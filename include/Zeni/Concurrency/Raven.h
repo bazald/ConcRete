@@ -12,12 +12,10 @@ namespace Zeni {
     /// An addressed message virtual base class
     class ZENI_CONCURRENCY_LINKAGE Raven : public Job {
     public:
-      typedef std::shared_ptr<Raven> Ptr;
-
       Raven(const std::shared_ptr<Maester> &recipient);
       Raven(std::shared_ptr<Maester> &&recipient);
 
-      void execute() override;
+      void execute(Job_Queue &job_queue) override;
 
       std::weak_ptr<Maester> m_recipient;
     };

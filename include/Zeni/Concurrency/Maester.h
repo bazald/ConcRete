@@ -17,20 +17,12 @@ namespace Zeni {
       Maester & operator=(const Maester &) = delete;
 
     public:
-      typedef std::shared_ptr<Maester> Ptr;
+      Maester();
 
-      Maester(const std::shared_ptr<Job_Queue> &job_queue);
-      Maester(std::shared_ptr<Job_Queue> &&job_queue);
-
-      Job_Queue & get_job_queue() const;
-
-      virtual void receive(const std::shared_ptr<Raven> &raven) = 0;
+      virtual void receive(Job_Queue &job_queue, const std::shared_ptr<Raven> &raven) = 0;
 
     protected:
       std::mutex m_mutex;
-
-    private:
-      std::shared_ptr<Job_Queue> m_job_queue;
     };
 
   }

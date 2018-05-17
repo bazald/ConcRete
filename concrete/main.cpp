@@ -32,12 +32,7 @@ class Gossip : public Zeni::Concurrency::Maester {
 public:
   typedef std::shared_ptr<Gossip> Ptr;
 
-  Gossip(const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
-    : Zeni::Concurrency::Maester(job_queue)
-  {
-  }
-
-  void receive(const std::shared_ptr<Zeni::Concurrency::Raven> &raven) override {
+  void receive(Zeni::Concurrency::Job_Queue &job_queue, const std::shared_ptr<Zeni::Concurrency::Raven> &raven) override {
     Whisper &whisper = dynamic_cast<Whisper &>(*raven);
 
     std::cerr << whisper.get_message() + "\n";
@@ -45,7 +40,7 @@ public:
 
     std::unique_lock<std::mutex> mutex_lock(m_mutex);
     for(Ptr gossip : m_gossips)
-      get_job_queue().give(std::make_shared<Whisper>(gossip, whisper.get_message()));
+      job_queue.give(std::make_shared<Whisper>(gossip, whisper.get_message()));
   }
 
   void tell(const Ptr &gossip) {
@@ -67,7 +62,7 @@ int main()
     Zeni::Concurrency::Thread_Pool thread_pool(job_queue);
 
     for(std::string name : {"alice", "betty", "carol", "diane", "ellen", "farah", "gabby", "helen", "irene", "janae", "kelly"})
-      gossips[name] = std::make_shared<Gossip>(job_queue);
+      gossips[name] = std::make_shared<Gossip>();
 
     gossips["alice"]->tell(gossips["betty"]);
     gossips["betty"]->tell(gossips["carol"]);

@@ -14,7 +14,7 @@ namespace Zeni {
         if (job_and_status.second == Job_Queue::Status::SHUT_DOWN)
           break;
         assert(job_and_status.first);
-        job_and_status.first->execute();
+        job_and_status.first->execute(*job_queue);
       }
     }
 

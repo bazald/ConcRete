@@ -71,9 +71,6 @@
     <ClCompile Include="..\src\Zeni\Concurrency\Job_Queue.cpp">
       <Filter>Concurrency\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Zeni\Concurrency\Maester.cpp">
-      <Filter>Concurrency\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Zeni\Concurrency\Raven.cpp">
       <Filter>Concurrency\Source Files</Filter>
     </ClCompile>
@@ -82,6 +79,9 @@
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Token_Index.cpp">
       <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Concurrency\Maester.cpp">
+      <Filter>Concurrency\Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -10,6 +10,7 @@ namespace Zeni {
   namespace Concurrency {
 
     class Job;
+    class Job_Queue;
 
   }
 
@@ -26,7 +27,7 @@ namespace Zeni {
     class ZENI_CONCURRENCY_LINKAGE Job : public std::enable_shared_from_this<Job> {
     public:
       /// The function that gets called by whichever worker pulls this Job off of the Job_Queue
-      virtual void execute() = 0;
+      virtual void execute(Job_Queue &job_queue) = 0;
     };
 
   }
