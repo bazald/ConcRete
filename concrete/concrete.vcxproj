@@ -72,15 +72,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
+    <SourcePath>$(SolutionDir)\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
+    <SourcePath>$(SolutionDir)\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
+    <SourcePath>$(SolutionDir)\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
+    <SourcePath>$(SolutionDir)\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -143,18 +151,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\Concurrency\job_queue.cpp" />
+    <ClCompile Include="..\src\Concurrency\maester.cpp" />
+    <ClCompile Include="..\src\Concurrency\raven.cpp" />
+    <ClCompile Include="..\src\Concurrency\thread_pool.cpp" />
     <ClCompile Include="concrete.cpp" />
-    <ClCompile Include="job_queue.cpp" />
-    <ClCompile Include="maester.cpp" />
-    <ClCompile Include="raven.cpp" />
-    <ClCompile Include="thread_pool.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="job.h" />
-    <ClInclude Include="job_queue.h" />
-    <ClInclude Include="maester.h" />
-    <ClInclude Include="raven.h" />
-    <ClInclude Include="thread_pool.h" />
+    <ClInclude Include="..\src\Concurrency\job.h" />
+    <ClInclude Include="..\src\Concurrency\job_queue.h" />
+    <ClInclude Include="..\src\Concurrency\maester.h" />
+    <ClInclude Include="..\src\Concurrency\raven.h" />
+    <ClInclude Include="..\src\Concurrency\thread_pool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

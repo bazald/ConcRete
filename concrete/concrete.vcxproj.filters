@@ -18,33 +18,33 @@
     <ClCompile Include="concrete.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="job_queue.cpp">
+    <ClCompile Include="..\src\Concurrency\maester.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="thread_pool.cpp">
+    <ClCompile Include="..\src\Concurrency\raven.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="raven.cpp">
+    <ClCompile Include="..\src\Concurrency\thread_pool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="maester.cpp">
+    <ClCompile Include="..\src\Concurrency\job_queue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="job.h">
+    <ClInclude Include="..\src\Concurrency\job_queue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="job_queue.h">
+    <ClInclude Include="..\src\Concurrency\maester.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="thread_pool.h">
+    <ClInclude Include="..\src\Concurrency\raven.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="maester.h">
+    <ClInclude Include="..\src\Concurrency\thread_pool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="raven.h">
+    <ClInclude Include="..\src\Concurrency\job.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
