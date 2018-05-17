@@ -66,6 +66,9 @@
     <ClInclude Include="..\include\Zeni\Concurrency\Mutex.h">
       <Filter>Concurrency\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Zeni\Utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -88,6 +91,15 @@
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Concurrency\Mutex.cpp">
       <Filter>Concurrency\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Symbol.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp">
+      <Filter>Rete\Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

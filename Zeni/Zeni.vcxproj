@@ -161,6 +161,7 @@
     <ClInclude Include="..\include\Zeni\Rete\Symbol.h" />
     <ClInclude Include="..\include\Zeni\Rete\Token_Index.h" />
     <ClInclude Include="..\include\Zeni\Rete\Variable_Indices.h" />
+    <ClInclude Include="..\include\Zeni\Utility.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
@@ -169,7 +170,10 @@
     <ClCompile Include="..\src\Zeni\Concurrency\Mutex.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Raven.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Thread_Pool.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Symbol.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Token_Index.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp" />
+    <ClCompile Include="..\src\Zeni\Utility.cpp" />
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

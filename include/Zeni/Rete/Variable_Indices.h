@@ -15,4 +15,6 @@ namespace Zeni {
 
 }
 
+std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Variable_Indices &indices);
+
 #endif
