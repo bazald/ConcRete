@@ -2,7 +2,6 @@
 #define ZENI_CONCURRENCY_THREAD_POOL
 
 #include "Job_Queue.h"
-#include <list>
 
 namespace Zeni {
 

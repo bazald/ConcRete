@@ -2,8 +2,7 @@
 #define ZENI_CONCURRENCY_MAESTER_H
 
 #include "Job_Queue.h"
-
-#include <mutex>
+#include "Mutex.h"
 
 namespace Zeni {
 
@@ -19,10 +18,10 @@ namespace Zeni {
     public:
       Maester();
 
-      virtual void receive(Job_Queue &job_queue, const std::shared_ptr<Raven> &raven) = 0;
+      virtual void receive(Job_Queue &job_queue, const Raven &raven) = 0;
 
     protected:
-      std::mutex m_mutex;
+      Mutex m_mutex;
     };
 
   }

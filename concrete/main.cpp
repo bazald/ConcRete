@@ -1,4 +1,5 @@
 #include "Zeni/Concurrency/Maester.h"
+#include "Zeni/Concurrency/Mutex.h"
 #include "Zeni/Concurrency/Raven.h"
 #include "Zeni/Concurrency/Thread_Pool.h"
 
@@ -32,19 +33,19 @@ class Gossip : public Zeni::Concurrency::Maester {
 public:
   typedef std::shared_ptr<Gossip> Ptr;
 
-  void receive(Zeni::Concurrency::Job_Queue &job_queue, const std::shared_ptr<Zeni::Concurrency::Raven> &raven) override {
-    Whisper &whisper = dynamic_cast<Whisper &>(*raven);
+  void receive(Zeni::Concurrency::Job_Queue &job_queue, const Zeni::Concurrency::Raven &raven) override {
+    const Whisper &whisper = dynamic_cast<const Whisper &>(raven);
 
     std::cerr << whisper.get_message() + "\n";
     //++g_num_recvs;
 
-    std::unique_lock<std::mutex> mutex_lock(m_mutex);
+    Zeni::Concurrency::Mutex::Lock mutex_lock(m_mutex);
     for(Ptr gossip : m_gossips)
       job_queue.give(std::make_shared<Whisper>(gossip, whisper.get_message()));
   }
 
   void tell(const Ptr &gossip) {
-    std::unique_lock<std::mutex> mutex_lock(m_mutex);
+    Zeni::Concurrency::Mutex::Lock mutex_lock(m_mutex);
     m_gossips.insert(gossip);
   }
 

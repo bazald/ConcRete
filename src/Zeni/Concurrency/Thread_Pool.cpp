@@ -2,6 +2,7 @@
 
 #include "Zeni/Concurrency/Job_Queue.h"
 #include <cassert>
+#include <list>
 #include <thread>
 
 namespace Zeni {
