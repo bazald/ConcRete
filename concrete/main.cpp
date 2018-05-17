@@ -1,17 +1,17 @@
-#include "Concurrency/maester.h"
-#include "Concurrency/raven.h"
-#include "Concurrency/thread_pool.h"
+#include "Zeni/Concurrency/Maester.h"
+#include "Zeni/Concurrency/Raven.h"
+#include "Zeni/Concurrency/Thread_Pool.h"
 
 #include <iostream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 
-class Whisper : public Concurrency::Raven {
+class Whisper : public Zeni::Concurrency::Raven {
 public:
   typedef std::shared_ptr<Whisper> Ptr;
 
-  Whisper(const std::shared_ptr<Concurrency::Maester> &recipient, const std::string &message)
+  Whisper(const std::shared_ptr<Zeni::Concurrency::Maester> &recipient, const std::string &message)
     : Raven(recipient), m_message(message)
   {
   }
@@ -26,16 +26,16 @@ private:
 
 //static std::atomic_int64_t g_num_recvs = 0;
 
-class Gossip : public Concurrency::Maester {
+class Gossip : public Zeni::Concurrency::Maester {
 public:
   typedef std::shared_ptr<Gossip> Ptr;
 
-  Gossip(const Concurrency::Job_Queue::Ptr &job_queue)
-    : Concurrency::Maester(job_queue)
+  Gossip(const Zeni::Concurrency::Job_Queue::Ptr &job_queue)
+    : Zeni::Concurrency::Maester(job_queue)
   {
   }
 
-  void receive(const std::shared_ptr<Concurrency::Raven> &raven) override {
+  void receive(const std::shared_ptr<Zeni::Concurrency::Raven> &raven) override {
     Whisper &whisper = dynamic_cast<Whisper &>(*raven);
 
     std::cerr << whisper.get_message() + "\n";
@@ -61,8 +61,8 @@ int main()
     std::unordered_map<std::string, Gossip::Ptr> gossips;
 
     static const size_t num_workers = 8;
-    Concurrency::Job_Queue::Ptr job_queue = std::make_shared<Concurrency::Job_Queue>(num_workers);
-    Concurrency::Thread_Pool thread_pool(job_queue);
+    Zeni::Concurrency::Job_Queue::Ptr job_queue = std::make_shared<Zeni::Concurrency::Job_Queue>(num_workers);
+    Zeni::Concurrency::Thread_Pool thread_pool(job_queue);
 
     for(std::string name : {"alice", "betty", "carol", "diane", "ellen", "farah", "gabby", "helen", "irene", "janae", "kelly"})
       gossips[name] = std::make_shared<Gossip>(job_queue);
