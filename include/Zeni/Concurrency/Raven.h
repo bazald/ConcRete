@@ -10,7 +10,7 @@ namespace Zeni {
     class Maester;
 
     /// An addressed message virtual base class
-    class Raven : public Job {
+    class ZENI_CONCURRENCY_LINKAGE Raven : public Job {
     public:
       typedef std::shared_ptr<Raven> Ptr;
 

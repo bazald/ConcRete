@@ -2,6 +2,8 @@
 #include "Zeni/Concurrency/Raven.h"
 #include "Zeni/Concurrency/Thread_Pool.h"
 
+#include "Zeni/Rete/Token_Index.h"
+
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -30,7 +32,7 @@ class Gossip : public Zeni::Concurrency::Maester {
 public:
   typedef std::shared_ptr<Gossip> Ptr;
 
-  Gossip(const Zeni::Concurrency::Job_Queue::Ptr &job_queue)
+  Gossip(const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
     : Zeni::Concurrency::Maester(job_queue)
   {
   }
@@ -43,7 +45,7 @@ public:
 
     std::unique_lock<std::mutex> mutex_lock(m_mutex);
     for(Ptr gossip : m_gossips)
-      get_job_queue()->give(std::make_shared<Whisper>(gossip, whisper.get_message()));
+      get_job_queue().give(std::make_shared<Whisper>(gossip, whisper.get_message()));
   }
 
   void tell(const Ptr &gossip) {
@@ -61,7 +63,7 @@ int main()
     std::unordered_map<std::string, Gossip::Ptr> gossips;
 
     static const size_t num_workers = 8;
-    Zeni::Concurrency::Job_Queue::Ptr job_queue = std::make_shared<Zeni::Concurrency::Job_Queue>(num_workers);
+    auto job_queue = std::make_shared<Zeni::Concurrency::Job_Queue>(num_workers);
     Zeni::Concurrency::Thread_Pool thread_pool(job_queue);
 
     for(std::string name : {"alice", "betty", "carol", "diane", "ellen", "farah", "gabby", "helen", "irene", "janae", "kelly"})

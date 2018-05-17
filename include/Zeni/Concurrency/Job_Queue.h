@@ -3,18 +3,20 @@
 
 #include "Job.h"
 
-#include <thread>
-#include <mutex>
-#include <queue>
+#include <stdexcept>
 
 namespace Zeni {
 
   namespace Concurrency {
 
-    class Job_Queue {
+    class Job_Queue_Pimpl;
+
+    class ZENI_CONCURRENCY_LINKAGE Job_Queue {
+      Job_Queue(const Job_Queue &) = delete;
+      Job_Queue operator=(const Job_Queue &) = delete;
+
     public:
       enum class Status { RUNNING, SHUTTING_DOWN, SHUT_DOWN };
-      typedef std::shared_ptr<Job_Queue> Ptr;
 
       class Job_Queue_Must_Be_Running : public std::runtime_error {
       public:
@@ -33,6 +35,7 @@ namespace Zeni {
       };
 
       Job_Queue(const size_t &num_threads);
+      ~Job_Queue();
 
       /// Get the number of threads.
       size_t num_threads() const;
@@ -44,21 +47,15 @@ namespace Zeni {
       void wait_for_completion();
 
       /// Take a Job off the queue. Will be null if and only if SHUT_DOWN.
-      std::pair<Job::Ptr, Status> take();
+      std::pair<std::shared_ptr<Job>, Status> take();
 
       /// Give the queue a new Job. Can throw Job_Queue_Must_Not_Be_Shut_Down.
-      void give(const Job::Ptr &job);
+      void give(const std::shared_ptr<Job> &job);
       /// Give the queue a new Job. Can throw Job_Queue_Must_Not_Be_Shut_Down.
-      void give(Job::Ptr &&job);
+      void give(std::shared_ptr<Job> &&job);
 
     private:
-      std::mutex m_mutex;
-      std::queue<Job::Ptr> m_jobs;
-      std::condition_variable m_empty;
-      std::condition_variable m_non_empty;
-      Status m_status = Status::RUNNING;
-      size_t m_dormant = 0;
-      size_t m_dormant_max;
+      Job_Queue_Pimpl * const m_impl;
     };
 
   }

@@ -1,17 +1,30 @@
 #ifndef ZENI_CONCURRENCY_JOB_H
 #define ZENI_CONCURRENCY_JOB_H
 
+#include "Zeni/Linkage.h"
+
 #include <memory>
 
 namespace Zeni {
 
   namespace Concurrency {
 
-    /// A Job virtual base class
-    class Job : public std::enable_shared_from_this<Job> {
-    public:
-      typedef std::shared_ptr<Job> Ptr;
+    class Job;
 
+  }
+
+}
+
+ZENI_CONCURRENCY_EXTERN template class ZENI_CONCURRENCY_LINKAGE std::weak_ptr<Zeni::Concurrency::Job>;
+ZENI_CONCURRENCY_EXTERN template class ZENI_CONCURRENCY_LINKAGE std::enable_shared_from_this<Zeni::Concurrency::Job>;
+
+namespace Zeni {
+
+  namespace Concurrency {
+
+    /// A Job virtual base class
+    class ZENI_CONCURRENCY_LINKAGE Job : public std::enable_shared_from_this<Job> {
+    public:
       /// The function that gets called by whichever worker pulls this Job off of the Job_Queue
       virtual void execute() = 0;
     };

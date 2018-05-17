@@ -3,7 +3,6 @@
 
 #include "Job_Queue.h"
 
-#include <memory>
 #include <mutex>
 
 namespace Zeni {
@@ -13,14 +12,17 @@ namespace Zeni {
     class Raven;
 
     /// A message recipient virtual base class
-    class Maester {
+    class ZENI_CONCURRENCY_LINKAGE Maester {
+      Maester(const Maester &) = delete;
+      Maester & operator=(const Maester &) = delete;
+
     public:
       typedef std::shared_ptr<Maester> Ptr;
 
-      Maester(const Job_Queue::Ptr &job_queue);
-      Maester(Job_Queue::Ptr &&job_queue);
+      Maester(const std::shared_ptr<Job_Queue> &job_queue);
+      Maester(std::shared_ptr<Job_Queue> &&job_queue);
 
-      Job_Queue::Ptr get_job_queue() const;
+      Job_Queue & get_job_queue() const;
 
       virtual void receive(const std::shared_ptr<Raven> &raven) = 0;
 
@@ -28,7 +30,7 @@ namespace Zeni {
       std::mutex m_mutex;
 
     private:
-      Job_Queue::Ptr m_job_queue;
+      std::shared_ptr<Job_Queue> m_job_queue;
     };
 
   }
