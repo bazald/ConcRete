@@ -1,32 +1,32 @@
-#ifndef WME_SET_H
-#define WME_SET_H
+#ifndef ZENI_RETE_WORKING_MEMORY_H
+#define ZENI_RETE_WORKING_MEMORY_H
 
-#include "wme.h"
-#include "utility.h"
+#include "Zeni/Utility.h"
+#include "WME.h"
 
-namespace Rete {
+namespace Zeni {
 
-  class RETE_LINKAGE WME_Set {
-  public:
-    std::unordered_set<WME_Ptr_C, Rete::hash_deref<Rete::WME>, Rete::compare_deref_eq> wmes;
-  };
+  namespace Rete {
+
+    class ZENI_RETE_LINKAGE Working_Memory {
+    public:
+      std::unordered_set<std::shared_ptr<const WME>, hash_deref<WME>, compare_deref_eq> wmes;
+    };
+
+  }
 
 }
 
-inline std::ostream & operator<<(std::ostream &os, const Rete::WME_Set &wme_set) {
-  os << '{' << std::endl;
-  for(const auto &wme : wme_set.wmes)
-    os << "  " << *wme << std::endl;
-  os << '}';
-  return os;
-}
+ZENI_RETE_LINKAGE std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Working_Memory &working_memory);
 
 namespace std {
-  template <> struct hash<Rete::WME_Set> {
-    size_t operator()(const Rete::WME_Set &wme_set) const {
-      return hash<std::unordered_set<Rete::WME_Ptr_C, Rete::hash_deref<Rete::WME>, Rete::compare_deref_eq>>()(wme_set.wmes);
+
+  template <> struct hash<Zeni::Rete::Working_Memory> {
+    size_t operator()(const Zeni::Rete::Working_Memory &working_memory) const {
+      return hash<std::unordered_set<std::shared_ptr<const Zeni::Rete::WME>, Zeni::hash_deref<Zeni::Rete::WME>, Zeni::compare_deref_eq>>()(working_memory.wmes);
     }
   };
+
 }
 
 #endif

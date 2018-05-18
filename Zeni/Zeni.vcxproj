@@ -164,6 +164,7 @@
     <ClInclude Include="..\include\Zeni\Rete\Variable_Indices.h" />
     <ClInclude Include="..\include\Zeni\Rete\WME.h" />
     <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.h" />
+    <ClInclude Include="..\include\Zeni\Rete\Working_Memory.h" />
     <ClInclude Include="..\include\Zeni\Utility.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -179,6 +180,7 @@
     <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\WME.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Variable_Binding.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Working_Memory.cpp" />
     <ClCompile Include="..\src\Zeni\Utility.cpp" />
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>

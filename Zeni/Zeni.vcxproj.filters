@@ -78,6 +78,9 @@
     <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.h">
       <Filter>Rete\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Working_Memory.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -117,6 +120,9 @@
       <Filter>Rete\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Variable_Binding.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Working_Memory.cpp">
       <Filter>Rete\Source Files</Filter>
     </ClCompile>
   </ItemGroup>
