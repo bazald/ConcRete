@@ -1,43 +1,45 @@
-#ifndef WME_H
-#define WME_H
+#ifndef ZENI_RETE_WME_H
+#define ZENI_RETE_WME_H
 
-#include "../utility/memory_pool.h"
+#include "Zeni/Utility.h"
+#include "Symbol.h"
 
-#include "symbol.h"
-#include "utility.h"
+#include <array>
 
-namespace Rete {
+namespace Zeni {
 
-  class WME;
-  typedef std::shared_ptr<const WME> WME_Ptr_C;
-  typedef std::shared_ptr<WME> WME_Ptr;
+  namespace Rete {
 
-  class RETE_LINKAGE WME : public Zeni::Pool_Allocator<WME> {
-  public:
-    typedef std::array<Symbol_Ptr_C, 3> WME_Symbols;
+    class WME;
 
-    WME() {}
-    WME(const Symbol_Ptr_C &first, const Symbol_Ptr_C &second, const Symbol_Ptr_C &third);
+    class ZENI_RETE_LINKAGE WME {
+    public:
+      typedef std::array<std::shared_ptr<const Symbol>, 3> WME_Symbols;
 
-    bool operator==(const WME &rhs) const;
-    bool operator<(const WME &rhs) const;
+      WME() {}
+      WME(const std::shared_ptr<const Symbol> &first, const std::shared_ptr<const Symbol> &second, const std::shared_ptr<const Symbol> &third);
 
-    std::ostream & print(std::ostream &os) const;
-    std::ostream & print(std::ostream &os, const Variable_Indices_Ptr_C &indices) const;
+      bool operator==(const WME &rhs) const;
+      bool operator<(const WME &rhs) const;
 
-    WME_Symbols symbols;
-  };
+      std::ostream & print(std::ostream &os) const;
+      std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices) const;
+
+      WME_Symbols symbols;
+    };
+
+  }
 
 }
 
-RETE_LINKAGE std::ostream & operator<<(std::ostream &os, const Rete::WME &wme);
+ZENI_RETE_LINKAGE std::ostream & operator<<(std::ostream &os, const Zeni::Rete::WME &wme);
 
 namespace std {
-  template <> struct hash<Rete::WME> {
-    size_t operator()(const Rete::WME &wme) const {
-      return Rete::hash_combine(Rete::hash_combine(wme.symbols[0] ? wme.symbols[0]->hash() : 0,
+  template <> struct hash<Zeni::Rete::WME> {
+    size_t operator()(const Zeni::Rete::WME &wme) const {
+      return Zeni::hash_combine(Zeni::hash_combine(wme.symbols[0] ? wme.symbols[0]->hash() : 0,
                                                    wme.symbols[1] ? wme.symbols[1]->hash() : 0),
-                                wme.symbols[2] ? wme.symbols[2]->hash() : 0);
+                                                   wme.symbols[2] ? wme.symbols[2]->hash() : 0);
     }
   };
 }

@@ -69,6 +69,15 @@
     <ClInclude Include="..\include\Zeni\Utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\WME.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Token.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -99,6 +108,15 @@
       <Filter>Rete\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\WME.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Token.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Variable_Binding.cpp">
       <Filter>Rete\Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -72,7 +72,7 @@ namespace Zeni {
 
       virtual bool operator==(const double &) const;
       virtual bool operator==(const int64_t &) const;
-      virtual bool operator==(const std::string &) const;
+      virtual bool operator==(const char * const &) const;
 
       virtual size_t hash() const = 0;
       virtual std::ostream & print(std::ostream &os) const = 0;
@@ -188,7 +188,9 @@ namespace Zeni {
       Symbol_Constant_String & operator=(const Symbol_Constant_String &) = delete;
 
     public:
-      Symbol_Constant_String(const std::string &value_);
+      Symbol_Constant_String(const char * const &value_);
+
+      const char * get_value() const;
 
       Symbol_Constant_String * clone() const override;
 
@@ -215,7 +217,7 @@ namespace Zeni {
       bool operator<(const Symbol_Variable &) const override;
       bool operator<=(const Symbol_Variable &) const override;
 
-      bool operator==(const std::string &value_) const override;
+      bool operator==(const char * const &value_) const override;
 
       size_t hash() const override;
 
@@ -223,7 +225,11 @@ namespace Zeni {
 
       virtual std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &) const override;
 
-      const std::string value;
+    private:
+#pragma warning( push )
+#pragma warning( disable: 4251 )
+      const std::string m_value;
+#pragma warning( pop )
     };
 
     class ZENI_RETE_LINKAGE Symbol_Identifier : public Symbol {
@@ -231,7 +237,9 @@ namespace Zeni {
       Symbol_Identifier & operator=(const Symbol_Identifier &) = delete;
 
     public:
-      Symbol_Identifier(const std::string &value_);
+      Symbol_Identifier(const char * const &value_);
+
+      const char * get_value() const;
 
       Symbol_Identifier * clone() const override;
 
@@ -258,7 +266,7 @@ namespace Zeni {
       bool operator<(const Symbol_Variable &) const override;
       bool operator<=(const Symbol_Variable &) const override;
 
-      bool operator==(const std::string &value_) const override;
+      bool operator==(const char * const &value_) const override;
 
       size_t hash() const override;
 
@@ -266,7 +274,11 @@ namespace Zeni {
 
       virtual std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &) const override;
 
-      const std::string value;
+    private:
+#pragma warning( push )
+#pragma warning( disable: 4251 )
+      const std::string m_value;
+#pragma warning( pop )
     };
 
     class ZENI_RETE_LINKAGE Symbol_Variable : public Symbol {
@@ -316,11 +328,11 @@ namespace Zeni {
 
 }
 
-bool operator==(const double &lhs, const Zeni::Rete::Symbol &rhs);
-bool operator==(const int64_t &lhs, const Zeni::Rete::Symbol &rhs);
-bool operator==(const std::string &lhs, const Zeni::Rete::Symbol &rhs);
+bool ZENI_RETE_LINKAGE operator==(const double &lhs, const Zeni::Rete::Symbol &rhs);
+bool ZENI_RETE_LINKAGE operator==(const int64_t &lhs, const Zeni::Rete::Symbol &rhs);
+bool ZENI_RETE_LINKAGE operator==(const char * const &lhs, const Zeni::Rete::Symbol &rhs);
 
-std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Symbol &symbol);
+ZENI_RETE_LINKAGE std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Symbol &symbol);
 
 namespace std {
   template <> struct hash<Zeni::Rete::Symbol> {
