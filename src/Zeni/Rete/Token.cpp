@@ -98,10 +98,10 @@ namespace Zeni {
       }
     }
 
-    //std::pair<Variable_Indices_Ptr_C, Variable_Indices_Ptr_C> split_Variable_Indices(const WME_Bindings &bindings, const Variable_Indices_Ptr_C &indices, const int64_t &offset) {
-    //  //std::pair<Variable_Indices_Ptr, Variable_Indices_Ptr> rv =
+    //std::pair<std::shared_ptr<const Variable_Indices>, std::shared_ptr<const Variable_Indices>> split_Variable_Indices(const Variable_Bindings &bindings, const std::shared_ptr<const Variable_Indices> &indices, const int64_t &offset) {
+    //  //std::pair<std::shared_ptr<Variable_Indices>, std::shared_ptr<Variable_Indices>> rv =
     //  //  std::make_pair(std::make_shared<Variable_Indices>(), std::make_shared<Variable_Indices>());
-    //  std::pair<Variable_Indices_Ptr_C, Variable_Indices_Ptr> rv =
+    //  std::pair<std::shared_ptr<const Variable_Indices>, std::shared_ptr<Variable_Indices>> rv =
     //    std::make_pair(indices, std::make_shared<Variable_Indices>());
     //
     //  for(const auto &index : *indices) {
@@ -122,7 +122,7 @@ namespace Zeni {
     //  return rv;
     //}
 
-    //std::shared_ptr<const Variable_Indices> bind_Variable_Indices(const WME_Bindings &bindings, const std::shared_ptr<const Variable_Indices> &indices, const Rete_Node &left, const Rete_Node &right) {
+    //std::shared_ptr<const Variable_Indices> bind_Variable_Indices(const Variable_Bindings &bindings, const std::shared_ptr<const Variable_Indices> &indices, const Node &left, const Node &right) {
     //  const int64_t left_size = left.get_size();
     //  const int64_t left_token_size = left.get_token_size();
     //  const int64_t right_size = right.get_size();

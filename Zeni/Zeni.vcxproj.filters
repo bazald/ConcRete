@@ -81,6 +81,42 @@
     <ClInclude Include="..\include\Zeni\Rete\Working_Memory.h">
       <Filter>Rete\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Agenda.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Action.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Existential.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Filter.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Join.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Join_Existential.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Join_Negation.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Negation.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Custom_Data.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Network.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Predicate.h">
+      <Filter>Rete\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -123,6 +159,15 @@
       <Filter>Rete\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Working_Memory.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Filter.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Custom_Data.cpp">
       <Filter>Rete\Source Files</Filter>
     </ClCompile>
   </ItemGroup>

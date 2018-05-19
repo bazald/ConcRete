@@ -24,7 +24,7 @@ namespace Zeni {
 
   namespace Rete {
 
-    class Rete_Node;
+    class Node;
     class Token;
 
     class ZENI_RETE_LINKAGE Token : public std::enable_shared_from_this<Token> {
@@ -61,7 +61,7 @@ namespace Zeni {
       size_t m_hashval;
     };
 
-    //std::shared_ptr<const Variable_Indices> bind_Variable_Indices(const WME_Bindings &bindings, const std::shared_ptr<const Variable_Indices> &indices, const Rete_Node &left, const Rete_Node &right);
+    //std::shared_ptr<const Variable_Indices> bind_Variable_Indices(const Variable_Bindings &bindings, const std::shared_ptr<const Variable_Indices> &indices, const Node &left, const Node &right);
     std::string get_Variable_name(const std::shared_ptr<const Variable_Indices> &indices, const Token_Index &index);
 
   }
