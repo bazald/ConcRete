@@ -170,5 +170,29 @@
     <ClCompile Include="..\src\Zeni\Rete\Custom_Data.cpp">
       <Filter>Rete\Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Join_Existential.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Join_Negation.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Negation.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Predicate.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Network.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Action.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Existential.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Join.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

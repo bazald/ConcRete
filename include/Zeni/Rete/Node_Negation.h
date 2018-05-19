@@ -7,21 +7,21 @@ namespace Zeni {
 
   namespace Rete {
 
-    class ZENI_RETE_LINKAGE Rete_Negation : public Node {
-      Rete_Negation(const Rete_Negation &);
-      Rete_Negation & operator=(const Rete_Negation &);
+    class ZENI_RETE_LINKAGE Node_Negation : public Node {
+      Node_Negation(const Node_Negation &);
+      Node_Negation & operator=(const Node_Negation &);
 
       friend ZENI_RETE_LINKAGE void bind_to_negation(Network &network, const std::shared_ptr<Node_Negation> &negation, const std::shared_ptr<Node> &out);
 
     public:
-      Rete_Negation();
+      Node_Negation();
 
       void destroy(Network &network, const std::shared_ptr<Node> &output) override;
 
-      std::shared_ptr<const Node> parent_left() const override { return input->shared(); }
-      std::shared_ptr<const Node> parent_right() const override { return input->shared(); }
-      std::shared_ptr<Node> parent_left() override { return input->shared(); }
-      std::shared_ptr<Node> parent_right() override { return input->shared(); }
+      std::shared_ptr<const Node> parent_left() const override { return input.lock(); }
+      std::shared_ptr<const Node> parent_right() const override { return input.lock(); }
+      std::shared_ptr<Node> parent_left() override { return input.lock(); }
+      std::shared_ptr<Node> parent_right() override { return input.lock(); }
 
       std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const override;
 
@@ -48,7 +48,7 @@ namespace Zeni {
       static std::shared_ptr<Node_Negation> find_existing(const std::shared_ptr<Node> &out);
 
     private:
-      Node * input = nullptr;
+      std::weak_ptr<Node> input;
       Tokens input_tokens;
       Tokens output_tokens;
       std::shared_ptr<const Token> output_token;

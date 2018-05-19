@@ -85,7 +85,7 @@ namespace Zeni {
       virtual void insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0;
       virtual bool remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0; ///< Returns true if removed the last
 
-      virtual void disconnect(Network &/*agent*/, const std::shared_ptr<const Node> &/*from*/) {}
+      virtual void disconnect(Network &/*network*/, const std::shared_ptr<const Node> &/*from*/) {}
 
       virtual void pass_tokens(Network &network, const std::shared_ptr<Node> &output) = 0;
       virtual void unpass_tokens(Network &network, const std::shared_ptr<Node> &output) = 0;
@@ -164,7 +164,7 @@ namespace Zeni {
       nodes.push_back(this);
 
       while(!nodes.empty()) {
-        Node * const node = nodes.front();
+        const std::shared_ptr<Node> node = nodes.front();
         nodes.pop_front();
 
         if(node->visitor_value == visitor_value_)

@@ -27,7 +27,7 @@ namespace Zeni {
         ~CPU_Accumulator();
 
       private:
-        Network & agent;
+        Network & network;
       };
 
       Network();
@@ -41,8 +41,8 @@ namespace Zeni {
       std::shared_ptr<Node_Join> make_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
       std::shared_ptr<Node_Negation> make_negation(const std::shared_ptr<Node> &out);
       std::shared_ptr<Node_Join_Negation> make_negation_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
-      std::shared_ptr<Node_Predicate> make_predicate_vc(const Rete_Predicate::Predicate &pred, const Token_Index &lhs_index, const std::shared_ptr<const Symbol> &rhs, const std::shared_ptr<Node> &out);
-      std::shared_ptr<Node_Predicate> make_predicate_vv(const Rete_Predicate::Predicate &pred, const Token_Index &lhs_index, const Token_Index &rhs_index, const std::shared_ptr<Node> &out);
+      std::shared_ptr<Node_Predicate> make_predicate_vc(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const std::shared_ptr<const Symbol> &rhs, const std::shared_ptr<Node> &out);
+      std::shared_ptr<Node_Predicate> make_predicate_vv(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const Token_Index &rhs_index, const std::shared_ptr<Node> &out);
 
       Agenda & get_agenda() { return agenda; }
       std::shared_ptr<Node_Action> get_rule(const std::string &name);

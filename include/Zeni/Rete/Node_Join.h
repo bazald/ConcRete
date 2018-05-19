@@ -3,25 +3,28 @@
 
 #include "Node.h"
 
+#include <functional>
+#include <unordered_map>
+
 namespace Zeni {
 
   namespace Rete {
 
-    class ZENI_RETE_LINKAGE Rete_Join : public Node {
-      Rete_Join(const Rete_Join &);
-      Rete_Join & operator=(const Rete_Join &);
+    class ZENI_RETE_LINKAGE Node_Join : public Node {
+      Node_Join(const Node_Join &);
+      Node_Join & operator=(const Node_Join &);
 
       friend ZENI_RETE_LINKAGE void bind_to_join(Network &network, const std::shared_ptr<Node_Join> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
 
     public:
-      Rete_Join(Variable_Bindings bindings_);
+      Node_Join(Variable_Bindings bindings_);
 
       void destroy(Network &network, const std::shared_ptr<Node> &output) override;
 
-      std::shared_ptr<const Node> parent_left() const override { return input0->shared(); }
-      std::shared_ptr<const Node> parent_right() const override { return input1->shared(); }
-      std::shared_ptr<Node> parent_left() override { return input0->shared(); }
-      std::shared_ptr<Node> parent_right() override { return input1->shared(); }
+      std::shared_ptr<const Node> parent_left() const override { return input0.lock(); }
+      std::shared_ptr<const Node> parent_right() const override { return input1.lock(); }
+      std::shared_ptr<Node> parent_left() override { return input0.lock(); }
+      std::shared_ptr<Node> parent_right() override { return input1.lock(); }
 
       std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const override;
 
@@ -60,8 +63,8 @@ namespace Zeni {
       void unpass_tokens(Network &network, const std::shared_ptr<Node> &output) override;
 
       Variable_Bindings bindings;
-      Node * input0 = nullptr;
-      Node * input1 = nullptr;
+      std::weak_ptr<Node> input0;
+      std::weak_ptr<Node> input1;
       int64_t input0_count = 0;
       int64_t input1_count = 0;
 

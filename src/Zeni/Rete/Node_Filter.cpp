@@ -137,7 +137,7 @@ namespace Zeni {
       return std::vector<WME>(1, m_wme);
     }
 
-    void bind_to_filter(Network &/*agent*/, const std::shared_ptr<Node_Filter> &filter) {
+    void bind_to_filter(Network &/*network*/, const std::shared_ptr<Node_Filter> &filter) {
       assert(filter);
       filter->height = 1;
       filter->token_owner = filter;

@@ -61,7 +61,6 @@ namespace Zeni {
       size_t m_hashval;
     };
 
-    //std::shared_ptr<const Variable_Indices> bind_Variable_Indices(const Variable_Bindings &bindings, const std::shared_ptr<const Variable_Indices> &indices, const Node &left, const Node &right);
     std::string get_Variable_name(const std::shared_ptr<const Variable_Indices> &indices, const Token_Index &index);
 
   }

@@ -187,8 +187,16 @@
     <ClCompile Include="..\src\Zeni\Concurrency\Raven.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Thread_Pool.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Custom_Data.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Network.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Node_Action.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Node_Existential.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node_Filter.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Node_Join.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Node_Join_Existential.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Node_Join_Negation.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Node_Negation.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Node_Predicate.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Symbol.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Token.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Token_Index.cpp" />

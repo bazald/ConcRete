@@ -7,21 +7,21 @@ namespace Zeni {
 
   namespace Rete {
 
-    class ZENI_RETE_LINKAGE Rete_Existential : public Node {
-      Rete_Existential(const Rete_Existential &);
-      Rete_Existential & operator=(const Rete_Existential &);
+    class ZENI_RETE_LINKAGE Node_Existential : public Node {
+      Node_Existential(const Node_Existential &);
+      Node_Existential & operator=(const Node_Existential &);
 
       friend ZENI_RETE_LINKAGE void bind_to_existential(Network &network, const std::shared_ptr<Node_Existential> &existential, const std::shared_ptr<Node> &out);
 
     public:
-      Rete_Existential();
+      Node_Existential();
 
       void destroy(Network &network, const std::shared_ptr<Node> &output) override;
 
-      std::shared_ptr<const Node> parent_left() const override { return input->shared(); }
-      std::shared_ptr<const Node> parent_right() const override { return input->shared(); }
-      std::shared_ptr<Node> parent_left() override { return input->shared(); }
-      std::shared_ptr<Node> parent_right() override { return input->shared(); }
+      std::shared_ptr<const Node> parent_left() const override;
+      std::shared_ptr<const Node> parent_right() const override;
+      std::shared_ptr<Node> parent_left() override;
+      std::shared_ptr<Node> parent_right() override;
 
       std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const override;
 
@@ -49,7 +49,7 @@ namespace Zeni {
       static std::shared_ptr<Node_Existential> find_existing(const std::shared_ptr<Node> &out);
 
     private:
-      Node * input = nullptr;
+      std::weak_ptr<Node> input;
       Tokens input_tokens;
       Tokens output_tokens;
       std::shared_ptr<const Token> output_token;

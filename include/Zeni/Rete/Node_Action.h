@@ -28,10 +28,10 @@ namespace Zeni {
       void destroy(Network &network, const std::shared_ptr<Node> &output = std::shared_ptr<Node>()) override;
       bool is_excised() const { return excised; }
 
-      std::shared_ptr<const Node> parent_left() const override { return input->shared(); }
-      std::shared_ptr<const Node> parent_right() const override { return input->shared(); }
-      std::shared_ptr<Node> parent_left() override { return input->shared(); }
-      std::shared_ptr<Node> parent_right() override { return input->shared(); }
+      std::shared_ptr<const Node> parent_left() const override;
+      std::shared_ptr<const Node> parent_right() const override;
+      std::shared_ptr<Node> parent_left() override;
+      std::shared_ptr<Node> parent_right() override;
 
       std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const override;
 
@@ -72,7 +72,7 @@ namespace Zeni {
       }
 
     private:
-      Node * input = nullptr;
+      std::weak_ptr<Node> input;
       std::shared_ptr<const Variable_Indices> variables;
       Tokens input_tokens;
       const std::string name;

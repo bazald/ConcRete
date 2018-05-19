@@ -7,24 +7,24 @@ namespace Zeni {
 
   namespace Rete {
 
-    class ZENI_RETE_LINKAGE Rete_Predicate : public Node {
-      Rete_Predicate(const Rete_Predicate &);
-      Rete_Predicate & operator=(const Rete_Predicate &);
+    class ZENI_RETE_LINKAGE Node_Predicate : public Node {
+      Node_Predicate(const Node_Predicate &);
+      Node_Predicate & operator=(const Node_Predicate &);
 
       friend ZENI_RETE_LINKAGE void bind_to_predicate(Network &network, const std::shared_ptr<Node_Predicate> &predicate, const std::shared_ptr<Node> &out);
 
     public:
       enum Predicate { EQ, NEQ, GT, GTE, LT, LTE };
 
-      Rete_Predicate(const Predicate &predicate_, const Token_Index lhs_index_, const Token_Index rhs_index_);
-      Rete_Predicate(const Predicate &predicate_, const Token_Index lhs_index_, const std::shared_ptr<const Symbol> &rhs_);
+      Node_Predicate(const Predicate &predicate_, const Token_Index lhs_index_, const Token_Index rhs_index_);
+      Node_Predicate(const Predicate &predicate_, const Token_Index lhs_index_, const std::shared_ptr<const Symbol> &rhs_);
 
       void destroy(Network &network, const std::shared_ptr<Node> &output) override;
 
-      std::shared_ptr<const Node> parent_left() const override { return input->shared(); }
-      std::shared_ptr<const Node> parent_right() const override { return input->shared(); }
-      std::shared_ptr<Node> parent_left() override { return input->shared(); }
-      std::shared_ptr<Node> parent_right() override { return input->shared(); }
+      std::shared_ptr<const Node> parent_left() const override;
+      std::shared_ptr<const Node> parent_right() const override;
+      std::shared_ptr<Node> parent_left() override;
+      std::shared_ptr<Node> parent_right() override;
 
       std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const override;
 
@@ -65,7 +65,7 @@ namespace Zeni {
       Token_Index m_lhs_index;
       Token_Index m_rhs_index;
       std::shared_ptr<const Symbol> m_rhs;
-      Node * input = nullptr;
+      std::weak_ptr<Node> input;
       Tokens tokens;
     };
 
