@@ -32,7 +32,8 @@ namespace Zeni {
       }
     }
 
-    Network::Network()
+    Network::Network(const Network::Printed_Output &printed_output)
+      : m_printed_output(printed_output)
     {
     }
 
@@ -43,8 +44,10 @@ namespace Zeni {
     std::shared_ptr<Node_Action> Network::make_action(const std::string &name, const bool &user_action, const Node_Action::Action &action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables) {
       CPU_Accumulator cpu_accumulator(*this);
 
-      if (auto existing = Node_Action::find_existing(action, [](const Node_Action &, const Token &) {}, out))
-        return existing;
+      if (m_node_sharing == Node_Sharing::Enabled) {
+        if (auto existing = Node_Action::find_existing(action, [](const Node_Action &, const Token &) {}, out))
+          return existing;
+      }
       //      std::cerr << "DEBUG: make_action" << std::endl;
       auto action_fun = std::make_shared<Node_Action>(name, action, [](const Node_Action &, const Token &) {});
       bind_to_action(*this, action_fun, out, variables);
@@ -57,8 +60,10 @@ namespace Zeni {
     std::shared_ptr<Node_Action> Network::make_action_retraction(const std::string &name, const bool &user_action, const Node_Action::Action &action, const Node_Action::Action &retraction, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables) {
       CPU_Accumulator cpu_accumulator(*this);
 
-      if (auto existing = Node_Action::find_existing(action, retraction, out))
-        return existing;
+      if (m_node_sharing == Node_Sharing::Enabled) {
+        if (auto existing = Node_Action::find_existing(action, retraction, out))
+          return existing;
+      }
       auto action_fun = std::make_shared<Node_Action>(name, action, retraction);
       bind_to_action(*this, action_fun, out, variables);
       source_rule(action_fun, user_action);
@@ -68,8 +73,10 @@ namespace Zeni {
     std::shared_ptr<Node_Existential> Network::make_existential(const std::shared_ptr<Node> &out) {
       CPU_Accumulator cpu_accumulator(*this);
 
-      if (auto existing = Node_Existential::find_existing(out))
-        return existing;
+      if (m_node_sharing == Node_Sharing::Enabled) {
+        if (auto existing = Node_Existential::find_existing(out))
+          return existing;
+      }
       auto existential = std::make_shared<Node_Existential>();
       bind_to_existential(*this, existential, out);
       return existential;
@@ -78,8 +85,10 @@ namespace Zeni {
     std::shared_ptr<Node_Join_Existential> Network::make_existential_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
       CPU_Accumulator cpu_accumulator(*this);
 
-      if (auto existing = Node_Join_Existential::find_existing(bindings, out0, out1))
-        return existing;
+      if (m_node_sharing == Node_Sharing::Enabled) {
+        if (auto existing = Node_Join_Existential::find_existing(bindings, out0, out1))
+          return existing;
+      }
       auto existential_join = std::make_shared<Node_Join_Existential>(bindings);
       bind_to_existential_join(*this, existential_join, out0, out1);
       return existential_join;
@@ -90,7 +99,7 @@ namespace Zeni {
 
       auto filter = std::make_shared<Node_Filter>(wme);
 
-      if (!get_Option_Ranged<bool>(Options::get_global(), "rete-disable-node-sharing")) {
+      if (m_node_sharing == Node_Sharing::Enabled) {
         for (auto &existing_filter : filters) {
           if (*existing_filter == *filter)
             return existing_filter;
@@ -108,8 +117,10 @@ namespace Zeni {
     std::shared_ptr<Node_Join> Network::make_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
       CPU_Accumulator cpu_accumulator(*this);
 
-      if (auto existing = Node_Join::find_existing(bindings, out0, out1))
-        return existing;
+      if (m_node_sharing == Node_Sharing::Enabled) {
+        if (auto existing = Node_Join::find_existing(bindings, out0, out1))
+          return existing;
+      }
       auto join = std::make_shared<Node_Join>(bindings);
       bind_to_join(*this, join, out0, out1);
       return join;
@@ -118,8 +129,10 @@ namespace Zeni {
     std::shared_ptr<Node_Negation> Network::make_negation(const std::shared_ptr<Node> &out) {
       CPU_Accumulator cpu_accumulator(*this);
 
-      if (auto existing = Node_Negation::find_existing(out))
-        return existing;
+      if (m_node_sharing == Node_Sharing::Enabled) {
+        if (auto existing = Node_Negation::find_existing(out))
+          return existing;
+      }
       auto negation = std::make_shared<Node_Negation>();
       bind_to_negation(*this, negation, out);
       return negation;
@@ -128,8 +141,10 @@ namespace Zeni {
     std::shared_ptr<Node_Join_Negation> Network::make_negation_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
       CPU_Accumulator cpu_accumulator(*this);
 
-      if (auto existing = Node_Join_Negation::find_existing(bindings, out0, out1))
-        return existing;
+      if (m_node_sharing == Node_Sharing::Enabled) {
+        if (auto existing = Node_Join_Negation::find_existing(bindings, out0, out1))
+          return existing;
+      }
       auto negation_join = std::make_shared<Node_Join_Negation>(bindings);
       bind_to_negation_join(*this, negation_join, out0, out1);
       return negation_join;
@@ -138,8 +153,10 @@ namespace Zeni {
     std::shared_ptr<Node_Predicate> Network::make_predicate_vc(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const std::shared_ptr<const Symbol> &rhs, const std::shared_ptr<Node> &out) {
       CPU_Accumulator cpu_accumulator(*this);
 
-      if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs, out))
-        return existing;
+      if (m_node_sharing == Node_Sharing::Enabled) {
+        if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs, out))
+          return existing;
+      }
       auto predicate = std::make_shared<Node_Predicate>(pred, lhs_index, rhs);
       bind_to_predicate(*this, predicate, out);
       return predicate;
@@ -148,8 +165,10 @@ namespace Zeni {
     std::shared_ptr<Node_Predicate> Network::make_predicate_vv(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const Token_Index &rhs_index, const std::shared_ptr<Node> &out) {
       CPU_Accumulator cpu_accumulator(*this);
 
-      if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs_index, out))
-        return existing;
+      if (m_node_sharing == Node_Sharing::Enabled) {
+        if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs_index, out))
+          return existing;
+      }
       auto predicate = std::make_shared<Node_Predicate>(pred, lhs_index, rhs_index);
       bind_to_predicate(*this, predicate, out);
       return predicate;
@@ -288,16 +307,16 @@ namespace Zeni {
 
     size_t Network::rete_size() const {
       size_t size = 0;
-      std::function<void(const Node &)> visitor = [&size](const Node &
+      std::function<void(const std::shared_ptr<Node> &)> visitor = [&size](const std::shared_ptr<Node> &
 #ifndef NDEBUG
         node
 #endif
         ) {
 #ifndef NDEBUG
-        if (dynamic_cast<const Node_Action *>(&node))
-          assert(node.get_outputs_all().empty());
+        if (std::dynamic_pointer_cast<const Node_Action>(node))
+          assert(node->get_outputs_all().empty());
         else
-          assert(!node.get_outputs_all().empty());
+          assert(!node->get_outputs_all().empty());
 #endif
         ++size;
       };
@@ -311,31 +330,31 @@ namespace Zeni {
       std::map<std::shared_ptr<const Node>, std::map<int64_t, std::list<std::shared_ptr<const Node>>>> clusters;
       std::map<std::shared_ptr<const Node>, std::list<std::shared_ptr<const Node>>> cluster_children;
 
-      std::function<void(Node &)> visitor = [&os, &clusters](Node &node) {
-        node.print_details(os);
-        if (node.data) {
-          clusters[node.data->cluster_root_ancestor()];
+      std::function<void(const std::shared_ptr<Node> &)> visitor = [&os, &clusters](const std::shared_ptr<Node> &node) {
+        node->print_details(os);
+        if (node->custom_data) {
+          clusters[node->custom_data->cluster_root_ancestor()];
         }
       };
       const_cast<Network *>(this)->visit_preorder(visitor, false);
 
-      visitor = [&clusters, &cluster_children](Node &node) {
-        if (dynamic_cast<Node_Filter *>(&node))
+      visitor = [&clusters, &cluster_children](const std::shared_ptr<Node> &node) {
+        if (std::dynamic_pointer_cast<Node_Filter>(node))
           return;
-        const auto found = clusters.find(node.shared());
+        const auto found = clusters.find(node);
         if (found == clusters.end()) {
           int64_t i = 1;
-          for (auto ancestor = node.parent_left(); !dynamic_cast<Node_Filter *>(ancestor.get()); ancestor = ancestor->parent_left(), ++i) {
+          for (auto ancestor = node->parent_left(); !dynamic_cast<Node_Filter *>(ancestor.get()); ancestor = ancestor->parent_left(), ++i) {
             const auto found2 = clusters.find(ancestor);
             if (found2 != clusters.end()) {
-              found2->second[i].push_back(node.shared());
+              found2->second[i].push_back(node);
               break;
             }
           }
         }
         else {
-          found->second[0].push_back(node.shared());
-          for (auto ancestor = node.parent_left(); !dynamic_cast<Node_Filter *>(ancestor.get()); ancestor = ancestor->parent_left()) {
+          found->second[0].push_back(node);
+          for (auto ancestor = node->parent_left(); !dynamic_cast<Node_Filter *>(ancestor.get()); ancestor = ancestor->parent_left()) {
             const auto found2 = clusters.find(ancestor);
             if (found2 != clusters.end()) {
               cluster_children[found2->first].push_back(found->first);
@@ -384,7 +403,7 @@ namespace Zeni {
     void Network::rete_print_rules(std::ostream &os) const {
       std::multimap<int64_t, std::shared_ptr<const Node_Action>> ordered_rules;
       for (auto it = rules.begin(), iend = rules.end(); it != iend; ++it)
-        ordered_rules.insert(std::make_pair(it->second->data ? it->second->data->rank() : 0, it->second));
+        ordered_rules.insert(std::make_pair(it->second->custom_data ? it->second->custom_data->rank() : 0, it->second));
 
       auto it = ordered_rules.begin();
       const auto iend = ordered_rules.end();
@@ -417,8 +436,6 @@ namespace Zeni {
     void Network::source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command) {
       CPU_Accumulator cpu_accumulator(*this);
 
-      const auto output = dynamic_cast<const Option_Itemized &>(Options::get_global()["output"]).get_value();
-
       auto found = rules.find(action->get_name());
       if (found == rules.end()) {
         //#ifndef NDEBUG
@@ -432,11 +449,11 @@ namespace Zeni {
         //#endif
         assert(found->second != action);
         found->second->destroy(*this);
-        if (user_command && output != "null")
+        if (user_command && m_printed_output != Printed_Output::None)
           std::cerr << '#';
         found->second = action;
       }
-      if (user_command && output != "null")
+      if (user_command && m_printed_output != Printed_Output::None)
         std::cerr << '*';
     }
 

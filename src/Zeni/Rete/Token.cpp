@@ -143,9 +143,9 @@ namespace Zeni {
 
 }
 
-std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Token &Token) {
+std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Token &token) {
   os << '{';
-  Token.print(os);
+  token.print(os);
   os << '}';
   return os;
 }

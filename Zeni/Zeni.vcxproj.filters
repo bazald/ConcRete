@@ -194,5 +194,8 @@
     <ClCompile Include="..\src\Zeni\Rete\Node_Join.cpp">
       <Filter>Rete\Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Agenda.cpp">
+      <Filter>Rete\Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

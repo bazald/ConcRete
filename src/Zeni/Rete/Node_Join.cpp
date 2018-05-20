@@ -1,8 +1,6 @@
 #include "Zeni/Rete/Node_Join.h"
 
 #include "Zeni/Rete/Node_Action.h"
-//#include "Zeni/Rete/Node_Existential.h"
-//#include "Zeni/Rete/Node_Negation.h"
 
 #include <cassert>
 //#include <typeinfo>
@@ -300,9 +298,6 @@ namespace Zeni {
     }
 
     std::shared_ptr<Node_Join> Node_Join::find_existing(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      if (get_Option_Ranged<bool>(Options::get_global(), "rete-disable-node-sharing"))
-        return nullptr;
-
       for (auto &o0 : out0->get_outputs_all()) {
         if (auto existing_join = std::dynamic_pointer_cast<Node_Join>(o0)) {
           if (std::find(out1->get_outputs_all().begin(), out1->get_outputs_all().end(), existing_join) != out1->get_outputs_all().end()) {
@@ -328,8 +323,9 @@ namespace Zeni {
       const auto token = output_tokens.insert(join_tokens(lhs, rhs));
 
       if (token.second) {
+        const auto sft = shared_from_this();
         for (auto &output : outputs_enabled)
-          output->insert_token(network, (*token.first), shared_from_this());
+          output->insert_token(network, (*token.first), sft);
       }
     }
 
@@ -412,8 +408,6 @@ namespace Zeni {
 
     void bind_to_join(Network &network, const std::shared_ptr<Node_Join> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
       assert(join && !join->input0.lock() && !join->input1.lock());
-      assert(!std::dynamic_pointer_cast<Node_Existential>(out0));
-      assert(!std::dynamic_pointer_cast<Node_Negation>(out0));
       join->input0 = out0;
       join->input1 = out1;
       join->height = std::max(out0->get_height(), out1->get_height()) + 1;

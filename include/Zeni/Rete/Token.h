@@ -67,12 +67,12 @@ namespace Zeni {
 
 }
 
-ZENI_RETE_LINKAGE std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Token &Token);
+ZENI_RETE_LINKAGE std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Token &token);
 
 namespace std {
   template <> struct hash<Zeni::Rete::Token> {
-    size_t operator()(const Zeni::Rete::Token &Token) const {
-      return Token.get_hash();
+    size_t operator()(const Zeni::Rete::Token &token) const {
+      return token.get_hash();
     }
   };
 }

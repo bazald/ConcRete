@@ -21,7 +21,7 @@ namespace Zeni {
     void Node_Filter::destroy(Network &network, const std::shared_ptr<Node> &output) {
       erase_output(output);
       if (!destruction_suppressed && outputs_all.empty())
-        network.excise_filter(std::static_pointer_cast<Node_Filter>(shared()));
+        network.excise_filter(std::static_pointer_cast<Node_Filter>(shared_from_this()));
     }
 
     std::shared_ptr<const Node_Filter> Node_Filter::get_filter(const int64_t &
@@ -55,17 +55,19 @@ namespace Zeni {
 
       const auto inserted = tokens.insert(std::make_shared<Token>(wme));
       if (inserted.second) {
+        const auto sft = shared_from_this();
         for (auto &output : outputs_enabled)
-          output->insert_token(network, *inserted.first, shared_from_this());
+          output->insert_token(network, *inserted.first, sft);
       }
     }
 
     void Node_Filter::remove_wme(Network &network, const std::shared_ptr<const WME> &wme) {
       auto found = tokens.find(std::make_shared<Token>(wme));
       if (found != tokens.end()) {
+        const auto sft = shared_from_this();
         for (auto ot = outputs_enabled.begin(), oend = outputs_enabled.end(); ot != oend; ) {
-          if ((*ot)->remove_token(network, *found, shared_from_this()))
-            (*ot++)->disconnect(network, shared_from_this());
+          if ((*ot)->remove_token(network, *found, sft))
+            (*ot++)->disconnect(network, sft);
           else
             ++ot;
         }
@@ -82,13 +84,15 @@ namespace Zeni {
     }
 
     void Node_Filter::pass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+      const auto sft = shared_from_this();
       for (auto &token : tokens)
-        output->insert_token(network, token, shared_from_this());
+        output->insert_token(network, token, sft);
     }
 
     void Node_Filter::unpass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+      const auto sft = shared_from_this();
       for (auto &token : tokens)
-        output->remove_token(network, token, shared_from_this());
+        output->remove_token(network, token, sft);
     }
 
     bool Node_Filter::operator==(const Node &rhs) const {

@@ -30,7 +30,10 @@ namespace Zeni {
         Network & network;
       };
 
-      Network();
+      enum class Node_Sharing { Enabled, Disabled };
+      enum class Printed_Output { Normal, None };
+
+      Network(const Printed_Output &printed_output = Printed_Output::Normal);
       ~Network();
 
       std::shared_ptr<Node_Action> make_action(const std::string &name, const bool &user_action, const Node_Action::Action &action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables);
@@ -49,6 +52,7 @@ namespace Zeni {
       std::set<std::string> get_rule_names() const;
       int64_t get_rule_name_index() const { return rule_name_index; }
       void set_rule_name_index(const int64_t &rule_name_index_) { rule_name_index = rule_name_index_; }
+      Printed_Output get_printed_output() const { return m_printed_output;  }
 
       void excise_all();
       void excise_filter(const std::shared_ptr<Node_Filter> &filter);
@@ -77,8 +81,6 @@ namespace Zeni {
       }
 
     protected:
-      void destroy();
-
       Agenda agenda;
 
     private:
@@ -93,6 +95,11 @@ namespace Zeni {
       double m_cpu_time = 0.0;
       size_t m_rete_depth = 0;
       std::chrono::high_resolution_clock::time_point m_start;
+
+      // Options
+
+      Node_Sharing m_node_sharing = Node_Sharing::Enabled;
+      Printed_Output m_printed_output;
     };
 
   }

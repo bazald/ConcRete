@@ -77,7 +77,7 @@ namespace Zeni {
       //    std::cerr << std::endl;
       //#endif
 
-      network.get_agenda().insert_action(std::dynamic_pointer_cast<Node_Action>(shared()), *inserted.first);
+      network.get_agenda().insert_action(std::static_pointer_cast<Node_Action>(shared_from_this()), *inserted.first);
     }
 
     bool Node_Action::remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
@@ -98,7 +98,7 @@ namespace Zeni {
         // TODO: change from the 'if' to the 'assert', ensuring that we're not wasting time on non-existent removals
         //assert(found != input_tokens.end());
       {
-        network.get_agenda().insert_retraction(std::dynamic_pointer_cast<Node_Action>(shared()), *found);
+        network.get_agenda().insert_retraction(std::static_pointer_cast<Node_Action>(shared_from_this()), *found);
 
         input_tokens.erase(found);
       }
@@ -144,19 +144,19 @@ namespace Zeni {
       }
 #endif
 
-      const std::shared_ptr<const Node> suppress = data->get_suppress();
+      const std::shared_ptr<const Node> suppress = custom_data->get_suppress();
 
       os << "sp {" << name;
-      if (data)
-        data->print_flags(os);
+      if (custom_data)
+        custom_data->print_flags(os);
       os << std::endl << "  ";
 
       parent_left()->print_rule(os, variables, suppress);
 
       os << std::endl << "-->";
-      if (data) {
+      if (custom_data) {
         os << std::endl;
-        data->print_action(os);
+        custom_data->print_action(os);
       }
       os << std::endl << '}' << std::endl;
     }

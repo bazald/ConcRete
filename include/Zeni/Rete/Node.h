@@ -9,7 +9,7 @@
 //#include <functional>
 //#include <list>
 //#include <unordered_set>
-//#include <deque>
+#include <deque>
 
 namespace Zeni {
 
@@ -56,12 +56,12 @@ namespace Zeni {
         destruction_suppressed = suppress;
       }
 
-      std::shared_ptr<const Node> shared() const {
-        return shared_from_this();
-      }
-      std::shared_ptr<Node> shared() {
-        return shared_from_this();
-      }
+      //std::shared_ptr<const Node> shared() const {
+      //  return shared_from_this();
+      //}
+      //std::shared_ptr<Node> shared() {
+      //  return shared_from_this();
+      //}
 
       const Output_Ptrs & get_outputs_all() const {
         return outputs_all;
@@ -128,7 +128,7 @@ namespace Zeni {
       template <typename VISITOR>
       VISITOR visit_preorder(VISITOR visitor, const bool &strict, const intptr_t &visitor_value_);
 
-      std::shared_ptr<Custom_Data> data;
+      std::shared_ptr<Custom_Data> custom_data;
 
     protected:
       bool destruction_suppressed = false;
@@ -160,8 +160,8 @@ namespace Zeni {
 
     template <typename VISITOR>
     VISITOR Node::visit_preorder(VISITOR visitor, const bool &strict, const intptr_t &visitor_value_) {
-      std::deque<Node *> nodes;
-      nodes.push_back(this);
+      std::deque<std::shared_ptr<Node>> nodes;
+      nodes.push_back(shared_from_this());
 
       while(!nodes.empty()) {
         const std::shared_ptr<Node> node = nodes.front();
@@ -170,21 +170,21 @@ namespace Zeni {
         if(node->visitor_value == visitor_value_)
           continue;
 
-        if(!strict && !dynamic_cast<Node_Filter *>(node)) {
+        if(!strict && !std::dynamic_pointer_cast<Node_Filter>(node)) {
           if(node->parent_left()->visitor_value != visitor_value_) {
-            nodes.push_front(node->parent_left().get());
+            nodes.push_front(node->parent_left());
             continue;
           }
           else if(node->parent_right()->visitor_value != visitor_value_) {
-            nodes.push_front(node->parent_right().get());
+            nodes.push_front(node->parent_right());
             continue;
           }
         }
 
         node->visitor_value = visitor_value_;
-        visitor(*node);
+        visitor(node);
         for(auto &o : node->outputs_all)
-          nodes.push_back(o.get());
+          nodes.push_back(o);
       }
 
       return visitor;

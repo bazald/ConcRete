@@ -17,7 +17,7 @@ namespace Zeni {
         //output_name(std::cerr, 3);
         //std::cerr << std::endl;
 
-        input.lock()->destroy(network, shared());
+        input.lock()->destroy(network, shared_from_this());
       }
     }
 
@@ -48,8 +48,9 @@ namespace Zeni {
       input_tokens.insert(token);
 
       if (input_tokens.size() == 1) {
+        const auto sft = shared_from_this();
         for (auto &output : outputs_enabled)
-          output->insert_token(network, output_token, shared_from_this());
+          output->insert_token(network, output_token, sft);
         output_tokens.insert(output_token);
       }
 
@@ -67,9 +68,10 @@ namespace Zeni {
       if (found != input_tokens.end()) {
         input_tokens.erase(found);
         if (input_tokens.empty()) {
+          const auto sft = shared_from_this();
           for (auto ot = outputs_enabled.begin(), oend = outputs_enabled.end(); ot != oend; ) {
-            if ((*ot)->remove_token(network, output_token, shared_from_this()))
-              (*ot++)->disconnect(network, shared_from_this());
+            if ((*ot)->remove_token(network, output_token, sft))
+              (*ot++)->disconnect(network, sft);
             else
               ++ot;
           }
@@ -137,9 +139,6 @@ namespace Zeni {
     }
 
     std::shared_ptr<Node_Existential> Node_Existential::find_existing(const std::shared_ptr<Node> &out) {
-      if (get_Option_Ranged<bool>(Options::get_global(), "rete-disable-node-sharing"))
-        return nullptr;
-
       for (auto &o : out->get_outputs_all()) {
         if (auto existing_existential = std::dynamic_pointer_cast<Node_Existential>(o))
           return existing_existential;

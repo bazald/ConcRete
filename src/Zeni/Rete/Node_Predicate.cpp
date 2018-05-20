@@ -1,8 +1,6 @@
 #include "Zeni/Rete/Node_Predicate.h"
 
 #include "Zeni/Rete/Node_Action.h"
-//#include "Zeni/Rete/Node_Existential.h"
-//#include "Zeni/Rete/Node_Negation.h"
 
 #include <cassert>
 #include <sstream>
@@ -74,8 +72,9 @@ namespace Zeni {
 
       const auto inserted = tokens.insert(token);
       if (inserted.second) {
+        const auto sft = shared_from_this();
         for (auto &output : outputs_enabled)
-          output->insert_token(network, *inserted.first, shared_from_this());
+          output->insert_token(network, *inserted.first, sft);
       }
     }
 
@@ -88,9 +87,10 @@ namespace Zeni {
 
       auto found = tokens.find(token);
       if (found != tokens.end()) {
+        const auto sft = shared_from_this();
         for (auto ot = outputs_enabled.begin(), oend = outputs_enabled.end(); ot != oend; ) {
-          if ((*ot)->remove_token(network, *found, shared_from_this()))
-            (*ot++)->disconnect(network, shared_from_this());
+          if ((*ot)->remove_token(network, *found, sft))
+            (*ot++)->disconnect(network, sft);
           else
             ++ot;
         }
@@ -101,16 +101,18 @@ namespace Zeni {
     }
 
     void Node_Predicate::pass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+      const auto sft = shared_from_this();
       for (auto &token : tokens)
-        output->insert_token(network, token, shared_from_this());
+        output->insert_token(network, token, sft);
     }
 
     void Node_Predicate::unpass_tokens(Network &network, const std::shared_ptr<Node> &output) {
       //#ifndef NDEBUG
       //    std::cerr << "Unpassing " << tokens.size() << " Node_Predicate tokens." << std::endl;
       //#endif
+      const auto sft = shared_from_this();
       for (auto &token : tokens)
-        output->remove_token(network, token, shared_from_this());
+        output->remove_token(network, token, sft);
     }
 
     bool Node_Predicate::operator==(const Node &rhs) const {
@@ -220,9 +222,6 @@ namespace Zeni {
     }
 
     std::shared_ptr<Node_Predicate> Node_Predicate::find_existing(const Predicate &predicate, const Token_Index &lhs_index, const std::shared_ptr<const Symbol> &rhs, const std::shared_ptr<Node> &out) {
-      if (get_Option_Ranged<bool>(Options::get_global(), "rete-disable-node-sharing"))
-        return nullptr;
-
       for (auto &o : out->get_outputs_all()) {
         if (auto existing_predicate = std::dynamic_pointer_cast<Node_Predicate>(o)) {
           if (predicate == existing_predicate->m_predicate &&
@@ -263,8 +262,6 @@ namespace Zeni {
 
     void bind_to_predicate(Network &network, const std::shared_ptr<Node_Predicate> &predicate, const std::shared_ptr<Node> &out) {
       assert(predicate);
-      assert(!std::dynamic_pointer_cast<Node_Existential>(out));
-      assert(!std::dynamic_pointer_cast<Node_Negation>(out));
       predicate->input = out;
       predicate->height = out->get_height() + 1;
       predicate->token_owner = out->get_token_owner();

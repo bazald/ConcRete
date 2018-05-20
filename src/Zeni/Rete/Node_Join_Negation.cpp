@@ -1,8 +1,6 @@
 #include "Zeni/Rete/Node_Join_Negation.h"
 
 #include "Zeni/Rete/Node_Action.h"
-//#include "Zeni/Rete/Node_Existential.h"
-//#include "Zeni/Rete/Node_Negation.h"
 
 #include <cassert>
 
@@ -19,12 +17,12 @@ namespace Zeni {
         //output_name(std::cerr, 3);
         //std::cerr << std::endl;
 
-        auto i0 = input0.lock();
-        auto i1 = input1.lock();
-        auto o = shared();
-        i0->destroy(network, o);
-        if (i0 != i1)
-          i1->destroy(network, o);
+        auto input0_locked = input0.lock();
+        auto input1_locked = input1.lock();
+        auto sft = shared_from_this();
+        input0_locked->destroy(network, sft);
+        if (input0_locked != input1_locked)
+          input1_locked->destroy(network, sft);
       }
     }
 
@@ -189,9 +187,6 @@ namespace Zeni {
     }
 
     std::shared_ptr<Node_Join_Negation> Node_Join_Negation::find_existing(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      if (get_Option_Ranged<bool>(Options::get_global(), "rete-disable-node-sharing"))
-        return nullptr;
-
       for (auto &o0 : out0->get_outputs_all()) {
         if (auto existing_negation_join = std::dynamic_pointer_cast<Node_Join_Negation>(o0)) {
           if (std::find(out1->get_outputs_all().begin(), out1->get_outputs_all().end(), existing_negation_join) != out1->get_outputs_all().end()) {
@@ -252,8 +247,6 @@ namespace Zeni {
 
     void bind_to_negation_join(Network &network, const std::shared_ptr<Node_Join_Negation> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
       assert(join && !join->input0.lock() && !join->input1.lock());
-      assert(!std::dynamic_pointer_cast<Node_Existential>(out0));
-      assert(!std::dynamic_pointer_cast<Node_Negation>(out0));
       join->input0 = out0;
       join->input1 = out1;
       join->height = std::max(out0->get_height(), out1->get_height()) + 1;

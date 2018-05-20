@@ -186,6 +186,7 @@
     <ClCompile Include="..\src\Zeni\Concurrency\Mutex.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Raven.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Thread_Pool.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Agenda.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Custom_Data.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Network.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node.cpp" />

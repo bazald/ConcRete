@@ -33,7 +33,7 @@ namespace Zeni {
     }
 
     void Node::erase_output(const std::shared_ptr<Node> &output) {
-      if (output->disabled_input(shared()))
+      if (output->disabled_input(shared_from_this()))
         erase_output_disabled(output);
       else
         erase_output_enabled(output);
