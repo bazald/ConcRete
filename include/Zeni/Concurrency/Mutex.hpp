@@ -29,7 +29,6 @@ namespace Zeni {
         Mutex_Lock_Pimpl * const m_impl;
       };
 
-
       Mutex();
       ~Mutex();
 

@@ -10,10 +10,13 @@ namespace Zeni {
   namespace Concurrency {
 
     class Job_Queue_Pimpl;
+    class Job_Queue_Lock_Pimpl;
 
     class Job_Queue {
       Job_Queue(const Job_Queue &) = delete;
       Job_Queue operator=(const Job_Queue &) = delete;
+
+      friend class Job_Queue_Lock_Pimpl;
 
     public:
       enum class ZENI_CONCURRENCY_LINKAGE Status { RUNNING, SHUTTING_DOWN, SHUT_DOWN };
@@ -34,11 +37,28 @@ namespace Zeni {
         }
       };
 
+      class ZENI_CONCURRENCY_LINKAGE Lock {
+        Lock(const Lock &) = delete;
+        Lock & operator=(const Lock &) = delete;
+
+      public:
+        Lock(Job_Queue &job_queue);
+        ~Lock();
+
+      private:
+        Job_Queue_Lock_Pimpl * const m_impl;
+      };
+
+      /// Initialize the number of threads to std::thread::hardware_concurrency()
+      ZENI_CONCURRENCY_LINKAGE Job_Queue();
+      /// Initialize the number of threads to 0 for single-threaded operation, anything else for multithreaded
       ZENI_CONCURRENCY_LINKAGE Job_Queue(const size_t &num_threads);
       ZENI_CONCURRENCY_LINKAGE ~Job_Queue();
 
       /// Get the number of threads.
       ZENI_CONCURRENCY_LINKAGE size_t num_threads() const;
+      /// Add threads; Should be called only by Thread_Pool after threads are instantiated and before unlocking the Job_Queue.
+      ZENI_CONCURRENCY_LINKAGE void add_threads(const size_t &threads);
 
       /// Change status to SHUTTING_DOWN and wake a thread in case all are waiting on non-empty. Can throw Job_Queue_Must_Be_Running.
       ZENI_CONCURRENCY_LINKAGE void finish();

@@ -58,9 +58,7 @@ int main()
   {
     std::unordered_map<std::string, Gossip::Ptr> gossips;
 
-    static const size_t num_workers = 8;
-    auto job_queue = std::make_shared<Zeni::Concurrency::Job_Queue>(num_workers);
-    Zeni::Concurrency::Thread_Pool thread_pool(job_queue);
+    Zeni::Concurrency::Thread_Pool thread_pool;
 
     for (std::string name : {"alice", "betty", "carol", "diane", "ellen", "farah", "gabby", "helen", "irene", "janae", "kelly"})
       gossips[name] = std::make_shared<Gossip>();
@@ -77,14 +75,14 @@ int main()
     gossips["diane"]->tell(gossips["kelly"]);
 
     for (std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
-      job_queue->give(std::make_shared<Whisper>(gossips["alice"], message));
+      thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
     //for(int i = 0; i != 1000000; ++i)
-    //  job_queue->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
+    //  thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
 
-    job_queue->wait_for_completion();
+    thread_pool.get_queue()->wait_for_completion();
 
     for (std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
-      job_queue->give(std::make_shared<Whisper>(gossips["alice"], message));
+      thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
   }
 
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;

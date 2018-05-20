@@ -14,8 +14,10 @@ namespace Zeni {
       Thread_Pool & operator=(const Thread_Pool &) = delete;
 
     public:
-      /// Initializes a thread pool with a number of threads equal to what is specified in the Job_Queue
-      ZENI_CONCURRENCY_LINKAGE Thread_Pool(const std::shared_ptr<Job_Queue> &job_queue);
+      /// Initialize the number of threads to std::thread::hardware_concurrency()
+      ZENI_CONCURRENCY_LINKAGE Thread_Pool();
+      /// Initialize the number of threads to 0 for single-threaded operation, anything else for multithreaded
+      ZENI_CONCURRENCY_LINKAGE Thread_Pool(const size_t &num_threads);
       ZENI_CONCURRENCY_LINKAGE ~Thread_Pool();
 
       ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Job_Queue> get_queue() const;

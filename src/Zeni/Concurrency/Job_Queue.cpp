@@ -13,7 +13,14 @@ namespace Zeni {
   namespace Concurrency {
 
     class Job_Queue_Pimpl {
+      friend class Job_Queue_Lock_Pimpl;
+
     public:
+      Job_Queue_Pimpl()
+        : Job_Queue_Pimpl(std::thread::hardware_concurrency())
+      {
+      }
+
       Job_Queue_Pimpl(const size_t &num_threads)
         : m_dormant_max(num_threads)
       {
@@ -21,6 +28,10 @@ namespace Zeni {
 
       size_t num_threads() const {
         return m_dormant_max;
+      }
+
+      void add_threads(const size_t &threads) {
+        m_dormant_max += threads;
       }
 
       void finish() {
@@ -70,24 +81,40 @@ namespace Zeni {
         return std::make_pair(job, m_status);
       }
 
-      void give(const std::shared_ptr<Job> &job) {
+      void give(Job_Queue * const pub_this, const std::shared_ptr<Job> &job) {
         std::unique_lock<std::mutex> mutex_lock(m_mutex);
 
         if (m_status == Job_Queue::Status::SHUT_DOWN)
           throw Job_Queue::Job_Queue_Must_Not_Be_Shut_Down();
 
-        m_jobs.push(job);
-        m_non_empty.notify_one();
+        if (m_dormant_max) {
+          m_jobs.push(job);
+          m_non_empty.notify_one();
+        }
+        else {
+          // Single-threaded mode
+          mutex_lock.release();
+          m_mutex.unlock();
+          job->execute(*pub_this);
+        }
       }
 
-      void give(std::shared_ptr<Job> &&job) {
+      void give(Job_Queue * const pub_this, std::shared_ptr<Job> &&job) {
         std::unique_lock<std::mutex> mutex_lock(m_mutex);
 
         if (m_status == Job_Queue::Status::SHUT_DOWN)
           throw Job_Queue::Job_Queue_Must_Not_Be_Shut_Down();
 
-        m_jobs.push(std::move(job));
-        m_non_empty.notify_one();
+        if (m_dormant_max) {
+          m_jobs.push(std::move(job));
+          m_non_empty.notify_one();
+        }
+        else {
+          // Single-threaded mode
+          mutex_lock.release();
+          m_mutex.unlock();
+          job->execute(*pub_this);
+        }
       }
 
     private:
@@ -99,6 +126,34 @@ namespace Zeni {
       size_t m_dormant = 0;
       size_t m_dormant_max;
     };
+
+    class Job_Queue_Lock_Pimpl {
+      Job_Queue_Lock_Pimpl(const Job_Queue_Lock_Pimpl &) = delete;
+      Job_Queue_Lock_Pimpl & operator=(const Job_Queue_Lock_Pimpl &) = delete;
+
+    public:
+      Job_Queue_Lock_Pimpl(Job_Queue &job_queue)
+        : m_lock(job_queue.m_impl->m_mutex)
+      {
+      }
+
+    private:
+      std::unique_lock<std::mutex> m_lock;
+    };
+
+    Job_Queue::Lock::Lock(Job_Queue &job_queue)
+      : m_impl(new Job_Queue_Lock_Pimpl(job_queue))
+    {
+    }
+
+    Job_Queue::Lock::~Lock() {
+      delete m_impl;
+    }
+
+    Job_Queue::Job_Queue()
+      : m_impl(new Job_Queue_Pimpl)
+    {
+    }
 
     Job_Queue::Job_Queue(const size_t &num_threads)
       : m_impl(new Job_Queue_Pimpl(num_threads))
@@ -114,6 +169,10 @@ namespace Zeni {
       return m_impl->num_threads();
     }
 
+    void Job_Queue::add_threads(const size_t &threads) {
+      m_impl->add_threads(threads);
+    }
+
     void Job_Queue::finish() {
       return m_impl->finish();
     }
@@ -127,11 +186,11 @@ namespace Zeni {
     }
 
     void Job_Queue::give(const std::shared_ptr<Job> &job) {
-      return m_impl->give(job);
+      return m_impl->give(this, job);
     }
 
     void Job_Queue::give(std::shared_ptr<Job> &&job) {
-      return m_impl->give(std::move(job));
+      return m_impl->give(this, std::move(job));
     }
 
   }
