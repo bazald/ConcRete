@@ -1,6 +1,6 @@
-#include "Zeni/Rete/Node_Join_Negation.h"
+#include "Zeni/Rete/Node_Join_Negation.hpp"
 
-#include "Zeni/Rete/Node_Action.h"
+#include "Zeni/Rete/Node_Action.hpp"
 
 #include <cassert>
 

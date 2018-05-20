@@ -1,9 +1,9 @@
-#include "Zeni/Concurrency/Maester.h"
-#include "Zeni/Concurrency/Mutex.h"
-#include "Zeni/Concurrency/Raven.h"
-#include "Zeni/Concurrency/Thread_Pool.h"
+#include "Zeni/Concurrency/Maester.hpp"
+#include "Zeni/Concurrency/Mutex.hpp"
+#include "Zeni/Concurrency/Raven.hpp"
+#include "Zeni/Concurrency/Thread_Pool.hpp"
 
-#include "Zeni/Rete/Token_Index.h"
+#include "Zeni/Rete/Network.hpp"
 
 #include <iostream>
 #include <string>
@@ -62,7 +62,7 @@ int main()
     auto job_queue = std::make_shared<Zeni::Concurrency::Job_Queue>(num_workers);
     Zeni::Concurrency::Thread_Pool thread_pool(job_queue);
 
-    for(std::string name : {"alice", "betty", "carol", "diane", "ellen", "farah", "gabby", "helen", "irene", "janae", "kelly"})
+    for (std::string name : {"alice", "betty", "carol", "diane", "ellen", "farah", "gabby", "helen", "irene", "janae", "kelly"})
       gossips[name] = std::make_shared<Gossip>();
 
     gossips["alice"]->tell(gossips["betty"]);
@@ -76,18 +76,37 @@ int main()
     gossips["diane"]->tell(gossips["janae"]);
     gossips["diane"]->tell(gossips["kelly"]);
 
-    for(std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
+    for (std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
       job_queue->give(std::make_shared<Whisper>(gossips["alice"], message));
     //for(int i = 0; i != 1000000; ++i)
     //  job_queue->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
 
     job_queue->wait_for_completion();
 
-    for(std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
+    for (std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
       job_queue->give(std::make_shared<Whisper>(gossips["alice"], message));
   }
 
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;
+
+  Zeni::Rete::Network network;
+
+  std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
+    {
+      std::make_shared<Zeni::Rete::Symbol_Constant_Int>(1),
+      std::make_shared<Zeni::Rete::Symbol_Constant_Int>(2),
+      std::make_shared<Zeni::Rete::Symbol_Constant_Int>(3),
+      std::make_shared<Zeni::Rete::Symbol_Constant_Int>(4),
+      std::make_shared<Zeni::Rete::Symbol_Constant_Int>(5)
+    }
+  };
+
+  auto filter = network.make_filter(Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+  auto action = network.make_action("hello-world", false, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
+    std::cout << "Hello world!" << std::endl;
+  }, filter, std::make_shared<Zeni::Rete::Variable_Indices>());
+
+  network.insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
   return 0;
 }

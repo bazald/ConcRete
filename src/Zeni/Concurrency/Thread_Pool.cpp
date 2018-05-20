@@ -1,6 +1,6 @@
-#include "Zeni/Concurrency/Thread_Pool.h"
+#include "Zeni/Concurrency/Thread_Pool.hpp"
 
-#include "Zeni/Concurrency/Job_Queue.h"
+#include "Zeni/Concurrency/Job_Queue.hpp"
 #include <cassert>
 #include <list>
 #include <thread>

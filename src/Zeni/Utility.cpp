@@ -1,5 +1,5 @@
-#ifndef RETE_UTILITY_H
-#define RETE_UTILITY_H
+#ifndef ZENI_RETE_UTILITY_H
+#define ZENI_RETE_UTILITY_H
 
 #include <iomanip>
 #include <sstream>

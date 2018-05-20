@@ -1,10 +1,10 @@
-#include "Zeni/Rete/Node_Join_Existential.h"
+#include "Zeni/Rete/Node_Join_Existential.hpp"
 
-#include "Zeni/Rete/Node_Action.h"
+#include "Zeni/Rete/Node_Action.hpp"
 
 #include <cassert>
 
-#undef RETE_LR_UNLINKING
+#undef ZENI_RETE_LR_UNLINKING
 
 namespace Zeni {
 
@@ -54,7 +54,7 @@ namespace Zeni {
       assert(from == input0_locked || from == input1_locked);
 
       if (from == input0_locked) {
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
         if (!data.connected1) {
           //#ifdef DEBUG_OUTPUT
           //        std::cerr << this << " Connecting right" << std::endl;
@@ -74,7 +74,7 @@ namespace Zeni {
         }
       }
       if (from == input1_locked) {
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
         if (!data.connected0) {
           //#ifdef DEBUG_OUTPUT
           //        std::cerr << this << " Connecting left" << std::endl;
@@ -150,11 +150,11 @@ namespace Zeni {
     }
 
     bool Node_Join_Existential::disabled_input(const std::shared_ptr<Node> &
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       input
 #endif
     ) {
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       if (input.get() == input0)
         return !data.connected0;
       else {
@@ -290,15 +290,15 @@ namespace Zeni {
     }
 
     void Node_Join_Existential::disconnect(Network &
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       network
 #endif
       , const std::shared_ptr<const Node> &
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       from
 #endif
     ) {
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       if (input0 != input1) {
         if (from == input0) {
           assert(data.connected1);
@@ -326,7 +326,7 @@ namespace Zeni {
 
       out0->insert_output_enabled(join);
       if (out0 != out1)
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
         out1->insert_output_disabled(join);
 #else
         out1->insert_output_enabled(join);
@@ -334,7 +334,7 @@ namespace Zeni {
 #endif
 
       out0->pass_tokens(network, join);
-#ifndef RETE_LR_UNLINKING
+#ifndef ZENI_RETE_LR_UNLINKING
       if (out0 != out1)
         out1->pass_tokens(network, join);
 #endif

@@ -1,4 +1,4 @@
-#include "Zeni/Rete/WME.h"
+#include "Zeni/Rete/WME.hpp"
 
 namespace Zeni {
 

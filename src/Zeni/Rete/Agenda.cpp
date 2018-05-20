@@ -1,6 +1,6 @@
-#include "Zeni/Rete/Agenda.h"
+#include "Zeni/Rete/Agenda.hpp"
 
-#include "Zeni/Rete/Node_Action.h"
+#include "Zeni/Rete/Node_Action.hpp"
 
 namespace Zeni {
 

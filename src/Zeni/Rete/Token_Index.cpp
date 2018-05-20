@@ -1,4 +1,4 @@
-#include "Zeni/Rete/Token_Index.h"
+#include "Zeni/Rete/Token_Index.hpp"
 
 #include <iostream>
 
@@ -7,8 +7,7 @@ namespace Zeni {
   namespace Rete {
 
     Token_Index::Token_Index()
-      :
-    rete_row(0), token_row(0), column(0), existential(false)
+      : rete_row(0), token_row(0), column(0), existential(false)
     {
     }
 

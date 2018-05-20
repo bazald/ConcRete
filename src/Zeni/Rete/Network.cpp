@@ -1,13 +1,13 @@
-#include "Zeni/Rete/Network.h"
+#include "Zeni/Rete/Network.hpp"
 
-#include "Zeni/Rete/Node_Action.h"
-#include "Zeni/Rete/Node_Existential.h"
-#include "Zeni/Rete/Node_Filter.h"
-#include "Zeni/Rete/Node_Join.h"
-#include "Zeni/Rete/Node_Join_Existential.h"
-#include "Zeni/Rete/Node_Join_Negation.h"
-#include "Zeni/Rete/Node_Negation.h"
-#include "Zeni/Rete/Node_Predicate.h"
+#include "Zeni/Rete/Node_Action.hpp"
+#include "Zeni/Rete/Node_Existential.hpp"
+#include "Zeni/Rete/Node_Filter.hpp"
+#include "Zeni/Rete/Node_Join.hpp"
+#include "Zeni/Rete/Node_Join_Existential.hpp"
+#include "Zeni/Rete/Node_Join_Negation.hpp"
+#include "Zeni/Rete/Node_Negation.hpp"
+#include "Zeni/Rete/Node_Predicate.hpp"
 
 #include <iostream>
 #include <map>

@@ -1,4 +1,4 @@
-#include "Zeni/Concurrency/Job_Queue.h"
+#include "Zeni/Concurrency/Job_Queue.hpp"
 
 #include <thread>
 #include <mutex>

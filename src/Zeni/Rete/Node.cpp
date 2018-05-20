@@ -1,4 +1,4 @@
-#include "Zeni/Rete/Node.h"
+#include "Zeni/Rete/Node.hpp"
 
 #include <cassert>
 

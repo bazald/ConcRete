@@ -1,6 +1,6 @@
-#include "Zeni/Rete/Node_Predicate.h"
+#include "Zeni/Rete/Node_Predicate.hpp"
 
-#include "Zeni/Rete/Node_Action.h"
+#include "Zeni/Rete/Node_Action.hpp"
 
 #include <cassert>
 #include <sstream>

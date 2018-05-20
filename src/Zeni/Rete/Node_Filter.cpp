@@ -1,7 +1,7 @@
-#include "Zeni/Rete/Node_Filter.h"
+#include "Zeni/Rete/Node_Filter.hpp"
 
-#include "Zeni/Rete/Network.h"
-#include "Zeni/Rete/Node_Action.h"
+#include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/Node_Action.hpp"
 
 namespace Zeni {
 

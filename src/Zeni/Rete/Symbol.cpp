@@ -1,6 +1,6 @@
-#include "Zeni/Rete/Symbol.h"
+#include "Zeni/Rete/Symbol.hpp"
 
-#include "Zeni/Utility.h"
+#include "Zeni/Utility.hpp"
 #include <algorithm>
 #include <iostream>
 

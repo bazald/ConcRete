@@ -1,6 +1,6 @@
-#include "Zeni/Rete/Node_Action.h"
+#include "Zeni/Rete/Node_Action.hpp"
 
-#include "Zeni/Rete/Network.h"
+#include "Zeni/Rete/Network.hpp"
 
 namespace Zeni {
 
@@ -119,8 +119,8 @@ namespace Zeni {
     }
 
     bool Node_Action::operator==(const Node &/*rhs*/) const {
-      //       if(auto rete_action = dynamic_cast<const Node_Action *>(&rhs))
-      //         return action == rete_action->action && retraction == rete_action->retraction && input == rete_action->input;
+      //       if(autoZENI_RETE_action = dynamic_cast<const Node_Action *>(&rhs))
+      //         return action ==ZENI_RETE_action->action && retraction ==ZENI_RETE_action->retraction && input ==ZENI_RETE_action->input;
       return false;
     }
 

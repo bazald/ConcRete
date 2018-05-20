@@ -1,6 +1,6 @@
-#include "Zeni/Rete/Variable_Indices.h"
+#include "Zeni/Rete/Variable_Indices.hpp"
 
-#include "Zeni/Rete/Node.h"
+#include "Zeni/Rete/Node.hpp"
 
 #include <iostream>
 #include <string>

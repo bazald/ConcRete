@@ -1,11 +1,11 @@
-#include "Zeni/Rete/Node_Join.h"
+#include "Zeni/Rete/Node_Join.hpp"
 
-#include "Zeni/Rete/Node_Action.h"
+#include "Zeni/Rete/Node_Action.hpp"
 
 #include <cassert>
 //#include <typeinfo>
 
-#define RETE_LR_UNLINKING
+#define ZENI_RETE_LR_UNLINKING
 
 namespace Zeni {
 
@@ -58,7 +58,7 @@ namespace Zeni {
         //#ifdef DEBUG_OUTPUT
         //      std::cerr << this << " Joining left: " << *token << std::endl;
         //#endif
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
         if (!data.connected1) {
           //#ifdef DEBUG_OUTPUT
           //        std::cerr << this << " Connecting right" << std::endl;
@@ -98,7 +98,7 @@ namespace Zeni {
         //#ifdef DEBUG_OUTPUT
         //      std::cerr << this << " Joining right: " << *token << std::endl;
         //#endif
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
         if (!data.connected0) {
           //#ifdef DEBUG_OUTPUT
           //        std::cerr << this << " Connecting left" << std::endl;
@@ -218,11 +218,11 @@ namespace Zeni {
     }
 
     bool Node_Join::disabled_input(const std::shared_ptr<Node> &
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       input
 #endif
     ) {
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       if (input == input0.lock())
         return !data.connected0;
       else {
@@ -337,15 +337,15 @@ namespace Zeni {
     }
 
     void Node_Join::disconnect(Network &
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       network
 #endif
       , const std::shared_ptr<const Node> &
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       from
 #endif
     ) {
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       const auto input0_locked = input0.lock();
       const auto input1_locked = input1.lock();
       if (from == input0_locked) {
@@ -415,7 +415,7 @@ namespace Zeni {
       join->size = out0->get_size() + out1->get_size();
       join->token_size = out0->get_token_size() + out1->get_token_size();
 
-#ifdef RETE_LR_UNLINKING
+#ifdef ZENI_RETE_LR_UNLINKING
       if (!out1->has_output_tokens()) {
         out0->insert_output_enabled(join);
 

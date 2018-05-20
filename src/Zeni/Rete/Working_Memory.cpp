@@ -1,4 +1,4 @@
-#include "Zeni/Rete/Working_Memory.h"
+#include "Zeni/Rete/Working_Memory.hpp"
 
 namespace Zeni {
 

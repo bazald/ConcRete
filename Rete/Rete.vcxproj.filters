@@ -13,132 +13,609 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\include\Zeni\Utility.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Agenda.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Custom_Data.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Linkage.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Network.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Node.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Node_Action.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Node_Existential.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Node_Filter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Node_Join.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Node_Join_Existential.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Node_Join_Negation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Node_Negation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Node_Predicate.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Symbol.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Token.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Token_Index.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Variable_Indices.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\WME.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Working_Memory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <Filter Include="Header Files\tao">
+      <UniqueIdentifier>{0fc5401c-ff99-451f-a4ed-e67d81bb4cae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Zeni">
+      <UniqueIdentifier>{076ea605-9b1d-455d-87b8-8058a22b7787}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Zeni">
+      <UniqueIdentifier>{9366535d-f754-428c-8ace-3acf376c924e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Zeni\Rete\Agenda.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Custom_Data.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Network.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Action.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Existential.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Filter.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Join.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Join_Existential.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Join_Negation.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Negation.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Predicate.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Symbol.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Token.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Token_Index.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Variable_Binding.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\WME.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Working_Memory.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Utility.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Variable_Binding.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\WME.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Working_Memory.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\Zeni\Rete\Agenda.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Custom_Data.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Linkage.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Network.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Action.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Existential.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Filter.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Join.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Join_Existential.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Join_Negation.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Negation.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Predicate.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Symbol.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Token.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Token_Index.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Variable_Indices.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\WME.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Working_Memory.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Utility.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\analysis\analyze_cycles.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\analysis\counted.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\analysis\generic.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\analysis\grammar_info.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\analysis\insert_guard.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\analysis\insert_rules.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\analysis\rule_info.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\analysis\rule_type.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\analyze.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\apply_mode.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\argv_input.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\ascii.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\buffer_input.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\config.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\abnf.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\alphabet.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\changes.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\counter.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\http.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\icu\internal.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\icu\utf16.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\icu\utf32.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\icu\utf8.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\integer.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\json.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\parse_tree.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\raw_string.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\rep_one_min_max.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\to_string.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\tracer.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\unescape.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\contrib\uri.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\cstream_input.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\eol.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\eol_pair.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\file_input.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\input_error.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\action.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\action_input.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\alnum.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\alpha.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\any.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\apply.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\apply0.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\apply0_single.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\apply_single.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\at.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\bof.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\bol.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\bump_help.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\bump_impl.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\bytes.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\control.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\crlf_eol.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\cr_crlf_eol.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\cr_eol.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\cstream_reader.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\cstring_reader.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\demangle.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\demangle_cxxabi.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\demangle_nop.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\demangle_sanitise.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\disable.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\discard.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\duseltronik.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\dusel_mode.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\enable.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\endian.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\endian_gcc.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\endian_win.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\eof.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\eol.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\eolf.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\file_mapper.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\file_opener.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\file_reader.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\has_apply.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\has_apply0.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\identifier.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\if_apply.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\if_must.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\if_must_else.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\if_then_else.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\input_pair.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\integer_sequence.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\istream_reader.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\istring.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\iterator.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\lf_crlf_eol.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\lf_eol.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\list.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\list_must.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\list_tail.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\list_tail_pad.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\marker.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\minus.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\must.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\not_at.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\one.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\opt.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\pad.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\pad_opt.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\peek_char.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\peek_mask_uint.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\peek_mask_uint8.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\peek_uint.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\peek_uint8.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\peek_utf16.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\peek_utf32.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\peek_utf8.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\pegtl_string.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\plus.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\raise.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\range.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\ranges.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\read_uint.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\rep.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\rep_min.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\rep_min_max.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\rep_opt.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\require.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\result_on_found.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\rules.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\rule_conjunction.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\seq.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\skip_control.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\sor.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\star.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\star_must.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\state.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\string.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\trivial.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\try_catch_type.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\internal\until.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\istream_input.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\memory_input.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\mmap_input.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\normal.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\nothing.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\parse.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\parse_error.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\position.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\read_input.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\rewind_mode.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\rules.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\string_input.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\tracking_mode.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\uint16.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\uint32.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\uint64.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\uint8.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\utf16.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\utf32.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\utf8.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl\version.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tao\pegtl.hpp">
+      <Filter>Header Files\tao</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

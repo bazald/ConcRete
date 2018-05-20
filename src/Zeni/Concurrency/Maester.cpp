@@ -1,6 +1,6 @@
-#include "Zeni/Concurrency/Maester.h"
+#include "Zeni/Concurrency/Maester.hpp"
 
-#include "Zeni/Concurrency/Raven.h"
+#include "Zeni/Concurrency/Raven.hpp"
 
 namespace Zeni {
 

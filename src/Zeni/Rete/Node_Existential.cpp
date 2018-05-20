@@ -1,6 +1,6 @@
-#include "Zeni/Rete/Node_Existential.h"
+#include "Zeni/Rete/Node_Existential.hpp"
 
-#include "Zeni/Rete/Node_Action.h"
+#include "Zeni/Rete/Node_Action.hpp"
 
 #include <cassert>
 
