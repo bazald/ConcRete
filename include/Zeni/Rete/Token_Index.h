@@ -1,8 +1,8 @@
 #ifndef ZENI_RETE_TOKEN_INDEX_H
 #define ZENI_RETE_TOKEN_INDEX_H
 
-#include "Zeni/Linkage.h"
 #include "Zeni/Utility.h"
+#include "Zeni/Rete/Linkage.h"
 
 #include <cinttypes>
 #include <iosfwd>
@@ -37,7 +37,7 @@ std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Token_Index &index
 namespace std {
   template <> struct hash<Zeni::Rete::Token_Index> {
     size_t operator()(const Zeni::Rete::Token_Index &token_index) const {
-      return Zeni::hash_combine(Zeni::hash_combine(Zeni::hash_combine(token_index.rete_row, token_index.token_row), token_index.column), token_index.existential);
+      return Zeni::hash_combine(Zeni::hash_combine(Zeni::hash_combine(size_t(token_index.rete_row), size_t(token_index.token_row)), token_index.column), token_index.existential);
     }
   };
 }

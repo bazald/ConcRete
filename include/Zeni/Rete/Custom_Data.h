@@ -1,7 +1,7 @@
 #ifndef ZENI_CUSTOM_DATA_H
 #define ZENI_CUSTOM_DATA_H
 
-#include "Zeni/Linkage.h"
+#include "Zeni/Rete/Linkage.h"
 
 #include <iosfwd>
 #include <memory>
@@ -15,8 +15,6 @@ namespace Zeni {
   }
 
 }
-
-ZENI_RETE_EXTERN template class ZENI_RETE_LINKAGE std::shared_ptr<const Zeni::Rete::Custom_Data>;
 
 namespace Zeni {
 

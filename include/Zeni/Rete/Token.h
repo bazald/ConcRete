@@ -17,9 +17,6 @@ namespace Zeni {
 
 }
 
-ZENI_RETE_EXTERN template class ZENI_RETE_LINKAGE std::shared_ptr<const Zeni::Rete::Token>;
-ZENI_RETE_EXTERN template class ZENI_RETE_LINKAGE std::weak_ptr<Zeni::Rete::Token>;
-
 namespace Zeni {
 
   namespace Rete {

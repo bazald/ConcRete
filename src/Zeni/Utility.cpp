@@ -1,8 +1,6 @@
 #ifndef RETE_UTILITY_H
 #define RETE_UTILITY_H
 
-#include "Zeni/Linkage.h"
-
 #include <iomanip>
 #include <sstream>
 

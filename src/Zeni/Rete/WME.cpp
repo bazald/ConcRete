@@ -41,8 +41,6 @@ namespace Zeni {
 
 }
 
-template class ZENI_RETE_LINKAGE std::shared_ptr<const Zeni::Rete::WME>;
-
 std::ostream & operator<<(std::ostream &os, const Zeni::Rete::WME &wme) {
   return wme.print(os);
 }

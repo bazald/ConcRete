@@ -1,14 +1,12 @@
 #ifndef RETE_UTILITY_H
 #define RETE_UTILITY_H
 
-#include "Zeni/Linkage.h"
-
 #include <string>
 #include <unordered_set>
 
 namespace Zeni {
 
-  class ZENI_RETE_LINKAGE compare_deref_eq {
+  class compare_deref_eq {
   public:
     template <typename Ptr1, typename Ptr2>
     bool operator()(const Ptr1 &lhs, const Ptr2 &rhs) const {
@@ -16,7 +14,7 @@ namespace Zeni {
     }
   };
 
-  class ZENI_RETE_LINKAGE compare_deref_lt {
+  class compare_deref_lt {
   public:
     template <typename Ptr1, typename Ptr2>
     bool operator()(const Ptr1 &lhs, const Ptr2 &rhs) const {
@@ -121,14 +119,14 @@ namespace Zeni {
     }
   };
 
-  class ZENI_RETE_LINKAGE nullhash {
+  class nullhash {
   public:
     size_t operator()(const size_t &val) const {
       return val;
     }
   };
 
-  ZENI_RETE_EXTERN std::string ZENI_RETE_LINKAGE to_string(const double &number);
+  std::string to_string(const double &number);
 
 }
 

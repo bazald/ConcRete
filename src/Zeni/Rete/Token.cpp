@@ -4,10 +4,6 @@
 #include <iostream>
 #include <sstream>
 
-template class ZENI_RETE_LINKAGE std::shared_ptr<const Zeni::Rete::Token>;
-template class ZENI_RETE_LINKAGE std::enable_shared_from_this<Zeni::Rete::Token>;
-template struct ZENI_RETE_LINKAGE std::pair<std::shared_ptr<const Zeni::Rete::Token>, std::shared_ptr<const Zeni::Rete::Token>>;
-
 namespace Zeni {
 
   namespace Rete {

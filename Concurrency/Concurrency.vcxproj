@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{342B6C75-66A4-4392-B0F7-D54D47BDA07D}</ProjectGuid>
+    <ProjectGuid>{512692B4-1CA2-423A-AB3F-7DF0238D7B87}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>Zeni</RootNamespace>
+    <RootNamespace>Concurrency</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -70,40 +70,29 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
-    <SourcePath>$(SolutionDir)\src;$(SourcePath)</SourcePath>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
-    <SourcePath>$(SolutionDir)\src;$(SourcePath)</SourcePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
-    <SourcePath>$(SolutionDir)\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\include;$(IncludePath)</IncludePath>
-    <SourcePath>$(SolutionDir)\src;$(SourcePath)</SourcePath>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;ZENI_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;CONCURRENCY_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -113,20 +102,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;ZENI_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;ZENI_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;CONCURRENCY_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -141,7 +118,26 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;ZENI_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;CONCURRENCY_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(SolutionDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;CONCURRENCY_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -153,32 +149,12 @@
   <ItemGroup>
     <ClInclude Include="..\include\Zeni\Concurrency\Job.h" />
     <ClInclude Include="..\include\Zeni\Concurrency\Job_Queue.h" />
+    <ClInclude Include="..\include\Zeni\Concurrency\Linkage.h" />
     <ClInclude Include="..\include\Zeni\Concurrency\Maester.h" />
     <ClInclude Include="..\include\Zeni\Concurrency\Mutex.h" />
     <ClInclude Include="..\include\Zeni\Concurrency\Raven.h" />
     <ClInclude Include="..\include\Zeni\Concurrency\Thread_Pool.h" />
-    <ClInclude Include="..\include\Zeni\Linkage.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Agenda.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Network.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Custom_Data.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Node.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Action.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Existential.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Filter.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Join.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Join_Existential.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Join_Negation.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Negation.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Predicate.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Symbol.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Token.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Token_Index.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Variable_Indices.h" />
-    <ClInclude Include="..\include\Zeni\Rete\WME.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.h" />
-    <ClInclude Include="..\include\Zeni\Rete\Working_Memory.h" />
     <ClInclude Include="..\include\Zeni\Utility.h" />
-    <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Zeni\Concurrency\Job_Queue.cpp" />
@@ -186,27 +162,7 @@
     <ClCompile Include="..\src\Zeni\Concurrency\Mutex.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Raven.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Thread_Pool.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Agenda.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Custom_Data.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Network.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Action.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Existential.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Filter.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Join.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Join_Existential.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Join_Negation.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Negation.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Predicate.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Symbol.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Token.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Token_Index.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\WME.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Variable_Binding.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Working_Memory.cpp" />
     <ClCompile Include="..\src\Zeni\Utility.cpp" />
-    <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

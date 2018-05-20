@@ -11,8 +11,6 @@
 //#include <unordered_set>
 #include <deque>
 
-ZENI_RETE_EXTERN template class ZENI_RETE_LINKAGE std::weak_ptr<const Zeni::Rete::Node>;
-
 namespace Zeni {
 
   namespace Rete {

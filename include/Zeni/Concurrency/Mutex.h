@@ -1,7 +1,7 @@
 #ifndef ZENI_CONCURRENCY_MUTEX_H
 #define ZENI_CONCURRENCY_MUTEX_H
 
-#include "Zeni/Linkage.h"
+#include "Zeni/Concurrency/Linkage.h"
 
 namespace Zeni {
 
