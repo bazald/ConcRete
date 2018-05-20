@@ -14,12 +14,12 @@ namespace Zeni {
 
     class Node;
 
-    class ZENI_RETE_LINKAGE Agenda {
+    class Agenda {
       Agenda(Agenda &);
       Agenda & operator=(Agenda &);
 
     public:
-      class Locker {
+      class ZENI_RETE_LINKAGE Locker {
         Locker(const Locker &rhs);
         Locker & operator=(const Locker &rhs);
 
@@ -39,14 +39,14 @@ namespace Zeni {
         Agenda & m_agenda;
       };
 
-      Agenda() {}
+      ZENI_RETE_LINKAGE Agenda() {}
 
-      void insert_action(const std::shared_ptr<const Node_Action> &action, const std::shared_ptr<const Token> &token);
-      void insert_retraction(const std::shared_ptr<const Node_Action> &action, const std::shared_ptr<const Token> &token);
+      ZENI_RETE_LINKAGE void insert_action(const std::shared_ptr<const Node_Action> &action, const std::shared_ptr<const Token> &token);
+      ZENI_RETE_LINKAGE void insert_retraction(const std::shared_ptr<const Node_Action> &action, const std::shared_ptr<const Token> &token);
 
-      void lock();
-      void unlock();
-      void run();
+      ZENI_RETE_LINKAGE void lock();
+      ZENI_RETE_LINKAGE void unlock();
+      ZENI_RETE_LINKAGE void run();
 
     private:
       std::unordered_set<std::pair<std::shared_ptr<const Node_Action>, std::shared_ptr<const Token>>> agenda;

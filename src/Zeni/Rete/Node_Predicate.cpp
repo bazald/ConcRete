@@ -129,12 +129,12 @@ namespace Zeni {
     void Node_Predicate::print_details(std::ostream &os) const {
       os << "  " << intptr_t(this) << " [label=\"" << m_lhs_index;
       switch (m_predicate) {
-      case EQ: os << '='; break;
-      case NEQ: os << "&ne;"; break;
-      case GT: os << '>'; break;
-      case GTE: os << "&ge;"; break;
-      case LT: os << '<'; break;
-      case LTE: os << "&le;"; break;
+      case Predicate::EQ: os << '='; break;
+      case Predicate::NEQ: os << "&ne;"; break;
+      case Predicate::GT: os << '>'; break;
+      case Predicate::GTE: os << "&ge;"; break;
+      case Predicate::LT: os << '<'; break;
+      case Predicate::LTE: os << "&le;"; break;
       default: abort();
       }
       if (m_rhs)
@@ -158,12 +158,12 @@ namespace Zeni {
       os << "(<" << get_Variable_name(indices, m_lhs_index) << "> ";
 
       switch (m_predicate) {
-      case EQ: os << "=="; break;
-      case NEQ: os << "!="; break;
-      case GT: os << '>'; break;
-      case GTE: os << ">="; break;
-      case LT: os << '<'; break;
-      case LTE: os << "<="; break;
+      case Predicate::EQ: os << "=="; break;
+      case Predicate::NEQ: os << "!="; break;
+      case Predicate::GT: os << '>'; break;
+      case Predicate::GTE: os << ">="; break;
+      case Predicate::LT: os << '<'; break;
+      case Predicate::LTE: os << "<="; break;
       default: abort();
       }
       os << ' ';
@@ -178,12 +178,12 @@ namespace Zeni {
 
     void Node_Predicate::output_name(std::ostream &os, const int64_t &depth) const {
       switch (m_predicate) {
-      case EQ: os << "EQ"; break;
-      case NEQ: os << "NEQ"; break;
-      case GT: os << "GT"; break;
-      case GTE: os << "GTE"; break;
-      case LT: os << "LT"; break;
-      case LTE: os << "LTE"; break;
+      case Predicate::EQ: os << "EQ"; break;
+      case Predicate::NEQ: os << "NEQ"; break;
+      case Predicate::GT: os << "GT"; break;
+      case Predicate::GTE: os << "GTE"; break;
+      case Predicate::LT: os << "LT"; break;
+      case Predicate::LTE: os << "LTE"; break;
       default: abort();
       }
       os << '(' << m_lhs_index << ',';
@@ -238,24 +238,24 @@ namespace Zeni {
 
     std::string Node_Predicate::get_predicate_str() const {
       switch (m_predicate) {
-      case EQ: return "EQ";
-      case NEQ: return "NEQ";
-      case GT: return "GT";
-      case GTE: return "GTE";
-      case LT: return "LT";
-      case LTE: return "LTE";
+      case Predicate::EQ: return "EQ";
+      case Predicate::NEQ: return "NEQ";
+      case Predicate::GT: return "GT";
+      case Predicate::GTE: return "GTE";
+      case Predicate::LT: return "LT";
+      case Predicate::LTE: return "LTE";
       default: abort();
       }
     }
 
     bool Node_Predicate::test_predicate(const std::shared_ptr<const Symbol> &lhs, const std::shared_ptr<const Symbol> &rhs) const {
       switch (m_predicate) {
-      case EQ: return *lhs == *rhs;
-      case NEQ: return *lhs != *rhs;
-      case GT: return *lhs > *rhs;
-      case GTE: return *lhs >= *rhs;
-      case LT: return *lhs < *rhs;
-      case LTE: return *lhs <= *rhs;
+      case Predicate::EQ: return *lhs == *rhs;
+      case Predicate::NEQ: return *lhs != *rhs;
+      case Predicate::GT: return *lhs > *rhs;
+      case Predicate::GTE: return *lhs >= *rhs;
+      case Predicate::LT: return *lhs < *rhs;
+      case Predicate::LTE: return *lhs <= *rhs;
       default: abort();
       }
     }

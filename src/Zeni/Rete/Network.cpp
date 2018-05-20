@@ -109,7 +109,7 @@ namespace Zeni {
       bind_to_filter(*this, filter);
 
       this->filters.push_back(filter);
-      for (auto &w : this->working_memory.wmes)
+      for (auto &w : this->working_memory.get_wmes())
         filter->insert_wme(*this, w);
       return filter;
     }
@@ -253,7 +253,7 @@ namespace Zeni {
       ///< Too slow!
   //    CPU_Accumulator cpu_accumulator(*this);
 
-      if (working_memory.wmes.find(wme) != working_memory.wmes.end()) {
+      if (working_memory.get_wmes().find(wme) != working_memory.get_wmes().end()) {
 #ifdef DEBUG_OUTPUT
         std::cerr << "rete.already_inserted" << *wme << std::endl;
 #endif
@@ -263,7 +263,7 @@ namespace Zeni {
       //const auto wme_clone = std::make_shared<WME>(std::shared_ptr<const Symbol>(wme->symbols[0]->clone()), std::shared_ptr<const Symbol>(wme->symbols[1]->clone()), std::shared_ptr<const Symbol>(wme->symbols[2]->clone()));
 
       Agenda::Locker locker(agenda);
-      working_memory.wmes.insert(wme);
+      working_memory.get_wmes().insert(wme);
 #ifdef DEBUG_OUTPUT
       std::cerr << "rete.insert" << *wme << std::endl;
 #endif
@@ -275,9 +275,9 @@ namespace Zeni {
       ///< Too slow!
   //    CPU_Accumulator cpu_accumulator(*this);
 
-      auto found = working_memory.wmes.find(wme);
+      auto found = working_memory.get_wmes().find(wme);
 
-      if (found == working_memory.wmes.end()) {
+      if (found == working_memory.get_wmes().end()) {
 #ifdef DEBUG_OUTPUT
         std::cerr << "rete.already_removed" << *wme << std::endl;
 #endif
@@ -285,7 +285,7 @@ namespace Zeni {
       }
 
       Agenda::Locker locker(agenda);
-      working_memory.wmes.erase(found);
+      working_memory.get_wmes().erase(found);
 #ifdef DEBUG_OUTPUT
       std::cerr << "rete.remove" << *wme << std::endl;
 #endif
@@ -298,11 +298,11 @@ namespace Zeni {
 
       CPU_Accumulator cpu_accumulator(*this);
 
-      for (auto &wme : working_memory.wmes) {
+      for (auto &wme : working_memory.get_wmes()) {
         for (auto &filter : filters)
           filter->remove_wme(*this, wme);
       }
-      working_memory.wmes.clear();
+      working_memory.get_wmes().clear();
     }
 
     size_t Network::rete_size() const {

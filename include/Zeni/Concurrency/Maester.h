@@ -11,14 +11,14 @@ namespace Zeni {
     class Raven;
 
     /// A message recipient virtual base class
-    class ZENI_CONCURRENCY_LINKAGE Maester {
+    class Maester {
       Maester(const Maester &) = delete;
       Maester & operator=(const Maester &) = delete;
 
     public:
-      Maester();
+      ZENI_CONCURRENCY_LINKAGE Maester();
 
-      virtual void receive(Job_Queue &job_queue, const Raven &raven) = 0;
+      ZENI_CONCURRENCY_LINKAGE virtual void receive(Job_Queue &job_queue, const Raven &raven) = 0;
 
     protected:
       Mutex m_mutex;

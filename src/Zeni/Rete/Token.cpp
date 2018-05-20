@@ -4,6 +4,10 @@
 #include <iostream>
 #include <sstream>
 
+template class ZENI_RETE_LINKAGE std::shared_ptr<const Zeni::Rete::Token>;
+template class ZENI_RETE_LINKAGE std::enable_shared_from_this<Zeni::Rete::Token>;
+template struct ZENI_RETE_LINKAGE std::pair<std::shared_ptr<const Zeni::Rete::Token>, std::shared_ptr<const Zeni::Rete::Token>>;
+
 namespace Zeni {
 
   namespace Rete {
@@ -22,9 +26,10 @@ namespace Zeni {
     }
 
     Token::Token(const std::shared_ptr<const Token> &first, const std::shared_ptr<const Token> &second)
-      : m_token(first, second),
+      : m_first(first),
+      m_second(second),
       m_size(first->m_size + second->m_size),
-      m_hashval(hash_combine(std::hash<std::shared_ptr<const Token>>()(m_token.first), std::hash<std::shared_ptr<const Token>>()(m_token.second)))
+      m_hashval(hash_combine(std::hash<std::shared_ptr<const Token>>()(m_first), std::hash<std::shared_ptr<const Token>>()(m_second)))
     {
       assert(first->m_size);
       assert(second->m_size);
@@ -43,11 +48,11 @@ namespace Zeni {
     }
 
     bool Token::operator==(const Token &rhs) const {
-      return m_token == rhs.m_token /*&& m_size == rhs.m_size*/ && m_wme == rhs.m_wme;
+      return m_first == rhs.m_first && m_second == rhs.m_second /*&& m_size == rhs.m_size*/ && m_wme == rhs.m_wme;
     }
 
     bool Token::operator!=(const Token &rhs) const {
-      return m_token != rhs.m_token /*|| m_size != rhs.m_size*/ || m_wme != rhs.m_wme;
+      return m_first != rhs.m_first || m_second != rhs.m_second /*|| m_size != rhs.m_size*/ || m_wme != rhs.m_wme;
     }
 
     std::ostream & Token::print(std::ostream &os) const {
@@ -56,10 +61,10 @@ namespace Zeni {
         os << *m_wme;
       }
       else if (m_size > 1) {
-        assert(m_token.first);
-        assert(m_token.second);
-        m_token.first->print(os);
-        m_token.second->print(os);
+        assert(m_first);
+        assert(m_second);
+        m_first->print(os);
+        m_second->print(os);
       }
 
       return os;
@@ -90,11 +95,11 @@ namespace Zeni {
       else {
         assert(index.token_row < m_size);
 
-        const auto first_size = m_token.first->m_size;
+        const auto first_size = m_first->m_size;
         if (index.token_row < first_size)
-          return (*m_token.first)[index];
+          return (*m_first)[index];
         else
-          return (*m_token.second)[Token_Index(index.rete_row, index.token_row - first_size, index.column)];
+          return (*m_second)[Token_Index(index.rete_row, index.token_row - first_size, index.column)];
       }
     }
 

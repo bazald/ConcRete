@@ -11,14 +11,14 @@ namespace Zeni {
     class Raven_Pimpl;
 
     /// An addressed message virtual base class
-    class ZENI_CONCURRENCY_LINKAGE Raven : public Job {
+    class Raven : public Job {
     public:
-      Raven(const std::shared_ptr<Maester> &recipient);
-      ~Raven();
+      ZENI_CONCURRENCY_LINKAGE Raven(const std::shared_ptr<Maester> &recipient);
+      ZENI_CONCURRENCY_LINKAGE ~Raven();
 
-      Maester * get_recipient() const;
+      ZENI_CONCURRENCY_LINKAGE Maester * get_recipient() const;
 
-      void execute(Job_Queue &job_queue) override;
+      ZENI_CONCURRENCY_LINKAGE void execute(Job_Queue &job_queue) override;
 
     private:
       Raven_Pimpl * const m_impl;

@@ -11,11 +11,14 @@
 //#include <unordered_set>
 #include <deque>
 
+ZENI_RETE_EXTERN template class ZENI_RETE_LINKAGE std::weak_ptr<const Zeni::Rete::Node>;
+
 namespace Zeni {
 
   namespace Rete {
 
     class Agenda;
+    class Custom_Data;
     class Network;
     class Node;
     class Node_Action;
@@ -27,7 +30,7 @@ namespace Zeni {
     class Node_Negation;
     class Node_Predicate;
 
-    class ZENI_RETE_LINKAGE Node : public std::enable_shared_from_this<Node>
+    class Node : public std::enable_shared_from_this<Node>
     {
       Node(const Node &) = delete;
       Node & operator=(const Node &) = delete;
@@ -48,11 +51,11 @@ namespace Zeni {
       typedef std::unordered_set<std::shared_ptr<Node>> Outputs;
       typedef std::unordered_set<std::shared_ptr<const Token>, Zeni::hash_deref<Token>, Zeni::compare_deref_eq> Tokens;
 
-      Node() {}
+      ZENI_RETE_LINKAGE Node() {}
 
-      virtual void destroy(Network &network, const std::shared_ptr<Node> &output) = 0;
+      ZENI_RETE_LINKAGE virtual void destroy(Network &network, const std::shared_ptr<Node> &output) = 0;
 
-      void suppress_destruction(const bool &suppress) {
+      ZENI_RETE_LINKAGE void suppress_destruction(const bool &suppress) {
         destruction_suppressed = suppress;
       }
 
@@ -63,62 +66,62 @@ namespace Zeni {
       //  return shared_from_this();
       //}
 
-      const Output_Ptrs & get_outputs_all() const {
+      ZENI_RETE_LINKAGE const Output_Ptrs & get_outputs_all() const {
         return outputs_all;
       }
 
-      virtual std::shared_ptr<const Node> parent_left() const = 0;
-      virtual std::shared_ptr<const Node> parent_right() const = 0;
-      virtual std::shared_ptr<Node> parent_left() = 0;
-      virtual std::shared_ptr<Node> parent_right() = 0;
+      ZENI_RETE_LINKAGE virtual std::shared_ptr<const Node> parent_left() const = 0;
+      ZENI_RETE_LINKAGE virtual std::shared_ptr<const Node> parent_right() const = 0;
+      ZENI_RETE_LINKAGE virtual std::shared_ptr<Node> parent_left() = 0;
+      ZENI_RETE_LINKAGE virtual std::shared_ptr<Node> parent_right() = 0;
 
-      int64_t get_height() const { return height; }
-      std::shared_ptr<const Node> get_token_owner() const { return token_owner.lock(); }
-      int64_t get_size() const { return size; }
-      int64_t get_token_size() const { return token_size; }
+      ZENI_RETE_LINKAGE int64_t get_height() const { return height; }
+      ZENI_RETE_LINKAGE std::shared_ptr<const Node> get_token_owner() const { return token_owner.lock(); }
+      ZENI_RETE_LINKAGE int64_t get_size() const { return size; }
+      ZENI_RETE_LINKAGE int64_t get_token_size() const { return token_size; }
 
-      virtual std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const = 0;
+      ZENI_RETE_LINKAGE virtual std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const = 0;
 
-      virtual const Tokens & get_output_tokens() const = 0;
-      virtual bool has_output_tokens() const = 0;
+      ZENI_RETE_LINKAGE virtual const Tokens & get_output_tokens() const = 0;
+      ZENI_RETE_LINKAGE virtual bool has_output_tokens() const = 0;
 
-      virtual void insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0;
-      virtual bool remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0; ///< Returns true if removed the last
+      ZENI_RETE_LINKAGE virtual void insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0;
+      ZENI_RETE_LINKAGE virtual bool remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0; ///< Returns true if removed the last
 
-      virtual void disconnect(Network &/*network*/, const std::shared_ptr<const Node> &/*from*/) {}
+      ZENI_RETE_LINKAGE virtual void disconnect(Network &/*network*/, const std::shared_ptr<const Node> &/*from*/) {}
 
-      virtual void pass_tokens(Network &network, const std::shared_ptr<Node> &output) = 0;
-      virtual void unpass_tokens(Network &network, const std::shared_ptr<Node> &output) = 0;
+      ZENI_RETE_LINKAGE virtual void pass_tokens(Network &network, const std::shared_ptr<Node> &output) = 0;
+      ZENI_RETE_LINKAGE virtual void unpass_tokens(Network &network, const std::shared_ptr<Node> &output) = 0;
 
-      virtual bool operator==(const Node &rhs) const = 0;
+      ZENI_RETE_LINKAGE virtual bool operator==(const Node &rhs) const = 0;
 
-      virtual bool disabled_input(const std::shared_ptr<Node> &);
+      ZENI_RETE_LINKAGE virtual bool disabled_input(const std::shared_ptr<Node> &);
 
       /// Disable an enabled output
-      void disable_output(Network &network, const std::shared_ptr<Node> &output);
+      ZENI_RETE_LINKAGE void disable_output(Network &network, const std::shared_ptr<Node> &output);
       /// Enable a disabled output
-      void enable_output(Network &network, const std::shared_ptr<Node> &output);
+      ZENI_RETE_LINKAGE void enable_output(Network &network, const std::shared_ptr<Node> &output);
 
       /// Add a new enabled output
-      void insert_output_enabled(const std::shared_ptr<Node> &output);
+      ZENI_RETE_LINKAGE void insert_output_enabled(const std::shared_ptr<Node> &output);
       /// Add a new disabled output
-      void insert_output_disabled(const std::shared_ptr<Node> &output);
+      ZENI_RETE_LINKAGE void insert_output_disabled(const std::shared_ptr<Node> &output);
 
-      void erase_output(const std::shared_ptr<Node> &output);
-      void erase_output_enabled(const std::shared_ptr<Node> &output);
-      void erase_output_disabled(const std::shared_ptr<Node> &output);
+      ZENI_RETE_LINKAGE void erase_output(const std::shared_ptr<Node> &output);
+      ZENI_RETE_LINKAGE void erase_output_enabled(const std::shared_ptr<Node> &output);
+      ZENI_RETE_LINKAGE void erase_output_disabled(const std::shared_ptr<Node> &output);
 
-      virtual void print_details(std::ostream &os) const = 0; ///< Formatted for dot: http://www.graphviz.org/content/dot-language
+      ZENI_RETE_LINKAGE virtual void print_details(std::ostream &os) const = 0; ///< Formatted for dot: http://www.graphviz.org/content/dot-language
 
-      virtual void print_rule(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices, const std::shared_ptr<const Node> &suppress) const = 0;
+      ZENI_RETE_LINKAGE virtual void print_rule(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices, const std::shared_ptr<const Node> &suppress) const = 0;
 
-      virtual void output_name(std::ostream &os, const int64_t &depth) const = 0;
+      ZENI_RETE_LINKAGE virtual void output_name(std::ostream &os, const int64_t &depth) const = 0;
 
-      virtual bool is_active() const = 0; ///< Has the node matched and forwarded at least one token?
+      ZENI_RETE_LINKAGE virtual bool is_active() const = 0; ///< Has the node matched and forwarded at least one token?
 
-      virtual std::vector<WME> get_filter_wmes() const = 0;
+      ZENI_RETE_LINKAGE virtual std::vector<WME> get_filter_wmes() const = 0;
 
-      virtual const Variable_Bindings * get_bindings() const { return nullptr; }
+      ZENI_RETE_LINKAGE virtual const Variable_Bindings * get_bindings() const { return nullptr; }
 
       template <typename VISITOR>
       VISITOR visit_preorder(VISITOR visitor, const bool &strict) {

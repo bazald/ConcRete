@@ -10,47 +10,47 @@ namespace Zeni {
 
   namespace Rete {
 
-    class ZENI_RETE_LINKAGE Node_Join : public Node {
+    class Node_Join : public Node {
       Node_Join(const Node_Join &);
       Node_Join & operator=(const Node_Join &);
 
       friend ZENI_RETE_LINKAGE void bind_to_join(Network &network, const std::shared_ptr<Node_Join> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
 
     public:
-      Node_Join(Variable_Bindings bindings_);
+      ZENI_RETE_LINKAGE Node_Join(Variable_Bindings bindings_);
 
-      void destroy(Network &network, const std::shared_ptr<Node> &output) override;
+      ZENI_RETE_LINKAGE void destroy(Network &network, const std::shared_ptr<Node> &output) override;
 
-      std::shared_ptr<const Node> parent_left() const override { return input0.lock(); }
-      std::shared_ptr<const Node> parent_right() const override { return input1.lock(); }
-      std::shared_ptr<Node> parent_left() override { return input0.lock(); }
-      std::shared_ptr<Node> parent_right() override { return input1.lock(); }
+      ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_left() const override { return input0.lock(); }
+      ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_right() const override { return input1.lock(); }
+      ZENI_RETE_LINKAGE std::shared_ptr<Node> parent_left() override { return input0.lock(); }
+      ZENI_RETE_LINKAGE std::shared_ptr<Node> parent_right() override { return input1.lock(); }
 
-      std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const override;
+      ZENI_RETE_LINKAGE std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const override;
 
-      const Tokens & get_output_tokens() const override;
-      bool has_output_tokens() const override;
+      ZENI_RETE_LINKAGE const Tokens & get_output_tokens() const override;
+      ZENI_RETE_LINKAGE bool has_output_tokens() const override;
 
-      void insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
-      bool remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
+      ZENI_RETE_LINKAGE void insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
+      ZENI_RETE_LINKAGE bool remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
 
-      bool operator==(const Node &rhs) const override;
+      ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
 
-      bool disabled_input(const std::shared_ptr<Node> &input) override;
+      ZENI_RETE_LINKAGE bool disabled_input(const std::shared_ptr<Node> &input) override;
 
-      void print_details(std::ostream &os) const override; ///< Formatted for dot: http://www.graphviz.org/content/dot-language
+      ZENI_RETE_LINKAGE void print_details(std::ostream &os) const override; ///< Formatted for dot: http://www.graphviz.org/content/dot-language
 
-      void print_rule(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices, const std::shared_ptr<const Node> &suppress) const override;
+      ZENI_RETE_LINKAGE void print_rule(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices, const std::shared_ptr<const Node> &suppress) const override;
 
-      void output_name(std::ostream &os, const int64_t &depth) const override;
+      ZENI_RETE_LINKAGE void output_name(std::ostream &os, const int64_t &depth) const override;
 
-      bool is_active() const override;
+      ZENI_RETE_LINKAGE bool is_active() const override;
 
-      std::vector<WME> get_filter_wmes() const override;
+      ZENI_RETE_LINKAGE std::vector<WME> get_filter_wmes() const override;
 
-      static std::shared_ptr<Node_Join> find_existing(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
+      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Join> find_existing(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
 
-      virtual const Variable_Bindings * get_bindings() const override { return &bindings; }
+      ZENI_RETE_LINKAGE virtual const Variable_Bindings * get_bindings() const override { return &bindings; }
 
     private:
       void join_tokens(Network &network, const std::shared_ptr<const Token> &lhs, const std::shared_ptr<const Token> &rhs);
