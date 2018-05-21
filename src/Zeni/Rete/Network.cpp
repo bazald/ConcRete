@@ -67,6 +67,10 @@ namespace Zeni {
       return std::make_shared<Friendly_Network>(thread_pool, printed_output);
     }
 
+    void Network::Destroy() {
+      m_thread_pool.reset();
+    }
+
     Network::~Network()
     {
     }
@@ -80,7 +84,7 @@ namespace Zeni {
           return existing;
       }
       //      std::cerr << "DEBUG: make_action" << std::endl;
-      auto action_fun = std::make_shared<Node_Action>(name, action, [](const Node_Action &, const Token &) {});
+      auto action_fun = Node_Action::Create(name, action, [](const Node_Action &, const Token &) {});
       bind_to_action(sft, action_fun, out, variables);
       //      std::cerr << "END: make_action" << std::endl;
       source_rule(action_fun, user_action);
@@ -96,7 +100,7 @@ namespace Zeni {
         if (auto existing = Node_Action::find_existing(action, retraction, out))
           return existing;
       }
-      auto action_fun = std::make_shared<Node_Action>(name, action, retraction);
+      auto action_fun = Node_Action::Create(name, action, retraction);
       bind_to_action(sft, action_fun, out, variables);
       source_rule(action_fun, user_action);
       return action_fun;
@@ -110,7 +114,7 @@ namespace Zeni {
         if (auto existing = Node_Existential::find_existing(out))
           return existing;
       }
-      auto existential = std::make_shared<Node_Existential>();
+      auto existential = Node_Existential::Create();
       bind_to_existential(sft, existential, out);
       return existential;
     }
@@ -123,7 +127,7 @@ namespace Zeni {
         if (auto existing = Node_Join_Existential::find_existing(bindings, out0, out1))
           return existing;
       }
-      auto existential_join = std::make_shared<Node_Join_Existential>(bindings);
+      auto existential_join = Node_Join_Existential::Create(bindings);
       bind_to_existential_join(sft, existential_join, out0, out1);
       return existential_join;
     }
@@ -132,7 +136,7 @@ namespace Zeni {
       const auto sft = shared_from_this();
       CPU_Accumulator cpu_accumulator(sft);
 
-      auto filter = std::make_shared<Node_Filter>(wme);
+      auto filter = Node_Filter::Create(wme);
 
       if (m_node_sharing == Node_Sharing::Enabled) {
         for (auto &existing_filter : filters) {
@@ -157,7 +161,7 @@ namespace Zeni {
         if (auto existing = Node_Join::find_existing(bindings, out0, out1))
           return existing;
       }
-      auto join = std::make_shared<Node_Join>(bindings);
+      auto join = Node_Join::Create(bindings);
       bind_to_join(sft, join, out0, out1);
       return join;
     }
@@ -170,7 +174,7 @@ namespace Zeni {
         if (auto existing = Node_Negation::find_existing(out))
           return existing;
       }
-      auto negation = std::make_shared<Node_Negation>();
+      auto negation = Node_Negation::Create();
       bind_to_negation(sft, negation, out);
       return negation;
     }
@@ -183,7 +187,7 @@ namespace Zeni {
         if (auto existing = Node_Join_Negation::find_existing(bindings, out0, out1))
           return existing;
       }
-      auto negation_join = std::make_shared<Node_Join_Negation>(bindings);
+      auto negation_join = Node_Join_Negation::Create(bindings);
       bind_to_negation_join(sft, negation_join, out0, out1);
       return negation_join;
     }
@@ -196,7 +200,7 @@ namespace Zeni {
         if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs, out))
           return existing;
       }
-      auto predicate = std::make_shared<Node_Predicate>(pred, lhs_index, rhs);
+      auto predicate = Node_Predicate::Create(pred, lhs_index, rhs);
       bind_to_predicate(sft, predicate, out);
       return predicate;
     }
@@ -209,7 +213,7 @@ namespace Zeni {
         if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs_index, out))
           return existing;
       }
-      auto predicate = std::make_shared<Node_Predicate>(pred, lhs_index, rhs_index);
+      auto predicate = Node_Predicate::Create(pred, lhs_index, rhs_index);
       bind_to_predicate(sft, predicate, out);
       return predicate;
     }
@@ -264,7 +268,7 @@ namespace Zeni {
         //#endif
         auto action = found->second;
         rules.erase(found);
-        action->destroy(shared_from_this());
+        action->Destroy(shared_from_this());
         if (user_command)
           std::cerr << '#';
       }
@@ -493,7 +497,7 @@ namespace Zeni {
         //      std::cerr << "Rule '" << action->get_name() << "' replaced." << std::endl;
         //#endif
         assert(found->second != action);
-        found->second->destroy(sft);
+        found->second->Destroy(sft);
         if (user_command && m_printed_output != Printed_Output::None)
           std::cerr << '#';
         found->second = action;

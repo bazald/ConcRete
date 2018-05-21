@@ -13,12 +13,16 @@ namespace Zeni {
 
     public:
       enum Index { LEFT = 0, CENTER = 1, RIGHT = 2 };
+      
+    private:
+      Node_Filter(const WME &wme_);
 
-      ZENI_RETE_LINKAGE Node_Filter(const WME &wme_);
+    public:
+      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Filter> Create(const WME &wme_);
 
       ZENI_RETE_LINKAGE const WME & get_wme() const;
 
-      ZENI_RETE_LINKAGE void destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
+      ZENI_RETE_LINKAGE void Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
 
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_left() const override { abort(); }
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_right() const override { abort(); }
@@ -34,7 +38,7 @@ namespace Zeni {
       ZENI_RETE_LINKAGE void remove_wme(const std::shared_ptr<Network> &network, const std::shared_ptr<const WME> &wme);
 
       ZENI_RETE_LINKAGE void insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &, const std::shared_ptr<const Node> &) override;
-      ZENI_RETE_LINKAGE bool remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &, const std::shared_ptr<const Node> &) override;
+      ZENI_RETE_LINKAGE void remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &, const std::shared_ptr<const Node> &) override;
 
       ZENI_RETE_LINKAGE void pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
       ZENI_RETE_LINKAGE void unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;

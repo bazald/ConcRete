@@ -43,9 +43,9 @@ namespace Zeni {
         m_status = Job_Queue::Status::SHUTTING_DOWN;
         m_non_empty.notify_one();
 
-        std::ostringstream oss;
-        oss << "Number of Jobs remaining: " << m_jobs.size() << std::endl;
-        std::cerr << oss.str();
+        //std::ostringstream oss;
+        //oss << "Number of Jobs remaining: " << m_jobs.size() << std::endl;
+        //std::cerr << oss.str();
       }
 
       void wait_for_completion() {

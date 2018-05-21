@@ -106,5 +106,7 @@ int main()
 
   network->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
+  network->Destroy();
+
   return 0;
 }

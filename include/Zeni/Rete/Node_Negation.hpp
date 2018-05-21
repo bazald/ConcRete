@@ -13,10 +13,12 @@ namespace Zeni {
 
       friend ZENI_RETE_LINKAGE void bind_to_negation(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Negation> &negation, const std::shared_ptr<Node> &out);
 
-    public:
-      ZENI_RETE_LINKAGE Node_Negation();
+      Node_Negation();
 
-      ZENI_RETE_LINKAGE void destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
+    public:
+      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Negation> Create();
+
+      ZENI_RETE_LINKAGE void Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
 
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_left() const override { return input.lock(); }
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_right() const override { return input.lock(); }
@@ -29,7 +31,7 @@ namespace Zeni {
       ZENI_RETE_LINKAGE bool has_output_tokens() const override;
 
       ZENI_RETE_LINKAGE void insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
-      ZENI_RETE_LINKAGE bool remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
+      ZENI_RETE_LINKAGE void remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
 
       ZENI_RETE_LINKAGE void pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
       ZENI_RETE_LINKAGE void unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;

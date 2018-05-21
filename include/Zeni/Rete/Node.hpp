@@ -53,9 +53,11 @@ namespace Zeni {
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> shared_from_this() const { return std::static_pointer_cast<const Node>(Concurrency::Maester::shared_from_this()); }
       ZENI_RETE_LINKAGE std::shared_ptr<Node> shared_from_this() { return std::static_pointer_cast<Node>(Concurrency::Maester::shared_from_this()); }
 
+    protected:
       ZENI_RETE_LINKAGE Node() {}
 
-      ZENI_RETE_LINKAGE virtual void destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) = 0;
+    public:
+      ZENI_RETE_LINKAGE virtual void Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) = 0;
 
       ZENI_RETE_LINKAGE void suppress_destruction(const bool &suppress) {
         destruction_suppressed = suppress;
@@ -89,11 +91,11 @@ namespace Zeni {
 
       ZENI_RETE_LINKAGE void receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) override;
 
-    //private:
+    private:
       ZENI_RETE_LINKAGE virtual void insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0;
-      ZENI_RETE_LINKAGE virtual bool remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0; ///< Returns true if removed the last
+      ZENI_RETE_LINKAGE virtual void remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0; ///< Returns true if removed the last
 
-    //public:
+    public:
       ZENI_RETE_LINKAGE virtual void disconnect(const std::shared_ptr<Network> &/*network*/, const std::shared_ptr<const Node> &/*from*/) {}
 
       ZENI_RETE_LINKAGE virtual void pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) = 0;

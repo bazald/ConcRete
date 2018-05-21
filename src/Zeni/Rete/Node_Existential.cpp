@@ -1,6 +1,8 @@
 #include "Zeni/Rete/Node_Existential.hpp"
 
+#include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
+#include "Zeni/Rete/Token_Pass.hpp"
 
 #include <cassert>
 
@@ -10,14 +12,20 @@ namespace Zeni {
 
     Node_Existential::Node_Existential() : output_token(std::make_shared<Token>()) {}
 
-    void Node_Existential::destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
+    std::shared_ptr<Node_Existential> Node_Existential::Create() {
+      class Friendly_Node_Existential : public Node_Existential {};
+
+      return std::make_shared<Friendly_Node_Existential>();
+    }
+
+    void Node_Existential::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       erase_output(output);
       if (!destruction_suppressed && outputs_all.empty()) {
         //std::cerr << "Destroying: ";
         //output_name(std::cerr, 3);
         //std::cerr << std::endl;
 
-        input.lock()->destroy(network, shared_from_this());
+        input.lock()->Destroy(network, shared_from_this());
       }
     }
 
@@ -50,14 +58,14 @@ namespace Zeni {
       if (input_tokens.size() == 1) {
         const auto sft = shared_from_this();
         for (auto &output : outputs_enabled)
-          output->insert_token(network, output_token, sft);
+          network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, output_token, Token_Pass::Type::Action));
         output_tokens.insert(output_token);
       }
 
       //std::cerr << "input_tokens.size() == " << input_tokens.size() << std::endl;
     }
 
-    bool Node_Existential::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
+    void Node_Existential::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
 #ifndef NDEBUG
       from
 #endif
@@ -69,29 +77,23 @@ namespace Zeni {
         input_tokens.erase(found);
         if (input_tokens.empty()) {
           const auto sft = shared_from_this();
-          for (auto ot = outputs_enabled.begin(), oend = outputs_enabled.end(); ot != oend; ) {
-            if ((*ot)->remove_token(network, output_token, sft))
-              (*ot++)->disconnect(network, sft);
-            else
-              ++ot;
-          }
+          for (auto ot = outputs_enabled.begin(), oend = outputs_enabled.end(); ot != oend; )
+            network->get_Job_Queue()->give(std::make_shared<Token_Pass>(*ot++, network, sft, output_token, Token_Pass::Type::Retraction));
           output_tokens.clear();
         }
       }
 
       //std::cerr << "input_tokens.size() == " << input_tokens.size() << std::endl;
-
-      return input_tokens.empty();
     }
 
     void Node_Existential::pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       if (!input_tokens.empty())
-        output->insert_token(network, output_token, shared_from_this());
+        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, shared_from_this(), output_token, Token_Pass::Type::Action));
     }
 
     void Node_Existential::unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       if (!input_tokens.empty())
-        output->remove_token(network, output_token, shared_from_this());
+        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, shared_from_this(), output_token, Token_Pass::Type::Retraction));
     }
 
     bool Node_Existential::operator==(const Node &rhs) const {

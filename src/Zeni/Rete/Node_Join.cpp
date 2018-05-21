@@ -1,6 +1,8 @@
 #include "Zeni/Rete/Node_Join.hpp"
 
+#include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
+#include "Zeni/Rete/Token_Pass.hpp"
 
 #include <cassert>
 //#include <typeinfo>
@@ -11,12 +13,21 @@ namespace Zeni {
 
   namespace Rete {
 
-    Node_Join::Node_Join(Variable_Bindings bindings_)
+    Node_Join::Node_Join(const Variable_Bindings &bindings_)
       : bindings(bindings_)
     {
     }
 
-    void Node_Join::destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
+    std::shared_ptr<Node_Join> Node_Join::Create(const Variable_Bindings &bindings_) {
+      class Friendly_Node_Join : public Node_Join {
+      public:
+        Friendly_Node_Join(const Variable_Bindings &bindings_) : Node_Join(bindings_) {}
+      };
+
+      return std::make_shared<Friendly_Node_Join>(bindings_);
+    }
+
+    void Node_Join::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       erase_output(output);
       if (!destruction_suppressed && outputs_all.empty()) {
         //std::cerr << "Destroying: ";
@@ -26,9 +37,9 @@ namespace Zeni {
         const auto input0_locked = input0.lock();
         const auto input1_locked = input1.lock();
         const auto sft = shared_from_this();
-        input0_locked->destroy(network, sft);
+        input0_locked->Destroy(network, sft);
         if (input0_locked != input1_locked)
-          input1_locked->destroy(network, sft);
+          input1_locked->Destroy(network, sft);
       }
     }
 
@@ -136,7 +147,7 @@ namespace Zeni {
       }
     }
 
-    bool Node_Join::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) {
+    void Node_Join::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) {
       const auto input0_locked = input0.lock();
       const auto input1_locked = input1.lock();
       const auto sft = shared_from_this();
@@ -154,12 +165,8 @@ namespace Zeni {
           for (const auto &other : match.second) {
             auto found_output = output_tokens.find(join_tokens(*found2, other));
             if (found_output != output_tokens.end()) {
-              for (auto ot = outputs_all.begin(), oend = outputs_all.end(); ot != oend; ) {
-                if ((*ot)->remove_token(network, (*found_output), sft))
-                  (*ot++)->disconnect(network, sft);
-                else
-                  ++ot;
-              }
+              for (auto ot = outputs_all.begin(), oend = outputs_all.end(); ot != oend; )
+                network->get_Job_Queue()->give(std::make_shared<Token_Pass>(*ot++, network, sft, *found_output, Token_Pass::Type::Retraction));
               output_tokens.erase(found_output);
             }
           }
@@ -185,12 +192,8 @@ namespace Zeni {
           for (const auto &other : match.first) {
             auto found_output = output_tokens.find(join_tokens(other, *found2));
             if (found_output != output_tokens.end()) {
-              for (auto ot = outputs_all.begin(), oend = outputs_all.end(); ot != oend; ) {
-                if ((*ot)->remove_token(network, (*found_output), sft))
-                  (*ot++)->disconnect(network, sft);
-                else
-                  ++ot;
-              }
+              for (auto ot = outputs_all.begin(), oend = outputs_all.end(); ot != oend; )
+                network->get_Job_Queue()->give(std::make_shared<Token_Pass>(*ot++, network, sft, *found_output, Token_Pass::Type::Retraction));
               output_tokens.erase(found_output);
             }
           }
@@ -208,7 +211,8 @@ namespace Zeni {
           matching.erase(index);
       }
 
-      return emptied;
+      if (emptied)
+        disconnect(network, from);
     }
 
     bool Node_Join::operator==(const Node &rhs) const {
@@ -325,7 +329,7 @@ namespace Zeni {
       if (token.second) {
         const auto sft = shared_from_this();
         for (auto &output : outputs_enabled)
-          output->insert_token(network, (*token.first), sft);
+          network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, (*token.first), Token_Pass::Type::Action));
       }
     }
 
@@ -397,13 +401,13 @@ namespace Zeni {
     void Node_Join::pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
       for (auto &token : output_tokens)
-        output->insert_token(network, token, sft);
+        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, token, Token_Pass::Type::Action));
     }
 
     void Node_Join::unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
       for (auto &token : output_tokens)
-        output->remove_token(network, token, sft);
+        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, token, Token_Pass::Type::Retraction));
     }
 
     void bind_to_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {

@@ -1,6 +1,8 @@
 #include "Zeni/Rete/Node_Join_Negation.hpp"
 
+#include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
+#include "Zeni/Rete/Token_Pass.hpp"
 
 #include <cassert>
 
@@ -8,9 +10,18 @@ namespace Zeni {
 
   namespace Rete {
 
-    Node_Join_Negation::Node_Join_Negation(Variable_Bindings bindings_) : bindings(bindings_) {}
+    Node_Join_Negation::Node_Join_Negation(const Variable_Bindings &bindings_) : bindings(bindings_) {}
 
-    void Node_Join_Negation::destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
+    std::shared_ptr<Node_Join_Negation> Node_Join_Negation::Create(const Variable_Bindings &bindings_) {
+      class Friendly_Node_Join_Negation : public Node_Join_Negation {
+      public:
+        Friendly_Node_Join_Negation(const Variable_Bindings &bindings_) : Node_Join_Negation(bindings_) {}
+      };
+
+      return std::make_shared<Friendly_Node_Join_Negation>(bindings_);
+    }
+
+    void Node_Join_Negation::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       erase_output(output);
       if (!destruction_suppressed && outputs_all.empty()) {
         //std::cerr << "Destroying: ";
@@ -20,9 +31,9 @@ namespace Zeni {
         auto input0_locked = input0.lock();
         auto input1_locked = input1.lock();
         auto sft = shared_from_this();
-        input0_locked->destroy(network, sft);
+        input0_locked->Destroy(network, sft);
         if (input0_locked != input1_locked)
-          input1_locked->destroy(network, sft);
+          input1_locked->Destroy(network, sft);
       }
     }
 
@@ -70,7 +81,7 @@ namespace Zeni {
       }
     }
 
-    bool Node_Join_Negation::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) {
+    void Node_Join_Negation::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) {
       const auto input0_locked = input0.lock();
       const auto input1_locked = input1.lock();
 
@@ -112,8 +123,6 @@ namespace Zeni {
         if (match.second.empty() && match.first.empty())
           matching.erase(index);
       }
-
-      return emptied;
     }
 
     bool Node_Join_Negation::operator==(const Node &rhs) const {
@@ -210,7 +219,7 @@ namespace Zeni {
 
       const auto sft = shared_from_this();
       for (auto &output : outputs_enabled)
-        output->insert_token(network, *token.first, sft);
+        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, *token.first, Token_Pass::Type::Action));
       //    }
     }
 
@@ -222,12 +231,8 @@ namespace Zeni {
 
       //    if(++lhs.second == 1) {
       const auto sft = shared_from_this();
-      for (auto ot = outputs_enabled.begin(), oend = outputs_enabled.end(); ot != oend; ) {
-        if ((*ot)->remove_token(network, lhs, sft))
-          (*ot++)->disconnect(network, sft);
-        else
-          ++ot;
-      }
+      for (auto ot = outputs_enabled.begin(), oend = outputs_enabled.end(); ot != oend; )
+        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(*ot++, network, sft, lhs, Token_Pass::Type::Retraction));
 
       output_tokens.erase(lhs);
       //    }
@@ -236,13 +241,13 @@ namespace Zeni {
     void Node_Join_Negation::pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
       for (auto &token : output_tokens)
-        output->insert_token(network, token, sft);
+        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, token, Token_Pass::Type::Action));
     }
 
     void Node_Join_Negation::unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
       for (auto &token : output_tokens)
-        output->remove_token(network, token, sft);
+        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, token, Token_Pass::Type::Retraction));
     }
 
     void bind_to_negation_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join_Negation> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {

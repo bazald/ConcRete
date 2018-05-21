@@ -1,6 +1,8 @@
 #include "Zeni/Rete/Node_Predicate.hpp"
 
+#include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
+#include "Zeni/Rete/Token_Pass.hpp"
 
 #include <cassert>
 #include <sstream>
@@ -26,14 +28,32 @@ namespace Zeni {
       assert(m_lhs_index.rete_row >= m_lhs_index.token_row);
     }
 
-    void Node_Predicate::destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
+    std::shared_ptr<Node_Predicate> Node_Predicate::Create(const Predicate &predicate_, const Token_Index lhs_index_, const Token_Index rhs_index_) {
+      class Friendly_Node_Predicate : public Node_Predicate {
+      public:
+        Friendly_Node_Predicate(const Predicate &predicate_, const Token_Index lhs_index_, const Token_Index rhs_index_) : Node_Predicate(predicate_, lhs_index_, rhs_index_) {}
+      };
+
+      return std::make_shared<Friendly_Node_Predicate>(predicate_, lhs_index_, rhs_index_);
+    }
+
+    std::shared_ptr<Node_Predicate> Node_Predicate::Create(const Predicate &predicate_, const Token_Index lhs_index_, const std::shared_ptr<const Symbol> &rhs_) {
+      class Friendly_Node_Predicate : public Node_Predicate {
+      public:
+        Friendly_Node_Predicate(const Predicate &predicate_, const Token_Index lhs_index_, const std::shared_ptr<const Symbol> &rhs_) : Node_Predicate(predicate_, lhs_index_, rhs_) {}
+      };
+
+      return std::make_shared<Friendly_Node_Predicate>(predicate_, lhs_index_, rhs_);
+    }
+
+    void Node_Predicate::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       erase_output(output);
       if (!destruction_suppressed && outputs_all.empty()) {
         //std::cerr << "Destroying: ";
         //output_name(std::cerr, 3);
         //std::cerr << std::endl;
 
-        input.lock()->destroy(network, shared_from_this());
+        input.lock()->Destroy(network, shared_from_this());
       }
     }
 
@@ -74,11 +94,11 @@ namespace Zeni {
       if (inserted.second) {
         const auto sft = shared_from_this();
         for (auto &output : outputs_enabled)
-          output->insert_token(network, *inserted.first, sft);
+          network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, *inserted.first, Token_Pass::Type::Action));
       }
     }
 
-    bool Node_Predicate::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
+    void Node_Predicate::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
 #ifndef NDEBUG
       from
 #endif
@@ -88,22 +108,16 @@ namespace Zeni {
       auto found = tokens.find(token);
       if (found != tokens.end()) {
         const auto sft = shared_from_this();
-        for (auto ot = outputs_enabled.begin(), oend = outputs_enabled.end(); ot != oend; ) {
-          if ((*ot)->remove_token(network, *found, sft))
-            (*ot++)->disconnect(network, sft);
-          else
-            ++ot;
-        }
+        for (auto ot = outputs_enabled.begin(), oend = outputs_enabled.end(); ot != oend; )
+          network->get_Job_Queue()->give(std::make_shared<Token_Pass>(*ot++, network, sft, *found, Token_Pass::Type::Retraction));
         tokens.erase(found);
       }
-
-      return tokens.empty();
     }
 
     void Node_Predicate::pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
       for (auto &token : tokens)
-        output->insert_token(network, token, sft);
+        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, token, Token_Pass::Type::Action));
     }
 
     void Node_Predicate::unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
@@ -112,7 +126,7 @@ namespace Zeni {
       //#endif
       const auto sft = shared_from_this();
       for (auto &token : tokens)
-        output->remove_token(network, token, sft);
+        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, token, Token_Pass::Type::Retraction));
     }
 
     bool Node_Predicate::operator==(const Node &rhs) const {

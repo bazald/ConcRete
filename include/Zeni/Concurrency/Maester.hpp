@@ -15,9 +15,10 @@ namespace Zeni {
       Maester(const Maester &) = delete;
       Maester & operator=(const Maester &) = delete;
 
-    public:
+    protected:
       ZENI_CONCURRENCY_LINKAGE Maester();
 
+    public:
       ZENI_CONCURRENCY_LINKAGE virtual void receive(Job_Queue &job_queue, const Raven &raven) = 0;
 
     protected:

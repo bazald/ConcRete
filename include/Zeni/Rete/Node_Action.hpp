@@ -19,13 +19,19 @@ namespace Zeni {
     public:
       typedef std::function<void(const Node_Action &rete_action, const Token &token)> Action;
 
-      ZENI_RETE_LINKAGE Node_Action(const std::string &name_,
+    private:
+      Node_Action(const std::string &name_,
+        const Action &action_ = [](const Node_Action &, const Token &) {},
+        const Action &retraction_ = [](const Node_Action &, const Token &) {});
+
+    public:
+      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::string &name_,
         const Action &action_ = [](const Node_Action &, const Token &) {},
         const Action &retraction_ = [](const Node_Action &, const Token &) {});
 
       ZENI_RETE_LINKAGE ~Node_Action();
 
-      ZENI_RETE_LINKAGE void destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output = std::shared_ptr<Node>()) override;
+      ZENI_RETE_LINKAGE void Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output = std::shared_ptr<Node>()) override;
       ZENI_RETE_LINKAGE bool is_excised() const { return excised; }
 
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_left() const override;
@@ -39,7 +45,7 @@ namespace Zeni {
       ZENI_RETE_LINKAGE bool has_output_tokens() const override;
 
       ZENI_RETE_LINKAGE void insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
-      ZENI_RETE_LINKAGE bool remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
+      ZENI_RETE_LINKAGE void remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
 
       ZENI_RETE_LINKAGE bool matches_token(const std::shared_ptr<const Token> &token) const;
 

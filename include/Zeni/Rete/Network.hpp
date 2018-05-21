@@ -47,6 +47,7 @@ namespace Zeni {
     public:
       ZENI_RETE_LINKAGE static std::shared_ptr<Network> Create(const Printed_Output &printed_output = Printed_Output::Normal);
       ZENI_RETE_LINKAGE static std::shared_ptr<Network> Create(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output = Printed_Output::Normal);
+      ZENI_RETE_LINKAGE void Destroy();
       ZENI_RETE_LINKAGE ~Network();
 
       ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> make_action(const std::string &name, const bool &user_action, const Node_Action::Action &action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables);
@@ -101,7 +102,7 @@ namespace Zeni {
     private:
       void source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command);
 
-      const std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
+      std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
 
       Node::Filters filters;
       std::unordered_map<std::string, std::shared_ptr<Node_Action>> rules;
