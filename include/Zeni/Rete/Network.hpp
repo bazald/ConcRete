@@ -47,30 +47,25 @@ namespace Zeni {
     public:
       ZENI_RETE_LINKAGE static std::shared_ptr<Network> Create(const Printed_Output &printed_output = Printed_Output::Normal);
       ZENI_RETE_LINKAGE static std::shared_ptr<Network> Create(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output = Printed_Output::Normal);
+
       ZENI_RETE_LINKAGE void Destroy();
       ZENI_RETE_LINKAGE ~Network();
 
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> make_action(const std::string &name, const bool &user_action, const Node_Action::Action &action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables);
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> make_action_retraction(const std::string &name, const bool &user_action, const Node_Action::Action &action, const Node_Action::Action &retraction, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables);
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Existential> make_existential(const std::shared_ptr<Node> &out);
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Join_Existential> make_existential_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Filter> make_filter(const WME &wme);
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Join> make_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Negation> make_negation(const std::shared_ptr<Node> &out);
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Join_Negation> make_negation_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Predicate> make_predicate_vc(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const std::shared_ptr<const Symbol> &rhs, const std::shared_ptr<Node> &out);
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Predicate> make_predicate_vv(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const Token_Index &rhs_index, const std::shared_ptr<Node> &out);
-
+      ZENI_RETE_LINKAGE Agenda & get_Agenda() { return agenda; }
       ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Job_Queue> get_Job_Queue() const;
+      ZENI_RETE_LINKAGE const Node::Filters & get_Filters() const { return filters; }
       ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Thread_Pool> get_Thread_Pool() const { return m_thread_pool; }
-      ZENI_RETE_LINKAGE Agenda & get_agenda() { return agenda; }
       ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> get_rule(const std::string &name);
       ZENI_RETE_LINKAGE std::set<std::string> get_rule_names() const;
       ZENI_RETE_LINKAGE int64_t get_rule_name_index() const { return rule_name_index; }
       ZENI_RETE_LINKAGE void set_rule_name_index(const int64_t &rule_name_index_) { rule_name_index = rule_name_index_; }
-      ZENI_RETE_LINKAGE Printed_Output get_printed_output() const { return m_printed_output;  }
+      ZENI_RETE_LINKAGE const Working_Memory & get_Working_Memory() const { return working_memory; }
+      ZENI_RETE_LINKAGE Node_Sharing get_Node_Sharing() const { return m_node_sharing; }
+      ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const { return m_printed_output;  }
 
+      ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command);
       ZENI_RETE_LINKAGE void excise_all();
+      ZENI_RETE_LINKAGE void source_filter(const std::shared_ptr<Node_Filter> &filter);
       ZENI_RETE_LINKAGE void excise_filter(const std::shared_ptr<Node_Filter> &filter);
       ZENI_RETE_LINKAGE void excise_rule(const std::string &name, const bool &user_command);
       ZENI_RETE_LINKAGE std::string next_rule_name(const std::string &prefix);
@@ -100,8 +95,6 @@ namespace Zeni {
       Agenda agenda;
 
     private:
-      void source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command);
-
       std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
 
       Node::Filters filters;

@@ -25,9 +25,7 @@ namespace Zeni {
         const Action &retraction_ = [](const Node_Action &, const Token &) {});
 
     public:
-      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::string &name_,
-        const Action &action_ = [](const Node_Action &, const Token &) {},
-        const Action &retraction_ = [](const Node_Action &, const Token &) {});
+      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::shared_ptr<Network> &network, const std::string &name, const bool &user_action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables, const Node_Action::Action &action, const Node_Action::Action &retraction = [](const Node_Action &, const Token &) {});
 
       ZENI_RETE_LINKAGE ~Node_Action();
 
@@ -87,8 +85,6 @@ namespace Zeni {
       Action retraction;
       bool excised = false;
     };
-
-    ZENI_RETE_LINKAGE void bind_to_action(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Action> &action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables);
 
     class ZENI_RETE_LINKAGE Node_Action_to_Agenda {
       friend class Agenda;

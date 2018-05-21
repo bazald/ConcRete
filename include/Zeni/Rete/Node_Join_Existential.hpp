@@ -19,7 +19,7 @@ namespace Zeni {
       Node_Join_Existential(const Variable_Bindings &bindings_);
 
     public:
-      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Join_Existential> Create(const Variable_Bindings &bindings_);
+      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Join_Existential> Create(const std::shared_ptr<Network> &network, const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
 
       ZENI_RETE_LINKAGE void Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
 
@@ -84,8 +84,6 @@ namespace Zeni {
         bool connected1 : 1;
       } data;
     };
-
-    ZENI_RETE_LINKAGE void bind_to_existential_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join_Existential> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
 
   }
 

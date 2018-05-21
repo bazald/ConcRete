@@ -16,13 +16,31 @@ namespace Zeni {
       output_tokens.insert(output_token);
     }
 
-    std::shared_ptr<Node_Negation> Node_Negation::Create() {
+    std::shared_ptr<Node_Negation> Node_Negation::Create(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &out) {
       class Friendly_Node_Negation : public Node_Negation {
       public:
         Friendly_Node_Negation() {}
       };
 
-      return std::make_shared<Friendly_Node_Negation>();
+      Network::CPU_Accumulator cpu_accumulator(network);
+
+      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+        if (auto existing = Node_Negation::find_existing(out))
+          return existing;
+      }
+
+      const auto negation = std::make_shared<Friendly_Node_Negation>();
+
+      negation->input = out;
+      negation->height = out->get_height() + 1;
+      negation->token_owner = out->get_token_owner();
+      negation->size = out->get_size();
+      negation->token_size = out->get_token_size();
+
+      out->insert_output_enabled(negation);
+      out->pass_tokens(network, negation);
+
+      return negation;
     }
 
     void Node_Negation::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
@@ -145,17 +163,6 @@ namespace Zeni {
       }
 
       return nullptr;
-    }
-
-    void bind_to_negation(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Negation> &negation, const std::shared_ptr<Node> &out) {
-      assert(negation);
-      negation->input = out;
-      negation->height = out->get_height() + 1;
-      negation->token_owner = out->get_token_owner();
-      negation->size = out->get_size();
-      negation->token_size = out->get_token_size();
-      out->insert_output_enabled(negation);
-      out->pass_tokens(network, negation);
     }
 
   }

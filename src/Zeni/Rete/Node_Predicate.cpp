@@ -28,22 +28,58 @@ namespace Zeni {
       assert(m_lhs_index.rete_row >= m_lhs_index.token_row);
     }
 
-    std::shared_ptr<Node_Predicate> Node_Predicate::Create(const Predicate &predicate_, const Token_Index lhs_index_, const Token_Index rhs_index_) {
-      class Friendly_Node_Predicate : public Node_Predicate {
-      public:
-        Friendly_Node_Predicate(const Predicate &predicate_, const Token_Index lhs_index_, const Token_Index rhs_index_) : Node_Predicate(predicate_, lhs_index_, rhs_index_) {}
-      };
-
-      return std::make_shared<Friendly_Node_Predicate>(predicate_, lhs_index_, rhs_index_);
-    }
-
-    std::shared_ptr<Node_Predicate> Node_Predicate::Create(const Predicate &predicate_, const Token_Index lhs_index_, const std::shared_ptr<const Symbol> &rhs_) {
+    std::shared_ptr<Node_Predicate> Node_Predicate::Create(const std::shared_ptr<Network> &network, const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const std::shared_ptr<const Symbol> &rhs, const std::shared_ptr<Node> &out) {
       class Friendly_Node_Predicate : public Node_Predicate {
       public:
         Friendly_Node_Predicate(const Predicate &predicate_, const Token_Index lhs_index_, const std::shared_ptr<const Symbol> &rhs_) : Node_Predicate(predicate_, lhs_index_, rhs_) {}
       };
 
-      return std::make_shared<Friendly_Node_Predicate>(predicate_, lhs_index_, rhs_);
+      Network::CPU_Accumulator cpu_accumulator(network);
+
+      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+        if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs, out))
+          return existing;
+      }
+
+      const auto predicate = std::make_shared<Friendly_Node_Predicate>(pred, lhs_index, rhs);
+
+      predicate->input = out;
+      predicate->height = out->get_height() + 1;
+      predicate->token_owner = out->get_token_owner();
+      predicate->size = out->get_size() + 1;
+      predicate->token_size = out->get_token_size();
+
+      out->insert_output_enabled(predicate);
+      out->pass_tokens(network, predicate);
+
+      return predicate;
+    }
+
+    std::shared_ptr<Node_Predicate> Node_Predicate::Create(const std::shared_ptr<Network> &network, const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const Token_Index &rhs_index, const std::shared_ptr<Node> &out) {
+      class Friendly_Node_Predicate : public Node_Predicate {
+      public:
+        Friendly_Node_Predicate(const Predicate &predicate_, const Token_Index lhs_index_, const Token_Index rhs_index_) : Node_Predicate(predicate_, lhs_index_, rhs_index_) {}
+      };
+
+      Network::CPU_Accumulator cpu_accumulator(network);
+
+      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+        if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs_index, out))
+          return existing;
+      }
+
+      const auto predicate = std::make_shared<Friendly_Node_Predicate>(pred, lhs_index, rhs_index);
+
+      predicate->input = out;
+      predicate->height = out->get_height() + 1;
+      predicate->token_owner = out->get_token_owner();
+      predicate->size = out->get_size() + 1;
+      predicate->token_size = out->get_token_size();
+
+      out->insert_output_enabled(predicate);
+      out->pass_tokens(network, predicate);
+
+      return predicate;
     }
 
     void Node_Predicate::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
@@ -272,18 +308,6 @@ namespace Zeni {
       case Predicate::LTE: return *lhs <= *rhs;
       default: abort();
       }
-    }
-
-    void bind_to_predicate(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Predicate> &predicate, const std::shared_ptr<Node> &out) {
-      assert(predicate);
-      predicate->input = out;
-      predicate->height = out->get_height() + 1;
-      predicate->token_owner = out->get_token_owner();
-      predicate->size = out->get_size() + 1;
-      predicate->token_size = out->get_token_size();
-
-      out->insert_output_enabled(predicate);
-      out->pass_tokens(network, predicate);
     }
 
   }

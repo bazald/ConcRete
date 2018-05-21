@@ -18,13 +18,67 @@ namespace Zeni {
     {
     }
 
-    std::shared_ptr<Node_Join> Node_Join::Create(const Variable_Bindings &bindings_) {
+    std::shared_ptr<Node_Join> Node_Join::Create(const std::shared_ptr<Network> &network, const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
       class Friendly_Node_Join : public Node_Join {
       public:
         Friendly_Node_Join(const Variable_Bindings &bindings_) : Node_Join(bindings_) {}
       };
 
-      return std::make_shared<Friendly_Node_Join>(bindings_);
+      Network::CPU_Accumulator cpu_accumulator(network);
+
+      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+        if (auto existing = Node_Join::find_existing(bindings, out0, out1))
+          return existing;
+      }
+
+      const auto join = std::make_shared<Friendly_Node_Join>(bindings);
+
+      join->input0 = out0;
+      join->input1 = out1;
+      join->height = std::max(out0->get_height(), out1->get_height()) + 1;
+      join->token_owner = join;
+      join->size = out0->get_size() + out1->get_size();
+      join->token_size = out0->get_token_size() + out1->get_token_size();
+
+#ifdef ZENI_RETE_LR_UNLINKING
+      if (!out1->has_output_tokens()) {
+        out0->insert_output_enabled(join);
+
+        if (out0 != out1) {
+          out1->insert_output_disabled(join);
+          join->data.connected1 = false;
+        }
+
+        out0->pass_tokens(network, join);
+      }
+      else {
+        out1->insert_output_enabled(join);
+
+        if (out0->has_output_tokens()) {
+          if (out0 != out1) {
+            out0->insert_output_enabled(join);
+            out0->pass_tokens(network, join);
+          }
+        }
+        else {
+          out0->insert_output_disabled(join);
+          join->data.connected0 = false;
+        }
+
+        out1->pass_tokens(network, join);
+      }
+#else
+      out0->insert_output_enabled(join);
+      if (out0 != out1)
+        out1->insert_output_enabled(join);
+      join->data.connected1 = true;
+
+      out0->pass_tokens(network, join);
+      if (out0 != out1)
+        out1->pass_tokens(network, join);
+#endif
+
+      return join;
     }
 
     void Node_Join::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
@@ -408,54 +462,6 @@ namespace Zeni {
       const auto sft = shared_from_this();
       for (auto &token : output_tokens)
         network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, token, Token_Pass::Type::Retraction));
-    }
-
-    void bind_to_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      assert(join && !join->input0.lock() && !join->input1.lock());
-      join->input0 = out0;
-      join->input1 = out1;
-      join->height = std::max(out0->get_height(), out1->get_height()) + 1;
-      join->token_owner = join;
-      join->size = out0->get_size() + out1->get_size();
-      join->token_size = out0->get_token_size() + out1->get_token_size();
-
-#ifdef ZENI_RETE_LR_UNLINKING
-      if (!out1->has_output_tokens()) {
-        out0->insert_output_enabled(join);
-
-        if (out0 != out1) {
-          out1->insert_output_disabled(join);
-          join->data.connected1 = false;
-        }
-
-        out0->pass_tokens(network, join);
-      }
-      else {
-        out1->insert_output_enabled(join);
-
-        if (out0->has_output_tokens()) {
-          if (out0 != out1) {
-            out0->insert_output_enabled(join);
-            out0->pass_tokens(network, join);
-          }
-        }
-        else {
-          out0->insert_output_disabled(join);
-          join->data.connected0 = false;
-        }
-
-        out1->pass_tokens(network, join);
-      }
-#else
-      out0->insert_output_enabled(join);
-      if (out0 != out1)
-        out1->insert_output_enabled(join);
-      join->data.connected1 = true;
-
-      out0->pass_tokens(network, join);
-      if (out0 != out1)
-        out1->pass_tokens(network, join);
-#endif
     }
 
   }

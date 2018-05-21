@@ -19,13 +19,31 @@ namespace Zeni {
       return m_wme;
     }
 
-    std::shared_ptr<Node_Filter> Node_Filter::Create(const WME &wme_) {
+    std::shared_ptr<Node_Filter> Node_Filter::Create(const std::shared_ptr<Network> &network, const WME &wme) {
       class Friendly_Node_Filter : public Node_Filter {
       public:
         Friendly_Node_Filter(const WME &wme_) : Node_Filter(wme_) {}
       };
 
-      return std::make_shared<Friendly_Node_Filter>(wme_);
+      Network::CPU_Accumulator cpu_accumulator(network);
+
+      const auto filter = std::make_shared<Friendly_Node_Filter>(wme);
+
+      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+        for (auto &existing_filter : network->get_Filters()) {
+          if (*existing_filter == *filter)
+            return existing_filter;
+        }
+      }
+
+      filter->height = 1;
+      filter->token_owner = filter;
+      filter->size = 1;
+      filter->token_size = 1;
+
+      network->source_filter(filter);
+
+      return filter;
     }
 
     void Node_Filter::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
@@ -145,14 +163,6 @@ namespace Zeni {
 
     std::vector<WME> Node_Filter::get_filter_wmes() const {
       return std::vector<WME>(1, m_wme);
-    }
-
-    void bind_to_filter(const std::shared_ptr<Network> &/*network*/, const std::shared_ptr<Node_Filter> &filter) {
-      assert(filter);
-      filter->height = 1;
-      filter->token_owner = filter;
-      filter->size = 1;
-      filter->token_size = 1;
     }
 
   }

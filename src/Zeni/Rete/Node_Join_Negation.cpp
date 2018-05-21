@@ -12,13 +12,36 @@ namespace Zeni {
 
     Node_Join_Negation::Node_Join_Negation(const Variable_Bindings &bindings_) : bindings(bindings_) {}
 
-    std::shared_ptr<Node_Join_Negation> Node_Join_Negation::Create(const Variable_Bindings &bindings_) {
+    std::shared_ptr<Node_Join_Negation> Node_Join_Negation::Create(const std::shared_ptr<Network> &network, const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
       class Friendly_Node_Join_Negation : public Node_Join_Negation {
       public:
         Friendly_Node_Join_Negation(const Variable_Bindings &bindings_) : Node_Join_Negation(bindings_) {}
       };
 
-      return std::make_shared<Friendly_Node_Join_Negation>(bindings_);
+      Network::CPU_Accumulator cpu_accumulator(network);
+
+      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+        if (auto existing = Node_Join_Negation::find_existing(bindings, out0, out1))
+          return existing;
+      }
+
+      const auto negation_join = std::make_shared<Friendly_Node_Join_Negation>(bindings);
+
+      negation_join->input0 = out0;
+      negation_join->input1 = out1;
+      negation_join->height = std::max(out0->get_height(), out1->get_height()) + 1;
+      negation_join->token_owner = out0->get_token_owner();
+      negation_join->size = out0->get_size() + out1->get_size();
+      negation_join->token_size = out0->get_token_size();
+
+      out0->insert_output_enabled(negation_join);
+      out0->pass_tokens(network, negation_join);
+      if (out0 != out1) {
+        out1->insert_output_enabled(negation_join);
+        out1->pass_tokens(network, negation_join);
+      }
+
+      return negation_join;
     }
 
     void Node_Join_Negation::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
@@ -248,23 +271,6 @@ namespace Zeni {
       const auto sft = shared_from_this();
       for (auto &token : output_tokens)
         network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, token, Token_Pass::Type::Retraction));
-    }
-
-    void bind_to_negation_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join_Negation> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      assert(join && !join->input0.lock() && !join->input1.lock());
-      join->input0 = out0;
-      join->input1 = out1;
-      join->height = std::max(out0->get_height(), out1->get_height()) + 1;
-      join->token_owner = out0->get_token_owner();
-      join->size = out0->get_size() + out1->get_size();
-      join->token_size = out0->get_token_size();
-
-      out0->insert_output_enabled(join);
-      out0->pass_tokens(network, join);
-      if (out0 != out1) {
-        out1->insert_output_enabled(join);
-        out1->pass_tokens(network, join);
-      }
     }
 
   }

@@ -12,10 +12,28 @@ namespace Zeni {
 
     Node_Existential::Node_Existential() : output_token(std::make_shared<Token>()) {}
 
-    std::shared_ptr<Node_Existential> Node_Existential::Create() {
+    std::shared_ptr<Node_Existential> Node_Existential::Create(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &out) {
       class Friendly_Node_Existential : public Node_Existential {};
 
-      return std::make_shared<Friendly_Node_Existential>();
+      Network::CPU_Accumulator cpu_accumulator(network);
+
+      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+        if (auto existing = Node_Existential::find_existing(out))
+          return existing;
+      }
+
+      const auto existential = std::make_shared<Friendly_Node_Existential>();
+
+      existential->input = out;
+      existential->height = out->get_height() + 1;
+      existential->token_owner = out->get_token_owner();
+      existential->size = out->get_size();
+      existential->token_size = out->get_token_size();
+
+      out->insert_output_enabled(existential);
+      out->pass_tokens(network, existential);
+
+      return existential;
     }
 
     void Node_Existential::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
@@ -147,17 +165,6 @@ namespace Zeni {
       }
 
       return nullptr;
-    }
-
-    void bind_to_existential(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Existential> &existential, const std::shared_ptr<Node> &out) {
-      assert(existential);
-      existential->input = out;
-      existential->height = out->get_height() + 1;
-      existential->token_owner = out->get_token_owner();
-      existential->size = out->get_size();
-      existential->token_size = out->get_token_size();
-      out->insert_output_enabled(existential);
-      out->pass_tokens(network, existential);
     }
 
   }

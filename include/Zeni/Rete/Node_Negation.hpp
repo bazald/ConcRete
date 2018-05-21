@@ -16,7 +16,7 @@ namespace Zeni {
       Node_Negation();
 
     public:
-      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Negation> Create();
+      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Negation> Create(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &out);
 
       ZENI_RETE_LINKAGE void Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
 
@@ -55,8 +55,6 @@ namespace Zeni {
       Tokens output_tokens;
       std::shared_ptr<const Token> output_token;
     };
-
-    ZENI_RETE_LINKAGE void bind_to_negation(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Negation> &negation, const std::shared_ptr<Node> &out);
 
   }
 

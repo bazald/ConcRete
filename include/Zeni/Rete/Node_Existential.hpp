@@ -16,7 +16,7 @@ namespace Zeni {
       Node_Existential();
 
     public:
-      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Existential> Create();
+      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Existential> Create(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &out);
 
       ZENI_RETE_LINKAGE void Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
 

@@ -17,13 +17,44 @@ namespace Zeni {
     {
     }
 
-    std::shared_ptr<Node_Join_Existential> Node_Join_Existential::Create(const Variable_Bindings &bindings_) {
+    std::shared_ptr<Node_Join_Existential> Node_Join_Existential::Create(const std::shared_ptr<Network> &network, const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
       class Friendly_Node_Join_Existential : public Node_Join_Existential {
       public:
         Friendly_Node_Join_Existential(const Variable_Bindings &bindings_) : Node_Join_Existential(bindings_) {}
       };
 
-      return std::make_shared<Friendly_Node_Join_Existential>(bindings_);
+      Network::CPU_Accumulator cpu_accumulator(network);
+
+      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+        if (auto existing = Node_Join_Existential::find_existing(bindings, out0, out1))
+          return existing;
+      }
+
+      const auto existential_join = std::make_shared<Friendly_Node_Join_Existential>(bindings);
+
+      existential_join->input0 = out0;
+      existential_join->input1 = out1;
+      existential_join->height = std::max(out0->get_height(), out1->get_height()) + 1;
+      existential_join->token_owner = out0->get_token_owner();
+      existential_join->size = out0->get_size() + out1->get_size();
+      existential_join->token_size = out0->get_token_size();
+
+      out0->insert_output_enabled(existential_join);
+      if (out0 != out1)
+#ifdef ZENI_RETE_LR_UNLINKING
+        out1->insert_output_disabled(existential_join);
+#else
+        out1->insert_output_enabled(existential_join);
+      existential_join->data.connected1 = true;
+#endif
+
+      out0->pass_tokens(network, existential_join);
+#ifndef ZENI_RETE_LR_UNLINKING
+      if (out0 != out1)
+        out1->pass_tokens(network, existential_join);
+#endif
+
+      return existential_join;
     }
 
     void Node_Join_Existential::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
@@ -320,31 +351,6 @@ namespace Zeni {
         }
       }
       assert(data.connected0 || data.connected1);
-#endif
-    }
-
-    void bind_to_existential_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join_Existential> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      assert(join && !join->input0.lock() && !join->input1.lock());
-      join->input0 = out0;
-      join->input1 = out1;
-      join->height = std::max(out0->get_height(), out1->get_height()) + 1;
-      join->token_owner = out0->get_token_owner();
-      join->size = out0->get_size() + out1->get_size();
-      join->token_size = out0->get_token_size();
-
-      out0->insert_output_enabled(join);
-      if (out0 != out1)
-#ifdef ZENI_RETE_LR_UNLINKING
-        out1->insert_output_disabled(join);
-#else
-        out1->insert_output_enabled(join);
-      join->data.connected1 = true;
-#endif
-
-      out0->pass_tokens(network, join);
-#ifndef ZENI_RETE_LR_UNLINKING
-      if (out0 != out1)
-        out1->pass_tokens(network, join);
 #endif
     }
 

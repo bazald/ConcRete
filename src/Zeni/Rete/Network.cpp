@@ -75,149 +75,6 @@ namespace Zeni {
     {
     }
 
-    std::shared_ptr<Node_Action> Network::make_action(const std::string &name, const bool &user_action, const Node_Action::Action &action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables) {
-      const auto sft = shared_from_this();
-      CPU_Accumulator cpu_accumulator(sft);
-
-      if (m_node_sharing == Node_Sharing::Enabled) {
-        if (auto existing = Node_Action::find_existing(action, [](const Node_Action &, const Token &) {}, out))
-          return existing;
-      }
-      //      std::cerr << "DEBUG: make_action" << std::endl;
-      auto action_fun = Node_Action::Create(name, action, [](const Node_Action &, const Token &) {});
-      bind_to_action(sft, action_fun, out, variables);
-      //      std::cerr << "END: make_action" << std::endl;
-      source_rule(action_fun, user_action);
-
-      return action_fun;
-    }
-
-    std::shared_ptr<Node_Action> Network::make_action_retraction(const std::string &name, const bool &user_action, const Node_Action::Action &action, const Node_Action::Action &retraction, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables) {
-      const auto sft = shared_from_this(); 
-      CPU_Accumulator cpu_accumulator(sft);
-
-      if (m_node_sharing == Node_Sharing::Enabled) {
-        if (auto existing = Node_Action::find_existing(action, retraction, out))
-          return existing;
-      }
-      auto action_fun = Node_Action::Create(name, action, retraction);
-      bind_to_action(sft, action_fun, out, variables);
-      source_rule(action_fun, user_action);
-      return action_fun;
-    }
-
-    std::shared_ptr<Node_Existential> Network::make_existential(const std::shared_ptr<Node> &out) {
-      const auto sft = shared_from_this();
-      CPU_Accumulator cpu_accumulator(sft);
-
-      if (m_node_sharing == Node_Sharing::Enabled) {
-        if (auto existing = Node_Existential::find_existing(out))
-          return existing;
-      }
-      auto existential = Node_Existential::Create();
-      bind_to_existential(sft, existential, out);
-      return existential;
-    }
-
-    std::shared_ptr<Node_Join_Existential> Network::make_existential_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      const auto sft = shared_from_this();
-      CPU_Accumulator cpu_accumulator(sft);
-
-      if (m_node_sharing == Node_Sharing::Enabled) {
-        if (auto existing = Node_Join_Existential::find_existing(bindings, out0, out1))
-          return existing;
-      }
-      auto existential_join = Node_Join_Existential::Create(bindings);
-      bind_to_existential_join(sft, existential_join, out0, out1);
-      return existential_join;
-    }
-
-    std::shared_ptr<Node_Filter> Network::make_filter(const WME &wme) {
-      const auto sft = shared_from_this();
-      CPU_Accumulator cpu_accumulator(sft);
-
-      auto filter = Node_Filter::Create(wme);
-
-      if (m_node_sharing == Node_Sharing::Enabled) {
-        for (auto &existing_filter : filters) {
-          if (*existing_filter == *filter)
-            return existing_filter;
-        }
-      }
-
-      bind_to_filter(sft, filter);
-
-      this->filters.push_back(filter);
-      for (auto &w : this->working_memory.get_wmes())
-        filter->insert_wme(sft, w);
-      return filter;
-    }
-
-    std::shared_ptr<Node_Join> Network::make_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      const auto sft = shared_from_this();
-      CPU_Accumulator cpu_accumulator(sft);
-
-      if (m_node_sharing == Node_Sharing::Enabled) {
-        if (auto existing = Node_Join::find_existing(bindings, out0, out1))
-          return existing;
-      }
-      auto join = Node_Join::Create(bindings);
-      bind_to_join(sft, join, out0, out1);
-      return join;
-    }
-
-    std::shared_ptr<Node_Negation> Network::make_negation(const std::shared_ptr<Node> &out) {
-      const auto sft = shared_from_this();
-      CPU_Accumulator cpu_accumulator(sft);
-
-      if (m_node_sharing == Node_Sharing::Enabled) {
-        if (auto existing = Node_Negation::find_existing(out))
-          return existing;
-      }
-      auto negation = Node_Negation::Create();
-      bind_to_negation(sft, negation, out);
-      return negation;
-    }
-
-    std::shared_ptr<Node_Join_Negation> Network::make_negation_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      const auto sft = shared_from_this();
-      CPU_Accumulator cpu_accumulator(sft);
-
-      if (m_node_sharing == Node_Sharing::Enabled) {
-        if (auto existing = Node_Join_Negation::find_existing(bindings, out0, out1))
-          return existing;
-      }
-      auto negation_join = Node_Join_Negation::Create(bindings);
-      bind_to_negation_join(sft, negation_join, out0, out1);
-      return negation_join;
-    }
-
-    std::shared_ptr<Node_Predicate> Network::make_predicate_vc(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const std::shared_ptr<const Symbol> &rhs, const std::shared_ptr<Node> &out) {
-      const auto sft = shared_from_this();
-      CPU_Accumulator cpu_accumulator(sft);
-
-      if (m_node_sharing == Node_Sharing::Enabled) {
-        if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs, out))
-          return existing;
-      }
-      auto predicate = Node_Predicate::Create(pred, lhs_index, rhs);
-      bind_to_predicate(sft, predicate, out);
-      return predicate;
-    }
-
-    std::shared_ptr<Node_Predicate> Network::make_predicate_vv(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const Token_Index &rhs_index, const std::shared_ptr<Node> &out) {
-      const auto sft = shared_from_this();
-      CPU_Accumulator cpu_accumulator(sft);
-
-      if (m_node_sharing == Node_Sharing::Enabled) {
-        if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs_index, out))
-          return existing;
-      }
-      auto predicate = Node_Predicate::Create(pred, lhs_index, rhs_index);
-      bind_to_predicate(sft, predicate, out);
-      return predicate;
-    }
-
     std::shared_ptr<Concurrency::Job_Queue> Network::get_Job_Queue() const {
       return m_thread_pool->get_Job_Queue();
     }
@@ -243,6 +100,15 @@ namespace Zeni {
 
       filters.clear();
       rules.clear();
+    }
+
+    void Network::source_filter(const std::shared_ptr<Node_Filter> &filter) {
+      CPU_Accumulator cpu_accumulator(shared_from_this());
+
+      filters.push_back(filter);
+      const auto sft = shared_from_this();
+      for (auto &w : working_memory.get_wmes())
+        filter->insert_wme(sft, w);
     }
 
     void Network::excise_filter(const std::shared_ptr<Node_Filter> &filter) {
