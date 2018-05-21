@@ -16,7 +16,7 @@ namespace Zeni {
     {
     }
 
-    void Node_Join::destroy(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Join::destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       erase_output(output);
       if (!destruction_suppressed && outputs_all.empty()) {
         //std::cerr << "Destroying: ";
@@ -48,7 +48,7 @@ namespace Zeni {
       return !output_tokens.empty();
     }
 
-    void Node_Join::insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) {
+    void Node_Join::insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) {
       const auto input0_locked = input0.lock();
       const auto input1_locked = input1.lock();
 
@@ -136,7 +136,7 @@ namespace Zeni {
       }
     }
 
-    bool Node_Join::remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) {
+    bool Node_Join::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) {
       const auto input0_locked = input0.lock();
       const auto input1_locked = input1.lock();
       const auto sft = shared_from_this();
@@ -310,7 +310,7 @@ namespace Zeni {
       return nullptr;
     }
 
-    void Node_Join::join_tokens(Network &network, const std::shared_ptr<const Token> &lhs, const std::shared_ptr<const Token> &rhs) {
+    void Node_Join::join_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &lhs, const std::shared_ptr<const Token> &rhs) {
       //    for(auto &binding : bindings) {
       //      if(*(*lhs)[binding.first] != *(*rhs)[binding.second])
       //        return;
@@ -336,7 +336,7 @@ namespace Zeni {
         return lhs;
     }
 
-    void Node_Join::disconnect(Network &
+    void Node_Join::disconnect(const std::shared_ptr<Network> &
 #ifdef ZENI_RETE_LR_UNLINKING
       network
 #endif
@@ -394,19 +394,19 @@ namespace Zeni {
 #endif
     }
 
-    void Node_Join::pass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Join::pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
       for (auto &token : output_tokens)
         output->insert_token(network, token, sft);
     }
 
-    void Node_Join::unpass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Join::unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
       for (auto &token : output_tokens)
         output->remove_token(network, token, sft);
     }
 
-    void bind_to_join(Network &network, const std::shared_ptr<Node_Join> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
+    void bind_to_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
       assert(join && !join->input0.lock() && !join->input1.lock());
       join->input0 = out0;
       join->input1 = out1;

@@ -1,7 +1,8 @@
 #include "Zeni/Rete/Node_Filter.hpp"
 
-#include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
+#include "Zeni/Rete/Token_Pass.hpp"
 
 namespace Zeni {
 
@@ -18,10 +19,10 @@ namespace Zeni {
       return m_wme;
     }
 
-    void Node_Filter::destroy(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Filter::destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       erase_output(output);
       if (!destruction_suppressed && outputs_all.empty())
-        network.excise_filter(std::static_pointer_cast<Node_Filter>(shared_from_this()));
+        network->excise_filter(std::static_pointer_cast<Node_Filter>(shared_from_this()));
     }
 
     std::shared_ptr<const Node_Filter> Node_Filter::get_filter(const int64_t &
@@ -30,7 +31,7 @@ namespace Zeni {
 #endif
     ) const {
       assert(index == 0);
-      return std::dynamic_pointer_cast<const Node_Filter>(shared_from_this());
+      return std::static_pointer_cast<const Node_Filter>(shared_from_this());
     }
 
     const Node::Tokens & Node_Filter::get_output_tokens() const {
@@ -41,7 +42,7 @@ namespace Zeni {
       return !tokens.empty();
     }
 
-    void Node_Filter::insert_wme(Network &network, const std::shared_ptr<const WME> &wme) {
+    void Node_Filter::insert_wme(const std::shared_ptr<Network> &network, const std::shared_ptr<const WME> &wme) {
       for (int i = 0; i != 3; ++i)
         if (!m_variable[i] && *m_wme.symbols[i] != *wme->symbols[i])
           return;
@@ -57,11 +58,11 @@ namespace Zeni {
       if (inserted.second) {
         const auto sft = shared_from_this();
         for (auto &output : outputs_enabled)
-          output->insert_token(network, *inserted.first, sft);
+          network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, *inserted.first, Token_Pass::Type::Action));
       }
     }
 
-    void Node_Filter::remove_wme(Network &network, const std::shared_ptr<const WME> &wme) {
+    void Node_Filter::remove_wme(const std::shared_ptr<Network> &network, const std::shared_ptr<const WME> &wme) {
       auto found = tokens.find(std::make_shared<Token>(wme));
       if (found != tokens.end()) {
         const auto sft = shared_from_this();
@@ -75,21 +76,21 @@ namespace Zeni {
       }
     }
 
-    void Node_Filter::insert_token(Network &, const std::shared_ptr<const Token> &, const std::shared_ptr<const Node> &) {
+    void Node_Filter::insert_token(const std::shared_ptr<Network> &, const std::shared_ptr<const Token> &, const std::shared_ptr<const Node> &) {
       abort();
     }
 
-    bool Node_Filter::remove_token(Network &, const std::shared_ptr<const Token> &, const std::shared_ptr<const Node> &) {
+    bool Node_Filter::remove_token(const std::shared_ptr<Network> &, const std::shared_ptr<const Token> &, const std::shared_ptr<const Node> &) {
       abort();
     }
 
-    void Node_Filter::pass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Filter::pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
       for (auto &token : tokens)
         output->insert_token(network, token, sft);
     }
 
-    void Node_Filter::unpass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Filter::unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
       for (auto &token : tokens)
         output->remove_token(network, token, sft);
@@ -141,7 +142,7 @@ namespace Zeni {
       return std::vector<WME>(1, m_wme);
     }
 
-    void bind_to_filter(Network &/*network*/, const std::shared_ptr<Node_Filter> &filter) {
+    void bind_to_filter(const std::shared_ptr<Network> &/*network*/, const std::shared_ptr<Node_Filter> &filter) {
       assert(filter);
       filter->height = 1;
       filter->token_owner = filter;

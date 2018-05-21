@@ -1,6 +1,7 @@
 #ifndef ZENI_RETE_NODE_H
 #define ZENI_RETE_NODE_H
 
+#include "Zeni/Concurrency/Maester.hpp"
 #include "Custom_Data.hpp"
 #include "Token.hpp"
 
@@ -28,19 +29,19 @@ namespace Zeni {
     class Node_Negation;
     class Node_Predicate;
 
-    class Node : public std::enable_shared_from_this<Node>
+    class Node : public Concurrency::Maester
     {
       Node(const Node &) = delete;
       Node & operator=(const Node &) = delete;
 
-      friend ZENI_RETE_LINKAGE void bind_to_action(Network &network, const std::shared_ptr<Node_Action> &action, const std::shared_ptr<Node> &out);
-      friend ZENI_RETE_LINKAGE void bind_to_existential(Network &network, const std::shared_ptr<Node_Existential> &existential, const std::shared_ptr<Node> &out);
-      friend ZENI_RETE_LINKAGE void bind_to_join_existential(Network &network, const std::shared_ptr<Node_Join_Existential> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
-      friend ZENI_RETE_LINKAGE void bind_to_filter(Network &network, const std::shared_ptr<Node_Filter> &filter);
-      friend ZENI_RETE_LINKAGE void bind_to_join(Network &network, const std::shared_ptr<Node_Join> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
-      friend ZENI_RETE_LINKAGE void bind_to_negation(Network &network, const std::shared_ptr<Node_Negation> &negation, const std::shared_ptr<Node> &out);
-      friend ZENI_RETE_LINKAGE void bind_to_join_negation(Network &network, const std::shared_ptr<Node_Join_Negation> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
-      friend ZENI_RETE_LINKAGE void bind_to_predicate(Network &network, const std::shared_ptr<Node_Predicate> &predicate, const std::shared_ptr<Node> &out);
+      friend ZENI_RETE_LINKAGE void bind_to_action(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Action> &action, const std::shared_ptr<Node> &out);
+      friend ZENI_RETE_LINKAGE void bind_to_existential(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Existential> &existential, const std::shared_ptr<Node> &out);
+      friend ZENI_RETE_LINKAGE void bind_to_join_existential(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join_Existential> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
+      friend ZENI_RETE_LINKAGE void bind_to_filter(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Filter> &filter);
+      friend ZENI_RETE_LINKAGE void bind_to_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
+      friend ZENI_RETE_LINKAGE void bind_to_negation(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Negation> &negation, const std::shared_ptr<Node> &out);
+      friend ZENI_RETE_LINKAGE void bind_to_join_negation(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join_Negation> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
+      friend ZENI_RETE_LINKAGE void bind_to_predicate(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Predicate> &predicate, const std::shared_ptr<Node> &out);
 
     public:
       typedef std::list<std::shared_ptr<Node_Filter>> Filters;
@@ -49,9 +50,12 @@ namespace Zeni {
       typedef std::unordered_set<std::shared_ptr<Node>> Outputs;
       typedef std::unordered_set<std::shared_ptr<const Token>, Zeni::hash_deref<Token>, Zeni::compare_deref_eq> Tokens;
 
+      ZENI_RETE_LINKAGE std::shared_ptr<const Node> shared_from_this() const { return std::static_pointer_cast<const Node>(Concurrency::Maester::shared_from_this()); }
+      ZENI_RETE_LINKAGE std::shared_ptr<Node> shared_from_this() { return std::static_pointer_cast<Node>(Concurrency::Maester::shared_from_this()); }
+
       ZENI_RETE_LINKAGE Node() {}
 
-      ZENI_RETE_LINKAGE virtual void destroy(Network &network, const std::shared_ptr<Node> &output) = 0;
+      ZENI_RETE_LINKAGE virtual void destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) = 0;
 
       ZENI_RETE_LINKAGE void suppress_destruction(const bool &suppress) {
         destruction_suppressed = suppress;
@@ -83,22 +87,26 @@ namespace Zeni {
       ZENI_RETE_LINKAGE virtual const Tokens & get_output_tokens() const = 0;
       ZENI_RETE_LINKAGE virtual bool has_output_tokens() const = 0;
 
-      ZENI_RETE_LINKAGE virtual void insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0;
-      ZENI_RETE_LINKAGE virtual bool remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0; ///< Returns true if removed the last
+      ZENI_RETE_LINKAGE void receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) override;
 
-      ZENI_RETE_LINKAGE virtual void disconnect(Network &/*network*/, const std::shared_ptr<const Node> &/*from*/) {}
+    //private:
+      ZENI_RETE_LINKAGE virtual void insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0;
+      ZENI_RETE_LINKAGE virtual bool remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) = 0; ///< Returns true if removed the last
 
-      ZENI_RETE_LINKAGE virtual void pass_tokens(Network &network, const std::shared_ptr<Node> &output) = 0;
-      ZENI_RETE_LINKAGE virtual void unpass_tokens(Network &network, const std::shared_ptr<Node> &output) = 0;
+    //public:
+      ZENI_RETE_LINKAGE virtual void disconnect(const std::shared_ptr<Network> &/*network*/, const std::shared_ptr<const Node> &/*from*/) {}
+
+      ZENI_RETE_LINKAGE virtual void pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) = 0;
+      ZENI_RETE_LINKAGE virtual void unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) = 0;
 
       ZENI_RETE_LINKAGE virtual bool operator==(const Node &rhs) const = 0;
 
       ZENI_RETE_LINKAGE virtual bool disabled_input(const std::shared_ptr<Node> &);
 
       /// Disable an enabled output
-      ZENI_RETE_LINKAGE void disable_output(Network &network, const std::shared_ptr<Node> &output);
+      ZENI_RETE_LINKAGE void disable_output(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output);
       /// Enable a disabled output
-      ZENI_RETE_LINKAGE void enable_output(Network &network, const std::shared_ptr<Node> &output);
+      ZENI_RETE_LINKAGE void enable_output(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output);
 
       /// Add a new enabled output
       ZENI_RETE_LINKAGE void insert_output_enabled(const std::shared_ptr<Node> &output);

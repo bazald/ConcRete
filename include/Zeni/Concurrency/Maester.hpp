@@ -11,7 +11,7 @@ namespace Zeni {
     class Raven;
 
     /// A message recipient virtual base class
-    class Maester {
+    class Maester : public std::enable_shared_from_this<Maester> {
       Maester(const Maester &) = delete;
       Maester & operator=(const Maester &) = delete;
 

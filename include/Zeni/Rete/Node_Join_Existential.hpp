@@ -14,12 +14,12 @@ namespace Zeni {
       Node_Join_Existential(const Node_Join_Existential &);
       Node_Join_Existential & operator=(const Node_Join_Existential &);
 
-      friend ZENI_RETE_LINKAGE void bind_to_existential_join(Network &network, const std::shared_ptr<Node_Join_Existential> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
+      friend ZENI_RETE_LINKAGE void bind_to_existential_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join_Existential> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
 
     public:
       ZENI_RETE_LINKAGE Node_Join_Existential(Variable_Bindings bindings_);
 
-      ZENI_RETE_LINKAGE void destroy(Network &network, const std::shared_ptr<Node> &output) override;
+      ZENI_RETE_LINKAGE void destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
 
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_left() const override { return input0.lock(); }
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_right() const override { return input1.lock(); }
@@ -31,8 +31,8 @@ namespace Zeni {
       ZENI_RETE_LINKAGE const Tokens & get_output_tokens() const override;
       ZENI_RETE_LINKAGE bool has_output_tokens() const override;
 
-      ZENI_RETE_LINKAGE void insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
-      ZENI_RETE_LINKAGE bool remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
+      ZENI_RETE_LINKAGE void insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
+      ZENI_RETE_LINKAGE bool remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
 
       ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
 
@@ -53,13 +53,13 @@ namespace Zeni {
       ZENI_RETE_LINKAGE virtual const Variable_Bindings * get_bindings() const override { return &bindings; }
 
     private:
-      void join_tokens(Network &network, const std::shared_ptr<const Token> &lhs);
-      void unjoin_tokens(Network &network, const std::shared_ptr<const Token> &lhs);
+      void join_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &lhs);
+      void unjoin_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &lhs);
 
-      void disconnect(Network &network, const std::shared_ptr<const Node> &from) override;
+      void disconnect(const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &from) override;
 
-      void pass_tokens(Network &network, const std::shared_ptr<Node> &output) override;
-      void unpass_tokens(Network &network, const std::shared_ptr<Node> &output) override;
+      void pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
+      void unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
 
       Variable_Bindings bindings;
       std::weak_ptr<Node> input0;
@@ -83,7 +83,7 @@ namespace Zeni {
       } data;
     };
 
-    ZENI_RETE_LINKAGE void bind_to_existential_join(Network &network, const std::shared_ptr<Node_Join_Existential> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
+    ZENI_RETE_LINKAGE void bind_to_existential_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join_Existential> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
 
   }
 

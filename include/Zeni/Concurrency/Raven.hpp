@@ -12,6 +12,9 @@ namespace Zeni {
 
     /// An addressed message virtual base class
     class Raven : public Job {
+      Raven(const Raven &) = delete;
+      Raven operator=(const Raven &) = delete;
+
     public:
       ZENI_CONCURRENCY_LINKAGE Raven(const std::shared_ptr<Maester> &recipient);
       ZENI_CONCURRENCY_LINKAGE ~Raven();

@@ -10,7 +10,7 @@ namespace Zeni {
 
     Node_Existential::Node_Existential() : output_token(std::make_shared<Token>()) {}
 
-    void Node_Existential::destroy(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Existential::destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       erase_output(output);
       if (!destruction_suppressed && outputs_all.empty()) {
         //std::cerr << "Destroying: ";
@@ -38,7 +38,7 @@ namespace Zeni {
       return !input_tokens.empty();
     }
 
-    void Node_Existential::insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
+    void Node_Existential::insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
 #ifndef NDEBUG
       from
 #endif
@@ -57,7 +57,7 @@ namespace Zeni {
       //std::cerr << "input_tokens.size() == " << input_tokens.size() << std::endl;
     }
 
-    bool Node_Existential::remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
+    bool Node_Existential::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
 #ifndef NDEBUG
       from
 #endif
@@ -84,12 +84,12 @@ namespace Zeni {
       return input_tokens.empty();
     }
 
-    void Node_Existential::pass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Existential::pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       if (!input_tokens.empty())
         output->insert_token(network, output_token, shared_from_this());
     }
 
-    void Node_Existential::unpass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Existential::unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       if (!input_tokens.empty())
         output->remove_token(network, output_token, shared_from_this());
     }
@@ -147,7 +147,7 @@ namespace Zeni {
       return nullptr;
     }
 
-    void bind_to_existential(Network &network, const std::shared_ptr<Node_Existential> &existential, const std::shared_ptr<Node> &out) {
+    void bind_to_existential(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Existential> &existential, const std::shared_ptr<Node> &out) {
       assert(existential);
       existential->input = out;
       existential->height = out->get_height() + 1;

@@ -26,7 +26,7 @@ namespace Zeni {
       assert(m_lhs_index.rete_row >= m_lhs_index.token_row);
     }
 
-    void Node_Predicate::destroy(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Predicate::destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       erase_output(output);
       if (!destruction_suppressed && outputs_all.empty()) {
         //std::cerr << "Destroying: ";
@@ -54,7 +54,7 @@ namespace Zeni {
       return !tokens.empty();
     }
 
-    void Node_Predicate::insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
+    void Node_Predicate::insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
 #ifndef NDEBUG
       from
 #endif
@@ -78,7 +78,7 @@ namespace Zeni {
       }
     }
 
-    bool Node_Predicate::remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
+    bool Node_Predicate::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
 #ifndef NDEBUG
       from
 #endif
@@ -100,13 +100,13 @@ namespace Zeni {
       return tokens.empty();
     }
 
-    void Node_Predicate::pass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Predicate::pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
       for (auto &token : tokens)
         output->insert_token(network, token, sft);
     }
 
-    void Node_Predicate::unpass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Predicate::unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       //#ifndef NDEBUG
       //    std::cerr << "Unpassing " << tokens.size() << " Node_Predicate tokens." << std::endl;
       //#endif
@@ -260,7 +260,7 @@ namespace Zeni {
       }
     }
 
-    void bind_to_predicate(Network &network, const std::shared_ptr<Node_Predicate> &predicate, const std::shared_ptr<Node> &out) {
+    void bind_to_predicate(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Predicate> &predicate, const std::shared_ptr<Node> &out) {
       assert(predicate);
       predicate->input = out;
       predicate->height = out->get_height() + 1;

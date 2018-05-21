@@ -11,11 +11,18 @@
 
 namespace Zeni {
 
+  namespace Concurrency {
+
+    class Job_Queue;
+    class Thread_Pool;
+
+  }
+
   namespace Rete {
 
-    class Network {
-      Network(Network &);
-      Network & operator=(Network &);
+    class Network : public std::enable_shared_from_this<Network> {
+      Network(const std::shared_ptr<Network> &);
+      const std::shared_ptr<Network> & operator=(const std::shared_ptr<Network> &);
 
     public:
       class ZENI_RETE_LINKAGE CPU_Accumulator {
@@ -23,17 +30,23 @@ namespace Zeni {
         CPU_Accumulator operator=(const CPU_Accumulator &);
 
       public:
-        CPU_Accumulator(Network &network_);
+        CPU_Accumulator(const std::shared_ptr<Network> &network_);
         ~CPU_Accumulator();
 
       private:
-        Network & network;
+        const std::shared_ptr<Network> &network;
       };
 
       enum class ZENI_RETE_LINKAGE Node_Sharing { Enabled, Disabled };
       enum class ZENI_RETE_LINKAGE Printed_Output { Normal, None };
 
-      ZENI_RETE_LINKAGE Network(const Printed_Output &printed_output = Printed_Output::Normal);
+    private:
+      Network(const Printed_Output &printed_output);
+      Network(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output);
+
+    public:
+      ZENI_RETE_LINKAGE static std::shared_ptr<Network> Create(const Printed_Output &printed_output = Printed_Output::Normal);
+      ZENI_RETE_LINKAGE static std::shared_ptr<Network> Create(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output = Printed_Output::Normal);
       ZENI_RETE_LINKAGE ~Network();
 
       ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> make_action(const std::string &name, const bool &user_action, const Node_Action::Action &action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables);
@@ -47,6 +60,8 @@ namespace Zeni {
       ZENI_RETE_LINKAGE std::shared_ptr<Node_Predicate> make_predicate_vc(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const std::shared_ptr<const Symbol> &rhs, const std::shared_ptr<Node> &out);
       ZENI_RETE_LINKAGE std::shared_ptr<Node_Predicate> make_predicate_vv(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const Token_Index &rhs_index, const std::shared_ptr<Node> &out);
 
+      ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Job_Queue> get_Job_Queue() const;
+      ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Thread_Pool> get_Thread_Pool() const { return m_thread_pool; }
       ZENI_RETE_LINKAGE Agenda & get_agenda() { return agenda; }
       ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> get_rule(const std::string &name);
       ZENI_RETE_LINKAGE std::set<std::string> get_rule_names() const;
@@ -85,6 +100,8 @@ namespace Zeni {
 
     private:
       void source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command);
+
+      const std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
 
       Node::Filters filters;
       std::unordered_map<std::string, std::shared_ptr<Node_Action>> rules;

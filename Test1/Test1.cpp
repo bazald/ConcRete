@@ -3,7 +3,7 @@
 #include "Zeni/Concurrency/Raven.hpp"
 #include "Zeni/Concurrency/Thread_Pool.hpp"
 
-#include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/network.hpp"
 
 #include <iostream>
 #include <string>
@@ -75,19 +75,19 @@ int main()
     gossips["diane"]->tell(gossips["kelly"]);
 
     for (std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
-      thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
+      thread_pool.get_Job_Queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
     //for(int i = 0; i != 1000000; ++i)
     //  thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
 
-    thread_pool.get_queue()->wait_for_completion();
+    thread_pool.get_Job_Queue()->wait_for_completion();
 
     for (std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
-      thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
+      thread_pool.get_Job_Queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
   }
 
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;
 
-  Zeni::Rete::Network network;
+  const auto network = Zeni::Rete::Network::Create();
 
   std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
     {
@@ -99,12 +99,12 @@ int main()
     }
   };
 
-  auto filter = network.make_filter(Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-  auto action = network.make_action("hello-world", false, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
+  auto filter = network->make_filter(Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+  auto action = network->make_action("hello-world", false, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
     std::cout << "Hello world!" << std::endl;
   }, filter, std::make_shared<Zeni::Rete::Variable_Indices>());
 
-  network.insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+  network->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
   return 0;
 }

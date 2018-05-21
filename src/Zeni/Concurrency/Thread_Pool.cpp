@@ -55,7 +55,7 @@ namespace Zeni {
           worker.join();
       }
 
-      std::shared_ptr<Job_Queue> get_queue() const {
+      std::shared_ptr<Job_Queue> get_Job_Queue() const {
         return m_job_queue;
       }
 
@@ -78,8 +78,8 @@ namespace Zeni {
       delete m_impl;
     }
 
-    std::shared_ptr<Job_Queue> Thread_Pool::get_queue() const {
-      return m_impl->get_queue();
+    std::shared_ptr<Job_Queue> Thread_Pool::get_Job_Queue() const {
+      return m_impl->get_Job_Queue();
     }
 
   }

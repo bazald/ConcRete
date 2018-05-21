@@ -1,22 +1,33 @@
 #include "Zeni/Rete/Node.hpp"
 
+#include "Zeni/Rete/Token_Pass.hpp"
+
 #include <cassert>
 
 namespace Zeni {
 
   namespace Rete {
 
+    void Node::receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) {
+      const Token_Pass &token_pass = dynamic_cast<const Token_Pass &>(raven);
+
+      if(token_pass.get_Type() == Token_Pass::Type::Action)
+        insert_token(token_pass.get_Network(), token_pass.get_Token(), token_pass.get_sender());
+      else
+        remove_token(token_pass.get_Network(), token_pass.get_Token(), token_pass.get_sender());
+    }
+
     bool Node::disabled_input(const std::shared_ptr<Node> &) {
       return false;
     }
 
-    void Node::disable_output(Network &network, const std::shared_ptr<Node> &output) {
+    void Node::disable_output(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       outputs_disabled.erase(output);
       outputs_enabled.insert(output);
       unpass_tokens(network, output);
     }
 
-    void Node::enable_output(Network &network, const std::shared_ptr<Node> &output) {
+    void Node::enable_output(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       outputs_enabled.erase(output);
       outputs_disabled.insert(output);
       pass_tokens(network, output);

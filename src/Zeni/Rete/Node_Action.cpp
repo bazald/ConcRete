@@ -1,6 +1,6 @@
 #include "Zeni/Rete/Node_Action.hpp"
 
-#include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/network.hpp"
 
 namespace Zeni {
 
@@ -23,7 +23,7 @@ namespace Zeni {
       //    }
     }
 
-    void Node_Action::destroy(Network &network, const std::shared_ptr<Node> &
+    void Node_Action::destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &
 #ifndef NDEBUG
       output
 #endif
@@ -32,7 +32,7 @@ namespace Zeni {
 
       if (!destruction_suppressed && !excised) {
         excised = true;
-        network.excise_rule(name, false);
+        network->excise_rule(name, false);
 
         //std::cerr << "Destroying: ";
         //output_name(std::cerr);
@@ -62,7 +62,7 @@ namespace Zeni {
       abort();
     }
 
-    void Node_Action::insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
+    void Node_Action::insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
 #ifndef NDEBUG
       from
 #endif
@@ -77,10 +77,10 @@ namespace Zeni {
       //    std::cerr << std::endl;
       //#endif
 
-      network.get_agenda().insert_action(std::static_pointer_cast<Node_Action>(shared_from_this()), *inserted.first);
+      network->get_agenda().insert_action(std::static_pointer_cast<Node_Action>(shared_from_this()), *inserted.first);
     }
 
-    bool Node_Action::remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
+    bool Node_Action::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
 #ifndef NDEBUG
       from
 #endif
@@ -98,7 +98,7 @@ namespace Zeni {
         // TODO: change from the 'if' to the 'assert', ensuring that we're not wasting time on non-existent removals
         //assert(found != input_tokens.end());
       {
-        network.get_agenda().insert_retraction(std::static_pointer_cast<Node_Action>(shared_from_this()), *found);
+        network->get_agenda().insert_retraction(std::static_pointer_cast<Node_Action>(shared_from_this()), *found);
 
         input_tokens.erase(found);
       }
@@ -110,11 +110,11 @@ namespace Zeni {
       return input_tokens.find(token) != input_tokens.end();
     }
 
-    void Node_Action::pass_tokens(Network &, const std::shared_ptr<Node> &) {
+    void Node_Action::pass_tokens(const std::shared_ptr<Network> &, const std::shared_ptr<Node> &) {
       abort();
     }
 
-    void Node_Action::unpass_tokens(Network &, const std::shared_ptr<Node> &) {
+    void Node_Action::unpass_tokens(const std::shared_ptr<Network> &, const std::shared_ptr<Node> &) {
       abort();
     }
 
@@ -193,7 +193,7 @@ namespace Zeni {
       return nullptr;
     }
 
-    void bind_to_action(Network &network, const std::shared_ptr<Node_Action> &action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables) {
+    void bind_to_action(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Action> &action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables) {
       assert(action && !action->input.lock());
       action->input = out;
       action->variables = variables;

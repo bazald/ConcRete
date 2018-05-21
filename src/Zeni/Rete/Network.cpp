@@ -1,5 +1,6 @@
-#include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/network.hpp"
 
+#include "Zeni/Concurrency/Thread_Pool.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Existential.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
@@ -17,24 +18,53 @@ namespace Zeni {
 
   namespace Rete {
 
-    Network::CPU_Accumulator::CPU_Accumulator(Network &network_)
+    Network::CPU_Accumulator::CPU_Accumulator(const std::shared_ptr<Network> &network_)
       : network(network_)
     {
-      if (++network.m_rete_depth == 1)
-        network.m_start = std::chrono::high_resolution_clock::now();
+      if (++network->m_rete_depth == 1)
+        network->m_start = std::chrono::high_resolution_clock::now();
     }
 
     Network::CPU_Accumulator::~CPU_Accumulator() {
-      if (!--network.m_rete_depth) {
+      if (!--network->m_rete_depth) {
         using dseconds = std::chrono::duration<double, std::ratio<1, 1>>;
         const auto current = std::chrono::high_resolution_clock::now();
-        network.m_cpu_time += std::chrono::duration_cast<dseconds>(current - network.m_start).count();
+        network->m_cpu_time += std::chrono::duration_cast<dseconds>(current - network->m_start).count();
       }
     }
 
     Network::Network(const Network::Printed_Output &printed_output)
-      : m_printed_output(printed_output)
+      : m_thread_pool(std::make_shared<Concurrency::Thread_Pool>()), m_printed_output(printed_output)
     {
+    }
+
+    std::shared_ptr<Network> Network::Create(const Network::Printed_Output &printed_output) {
+      class Friendly_Network : public Network {
+      public:
+        Friendly_Network(const Network::Printed_Output &printed_output)
+          : Network(printed_output)
+        {
+        }
+      };
+
+      return std::make_shared<Friendly_Network>(printed_output);
+    }
+
+    Network::Network(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output)
+      : m_thread_pool(thread_pool), m_printed_output(printed_output)
+    {
+    }
+
+    std::shared_ptr<Network> Network::Create(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Network::Printed_Output &printed_output) {
+      class Friendly_Network : public Network {
+      public:
+        Friendly_Network(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Network::Printed_Output &printed_output)
+          : Network(thread_pool, printed_output)
+        {
+        }
+      };
+
+      return std::make_shared<Friendly_Network>(thread_pool, printed_output);
     }
 
     Network::~Network()
@@ -42,7 +72,8 @@ namespace Zeni {
     }
 
     std::shared_ptr<Node_Action> Network::make_action(const std::string &name, const bool &user_action, const Node_Action::Action &action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this();
+      CPU_Accumulator cpu_accumulator(sft);
 
       if (m_node_sharing == Node_Sharing::Enabled) {
         if (auto existing = Node_Action::find_existing(action, [](const Node_Action &, const Token &) {}, out))
@@ -50,7 +81,7 @@ namespace Zeni {
       }
       //      std::cerr << "DEBUG: make_action" << std::endl;
       auto action_fun = std::make_shared<Node_Action>(name, action, [](const Node_Action &, const Token &) {});
-      bind_to_action(*this, action_fun, out, variables);
+      bind_to_action(sft, action_fun, out, variables);
       //      std::cerr << "END: make_action" << std::endl;
       source_rule(action_fun, user_action);
 
@@ -58,44 +89,48 @@ namespace Zeni {
     }
 
     std::shared_ptr<Node_Action> Network::make_action_retraction(const std::string &name, const bool &user_action, const Node_Action::Action &action, const Node_Action::Action &retraction, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this(); 
+      CPU_Accumulator cpu_accumulator(sft);
 
       if (m_node_sharing == Node_Sharing::Enabled) {
         if (auto existing = Node_Action::find_existing(action, retraction, out))
           return existing;
       }
       auto action_fun = std::make_shared<Node_Action>(name, action, retraction);
-      bind_to_action(*this, action_fun, out, variables);
+      bind_to_action(sft, action_fun, out, variables);
       source_rule(action_fun, user_action);
       return action_fun;
     }
 
     std::shared_ptr<Node_Existential> Network::make_existential(const std::shared_ptr<Node> &out) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this();
+      CPU_Accumulator cpu_accumulator(sft);
 
       if (m_node_sharing == Node_Sharing::Enabled) {
         if (auto existing = Node_Existential::find_existing(out))
           return existing;
       }
       auto existential = std::make_shared<Node_Existential>();
-      bind_to_existential(*this, existential, out);
+      bind_to_existential(sft, existential, out);
       return existential;
     }
 
     std::shared_ptr<Node_Join_Existential> Network::make_existential_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this();
+      CPU_Accumulator cpu_accumulator(sft);
 
       if (m_node_sharing == Node_Sharing::Enabled) {
         if (auto existing = Node_Join_Existential::find_existing(bindings, out0, out1))
           return existing;
       }
       auto existential_join = std::make_shared<Node_Join_Existential>(bindings);
-      bind_to_existential_join(*this, existential_join, out0, out1);
+      bind_to_existential_join(sft, existential_join, out0, out1);
       return existential_join;
     }
 
     std::shared_ptr<Node_Filter> Network::make_filter(const WME &wme) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this();
+      CPU_Accumulator cpu_accumulator(sft);
 
       auto filter = std::make_shared<Node_Filter>(wme);
 
@@ -106,72 +141,81 @@ namespace Zeni {
         }
       }
 
-      bind_to_filter(*this, filter);
+      bind_to_filter(sft, filter);
 
       this->filters.push_back(filter);
       for (auto &w : this->working_memory.get_wmes())
-        filter->insert_wme(*this, w);
+        filter->insert_wme(sft, w);
       return filter;
     }
 
     std::shared_ptr<Node_Join> Network::make_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this();
+      CPU_Accumulator cpu_accumulator(sft);
 
       if (m_node_sharing == Node_Sharing::Enabled) {
         if (auto existing = Node_Join::find_existing(bindings, out0, out1))
           return existing;
       }
       auto join = std::make_shared<Node_Join>(bindings);
-      bind_to_join(*this, join, out0, out1);
+      bind_to_join(sft, join, out0, out1);
       return join;
     }
 
     std::shared_ptr<Node_Negation> Network::make_negation(const std::shared_ptr<Node> &out) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this();
+      CPU_Accumulator cpu_accumulator(sft);
 
       if (m_node_sharing == Node_Sharing::Enabled) {
         if (auto existing = Node_Negation::find_existing(out))
           return existing;
       }
       auto negation = std::make_shared<Node_Negation>();
-      bind_to_negation(*this, negation, out);
+      bind_to_negation(sft, negation, out);
       return negation;
     }
 
     std::shared_ptr<Node_Join_Negation> Network::make_negation_join(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this();
+      CPU_Accumulator cpu_accumulator(sft);
 
       if (m_node_sharing == Node_Sharing::Enabled) {
         if (auto existing = Node_Join_Negation::find_existing(bindings, out0, out1))
           return existing;
       }
       auto negation_join = std::make_shared<Node_Join_Negation>(bindings);
-      bind_to_negation_join(*this, negation_join, out0, out1);
+      bind_to_negation_join(sft, negation_join, out0, out1);
       return negation_join;
     }
 
     std::shared_ptr<Node_Predicate> Network::make_predicate_vc(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const std::shared_ptr<const Symbol> &rhs, const std::shared_ptr<Node> &out) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this();
+      CPU_Accumulator cpu_accumulator(sft);
 
       if (m_node_sharing == Node_Sharing::Enabled) {
         if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs, out))
           return existing;
       }
       auto predicate = std::make_shared<Node_Predicate>(pred, lhs_index, rhs);
-      bind_to_predicate(*this, predicate, out);
+      bind_to_predicate(sft, predicate, out);
       return predicate;
     }
 
     std::shared_ptr<Node_Predicate> Network::make_predicate_vv(const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const Token_Index &rhs_index, const std::shared_ptr<Node> &out) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this();
+      CPU_Accumulator cpu_accumulator(sft);
 
       if (m_node_sharing == Node_Sharing::Enabled) {
         if (auto existing = Node_Predicate::find_existing(pred, lhs_index, rhs_index, out))
           return existing;
       }
       auto predicate = std::make_shared<Node_Predicate>(pred, lhs_index, rhs_index);
-      bind_to_predicate(*this, predicate, out);
+      bind_to_predicate(sft, predicate, out);
       return predicate;
+    }
+
+    std::shared_ptr<Concurrency::Job_Queue> Network::get_Job_Queue() const {
+      return m_thread_pool->get_Job_Queue();
     }
 
     std::shared_ptr<Node_Action> Network::get_rule(const std::string &name) {
@@ -191,14 +235,14 @@ namespace Zeni {
     void Network::excise_all() {
       Agenda::Locker locker(agenda);
 
-      CPU_Accumulator cpu_accumulator(*this);
+      CPU_Accumulator cpu_accumulator(shared_from_this());
 
       filters.clear();
       rules.clear();
     }
 
     void Network::excise_filter(const std::shared_ptr<Node_Filter> &filter) {
-      CPU_Accumulator cpu_accumulator(*this);
+      CPU_Accumulator cpu_accumulator(shared_from_this());
 
       const auto found = std::find(filters.begin(), filters.end(), filter);
       if (found != filters.end())
@@ -206,7 +250,7 @@ namespace Zeni {
     }
 
     void Network::excise_rule(const std::string &name, const bool &user_command) {
-      CPU_Accumulator cpu_accumulator(*this);
+      CPU_Accumulator cpu_accumulator(shared_from_this());
 
       auto found = rules.find(name);
       if (found == rules.end()) {
@@ -220,7 +264,7 @@ namespace Zeni {
         //#endif
         auto action = found->second;
         rules.erase(found);
-        action->destroy(*this);
+        action->destroy(shared_from_this());
         if (user_command)
           std::cerr << '#';
       }
@@ -236,7 +280,7 @@ namespace Zeni {
     }
 
     std::shared_ptr<Node_Action> Network::unname_rule(const std::string &name, const bool &user_command) {
-      CPU_Accumulator cpu_accumulator(*this);
+      CPU_Accumulator cpu_accumulator(shared_from_this());
 
       std::shared_ptr<Node_Action> ptr;
       auto found = rules.find(name);
@@ -268,7 +312,7 @@ namespace Zeni {
       std::cerr << "rete.insert" << *wme << std::endl;
 #endif
       for (auto &filter : filters)
-        filter->insert_wme(*this, wme);
+        filter->insert_wme(shared_from_this(), wme);
     }
 
     void Network::remove_wme(const std::shared_ptr<const WME> &wme) {
@@ -290,17 +334,17 @@ namespace Zeni {
       std::cerr << "rete.remove" << *wme << std::endl;
 #endif
       for (auto &filter : filters)
-        filter->remove_wme(*this, wme);
+        filter->remove_wme(shared_from_this(), wme);
     }
 
     void Network::clear_wmes() {
       Agenda::Locker locker(agenda);
 
-      CPU_Accumulator cpu_accumulator(*this);
+      CPU_Accumulator cpu_accumulator(shared_from_this());
 
       for (auto &wme : working_memory.get_wmes()) {
         for (auto &filter : filters)
-          filter->remove_wme(*this, wme);
+          filter->remove_wme(shared_from_this(), wme);
       }
       working_memory.get_wmes().clear();
     }
@@ -434,7 +478,8 @@ namespace Zeni {
     }
 
     void Network::source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command) {
-      CPU_Accumulator cpu_accumulator(*this);
+      const auto sft = shared_from_this();
+      CPU_Accumulator cpu_accumulator(sft);
 
       auto found = rules.find(action->get_name());
       if (found == rules.end()) {
@@ -448,7 +493,7 @@ namespace Zeni {
         //      std::cerr << "Rule '" << action->get_name() << "' replaced." << std::endl;
         //#endif
         assert(found->second != action);
-        found->second->destroy(*this);
+        found->second->destroy(sft);
         if (user_command && m_printed_output != Printed_Output::None)
           std::cerr << '#';
         found->second = action;

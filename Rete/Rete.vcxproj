@@ -349,6 +349,7 @@
     <ClInclude Include="..\include\Zeni\Rete\Symbol.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Token.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Token_Index.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Token_Pass.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Variable_Indices.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\WME.hpp" />

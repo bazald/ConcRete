@@ -20,7 +20,7 @@ namespace Zeni {
       ZENI_CONCURRENCY_LINKAGE Thread_Pool(const size_t &num_threads);
       ZENI_CONCURRENCY_LINKAGE ~Thread_Pool();
 
-      ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Job_Queue> get_queue() const;
+      ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Job_Queue> get_Job_Queue() const;
 
     private:
       Thread_Pool_Pimpl * const m_impl;

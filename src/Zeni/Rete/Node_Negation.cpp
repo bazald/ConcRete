@@ -14,7 +14,7 @@ namespace Zeni {
       output_tokens.insert(output_token);
     }
 
-    void Node_Negation::destroy(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Negation::destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       erase_output(output);
       if (!destruction_suppressed && outputs_all.empty()) {
         //std::cerr << "Destroying: ";
@@ -37,7 +37,7 @@ namespace Zeni {
       return input_tokens.empty();
     }
 
-    void Node_Negation::insert_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
+    void Node_Negation::insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
 #ifndef NDEBUG
       from
 #endif
@@ -58,7 +58,7 @@ namespace Zeni {
       }
     }
 
-    bool Node_Negation::remove_token(Network &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
+    bool Node_Negation::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
 #ifndef NDEBUG
       from
 #endif
@@ -79,12 +79,12 @@ namespace Zeni {
       return input_tokens.empty();
     }
 
-    void Node_Negation::pass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Negation::pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       if (input_tokens.empty())
         output->insert_token(network, output_token, shared_from_this());
     }
 
-    void Node_Negation::unpass_tokens(Network &network, const std::shared_ptr<Node> &output) {
+    void Node_Negation::unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       if (input_tokens.empty())
         output->remove_token(network, output_token, shared_from_this());
     }
@@ -142,7 +142,7 @@ namespace Zeni {
       return nullptr;
     }
 
-    void bind_to_negation(Network &network, const std::shared_ptr<Node_Negation> &negation, const std::shared_ptr<Node> &out) {
+    void bind_to_negation(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Negation> &negation, const std::shared_ptr<Node> &out) {
       assert(negation);
       negation->input = out;
       negation->height = out->get_height() + 1;

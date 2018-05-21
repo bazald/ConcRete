@@ -617,5 +617,8 @@
     <ClInclude Include="..\include\tao\pegtl.hpp">
       <Filter>Header Files\tao</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Token_Pass.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
