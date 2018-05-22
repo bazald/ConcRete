@@ -14,8 +14,10 @@ namespace Zeni {
     protected:
       Node_Unary(const int64_t &height, const int64_t &size, const int64_t &token_size, const std::shared_ptr<Node> &input);
 
-      ZENI_RETE_LINKAGE void receive(const Raven_Token_Insert &raven) override;
-      ZENI_RETE_LINKAGE void receive(const Raven_Token_Remove &raven) override;
+      ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> &network) override;
+
+      ZENI_RETE_LINKAGE bool receive(const Raven_Token_Insert &raven) override;
+      ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &raven) override;
 
     public:
       std::shared_ptr<const Node> get_parent() const;
@@ -26,6 +28,7 @@ namespace Zeni {
     private:
       std::weak_ptr<Node> m_input;
       Tokens m_input_tokens;
+      Tokens m_input_antitokens;
     };
 
   }

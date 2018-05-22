@@ -336,6 +336,7 @@
     <ClInclude Include="..\include\Zeni\Rete\Node_Action.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Node_Filter.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Node_Unary.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Raven_Disconnect_Output.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Raven_Token_Insert.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Raven_Token_Remove.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Symbol.hpp" />

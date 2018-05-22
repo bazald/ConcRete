@@ -1,7 +1,7 @@
 #ifndef ZENI_RETE_NETWORK_H
 #define ZENI_RETE_NETWORK_H
 
-#include "Zeni/Concurrency/Mutex.hpp"
+#include "Zeni/Concurrency/Maester.hpp"
 #include "Working_Memory.hpp"
 
 #include <chrono>
@@ -22,9 +22,13 @@ namespace Zeni {
     class Node_Action;
     class Node_Filter;
 
-    class Network : public std::enable_shared_from_this<Network> {
-      Network(const std::shared_ptr<Network> &);
-      const std::shared_ptr<Network> & operator=(const std::shared_ptr<Network> &);
+    class Network : public Concurrency::Maester {
+      Network(const Network &);
+      Network & operator=(const Network &);
+
+    protected:
+      ZENI_RETE_LINKAGE std::shared_ptr<const Network> shared_from_this() const;
+      ZENI_RETE_LINKAGE std::shared_ptr<Network> shared_from_this();
 
     public:
       enum class ZENI_RETE_LINKAGE Node_Sharing { Enabled, Disabled };
@@ -52,12 +56,13 @@ namespace Zeni {
       ZENI_RETE_LINKAGE Node_Sharing get_Node_Sharing() const;
       ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Filter> find_filter(const std::shared_ptr<Node_Filter> &filter) const;
+      ZENI_RETE_LINKAGE void receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) override;
+
+      ZENI_RETE_LINKAGE std::shared_ptr<Node_Filter> find_filter_and_increment_output_count(const std::shared_ptr<Node_Filter> &filter);
 
       ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command);
       ZENI_RETE_LINKAGE void excise_all();
       ZENI_RETE_LINKAGE void source_filter(const std::shared_ptr<Node_Filter> &filter);
-      ZENI_RETE_LINKAGE void excise_filter(const std::shared_ptr<Node_Filter> &filter);
       ZENI_RETE_LINKAGE void excise_rule(const std::string &name, const bool &user_command);
       ZENI_RETE_LINKAGE std::string next_rule_name(const std::string &prefix);
       ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> unname_rule(const std::string &name, const bool &user_command);
@@ -72,7 +77,6 @@ namespace Zeni {
 
     private:
       std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
-      mutable Concurrency::Mutex m_mutex;
 
       Filters m_filters;
       std::unordered_map<std::string, std::shared_ptr<Node_Action>> m_rules;

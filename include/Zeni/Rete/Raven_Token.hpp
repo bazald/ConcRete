@@ -13,7 +13,7 @@ namespace Zeni {
 
     class Raven_Token : public Concurrency::Raven {
       Raven_Token(const Raven_Token &) = delete;
-      Raven_Token operator=(const Raven_Token &) = delete;
+      Raven_Token & operator=(const Raven_Token &) = delete;
 
     public:
       ZENI_RETE_LINKAGE Raven_Token(const std::shared_ptr<Node> &recipient, const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &sender, const std::shared_ptr<const Token> &token)

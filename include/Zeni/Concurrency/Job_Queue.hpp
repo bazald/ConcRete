@@ -14,7 +14,7 @@ namespace Zeni {
 
     class Job_Queue {
       Job_Queue(const Job_Queue &) = delete;
-      Job_Queue operator=(const Job_Queue &) = delete;
+      Job_Queue & operator=(const Job_Queue &) = delete;
 
       friend class Job_Queue_Lock_Pimpl;
 

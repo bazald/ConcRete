@@ -1,6 +1,7 @@
 #include "Zeni/Rete/Node_Unary.hpp"
 
 #include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
 
@@ -16,16 +17,34 @@ namespace Zeni {
     {
     }
 
-    ZENI_RETE_LINKAGE void Node_Unary::receive(const Raven_Token_Insert &raven) {
-      Concurrency::Mutex::Lock lock(m_mutex);
-      m_input_tokens.insert(raven.get_Token());
+    void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> &network) {
+      network->get_Job_Queue()->give(std::make_shared<Raven_Disconnect_Output>(m_input.lock(), network, shared_from_this()));
     }
 
-    ZENI_RETE_LINKAGE void Node_Unary::receive(const Raven_Token_Remove &raven) {
+    bool Node_Unary::receive(const Raven_Token_Insert &raven) {
+      Concurrency::Mutex::Lock lock(m_mutex);
+      const auto found = m_input_antitokens.find(raven.get_Token());
+      if (found == m_input_antitokens.end()) {
+        m_input_tokens.insert(raven.get_Token());
+        return true;
+      }
+      else {
+        m_input_antitokens.erase(found);
+        return false;
+      }
+    }
+
+    bool Node_Unary::receive(const Raven_Token_Remove &raven) {
       Concurrency::Mutex::Lock lock(m_mutex);
       const auto found = m_input_tokens.find(raven.get_Token());
-      assert(found != m_input_tokens.end());
-      m_input_tokens.erase(found);
+      if (found != m_input_tokens.end()) {
+        m_input_tokens.erase(found);
+        return true;
+      }
+      else {
+        m_input_antitokens.insert(raven.get_Token());
+        return false;
+      }
     }
 
     std::shared_ptr<const Node> Node_Unary::get_parent() const {

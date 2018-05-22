@@ -3,6 +3,7 @@
 #include "Zeni/Concurrency/Thread_Pool.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
+#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
 
@@ -14,6 +15,14 @@
 namespace Zeni {
 
   namespace Rete {
+
+    std::shared_ptr<const Network> Network::shared_from_this() const {
+      return std::static_pointer_cast<const Network>(Concurrency::Maester::shared_from_this());
+    }
+
+    std::shared_ptr<Network> Network::shared_from_this() {
+      return std::static_pointer_cast<Network>(Concurrency::Maester::shared_from_this());
+    }
 
     Network::Network(const Network::Printed_Output &printed_output)
       : m_thread_pool(std::make_shared<Concurrency::Thread_Pool>()), m_printed_output(printed_output)
@@ -107,16 +116,32 @@ namespace Zeni {
     void Network::excise_all() {
       Concurrency::Mutex::Lock lock(m_mutex);
 
-      m_filters.clear();
+      for (auto &rule : m_rules)
+        rule.second->get_parent()->disconnect_output(shared_from_this(), rule.second);
+
       m_rules.clear();
     }
 
-    std::shared_ptr<Node_Filter> Network::find_filter(const std::shared_ptr<Node_Filter> &filter) const {
+    void Network::receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) {
+      const auto &disconnect_output = dynamic_cast<const Raven_Disconnect_Output &>(raven);
+
+      Concurrency::Mutex::Lock lock(m_mutex);
+
+      if (disconnect_output.get_output()->get_output_count() == 0) {
+        const auto found = m_filters.find(std::dynamic_pointer_cast<Node_Filter>(disconnect_output.get_output()));
+        assert(found != m_filters.end());
+        m_filters.erase(found);
+      }
+    }
+
+    std::shared_ptr<Node_Filter> Network::find_filter_and_increment_output_count(const std::shared_ptr<Node_Filter> &filter) {
       Concurrency::Mutex::Lock lock(m_mutex);
 
       for (auto &existing_filter : m_filters) {
-        if (*existing_filter == *filter)
+        if (*existing_filter == *filter) {
+          existing_filter->increment_output_count();
           return existing_filter;
+        }
       }
       
       return nullptr;
@@ -129,12 +154,6 @@ namespace Zeni {
       const auto sft = shared_from_this();
       for (auto &wme : m_working_memory.get_wmes())
         m_thread_pool->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, std::make_shared<Token>(wme)));
-    }
-
-    void Network::excise_filter(const std::shared_ptr<Node_Filter> &filter) {
-      Concurrency::Mutex::Lock lock(m_mutex);
-
-      m_filters.erase(m_filters.find(filter));
     }
 
     void Network::excise_rule(const std::string &name, const bool &user_command) {

@@ -596,5 +596,8 @@
     <ClInclude Include="..\include\Zeni\Rete\Node_Unary.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Raven_Disconnect_Output.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

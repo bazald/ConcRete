@@ -7,7 +7,7 @@ namespace Zeni {
 
   namespace Rete {
 
-    ZENI_RETE_LINKAGE Raven_Token_Insert::Raven_Token_Insert(const std::shared_ptr<Node> &recipient, const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &sender, const std::shared_ptr<const Token> &token)
+    Raven_Token_Insert::Raven_Token_Insert(const std::shared_ptr<Node> &recipient, const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &sender, const std::shared_ptr<const Token> &token)
       : Raven_Token(recipient, network, sender, token)
     {
     }

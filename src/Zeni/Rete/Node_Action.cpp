@@ -44,14 +44,22 @@ namespace Zeni {
       //  m_retraction(*this, *token);
     }
 
-    void Node_Action::receive(const Raven_Token_Insert &raven) {
-      Node_Unary::receive(raven);
-      m_action(*this, *raven.get_Token());
+    bool Node_Action::receive(const Raven_Token_Insert &raven) {
+      if (Node_Unary::receive(raven)) {
+        m_action(*this, *raven.get_Token());
+        return true;
+      }
+      else
+        return false;
     }
 
-    void Node_Action::receive(const Raven_Token_Remove &raven) {
-      Node_Unary::receive(raven);
-      m_retraction(*this, *raven.get_Token());
+    bool Node_Action::receive(const Raven_Token_Remove &raven) {
+      if (Node_Unary::receive(raven)) {
+        m_retraction(*this, *raven.get_Token());
+        return true;
+      }
+      else
+        return false;
     }
 
     bool Node_Action::operator==(const Node &) const {

@@ -104,10 +104,17 @@ int main()
   auto filter = Zeni::Rete::Node_Filter::Create(network, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
   auto action = Zeni::Rete::Node_Action::Create(network, "hello-world", false, filter, std::make_shared<Zeni::Rete::Variable_Indices>(),
     [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
-      std::cout << "Hello world!" << std::endl;
-    });
+    std::cout << "Hello world!" << std::endl;
+  }, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
+    std::cout << "Goodbye world!" << std::endl;
+  });
 
   network->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+
+  network->get_Job_Queue()->wait_for_completion();
+
+  network->excise_all();
+  //network->excise_rule("hello-world", false);
 
   network->Destroy();
 

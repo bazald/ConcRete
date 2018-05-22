@@ -12,7 +12,7 @@ namespace Zeni {
 
     class Raven_Token_Remove : public Raven_Token {
       Raven_Token_Remove(const Raven_Token_Remove &) = delete;
-      Raven_Token_Remove operator=(const Raven_Token_Remove &) = delete;
+      Raven_Token_Remove & operator=(const Raven_Token_Remove &) = delete;
 
     public:
       ZENI_RETE_LINKAGE Raven_Token_Remove(const std::shared_ptr<Node> &recipient, const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &sender, const std::shared_ptr<const Token> &token);

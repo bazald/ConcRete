@@ -22,14 +22,18 @@ namespace Zeni {
 
       ZENI_RETE_LINKAGE const WME & get_wme() const;
 
-      ZENI_RETE_LINKAGE void receive(const Raven_Token_Insert &raven) override;
-      ZENI_RETE_LINKAGE void receive(const Raven_Token_Remove &raven) override;
+      ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> &network) override;
+
+      ZENI_RETE_LINKAGE bool receive(const Raven_Token_Insert &raven) override;
+      ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &raven) override;
 
       ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
 
     private:
       WME m_wme;
       std::array<std::shared_ptr<const Symbol_Variable>, 3> m_variable;
+
+      Tokens m_output_antitokens;
     };
 
   }

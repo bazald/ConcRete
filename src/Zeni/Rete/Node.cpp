@@ -1,6 +1,7 @@
 #include "Zeni/Rete/Node.hpp"
 
 #include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
 
@@ -23,20 +24,30 @@ namespace Zeni {
     {
     }
 
-    ZENI_RETE_LINKAGE const Node::Outputs & Node::get_outputs() const {
+    const Node::Outputs & Node::get_outputs() const {
       return m_outputs;
     }
 
-    ZENI_RETE_LINKAGE int64_t Node::get_height() const { 
+    int64_t Node::get_height() const { 
       return m_height;
     }
 
-    ZENI_RETE_LINKAGE int64_t Node::get_size() const {
+    int64_t Node::get_size() const {
       return m_size;
     }
 
-    ZENI_RETE_LINKAGE int64_t Node::get_token_size() const {
+    int64_t Node::get_token_size() const {
       return m_token_size;
+    }
+
+    int64_t Node::get_output_count() const {
+      Concurrency::Mutex::Lock lock(m_mutex);
+      return m_output_count;
+    }
+
+    void Node::increment_output_count() {
+      Concurrency::Mutex::Lock lock(m_mutex);
+      ++m_output_count;
     }
 
     void Node::connect_output(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
@@ -63,6 +74,10 @@ namespace Zeni {
         const auto found = m_outputs.find(output);
         assert(found != m_outputs.end());
         m_outputs.erase(found);
+        --m_output_count;
+        assert(m_output_count >= 0);
+        if (m_output_count == 0)
+          send_disconnect_from_parents(network);
       }
 
       const auto sft = shared_from_this();
@@ -72,6 +87,20 @@ namespace Zeni {
 
     void Node::receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) {
       dynamic_cast<const Raven_Token &>(raven).receive();
+    }
+
+    void Node::receive(const Raven_Disconnect_Output &raven) {
+      Concurrency::Mutex::Lock lock(m_mutex);
+
+      if (raven.get_output()->get_output_count() == 0) {
+        const auto found = m_outputs.find(raven.get_output());
+        assert(found != m_outputs.end());
+        m_outputs.erase(found);
+        --m_output_count;
+        assert(m_output_count >= 0);
+        if (m_output_count == 0)
+          send_disconnect_from_parents(raven.get_Network());
+      }
     }
 
   }
