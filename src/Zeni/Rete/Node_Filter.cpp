@@ -2,14 +2,18 @@
 
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
-#include "Zeni/Rete/Token_Pass.hpp"
+#include "Zeni/Rete/Raven_Token_Insert.hpp"
+#include "Zeni/Rete/Raven_Token_Remove.hpp"
+
+#include <cassert>
 
 namespace Zeni {
 
   namespace Rete {
 
     Node_Filter::Node_Filter(const WME &wme_)
-      : m_wme(wme_)
+      : Node(1, 1, 1),
+      m_wme(wme_)
     {
       for (int i = 0; i != 3; ++i)
         m_variable[i] = std::dynamic_pointer_cast<const Symbol_Variable>(m_wme.symbols[i]);
@@ -25,51 +29,24 @@ namespace Zeni {
         Friendly_Node_Filter(const WME &wme_) : Node_Filter(wme_) {}
       };
 
-      Network::CPU_Accumulator cpu_accumulator(network);
-
-      const auto filter = std::make_shared<Friendly_Node_Filter>(wme);
+      auto filter = std::make_shared<Friendly_Node_Filter>(wme);
 
       if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
-        for (auto &existing_filter : network->get_Filters()) {
-          if (*existing_filter == *filter)
-            return existing_filter;
-        }
+        const auto existing_filter = network->find_filter(filter);
+        if (existing_filter)
+          return existing_filter;
       }
-
-      filter->height = 1;
-      filter->token_owner = filter;
-      filter->size = 1;
-      filter->token_size = 1;
 
       network->source_filter(filter);
 
       return filter;
     }
 
-    void Node_Filter::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
-      erase_output(output);
-      if (!destruction_suppressed && outputs_all.empty())
-        network->excise_filter(std::static_pointer_cast<Node_Filter>(shared_from_this()));
-    }
+    void Node_Filter::receive(const Raven_Token_Insert &raven) {
+      const auto &token = raven.get_Token();
+      assert(token->size() == 1);
+      const auto &wme = token->get_wme();
 
-    std::shared_ptr<const Node_Filter> Node_Filter::get_filter(const int64_t &
-#ifndef NDEBUG
-      index
-#endif
-    ) const {
-      assert(index == 0);
-      return std::static_pointer_cast<const Node_Filter>(shared_from_this());
-    }
-
-    const Node::Tokens & Node_Filter::get_output_tokens() const {
-      return tokens;
-    }
-
-    bool Node_Filter::has_output_tokens() const {
-      return !tokens.empty();
-    }
-
-    void Node_Filter::insert_wme(const std::shared_ptr<Network> &network, const std::shared_ptr<const WME> &wme) {
       for (int i = 0; i != 3; ++i)
         if (!m_variable[i] && *m_wme.symbols[i] != *wme->symbols[i])
           return;
@@ -81,42 +58,41 @@ namespace Zeni {
       if (m_variable[1] && m_variable[2] && *m_variable[1] == *m_variable[2] && *wme->symbols[1] != *wme->symbols[2])
         return;
 
-      const auto inserted = tokens.insert(std::make_shared<Token>(wme));
-      if (inserted.second) {
-        const auto sft = shared_from_this();
-        for (auto &output : outputs_enabled)
-          network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, *inserted.first, Token_Pass::Type::Action));
+      Outputs outputs;
+      std::shared_ptr<const Token> output_token;
+      
+      {
+        Concurrency::Mutex::Lock lock(m_mutex);
+        outputs = m_outputs;
+        const auto inserted = m_output_tokens.insert(std::make_shared<Token>(wme));
+        output_token = *inserted;
       }
+
+      const auto sft = shared_from_this();
+      for (auto &output : outputs)
+        raven.get_Network()->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(output, raven.get_Network(), sft, output_token));
     }
 
-    void Node_Filter::remove_wme(const std::shared_ptr<Network> &network, const std::shared_ptr<const WME> &wme) {
-      auto found = tokens.find(std::make_shared<Token>(wme));
-      if (found != tokens.end()) {
-        const auto sft = shared_from_this();
-        for (auto ot = outputs_enabled.begin(), oend = outputs_enabled.end(); ot != oend; )
-          network->get_Job_Queue()->give(std::make_shared<Token_Pass>(*ot++, network, sft, *found, Token_Pass::Type::Retraction));
-        tokens.erase(found);
+    void Node_Filter::receive(const Raven_Token_Remove &raven) {
+      const auto &token = raven.get_Token();
+      assert(token->size() == 1);
+      const auto &wme = token->get_wme();
+
+      Outputs outputs;
+      std::shared_ptr<const Token> output_token;
+
+      {
+        Concurrency::Mutex::Lock lock(m_mutex);
+        outputs = m_outputs;
+        auto found = m_output_tokens.find(std::make_shared<Token>(wme));
+        assert(found != m_output_tokens.end());
+        output_token = *found;
+        m_output_tokens.erase(found);
       }
-    }
 
-    void Node_Filter::insert_token(const std::shared_ptr<Network> &, const std::shared_ptr<const Token> &, const std::shared_ptr<const Node> &) {
-      abort();
-    }
-
-    void Node_Filter::remove_token(const std::shared_ptr<Network> &, const std::shared_ptr<const Token> &, const std::shared_ptr<const Node> &) {
-      abort();
-    }
-
-    void Node_Filter::pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
-      for (auto &token : tokens)
-        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, token, Token_Pass::Type::Action));
-    }
-
-    void Node_Filter::unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
-      const auto sft = shared_from_this();
-      for (auto &token : tokens)
-        network->get_Job_Queue()->give(std::make_shared<Token_Pass>(output, network, sft, token, Token_Pass::Type::Retraction));
+      for (auto &output : outputs)
+        raven.get_Network()->get_Job_Queue()->give(std::make_shared<Raven_Token_Remove>(output, raven.get_Network(), sft, output_token));
     }
 
     bool Node_Filter::operator==(const Node &rhs) const {
@@ -138,31 +114,6 @@ namespace Zeni {
         return true;
       }
       return false;
-    }
-
-    void Node_Filter::print_details(std::ostream &os) const {
-      os << "  " << intptr_t(this) << " [label=\"F" << m_wme << "\"];" << std::endl;
-    }
-
-    void Node_Filter::print_rule(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices, const std::shared_ptr<const Node> &suppress) const {
-      if (suppress && this == suppress->parent_left().get()) {
-        os << '&' << dynamic_cast<const Node_Action *>(suppress.get())->get_name();
-        return;
-      }
-
-      m_wme.print(os, indices);
-    }
-
-    void Node_Filter::output_name(std::ostream &os, const int64_t &) const {
-      os << 'f' << m_wme;
-    }
-
-    bool Node_Filter::is_active() const {
-      return !tokens.empty();
-    }
-
-    std::vector<WME> Node_Filter::get_filter_wmes() const {
-      return std::vector<WME>(1, m_wme);
     }
 
   }

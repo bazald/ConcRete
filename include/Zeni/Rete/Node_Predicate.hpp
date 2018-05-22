@@ -24,14 +24,10 @@ namespace Zeni {
       ZENI_RETE_LINKAGE static std::shared_ptr<Node_Predicate> Create(const std::shared_ptr<Network> &network, const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const std::shared_ptr<const Symbol> &rhs, const std::shared_ptr<Node> &out);
       ZENI_RETE_LINKAGE static std::shared_ptr<Node_Predicate> Create(const std::shared_ptr<Network> &network, const Node_Predicate::Predicate &pred, const Token_Index &lhs_index, const Token_Index &rhs_index, const std::shared_ptr<Node> &out);
 
-      ZENI_RETE_LINKAGE void Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
-
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_left() const override;
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_right() const override;
       ZENI_RETE_LINKAGE std::shared_ptr<Node> parent_left() override;
       ZENI_RETE_LINKAGE std::shared_ptr<Node> parent_right() override;
-
-      ZENI_RETE_LINKAGE std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const override;
 
       ZENI_RETE_LINKAGE const Tokens & get_output_tokens() const override;
       ZENI_RETE_LINKAGE bool has_output_tokens() const override;

@@ -13,19 +13,15 @@ namespace Zeni {
 
       friend ZENI_RETE_LINKAGE void bind_to_existential(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Existential> &existential, const std::shared_ptr<Node> &out);
 
-      Node_Existential();
+      Node_Existential(const int64_t &height, const int64_t &size, const int64_t &token_size, const std::shared_ptr<Node> &input);
 
     public:
       ZENI_RETE_LINKAGE static std::shared_ptr<Node_Existential> Create(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &out);
-
-      ZENI_RETE_LINKAGE void Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
 
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_left() const override;
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_right() const override;
       ZENI_RETE_LINKAGE std::shared_ptr<Node> parent_left() override;
       ZENI_RETE_LINKAGE std::shared_ptr<Node> parent_right() override;
-
-      ZENI_RETE_LINKAGE std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const override;
 
       ZENI_RETE_LINKAGE const Tokens & get_output_tokens() const override;
       ZENI_RETE_LINKAGE bool has_output_tokens() const override;
@@ -51,10 +47,10 @@ namespace Zeni {
       ZENI_RETE_LINKAGE static std::shared_ptr<Node_Existential> find_existing(const std::shared_ptr<Node> &out);
 
     private:
-      std::weak_ptr<Node> input;
-      Tokens input_tokens;
-      Tokens output_tokens;
-      std::shared_ptr<const Token> output_token;
+      std::weak_ptr<Node> m_input;
+      Tokens m_input_tokens;
+      Tokens m_output_tokens;
+      std::shared_ptr<const Token> m_output_token;
     };
 
     ZENI_RETE_LINKAGE void bind_to_existential(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Existential> &existential, const std::shared_ptr<Node> &out);

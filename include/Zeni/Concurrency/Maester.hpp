@@ -22,7 +22,7 @@ namespace Zeni {
       ZENI_CONCURRENCY_LINKAGE virtual void receive(Job_Queue &job_queue, const Raven &raven) = 0;
 
     protected:
-      Mutex m_mutex;
+      mutable Mutex m_mutex;
     };
 
   }

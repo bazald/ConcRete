@@ -35,7 +35,6 @@ namespace Zeni {
       existential_join->input0 = out0;
       existential_join->input1 = out1;
       existential_join->height = std::max(out0->get_height(), out1->get_height()) + 1;
-      existential_join->token_owner = out0->get_token_owner();
       existential_join->size = out0->get_size() + out1->get_size();
       existential_join->token_size = out0->get_token_size();
 
@@ -233,7 +232,7 @@ namespace Zeni {
 
       const auto pl = parent_left();
       const auto pr = parent_right();
-      const bool prb = !dynamic_cast<const Node_Filter *>(pr.get());
+      const bool prb = pr->get_height() > 1;
 
       pl->print_rule(os, indices, suppress);
       os << std::endl << "  ";
@@ -276,7 +275,7 @@ namespace Zeni {
     std::shared_ptr<Node_Join_Existential> Node_Join_Existential::find_existing(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1) {
       for (auto &o0 : out0->get_outputs_all()) {
         if (auto existing_existential_join = std::dynamic_pointer_cast<Node_Join_Existential>(o0)) {
-          if (std::find(out1->get_outputs_all().begin(), out1->get_outputs_all().end(), existing_existential_join) != out1->get_outputs_all().end()) {
+          if (out1->get_outputs_all().find(existing_existential_join) != out1->get_outputs_all().end()) {
             if (bindings == existing_existential_join->bindings)
               return existing_existential_join;
           }

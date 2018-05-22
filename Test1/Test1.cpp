@@ -3,7 +3,9 @@
 #include "Zeni/Concurrency/Raven.hpp"
 #include "Zeni/Concurrency/Thread_Pool.hpp"
 
-#include "Zeni/Rete/network.hpp"
+#include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/Node_Action.hpp"
+#include "Zeni/Rete/Node_Filter.hpp"
 
 #include <iostream>
 #include <string>

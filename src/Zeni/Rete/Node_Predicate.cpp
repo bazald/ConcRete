@@ -45,7 +45,6 @@ namespace Zeni {
 
       predicate->input = out;
       predicate->height = out->get_height() + 1;
-      predicate->token_owner = out->get_token_owner();
       predicate->size = out->get_size() + 1;
       predicate->token_size = out->get_token_size();
 
@@ -72,7 +71,6 @@ namespace Zeni {
 
       predicate->input = out;
       predicate->height = out->get_height() + 1;
-      predicate->token_owner = out->get_token_owner();
       predicate->size = out->get_size() + 1;
       predicate->token_size = out->get_token_size();
 

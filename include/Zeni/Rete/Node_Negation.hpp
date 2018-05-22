@@ -18,14 +18,10 @@ namespace Zeni {
     public:
       ZENI_RETE_LINKAGE static std::shared_ptr<Node_Negation> Create(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &out);
 
-      ZENI_RETE_LINKAGE void Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
-
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_left() const override { return input.lock(); }
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_right() const override { return input.lock(); }
       ZENI_RETE_LINKAGE std::shared_ptr<Node> parent_left() override { return input.lock(); }
       ZENI_RETE_LINKAGE std::shared_ptr<Node> parent_right() override { return input.lock(); }
-
-      ZENI_RETE_LINKAGE std::shared_ptr<const Node_Filter> get_filter(const int64_t &index) const override;
 
       ZENI_RETE_LINKAGE const Tokens & get_output_tokens() const override;
       ZENI_RETE_LINKAGE bool has_output_tokens() const override;

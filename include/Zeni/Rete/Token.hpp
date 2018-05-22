@@ -37,7 +37,7 @@ namespace Zeni {
 
       ZENI_RETE_LINKAGE int64_t size() const;
 
-      ZENI_RETE_LINKAGE  bool operator==(const Token &rhs) const;
+      ZENI_RETE_LINKAGE bool operator==(const Token &rhs) const;
       ZENI_RETE_LINKAGE bool operator!=(const Token &rhs) const;
 
       ZENI_RETE_LINKAGE size_t get_hash() const { return m_hashval; }

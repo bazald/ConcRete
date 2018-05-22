@@ -2,6 +2,7 @@
 #define ZENI_RETE_AGENDA_H
 
 #include "Node.hpp"
+#include "Node.hpp"
 
 #include <cassert>
 #include <cstddef>
@@ -13,6 +14,7 @@ namespace Zeni {
   namespace Rete {
 
     class Node;
+    class Node_Action;
 
     class Agenda {
       Agenda(Agenda &);

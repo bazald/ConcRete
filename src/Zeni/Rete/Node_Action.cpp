@@ -1,226 +1,61 @@
 #include "Zeni/Rete/Node_Action.hpp"
 
-#include "Zeni/Rete/network.hpp"
+#include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/Raven_Token_Insert.hpp"
+#include "Zeni/Rete/Raven_Token_Remove.hpp"
+
+#include <cassert>
 
 namespace Zeni {
 
   namespace Rete {
 
-    Node_Action::Node_Action(const std::string &name_,
+    Node_Action::Node_Action(const std::string &name_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables,
       const Action &action_,
       const Action &retraction_)
-      : name(name_),
-      action(action_),
-      retraction(retraction_)
+      : Node_Unary(input->get_height() + 1, input->get_size(), input->get_token_size(), input),
+      m_variables(variables),
+      m_name(name_),
+      m_action(action_),
+      m_retraction(retraction_)
     {
-      assert(!name.empty());
+      assert(!m_name.empty());
     }
 
     std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> &network, const std::string &name, const bool &user_action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables, const Node_Action::Action &action, const Node_Action::Action &retraction) {
       class Friendly_Node_Action : public Node_Action {
       public:
-        Friendly_Node_Action(const std::string &name_,
+        Friendly_Node_Action(const std::string &name_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables,
           const Action &action_,
-          const Action &retraction_) : Node_Action(name_, action_, retraction_) {}
+          const Action &retraction_) : Node_Action(name_, input, variables, action_, retraction_) {}
       };
 
-      Network::CPU_Accumulator cpu_accumulator(network);
-
-      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
-        if (auto existing = Node_Action::find_existing(action, retraction, out))
-          return existing;
-      }
-
-      const auto action_fun = std::make_shared<Friendly_Node_Action>(name, action, retraction);
-
-      action_fun->input = out;
-      action_fun->variables = variables;
-      action_fun->height = out->get_height() + 1;
-      action_fun->token_owner = out->get_token_owner();
-      action_fun->size = out->get_size();
-      action_fun->token_size = out->get_token_size();
-
-      out->insert_output_enabled(action_fun);
-      out->pass_tokens(network, action_fun);
+      const auto action_fun = std::make_shared<Friendly_Node_Action>(name, out, variables, action, retraction);
 
       network->source_rule(action_fun, user_action);
+
+      out->connect_output(network, action_fun);
 
       return action_fun;
     }
 
     Node_Action::~Node_Action() {
-      //    if(!excised) {
-      for (auto &token : input_tokens)
-        retraction(*this, *token);
-      //    }
+      //for (auto &token : get_input_tokens())
+      //  m_retraction(*this, *token);
     }
 
-    void Node_Action::Destroy(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &
-#ifndef NDEBUG
-      output
-#endif
-    ) {
-      assert(!output);
-
-      if (!destruction_suppressed && !excised) {
-        excised = true;
-        network->excise_rule(name, false);
-
-        //std::cerr << "Destroying: ";
-        //output_name(std::cerr);
-        //std::cerr << std::endl;
-
-        for (auto &token : input_tokens)
-          retraction(*this, *token);
-
-        input.lock()->Destroy(network, shared_from_this());
-      }
+    void Node_Action::receive(const Raven_Token_Insert &raven) {
+      Node_Unary::receive(raven);
+      m_action(*this, *raven.get_Token());
     }
 
-    std::shared_ptr<const Node> Node_Action::parent_left() const { return input.lock(); }
-    std::shared_ptr<const Node> Node_Action::parent_right() const { return input.lock(); }
-    std::shared_ptr<Node> Node_Action::parent_left() { return input.lock(); }
-    std::shared_ptr<Node> Node_Action::parent_right() { return input.lock(); }
-
-    std::shared_ptr<const Node_Filter> Node_Action::get_filter(const int64_t &index) const {
-      return parent_left()->get_filter(index);
+    void Node_Action::receive(const Raven_Token_Remove &raven) {
+      Node_Unary::receive(raven);
+      m_retraction(*this, *raven.get_Token());
     }
 
-    const Node::Tokens & Node_Action::get_output_tokens() const {
-      abort();
-    }
-
-    bool Node_Action::has_output_tokens() const {
-      abort();
-    }
-
-    void Node_Action::insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
-#ifndef NDEBUG
-      from
-#endif
-    ) {
-      assert(from == input.lock());
-
-      const auto inserted = input_tokens.insert(token);
-
-      //#ifdef DEBUG_OUTPUT
-      //    std::cerr << "Firing action: " << get_name() << " on ";
-      //    token->print(std::cerr);
-      //    std::cerr << std::endl;
-      //#endif
-
-      network->get_Agenda().insert_action(std::static_pointer_cast<Node_Action>(shared_from_this()), *inserted.first);
-    }
-
-    void Node_Action::remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &
-#ifndef NDEBUG
-      from
-#endif
-    ) {
-      assert(from == input.lock());
-
-      //#ifdef DEBUG_OUTPUT
-      //    std::cerr << "Retracting action: " << get_name() << " on ";
-      //    token->print(std::cerr);
-      //    std::cerr << std::endl;
-      //#endif
-
-      auto found = input_tokens.find(token);
-      if (found != input_tokens.end())
-        // TODO: change from the 'if' to the 'assert', ensuring that we're not wasting time on non-existent removals
-        //assert(found != input_tokens.end());
-      {
-        network->get_Agenda().insert_retraction(std::static_pointer_cast<Node_Action>(shared_from_this()), *found);
-
-        input_tokens.erase(found);
-      }
-    }
-
-    bool Node_Action::matches_token(const std::shared_ptr<const Token> &token) const {
-      return input_tokens.find(token) != input_tokens.end();
-    }
-
-    void Node_Action::pass_tokens(const std::shared_ptr<Network> &, const std::shared_ptr<Node> &) {
-      abort();
-    }
-
-    void Node_Action::unpass_tokens(const std::shared_ptr<Network> &, const std::shared_ptr<Node> &) {
-      abort();
-    }
-
-    bool Node_Action::operator==(const Node &/*rhs*/) const {
-      //       if(autoZENI_RETE_action = dynamic_cast<const Node_Action *>(&rhs))
-      //         return action ==ZENI_RETE_action->action && retraction ==ZENI_RETE_action->retraction && input ==ZENI_RETE_action->input;
+    bool Node_Action::operator==(const Node &) const {
       return false;
-    }
-
-    void Node_Action::print_details(std::ostream &os) const {
-      os << "  " << intptr_t(this) << " [label=\"Act\"];" << std::endl;
-      os << "  " << intptr_t(input.lock().get()) << " -> " << intptr_t(this) << " [color=red];" << std::endl;
-    }
-
-    void Node_Action::print_rule(std::ostream &os, const std::shared_ptr<const Variable_Indices> &, const std::shared_ptr<const Node> &) const {
-#ifdef DEBUG_OUTPUT
-      {
-        const auto tokens = parent_left()->get_output_tokens();
-
-        os << "# Matches: " << tokens.size() << std::endl;
-
-        size_t matches = 0;
-        for (const auto &token : tokens)
-          os << "# Match " << ++matches << ": " << *token << std::endl;
-
-        os << "# Variables: " << *variables << std::endl;
-      }
-#endif
-
-      const std::shared_ptr<const Node> suppress = custom_data->get_suppress();
-
-      os << "sp {" << name;
-      if (custom_data)
-        custom_data->print_flags(os);
-      os << std::endl << "  ";
-
-      parent_left()->print_rule(os, variables, suppress);
-
-      os << std::endl << "-->";
-      if (custom_data) {
-        os << std::endl;
-        custom_data->print_action(os);
-      }
-      os << std::endl << '}' << std::endl;
-    }
-
-    void Node_Action::output_name(std::ostream &os, const int64_t &depth) const {
-      os << "a(";
-      const auto input_locked = input.lock();
-      if (input_locked && depth)
-        input_locked->output_name(os, depth - 1);
-      os << ')';
-    }
-
-    bool Node_Action::is_active() const {
-      //    return !parent_left()->get_output_tokens().empty();
-      return !input_tokens.empty();
-    }
-
-    int64_t Node_Action::num_input_tokens() const {
-      return int64_t(input_tokens.size());
-    }
-
-    std::vector<WME> Node_Action::get_filter_wmes() const {
-      return input.lock()->get_filter_wmes();
-    }
-
-    std::shared_ptr<Node_Action> Node_Action::find_existing(const Action &/*action_*/, const Action &/*retraction_*/, const std::shared_ptr<Node> &/*out*/) {
-      //       for(auto &o : out->get_outputs()) {
-      //         if(auto existing_action = std::dynamic_pointer_cast<Node_Action>(o)) {
-      //           if(action_ == existing_action->action && retraction_ == existing_action->retraction)
-      //             return existing_action;
-      //         }
-      //       }
-
-      return nullptr;
     }
 
   }

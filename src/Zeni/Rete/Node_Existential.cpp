@@ -10,7 +10,12 @@ namespace Zeni {
 
   namespace Rete {
 
-    Node_Existential::Node_Existential() : output_token(std::make_shared<Token>()) {}
+    Node_Existential::Node_Existential(const int64_t &height, const int64_t &size, const int64_t &token_size, const std::shared_ptr<Node> &input)
+      : Node(height, size, token_size),
+      m_input(input),
+      m_output_token(std::make_shared<Token>())
+    {
+    }
 
     std::shared_ptr<Node_Existential> Node_Existential::Create(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &out) {
       class Friendly_Node_Existential : public Node_Existential {};
@@ -22,13 +27,9 @@ namespace Zeni {
           return existing;
       }
 
-      const auto existential = std::make_shared<Friendly_Node_Existential>();
+      const auto existential = std::make_shared<Friendly_Node_Existential>(out->get_height() + 1, out->get_size(), out->get_token_size());
 
       existential->input = out;
-      existential->height = out->get_height() + 1;
-      existential->token_owner = out->get_token_owner();
-      existential->size = out->get_size();
-      existential->token_size = out->get_token_size();
 
       out->insert_output_enabled(existential);
       out->pass_tokens(network, existential);
