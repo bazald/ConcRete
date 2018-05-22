@@ -22,7 +22,7 @@ namespace Zeni {
         const Action &retraction_ = [](const Node_Action &, const Token &) {});
 
     public:
-      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::shared_ptr<Network> &network, const std::string &name, const bool &user_action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables, const Node_Action::Action &action, const Node_Action::Action &retraction = [](const Node_Action &, const Token &) {});
+      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create_Or_Increment_Output_Count(const std::shared_ptr<Network> &network, const std::string &name, const bool &user_action, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables, const Node_Action::Action &action, const Node_Action::Action &retraction = [](const Node_Action &, const Token &) {});
 
       ZENI_RETE_LINKAGE ~Node_Action();
 

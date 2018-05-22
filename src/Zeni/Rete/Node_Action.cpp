@@ -22,7 +22,7 @@ namespace Zeni {
       assert(!m_name.empty());
     }
 
-    std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> &network, const std::string &name, const bool &user_action, const std::shared_ptr<Node> &out, const std::shared_ptr<const Variable_Indices> &variables, const Node_Action::Action &action, const Node_Action::Action &retraction) {
+    std::shared_ptr<Node_Action> Node_Action::Create_Or_Increment_Output_Count(const std::shared_ptr<Network> &network, const std::string &name, const bool &user_action, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables, const Node_Action::Action &action, const Node_Action::Action &retraction) {
       class Friendly_Node_Action : public Node_Action {
       public:
         Friendly_Node_Action(const std::string &name_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables,
@@ -30,11 +30,11 @@ namespace Zeni {
           const Action &retraction_) : Node_Action(name_, input, variables, action_, retraction_) {}
       };
 
-      const auto action_fun = std::make_shared<Friendly_Node_Action>(name, out, variables, action, retraction);
+      const auto action_fun = std::make_shared<Friendly_Node_Action>(name, input, variables, action, retraction);
 
       network->source_rule(action_fun, user_action);
 
-      out->connect_output(network, action_fun);
+      input->connect_output(network, action_fun);
 
       return action_fun;
     }

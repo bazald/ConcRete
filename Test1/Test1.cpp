@@ -101,8 +101,8 @@ int main()
     }
   };
 
-  auto filter = Zeni::Rete::Node_Filter::Create(network, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-  auto action = Zeni::Rete::Node_Action::Create(network, "hello-world", false, filter, std::make_shared<Zeni::Rete::Variable_Indices>(),
+  auto filter = Zeni::Rete::Node_Filter::Create_Or_Increment_Output_Count(network, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+  auto action = Zeni::Rete::Node_Action::Create_Or_Increment_Output_Count(network, "hello-world", false, filter, std::make_shared<Zeni::Rete::Variable_Indices>(),
     [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
     std::cout << "Hello world!" << std::endl;
   }, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {

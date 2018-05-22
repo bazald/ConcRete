@@ -24,7 +24,7 @@ namespace Zeni {
       return m_wme;
     }
 
-    std::shared_ptr<Node_Filter> Node_Filter::Create(const std::shared_ptr<Network> &network, const WME &wme) {
+    std::shared_ptr<Node_Filter> Node_Filter::Create_Or_Increment_Output_Count(const std::shared_ptr<Network> &network, const WME &wme) {
       class Friendly_Node_Filter : public Node_Filter {
       public:
         Friendly_Node_Filter(const WME &wme_) : Node_Filter(wme_) {}
