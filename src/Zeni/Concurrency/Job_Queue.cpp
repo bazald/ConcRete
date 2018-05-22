@@ -5,7 +5,6 @@
 #include <queue>
 
 #include <cassert>
-#include <iostream>
 #include <sstream>
 
 namespace Zeni {
@@ -35,7 +34,7 @@ namespace Zeni {
       }
 
       void finish() {
-        std::unique_lock<std::mutex> mutex_lock(m_mutex);
+        std::lock_guard<std::mutex> mutex_lock(m_mutex);
 
         if (m_status != Job_Queue::Status::RUNNING)
           throw Job_Queue::Job_Queue_Must_Be_Running();
@@ -138,7 +137,7 @@ namespace Zeni {
       }
 
     private:
-      std::unique_lock<std::mutex> m_lock;
+      std::lock_guard<std::mutex> m_lock;
     };
 
     Job_Queue::Lock::Lock(Job_Queue &job_queue)

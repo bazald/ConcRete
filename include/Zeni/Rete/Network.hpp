@@ -31,6 +31,29 @@ namespace Zeni {
       ZENI_RETE_LINKAGE std::shared_ptr<Network> shared_from_this();
 
     public:
+      class Instantiation : public std::enable_shared_from_this<Instantiation> {
+        Instantiation(const Instantiation &) = delete;
+        Instantiation & operator=(const Instantiation &) = delete;
+
+        ZENI_RETE_LINKAGE Instantiation(const std::shared_ptr<Network> &network);
+
+      public:
+        ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const std::shared_ptr<Network> &network);
+
+        ZENI_RETE_LINKAGE ~Instantiation();
+
+        ZENI_RETE_LINKAGE const std::shared_ptr<const Network> & get() const;
+        ZENI_RETE_LINKAGE const std::shared_ptr<Network> & get();
+
+        ZENI_RETE_LINKAGE const Network * operator*() const;
+        ZENI_RETE_LINKAGE Network * operator*();
+        ZENI_RETE_LINKAGE const Network * operator->() const;
+        ZENI_RETE_LINKAGE Network * operator->();
+
+      private:
+        const std::shared_ptr<Network> m_network;
+      };
+
       enum class ZENI_RETE_LINKAGE Node_Sharing { Enabled, Disabled };
       enum class ZENI_RETE_LINKAGE Printed_Output { Normal, None };
 
@@ -40,11 +63,12 @@ namespace Zeni {
       Network(const Printed_Output &printed_output);
       Network(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output);
 
-    public:
-      ZENI_RETE_LINKAGE static std::shared_ptr<Network> Create(const Printed_Output &printed_output = Printed_Output::Normal);
-      ZENI_RETE_LINKAGE static std::shared_ptr<Network> Create(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output = Printed_Output::Normal);
-
       ZENI_RETE_LINKAGE void Destroy();
+
+    public:
+      ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const Printed_Output &printed_output = Printed_Output::Normal);
+      ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output = Printed_Output::Normal);
+
       ZENI_RETE_LINKAGE ~Network();
 
       ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Job_Queue> get_Job_Queue() const;

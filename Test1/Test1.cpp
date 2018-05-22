@@ -55,40 +55,50 @@ private:
   std::unordered_set<Ptr> m_gossips;
 };
 
+static void test_Thread_Pool();
+static void test_Rete_Network();
+
 int main()
 {
-  {
-    std::unordered_map<std::string, Gossip::Ptr> gossips;
+  test_Thread_Pool();
+  test_Rete_Network();
 
-    Zeni::Concurrency::Thread_Pool thread_pool;
+  return 0;
+}
 
-    for (std::string name : {"alice", "betty", "carol", "diane", "ellen", "farah", "gabby", "helen", "irene", "janae", "kelly"})
-      gossips[name] = std::make_shared<Gossip>();
+void test_Thread_Pool() {
+  std::unordered_map<std::string, Gossip::Ptr> gossips;
 
-    gossips["alice"]->tell(gossips["betty"]);
-    gossips["betty"]->tell(gossips["carol"]);
-    gossips["betty"]->tell(gossips["diane"]);
-    gossips["carol"]->tell(gossips["ellen"]);
-    gossips["carol"]->tell(gossips["farah"]);
-    gossips["carol"]->tell(gossips["gabby"]);
-    gossips["diane"]->tell(gossips["helen"]);
-    gossips["diane"]->tell(gossips["irene"]);
-    gossips["diane"]->tell(gossips["janae"]);
-    gossips["diane"]->tell(gossips["kelly"]);
+  Zeni::Concurrency::Thread_Pool thread_pool;
 
-    for (std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
-      thread_pool.get_Job_Queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
-    //for(int i = 0; i != 1000000; ++i)
-    //  thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
+  for (std::string name : {"alice", "betty", "carol", "diane", "ellen", "farah", "gabby", "helen", "irene", "janae", "kelly"})
+    gossips[name] = std::make_shared<Gossip>();
 
-    thread_pool.get_Job_Queue()->wait_for_completion();
+  gossips["alice"]->tell(gossips["betty"]);
+  gossips["betty"]->tell(gossips["carol"]);
+  gossips["betty"]->tell(gossips["diane"]);
+  gossips["carol"]->tell(gossips["ellen"]);
+  gossips["carol"]->tell(gossips["farah"]);
+  gossips["carol"]->tell(gossips["gabby"]);
+  gossips["diane"]->tell(gossips["helen"]);
+  gossips["diane"]->tell(gossips["irene"]);
+  gossips["diane"]->tell(gossips["janae"]);
+  gossips["diane"]->tell(gossips["kelly"]);
 
-    for (std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
-      thread_pool.get_Job_Queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
-  }
+  for (std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
+    thread_pool.get_Job_Queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
+  //for(int i = 0; i != 1000000; ++i)
+  //  thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
+
+  thread_pool.get_Job_Queue()->wait_for_completion();
+
+  for (std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
+    thread_pool.get_Job_Queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
 
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;
+}
 
+void test_Rete_Network() {
   const auto network = Zeni::Rete::Network::Create();
 
   std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
@@ -101,22 +111,18 @@ int main()
     }
   };
 
-  auto filter = Zeni::Rete::Node_Filter::Create_Or_Increment_Output_Count(network, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-  auto action = Zeni::Rete::Node_Action::Create_Or_Increment_Output_Count(network, "hello-world", false, filter, std::make_shared<Zeni::Rete::Variable_Indices>(),
+  auto filter = Zeni::Rete::Node_Filter::Create_Or_Increment_Output_Count(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+  auto action = Zeni::Rete::Node_Action::Create_Or_Increment_Output_Count(network->get(), "hello-world", false, filter, std::make_shared<Zeni::Rete::Variable_Indices>(),
     [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
     std::cout << "Hello world!" << std::endl;
   }, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
     std::cout << "Goodbye world!" << std::endl;
   });
 
-  network->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+  (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-  network->get_Job_Queue()->wait_for_completion();
+  (*network)->get_Job_Queue()->wait_for_completion();
 
-  network->excise_all();
+  (*network)->excise_all();
   //network->excise_rule("hello-world", false);
-
-  network->Destroy();
-
-  return 0;
 }

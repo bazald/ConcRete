@@ -32,7 +32,7 @@ namespace Zeni {
       }
 
     private:
-      std::unique_lock<std::mutex> m_lock;
+      std::lock_guard<std::mutex> m_lock;
     };
 
     Mutex::Lock::Lock(Mutex &mutex)

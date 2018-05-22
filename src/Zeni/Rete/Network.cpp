@@ -24,12 +24,57 @@ namespace Zeni {
       return std::static_pointer_cast<Network>(Concurrency::Maester::shared_from_this());
     }
 
+    Network::Instantiation::Instantiation(const std::shared_ptr<Network> &network)
+      : m_network(network)
+    {
+    }
+
+    std::shared_ptr<Network::Instantiation> Network::Instantiation::Create(const std::shared_ptr<Network> &network) {
+      class Friendly_Network_Instantiation : public Instantiation {
+      public:
+        Friendly_Network_Instantiation(const std::shared_ptr<Network> &network)
+          : Instantiation(network)
+        {
+        }
+      };
+
+      return std::make_shared<Friendly_Network_Instantiation>(network);
+    }
+
+    Network::Instantiation::~Instantiation() {
+      m_network->Destroy();
+    }
+
+    const std::shared_ptr<const Network> & Network::Instantiation::get() const {
+      return m_network;
+    }
+
+    const std::shared_ptr<Network> & Network::Instantiation::get() {
+      return m_network;
+    }
+
+    const Network * Network::Instantiation::operator*() const {
+      return m_network.get();
+    }
+
+    Network * Network::Instantiation::operator*() {
+      return m_network.get();
+    }
+
+    const Network * Network::Instantiation::operator->() const {
+      return m_network.get();
+    }
+
+    Network * Network::Instantiation::operator->() {
+      return m_network.get();
+    }
+
     Network::Network(const Network::Printed_Output &printed_output)
       : m_thread_pool(std::make_shared<Concurrency::Thread_Pool>()), m_printed_output(printed_output)
     {
     }
 
-    std::shared_ptr<Network> Network::Create(const Network::Printed_Output &printed_output) {
+    std::shared_ptr<Network::Instantiation> Network::Create(const Network::Printed_Output &printed_output) {
       class Friendly_Network : public Network {
       public:
         Friendly_Network(const Network::Printed_Output &printed_output)
@@ -38,7 +83,7 @@ namespace Zeni {
         }
       };
 
-      return std::make_shared<Friendly_Network>(printed_output);
+      return Instantiation::Create(std::make_shared<Friendly_Network>(printed_output));
     }
 
     Network::Network(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output)
@@ -46,7 +91,7 @@ namespace Zeni {
     {
     }
 
-    std::shared_ptr<Network> Network::Create(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Network::Printed_Output &printed_output) {
+    std::shared_ptr<Network::Instantiation> Network::Create(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Network::Printed_Output &printed_output) {
       class Friendly_Network : public Network {
       public:
         Friendly_Network(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Network::Printed_Output &printed_output)
@@ -55,7 +100,7 @@ namespace Zeni {
         }
       };
 
-      return std::make_shared<Friendly_Network>(thread_pool, printed_output);
+      return Instantiation::Create(std::make_shared<Friendly_Network>(thread_pool, printed_output));
     }
 
     void Network::Destroy() {

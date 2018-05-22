@@ -16,12 +16,17 @@ namespace Zeni {
       {
       }
 
-      std::weak_ptr<Maester> get_recipient() const {
-        return m_recipient;
+      Maester * get_recipient() const {
+        return m_recipient.get();
+      }
+
+      void execute(Raven * const &raven, Job_Queue &job_queue) {
+        if (m_recipient)
+          m_recipient->receive(job_queue, *raven);
       }
 
     private:
-      std::weak_ptr<Maester> m_recipient;
+      std::shared_ptr<Maester> m_recipient;
     };
 
     Raven::Raven(const std::shared_ptr<Maester> &recipient_)
@@ -34,13 +39,11 @@ namespace Zeni {
     }
 
     Maester * Raven::get_recipient() const {
-      return m_impl->get_recipient().lock().get();
+      return m_impl->get_recipient();
     }
 
     void Raven::execute(Job_Queue &job_queue) {
-      std::shared_ptr<Maester> recipient = m_impl->get_recipient().lock();
-      if (recipient)
-        recipient->receive(job_queue, *this);
+      m_impl->execute(this, job_queue);
     }
 
   }
