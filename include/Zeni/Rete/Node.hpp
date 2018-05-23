@@ -29,7 +29,6 @@ namespace Zeni {
 
     public:
       typedef std::unordered_set<std::shared_ptr<Node>> Outputs;
-      typedef std::unordered_multiset<std::shared_ptr<const Token>, Zeni::hash_deref<Token>, Zeni::compare_deref_eq> Tokens;
 
     protected:
       ZENI_RETE_LINKAGE std::shared_ptr<const Node> shared_from_this() const;

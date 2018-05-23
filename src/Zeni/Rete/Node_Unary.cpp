@@ -55,7 +55,7 @@ namespace Zeni {
       return m_input.lock();
     }
 
-    const Node::Tokens & Node_Unary::get_input_tokens() const {
+    const Tokens & Node_Unary::get_input_tokens() const {
       return m_input_tokens;
     }
 

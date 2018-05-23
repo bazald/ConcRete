@@ -5,7 +5,7 @@
 #include "Zeni/Rete/Variable_Binding.hpp"
 #include "Zeni/Rete/WME.hpp"
 
-#include <set>
+#include <unordered_set>
 
 namespace Zeni {
 
@@ -58,6 +58,8 @@ namespace Zeni {
 
       size_t m_hashval;
     };
+
+    typedef std::unordered_multiset<std::shared_ptr<const Token>, Zeni::hash_deref<Token>, Zeni::compare_deref_eq> Tokens;
 
     std::string get_Variable_name(const std::shared_ptr<const Variable_Indices> &indices, const Token_Index &index);
 

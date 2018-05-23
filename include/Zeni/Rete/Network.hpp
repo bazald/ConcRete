@@ -2,11 +2,10 @@
 #define ZENI_RETE_NETWORK_H
 
 #include "Zeni/Concurrency/Maester.hpp"
-#include "Working_Memory.hpp"
+#include "Zeni/Rete/Linkage.hpp"
 
-#include <chrono>
 #include <set>
-#include <unordered_map>
+#include <unordered_set>
 
 namespace Zeni {
 
@@ -19,12 +18,19 @@ namespace Zeni {
 
   namespace Rete {
 
+    class Network_Locked_Data;
+    class Network_Locked_Data_Const;
+    class Network_Unlocked_Data;
     class Node_Action;
     class Node_Filter;
+    class WME;
 
     class Network : public Concurrency::Maester {
-      Network(const Network &);
-      Network & operator=(const Network &);
+      Network(const Network &) = delete;
+      Network & operator=(const Network &) = delete;
+
+      friend class Network_Locked_Data;
+      friend class Network_Locked_Data_Const;
 
     protected:
       ZENI_RETE_LINKAGE std::shared_ptr<const Network> shared_from_this() const;
@@ -42,7 +48,7 @@ namespace Zeni {
 
         ZENI_RETE_LINKAGE ~Instantiation();
 
-        ZENI_RETE_LINKAGE const std::shared_ptr<const Network> & get() const;
+        ZENI_RETE_LINKAGE std::shared_ptr<const Network> get() const;
         ZENI_RETE_LINKAGE const std::shared_ptr<Network> & get();
 
         ZENI_RETE_LINKAGE const Network * operator*() const;
@@ -95,20 +101,11 @@ namespace Zeni {
       ZENI_RETE_LINKAGE void remove_wme(const std::shared_ptr<const WME> &wme);
       ZENI_RETE_LINKAGE void clear_wmes();
 
-      ZENI_RETE_LINKAGE void rete_print_rules(std::ostream &os) const;
-      ZENI_RETE_LINKAGE void rete_print_firing_counts(std::ostream &os) const;
-      ZENI_RETE_LINKAGE void rete_print_matches(std::ostream &os) const;
-
     private:
       std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
-
-      Filters m_filters;
-      std::unordered_map<std::string, std::shared_ptr<Node_Action>> m_rules;
-      int64_t m_rule_name_index = 0;
-      Working_Memory m_working_memory;
+      std::shared_ptr<Network_Unlocked_Data> m_unlocked_data;
 
       // Options
-
       Node_Sharing m_node_sharing = Node_Sharing::Enabled;
       Printed_Output m_printed_output;
     };

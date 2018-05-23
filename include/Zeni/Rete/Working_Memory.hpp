@@ -10,11 +10,7 @@ namespace Zeni {
 
     class Working_Memory {
     public:
-      ZENI_RETE_LINKAGE const std::unordered_set<std::shared_ptr<const WME>, hash_deref<WME>, compare_deref_eq> & get_wmes() const;
-      ZENI_RETE_LINKAGE std::unordered_set<std::shared_ptr<const WME>, hash_deref<WME>, compare_deref_eq> & get_wmes();
-
-    private:
-      std::unordered_set<std::shared_ptr<const WME>, hash_deref<WME>, compare_deref_eq> m_wmes;
+      std::unordered_set<std::shared_ptr<const WME>, hash_deref<WME>, compare_deref_eq> wmes;
     };
 
   }
@@ -27,7 +23,7 @@ namespace std {
 
   template <> struct hash<Zeni::Rete::Working_Memory> {
     size_t operator()(const Zeni::Rete::Working_Memory &working_memory) const {
-      return hash<std::unordered_set<std::shared_ptr<const Zeni::Rete::WME>, Zeni::hash_deref<Zeni::Rete::WME>, Zeni::compare_deref_eq>>()(working_memory.get_wmes());
+      return hash<std::unordered_set<std::shared_ptr<const Zeni::Rete::WME>, Zeni::hash_deref<Zeni::Rete::WME>, Zeni::compare_deref_eq>>()(working_memory.wmes);
     }
   };
 

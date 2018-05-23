@@ -16,6 +16,87 @@ namespace Zeni {
 
   namespace Rete {
 
+    class Network_Unlocked_Data {
+      Network_Unlocked_Data(const Network_Unlocked_Data &) = delete;
+      Network_Unlocked_Data & operator=(const Network_Unlocked_Data &) = delete;
+
+      friend Network_Locked_Data_Const;
+      friend Network_Locked_Data;
+
+    public:
+      Network_Unlocked_Data() {}
+
+    private:
+      Network::Filters filters;
+      std::unordered_map<std::string, std::shared_ptr<Node_Action>> rules;
+      int64_t rule_name_index = 0;
+      Tokens output_tokens;
+    };
+
+    class Network_Locked_Data_Const {
+      Network_Locked_Data_Const(const Network_Locked_Data_Const &) = delete;
+      Network_Locked_Data_Const & operator=(const Network_Locked_Data_Const &) = delete;
+
+    public:
+      Network_Locked_Data_Const(const Network * const &network)
+        : m_lock(network->m_mutex),
+        m_data(network->m_unlocked_data)
+      {
+      }
+
+      const Network::Filters & get_filters() {
+        return m_data->filters;
+      }
+
+      const std::unordered_map<std::string, std::shared_ptr<Node_Action>> & get_rules() {
+        return m_data->rules;
+      }
+
+      int64_t get_rule_name_index() {
+        return m_data->rule_name_index;
+      }
+
+      const Tokens & get_output_tokens() {
+        return m_data->output_tokens;
+      }
+
+    private:
+      Concurrency::Mutex::Lock m_lock;
+      std::shared_ptr<Network_Unlocked_Data> m_data;
+    };
+
+    class Network_Locked_Data {
+      Network_Locked_Data(const Network_Locked_Data &) = delete;
+      Network_Locked_Data & operator=(const Network_Locked_Data &) = delete;
+
+    public:
+      Network_Locked_Data(Network * const &network)
+        : m_lock(network->m_mutex),
+        m_data(network->m_unlocked_data)
+      {
+      }
+
+      Network::Filters & get_filters() {
+        return m_data->filters;
+      }
+
+      std::unordered_map<std::string, std::shared_ptr<Node_Action>> & get_rules() {
+        return m_data->rules;
+      }
+
+      int64_t & get_rule_name_index() {
+        return m_data->rule_name_index;
+      }
+
+      Tokens & get_output_tokens() {
+        return m_data->output_tokens;
+      }
+
+    private:
+      Concurrency::Mutex::Lock m_lock;
+      std::shared_ptr<Network_Unlocked_Data> m_data;
+    };
+
     std::shared_ptr<const Network> Network::shared_from_this() const {
       return std::static_pointer_cast<const Network>(Concurrency::Maester::shared_from_this());
     }
@@ -45,7 +126,7 @@ namespace Zeni {
       m_network->Destroy();
     }
 
-    const std::shared_ptr<const Network> & Network::Instantiation::get() const {
+    std::shared_ptr<const Network> Network::Instantiation::get() const {
       return m_network;
     }
 
@@ -83,7 +164,11 @@ namespace Zeni {
         }
       };
 
-      return Instantiation::Create(std::make_shared<Friendly_Network>(printed_output));
+      auto network_instantiation =  Instantiation::Create(std::make_shared<Friendly_Network>(printed_output));
+
+      (*network_instantiation)->m_unlocked_data = std::make_shared<Network_Unlocked_Data>();
+
+      return network_instantiation;
     }
 
     Network::Network(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output)
@@ -121,33 +206,34 @@ namespace Zeni {
     }
 
     std::shared_ptr<Node_Action> Network::get_rule(const std::string &name) const {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Network_Locked_Data_Const locked_data(this);
 
-      const auto found = m_rules.find(name);
-      if (found != m_rules.end())
+      const auto found = locked_data.get_rules().find(name);
+      if (found != locked_data.get_rules().end())
         return found->second;
+
       return nullptr;
     }
 
     std::set<std::string> Network::get_rule_names() const {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Network_Locked_Data_Const locked_data(this);
 
       std::set<std::string> rv;
-      for (auto rule : m_rules)
+      for (auto rule : locked_data.get_rules())
         rv.insert(rule.first);
       return rv;
     }
 
     int64_t Network::get_rule_name_index() const {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Network_Locked_Data_Const locked_data(this);
 
-      return m_rule_name_index;
+      return locked_data.get_rule_name_index();
     }
 
     void Network::set_rule_name_index(const int64_t &rule_name_index_) {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Network_Locked_Data locked_data(this);
 
-      m_rule_name_index = rule_name_index_;
+      locked_data.get_rule_name_index() = rule_name_index_;
     }
 
     Network::Node_Sharing Network::get_Node_Sharing() const {
@@ -159,30 +245,30 @@ namespace Zeni {
     }
 
     void Network::excise_all() {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Network_Locked_Data locked_data(this);
 
-      for (auto &rule : m_rules)
+      for (auto &rule : locked_data.get_rules())
         rule.second->get_parent()->disconnect_output(shared_from_this(), rule.second);
 
-      m_rules.clear();
+      locked_data.get_rules().clear();
     }
 
     void Network::receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) {
       const auto &disconnect_output = dynamic_cast<const Raven_Disconnect_Output &>(raven);
 
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Network_Locked_Data locked_data(this);
 
       if (disconnect_output.get_output()->get_output_count() == 0) {
-        const auto found = m_filters.find(std::dynamic_pointer_cast<Node_Filter>(disconnect_output.get_output()));
-        assert(found != m_filters.end());
-        m_filters.erase(found);
+        const auto found = locked_data.get_filters().find(std::dynamic_pointer_cast<Node_Filter>(disconnect_output.get_output()));
+        assert(found != locked_data.get_filters().end());
+        locked_data.get_filters().erase(found);
       }
     }
 
     std::shared_ptr<Node_Filter> Network::find_filter_and_increment_output_count(const std::shared_ptr<Node_Filter> &filter) {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Network_Locked_Data locked_data(this);
 
-      for (auto &existing_filter : m_filters) {
+      for (auto &existing_filter : locked_data.get_filters()) {
         if (*existing_filter == *filter) {
           existing_filter->increment_output_count();
           return existing_filter;
@@ -193,19 +279,20 @@ namespace Zeni {
     }
 
     void Network::source_filter(const std::shared_ptr<Node_Filter> &filter) {
-      Concurrency::Mutex::Lock lock(m_mutex);
-
-      m_filters.insert(filter);
       const auto sft = shared_from_this();
-      for (auto &wme : m_working_memory.get_wmes())
-        m_thread_pool->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, std::make_shared<Token>(wme)));
+
+      Network_Locked_Data locked_data(this);
+
+      locked_data.get_filters().insert(filter);
+      for (auto &output_token : locked_data.get_output_tokens())
+        m_thread_pool->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, output_token));
     }
 
     void Network::excise_rule(const std::string &name, const bool &user_command) {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Network_Locked_Data locked_data(this);
 
-      auto found = m_rules.find(name);
-      if (found == m_rules.end()) {
+      auto found = locked_data.get_rules().find(name);
+      if (found == locked_data.get_rules().end()) {
         //#ifndef NDEBUG
         //      std::cerr << "Rule '" << name << "' not found." << std::endl;
         //#endif
@@ -215,7 +302,7 @@ namespace Zeni {
         //      std::cerr << "Rule '" << name << "' excised." << std::endl;
         //#endif
         auto action = found->second;
-        m_rules.erase(found);
+        locked_data.get_rules().erase(found);
         
         action->get_parent()->disconnect_output(shared_from_this(), action);
         if (user_command)
@@ -224,24 +311,24 @@ namespace Zeni {
     }
 
     std::string Network::next_rule_name(const std::string &prefix) {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Network_Locked_Data locked_data(this);
 
       std::ostringstream oss;
       do {
         oss.str("");
-        oss << prefix << ++m_rule_name_index;
-      } while (m_rules.find(oss.str()) != m_rules.end());
+        oss << prefix << ++locked_data.get_rule_name_index();
+      } while (locked_data.get_rules().find(oss.str()) != locked_data.get_rules().end());
       return oss.str();
     }
 
     std::shared_ptr<Node_Action> Network::unname_rule(const std::string &name, const bool &user_command) {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Network_Locked_Data locked_data(this);
 
       std::shared_ptr<Node_Action> ptr;
-      auto found = m_rules.find(name);
-      if (found != m_rules.end()) {
+      auto found = locked_data.get_rules().find(name);
+      if (found != locked_data.get_rules().end()) {
         ptr = found->second;
-        m_rules.erase(found);
+        locked_data.get_rules().erase(found);
         if (user_command)
           std::cerr << '#';
       }
@@ -249,69 +336,59 @@ namespace Zeni {
     }
 
     void Network::insert_wme(const std::shared_ptr<const WME> &wme) {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      const auto sft = shared_from_this();
+      const auto output_token = std::make_shared<Token>(wme);
 
-      if (m_working_memory.get_wmes().find(wme) != m_working_memory.get_wmes().end()) {
-#ifdef DEBUG_OUTPUT
-        std::cerr << "rete.already_inserted" << *wme << std::endl;
-#endif
-        return;
-      }
+      Network_Locked_Data locked_data(this);
 
-      //const auto wme_clone = std::make_shared<WME>(std::shared_ptr<const Symbol>(wme->symbols[0]->clone()), std::shared_ptr<const Symbol>(wme->symbols[1]->clone()), std::shared_ptr<const Symbol>(wme->symbols[2]->clone()));
-
-      m_working_memory.get_wmes().insert(wme);
+      locked_data.get_output_tokens().insert(output_token);
 #ifdef DEBUG_OUTPUT
       std::cerr << "rete.insert" << *wme << std::endl;
 #endif
-      const auto sft = shared_from_this();
-      for (auto &filter : m_filters)
-        m_thread_pool->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, std::make_shared<Token>(wme)));
+      for (auto &filter : locked_data.get_filters())
+        m_thread_pool->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, output_token));
     }
 
     void Network::remove_wme(const std::shared_ptr<const WME> &wme) {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      const auto sft = shared_from_this();
+      const auto output_token = std::make_shared<Token>(wme);
 
-      auto found = m_working_memory.get_wmes().find(wme);
+      Network_Locked_Data locked_data(this);
 
-      if (found == m_working_memory.get_wmes().end()) {
-#ifdef DEBUG_OUTPUT
-        std::cerr << "rete.already_removed" << *wme << std::endl;
-#endif
-        return;
-      }
+      auto found = locked_data.get_output_tokens().find(output_token);
+      assert(found != locked_data.get_output_tokens().end());
+      locked_data.get_output_tokens().erase(found);
 
-      m_working_memory.get_wmes().erase(found);
 #ifdef DEBUG_OUTPUT
       std::cerr << "rete.remove" << *wme << std::endl;
 #endif
-      const auto sft = shared_from_this();
-      for (auto &filter : m_filters)
-        m_thread_pool->get_Job_Queue()->give(std::static_pointer_cast<Concurrency::Job>(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, std::make_shared<Token>(wme))));
+      for (auto &filter : locked_data.get_filters())
+        m_thread_pool->get_Job_Queue()->give(std::static_pointer_cast<Concurrency::Job>(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, output_token)));
     }
 
     void Network::clear_wmes() {
-      Concurrency::Mutex::Lock lock(m_mutex);
-
       const auto sft = shared_from_this();
-      for (auto &wme : m_working_memory.get_wmes()) {
-        for (auto &filter : m_filters)
-          m_thread_pool->get_Job_Queue()->give(std::static_pointer_cast<Concurrency::Job>(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, std::make_shared<Token>(wme))));
+
+      Network_Locked_Data locked_data(this);
+
+      for (auto &output_token : locked_data.get_output_tokens()) {
+        for (auto &filter : locked_data.get_filters())
+          m_thread_pool->get_Job_Queue()->give(std::static_pointer_cast<Concurrency::Job>(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, output_token)));
       }
-      m_working_memory.get_wmes().clear();
+      locked_data.get_output_tokens().clear();
     }
 
     void Network::source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command) {
-      Concurrency::Mutex::Lock lock(m_mutex);
-
       const auto sft = shared_from_this();
 
-      auto found = m_rules.find(action->get_name());
-      if (found == m_rules.end()) {
+      Network_Locked_Data locked_data(this);
+
+      auto found = locked_data.get_rules().find(action->get_name());
+      if (found == locked_data.get_rules().end()) {
         //#ifndef NDEBUG
         //      std::cerr << "Rule '" << action->get_name() << "' sourced." << std::endl;
         //#endif
-        m_rules[action->get_name()] = action;
+        locked_data.get_rules()[action->get_name()] = action;
       }
       else {
         //#ifndef NDEBUG
