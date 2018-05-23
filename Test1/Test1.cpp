@@ -7,6 +7,7 @@
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
 
+#include <array>
 #include <iostream>
 #include <string>
 #include <unordered_map>

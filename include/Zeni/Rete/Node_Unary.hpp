@@ -8,8 +8,8 @@ namespace Zeni {
   namespace Rete {
 
     class Node_Unary : public Node {
-      Node_Unary(const Node_Unary &);
-      Node_Unary & operator=(const Node_Unary &);
+      Node_Unary(const Node_Unary &) = delete;
+      Node_Unary & operator=(const Node_Unary &) = delete;
 
     protected:
       Node_Unary(const int64_t &height, const int64_t &size, const int64_t &token_size, const std::shared_ptr<Node> &input);
@@ -26,7 +26,7 @@ namespace Zeni {
       const Tokens & get_input_tokens() const;
 
     private:
-      std::weak_ptr<Node> m_input;
+      std::shared_ptr<Node> m_input;
       Tokens m_input_tokens;
       Tokens m_input_antitokens;
     };

@@ -279,11 +279,9 @@ namespace Zeni {
 
     std::ostream & Symbol_Variable::print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices) const {
       os.put('<');
-      const auto found = std::find_if(indices->begin(), indices->end(), [this](const std::pair<std::string, Token_Index> &ind)->bool {
-        return ind.second.token_row == 0 && ind.second.column == this->value;
-      });
-      if (found != indices->end())
-        os << found->first;
+      const auto found = indices->find_name_token(0, value);
+      if (!found.empty())
+        os << found;
       else
         os << value;
       os.put('>');

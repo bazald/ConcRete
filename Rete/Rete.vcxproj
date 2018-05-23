@@ -165,6 +165,8 @@
     <ClCompile Include="..\src\Zeni\Rete\Raven_Token_Remove.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Symbol.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Token.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Token_Alpha.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Token_Beta.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Token_Index.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Variable_Binding.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp" />
@@ -341,6 +343,8 @@
     <ClInclude Include="..\include\Zeni\Rete\Raven_Token_Remove.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Symbol.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Token.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Token_Alpha.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Token_Beta.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Token_Index.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Raven_Token.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.hpp" />

@@ -8,8 +8,8 @@ namespace Zeni {
   namespace Rete {
 
     class Node_Filter : public Node {
-      Node_Filter(const Node_Filter &);
-      Node_Filter & operator=(const Node_Filter &);
+      Node_Filter(const Node_Filter &) = delete;
+      Node_Filter & operator=(const Node_Filter &) = delete;
 
     public:
       enum Index { LEFT = 0, CENTER = 1, RIGHT = 2 };
@@ -31,7 +31,7 @@ namespace Zeni {
 
     private:
       WME m_wme;
-      std::array<std::shared_ptr<const Symbol_Variable>, 3> m_variable;
+      std::tuple<std::shared_ptr<const Symbol_Variable>, std::shared_ptr<const Symbol_Variable>, std::shared_ptr<const Symbol_Variable>> m_variable;
 
       Tokens m_output_antitokens;
     };

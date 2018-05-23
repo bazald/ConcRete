@@ -18,7 +18,7 @@ namespace Zeni {
     }
 
     void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> &network) {
-      network->get_Job_Queue()->give(std::make_shared<Raven_Disconnect_Output>(m_input.lock(), network, shared_from_this()));
+      network->get_Job_Queue()->give(std::make_shared<Raven_Disconnect_Output>(m_input, network, shared_from_this()));
     }
 
     bool Node_Unary::receive(const Raven_Token_Insert &raven) {
@@ -48,11 +48,11 @@ namespace Zeni {
     }
 
     std::shared_ptr<const Node> Node_Unary::get_parent() const {
-      return m_input.lock();
+      return m_input;
     }
 
     std::shared_ptr<Node> Node_Unary::get_parent() {
-      return m_input.lock();
+      return m_input;
     }
 
     const Tokens & Node_Unary::get_input_tokens() const {

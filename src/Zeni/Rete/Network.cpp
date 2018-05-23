@@ -6,10 +6,10 @@
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
+#include "Zeni/Rete/Token_Alpha.hpp"
 
 #include <cassert>
 #include <iostream>
-#include <map>
 #include <sstream>
 
 namespace Zeni {
@@ -30,7 +30,7 @@ namespace Zeni {
       Network::Filters filters;
       std::unordered_map<std::string, std::shared_ptr<Node_Action>> rules;
       int64_t rule_name_index = 0;
-      Tokens output_tokens;
+      std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> working_memory;
     };
 
     class Network_Locked_Data_Const {
@@ -44,20 +44,20 @@ namespace Zeni {
       {
       }
 
-      const Network::Filters & get_filters() {
+      const Network::Filters & get_filters() const {
         return m_data->filters;
       }
 
-      const std::unordered_map<std::string, std::shared_ptr<Node_Action>> & get_rules() {
+      const std::unordered_map<std::string, std::shared_ptr<Node_Action>> & get_rules() const {
         return m_data->rules;
       }
 
-      int64_t get_rule_name_index() {
+      int64_t get_rule_name_index() const {
         return m_data->rule_name_index;
       }
 
-      const Tokens & get_output_tokens() {
-        return m_data->output_tokens;
+      const std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> & get_working_memory() const {
+        return m_data->working_memory;
       }
 
     private:
@@ -88,8 +88,8 @@ namespace Zeni {
         return m_data->rule_name_index;
       }
 
-      Tokens & get_output_tokens() {
-        return m_data->output_tokens;
+      std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> & get_working_memory() {
+        return m_data->working_memory;
       }
 
     private:
@@ -189,6 +189,7 @@ namespace Zeni {
     }
 
     void Network::Destroy() {
+      excise_all();
       m_thread_pool->get_Job_Queue()->wait_for_completion();
       m_thread_pool.reset();
     }
@@ -284,8 +285,8 @@ namespace Zeni {
       Network_Locked_Data locked_data(this);
 
       locked_data.get_filters().insert(filter);
-      for (auto &output_token : locked_data.get_output_tokens())
-        m_thread_pool->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, output_token));
+      for (auto &wme_token : locked_data.get_working_memory())
+        m_thread_pool->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, wme_token.second));
     }
 
     void Network::excise_rule(const std::string &name, const bool &user_command) {
@@ -337,11 +338,11 @@ namespace Zeni {
 
     void Network::insert_wme(const std::shared_ptr<const WME> &wme) {
       const auto sft = shared_from_this();
-      const auto output_token = std::make_shared<Token>(wme);
+      const auto output_token = std::make_shared<Token_Alpha>(wme);
 
       Network_Locked_Data locked_data(this);
 
-      locked_data.get_output_tokens().insert(output_token);
+      locked_data.get_working_memory().insert(std::make_pair(wme, output_token));
 #ifdef DEBUG_OUTPUT
       std::cerr << "rete.insert" << *wme << std::endl;
 #endif
@@ -351,19 +352,19 @@ namespace Zeni {
 
     void Network::remove_wme(const std::shared_ptr<const WME> &wme) {
       const auto sft = shared_from_this();
-      const auto output_token = std::make_shared<Token>(wme);
 
       Network_Locked_Data locked_data(this);
 
-      auto found = locked_data.get_output_tokens().find(output_token);
-      assert(found != locked_data.get_output_tokens().end());
-      locked_data.get_output_tokens().erase(found);
+      auto found = locked_data.get_working_memory().find(wme);
+      assert(found != locked_data.get_working_memory().end());
 
 #ifdef DEBUG_OUTPUT
       std::cerr << "rete.remove" << *wme << std::endl;
 #endif
       for (auto &filter : locked_data.get_filters())
-        m_thread_pool->get_Job_Queue()->give(std::static_pointer_cast<Concurrency::Job>(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, output_token)));
+        m_thread_pool->get_Job_Queue()->give(std::static_pointer_cast<Concurrency::Job>(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, found->second)));
+
+      locked_data.get_working_memory().erase(found);
     }
 
     void Network::clear_wmes() {
@@ -371,11 +372,11 @@ namespace Zeni {
 
       Network_Locked_Data locked_data(this);
 
-      for (auto &output_token : locked_data.get_output_tokens()) {
+      for (auto &wme_token : locked_data.get_working_memory()) {
         for (auto &filter : locked_data.get_filters())
-          m_thread_pool->get_Job_Queue()->give(std::static_pointer_cast<Concurrency::Job>(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, output_token)));
+          m_thread_pool->get_Job_Queue()->give(std::static_pointer_cast<Concurrency::Job>(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, wme_token.second)));
       }
-      locked_data.get_output_tokens().clear();
+      locked_data.get_working_memory().clear();
     }
 
     void Network::source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command) {

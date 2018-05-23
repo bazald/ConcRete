@@ -4,28 +4,32 @@
 #include "Zeni/Utility.hpp"
 #include "Symbol.hpp"
 
-#include <array>
-
 namespace Zeni {
 
   namespace Rete {
 
     class WME;
 
-    class ZENI_RETE_LINKAGE WME {
+    class WME {
     public:
-      typedef std::array<std::shared_ptr<const Symbol>, 3> WME_Symbols;
+      typedef std::tuple<std::shared_ptr<const Symbol>, std::shared_ptr<const Symbol>, std::shared_ptr<const Symbol>> Symbols;
 
-      WME() {}
-      WME(const std::shared_ptr<const Symbol> &first, const std::shared_ptr<const Symbol> &second, const std::shared_ptr<const Symbol> &third);
+      ZENI_RETE_LINKAGE WME();
+      ZENI_RETE_LINKAGE WME(const std::shared_ptr<const Symbol> &first, const std::shared_ptr<const Symbol> &second, const std::shared_ptr<const Symbol> &third);
 
-      bool operator==(const WME &rhs) const;
-      bool operator<(const WME &rhs) const;
+      ZENI_RETE_LINKAGE bool operator==(const WME &rhs) const;
+      ZENI_RETE_LINKAGE bool operator<(const WME &rhs) const;
 
-      std::ostream & print(std::ostream &os) const;
-      std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices) const;
+      ZENI_RETE_LINKAGE const Symbols & get_symbols() const;
+      ZENI_RETE_LINKAGE size_t get_hash() const;
 
-      WME_Symbols symbols;
+      ZENI_RETE_LINKAGE std::ostream & print(std::ostream &os) const;
+      ZENI_RETE_LINKAGE std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices) const;
+
+    private:
+      Symbols m_symbols;
+
+      size_t m_hashval;
     };
 
   }
@@ -37,9 +41,7 @@ ZENI_RETE_LINKAGE std::ostream & operator<<(std::ostream &os, const Zeni::Rete::
 namespace std {
   template <> struct hash<Zeni::Rete::WME> {
     size_t operator()(const Zeni::Rete::WME &wme) const {
-      return Zeni::hash_combine(Zeni::hash_combine(wme.symbols[0] ? wme.symbols[0]->hash() : 0,
-                                                   wme.symbols[1] ? wme.symbols[1]->hash() : 0),
-                                wme.symbols[2] ? wme.symbols[2]->hash() : 0);
+      return wme.get_hash();
     }
   };
 }

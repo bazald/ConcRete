@@ -10,8 +10,8 @@ namespace Zeni {
   namespace Rete {
 
     class Node_Action : public Node_Unary {
-      Node_Action(const Node_Action &);
-      Node_Action & operator=(const Node_Action &);
+      Node_Action(const Node_Action &) = delete;
+      Node_Action & operator=(const Node_Action &) = delete;
 
     public:
       typedef std::function<void(const Node_Action &rete_action, const Token &token)> Action;

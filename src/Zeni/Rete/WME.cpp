@@ -4,35 +4,50 @@ namespace Zeni {
 
   namespace Rete {
 
-    WME::WME(const std::shared_ptr<const Symbol> &first, const std::shared_ptr<const Symbol> &second, const std::shared_ptr<const Symbol> &third) {
-      symbols[0] = first;
-      symbols[1] = second;
-      symbols[2] = third;
+    WME::WME()
+      : m_hashval(0)
+    {
+    }
+
+    WME::WME(const std::shared_ptr<const Symbol> &first, const std::shared_ptr<const Symbol> &second, const std::shared_ptr<const Symbol> &third)
+      : m_symbols(first, second, third),
+      m_hashval(Zeni::hash_combine(Zeni::hash_combine(first ? first->hash() : 0,
+        second ? second->hash() : 0),
+        third ? third->hash() : 0))
+    {
     }
 
     bool WME::operator==(const WME &rhs) const {
-      return (symbols[0] ? rhs.symbols[0] && (*symbols[0] == *rhs.symbols[0]) : !rhs.symbols[0]) &&
-        (symbols[1] ? rhs.symbols[1] && (*symbols[1] == *rhs.symbols[1]) : !rhs.symbols[1]) &&
-        (symbols[2] ? rhs.symbols[2] && (*symbols[2] == *rhs.symbols[2]) : !rhs.symbols[2]);
+      return (std::get<0>(m_symbols) ? std::get<0>(rhs.m_symbols) && (*std::get<0>(m_symbols) == *std::get<0>(rhs.m_symbols)) : !std::get<0>(rhs.m_symbols)) &&
+        (std::get<1>(m_symbols) ? std::get<1>(rhs.m_symbols) && (*std::get<1>(m_symbols) == *std::get<1>(rhs.m_symbols)) : !std::get<1>(rhs.m_symbols)) &&
+        (std::get<2>(m_symbols) ? std::get<2>(rhs.m_symbols) && (*std::get<2>(m_symbols) == *std::get<2>(rhs.m_symbols)) : !std::get<2>(rhs.m_symbols));
     }
 
     bool WME::operator<(const WME &rhs) const {
-      return *symbols[0] < *rhs.symbols[0] || (*symbols[0] == *rhs.symbols[0] &&
-        (*symbols[1] < *rhs.symbols[1] || (*symbols[1] == *rhs.symbols[1] && *symbols[2] < *rhs.symbols[2])));
+      return *std::get<0>(m_symbols) < *std::get<0>(rhs.m_symbols) || (*std::get<0>(m_symbols) == *std::get<0>(rhs.m_symbols) &&
+        (*std::get<1>(m_symbols) < *std::get<1>(rhs.m_symbols) || (*std::get<1>(m_symbols) == *std::get<1>(rhs.m_symbols) && *std::get<2>(m_symbols) < *std::get<2>(rhs.m_symbols))));
+    }
+
+    const WME::Symbols & WME::get_symbols() const {
+      return m_symbols;
+    }
+
+    size_t WME::get_hash() const {
+      return m_hashval;
     }
 
     std::ostream & WME::print(std::ostream &os) const {
-      //    return os << '(' << symbols[0] << ':' << *symbols[0] << " ^" << symbols[1] << ':' << *symbols[1] << ' ' << symbols[2] << ':' << *symbols[2] << ')';
-      return os << '(' << *symbols[0] << " ^" << *symbols[1] << ' ' << *symbols[2] << ')';
+      //    return os << '(' << std::get<0>(m_symbols) << ':' << *std::get<0>(m_symbols) << " ^" << std::get<1>(m_symbols) << ':' << *std::get<1>(m_symbols) << ' ' << std::get<2>(m_symbols) << ':' << *std::get<2>(m_symbols) << ')';
+      return os << '(' << *std::get<0>(m_symbols) << " ^" << *std::get<1>(m_symbols) << ' ' << *std::get<2>(m_symbols) << ')';
     }
 
     std::ostream & WME::print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices) const {
       os << '(';
-      symbols[0]->print(os, indices);
+      std::get<0>(m_symbols)->print(os, indices);
       os << " ^";
-      symbols[1]->print(os, indices);
+      std::get<1>(m_symbols)->print(os, indices);
       os << ' ';
-      symbols[2]->print(os, indices);
+      std::get<2>(m_symbols)->print(os, indices);
       os << ')';
       return os;
     }

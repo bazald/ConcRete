@@ -5,6 +5,7 @@
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
+#include "Zeni/Rete/Token_Alpha.hpp"
 
 #include <cassert>
 
@@ -16,8 +17,9 @@ namespace Zeni {
       : Node(1, 1, 1),
       m_wme(wme_)
     {
-      for (int i = 0; i != 3; ++i)
-        m_variable[i] = std::dynamic_pointer_cast<const Symbol_Variable>(m_wme.symbols[i]);
+      std::get<0>(m_variable) = std::dynamic_pointer_cast<const Symbol_Variable>(std::get<0>(m_wme.get_symbols()));
+      std::get<1>(m_variable) = std::dynamic_pointer_cast<const Symbol_Variable>(std::get<1>(m_wme.get_symbols()));
+      std::get<2>(m_variable) = std::dynamic_pointer_cast<const Symbol_Variable>(std::get<2>(m_wme.get_symbols()));
     }
 
     const WME & Node_Filter::get_wme() const {
@@ -48,19 +50,22 @@ namespace Zeni {
     }
 
     bool Node_Filter::receive(const Raven_Token_Insert &raven) {
-      const auto &token = raven.get_Token();
-      assert(token->size() == 1);
+      const auto token = std::dynamic_pointer_cast<const Token_Alpha>(raven.get_Token());
+      assert(token);
       const auto &wme = token->get_wme();
 
-      for (int i = 0; i != 3; ++i)
-        if (!m_variable[i] && *m_wme.symbols[i] != *wme->symbols[i])
-          return false;
+      if (!std::get<0>(m_variable) && *std::get<0>(m_wme.get_symbols()) != *std::get<0>(wme->get_symbols()))
+        return false;
+      if (!std::get<1>(m_variable) && *std::get<1>(m_wme.get_symbols()) != *std::get<1>(wme->get_symbols()))
+        return false;
+      if (!std::get<2>(m_variable) && *std::get<2>(m_wme.get_symbols()) != *std::get<2>(wme->get_symbols()))
+        return false;
 
-      if (m_variable[0] && m_variable[1] && *m_variable[0] == *m_variable[1] && *wme->symbols[0] != *wme->symbols[1])
+      if (std::get<0>(m_variable) && std::get<1>(m_variable) && *std::get<0>(m_variable) == *std::get<1>(m_variable) && *std::get<0>(wme->get_symbols()) != *std::get<1>(wme->get_symbols()))
         return false;
-      if (m_variable[0] && m_variable[2] && *m_variable[0] == *m_variable[2] && *wme->symbols[0] != *wme->symbols[2])
+      if (std::get<0>(m_variable) && std::get<2>(m_variable) && *std::get<0>(m_variable) == *std::get<2>(m_variable) && *std::get<0>(wme->get_symbols()) != *std::get<2>(wme->get_symbols()))
         return false;
-      if (m_variable[1] && m_variable[2] && *m_variable[1] == *m_variable[2] && *wme->symbols[1] != *wme->symbols[2])
+      if (std::get<1>(m_variable) && std::get<2>(m_variable) && *std::get<1>(m_variable) == *std::get<2>(m_variable) && *std::get<1>(wme->get_symbols()) != *std::get<2>(wme->get_symbols()))
         return false;
 
       Outputs outputs;
@@ -69,7 +74,7 @@ namespace Zeni {
       {
         Concurrency::Mutex::Lock lock(m_mutex);
         outputs = m_outputs;
-        const auto token = std::make_shared<Token>(wme);
+        const auto token = std::make_shared<Token_Alpha>(wme);
         auto found = m_output_antitokens.find(token);
         if (found == m_output_antitokens.end()) {
           const auto inserted = m_output_tokens.insert(token);
@@ -88,19 +93,22 @@ namespace Zeni {
     }
 
     bool Node_Filter::receive(const Raven_Token_Remove &raven) {
-      const auto &token = raven.get_Token();
-      assert(token->size() == 1);
+      const auto token = std::dynamic_pointer_cast<const Token_Alpha>(raven.get_Token());
+      assert(token);
       const auto &wme = token->get_wme();
 
-      for (int i = 0; i != 3; ++i)
-        if (!m_variable[i] && *m_wme.symbols[i] != *wme->symbols[i])
-          return false;
+      if (!std::get<0>(m_variable) && *std::get<0>(m_wme.get_symbols()) != *std::get<0>(wme->get_symbols()))
+        return false;
+      if (!std::get<1>(m_variable) && *std::get<1>(m_wme.get_symbols()) != *std::get<1>(wme->get_symbols()))
+        return false;
+      if (!std::get<2>(m_variable) && *std::get<2>(m_wme.get_symbols()) != *std::get<2>(wme->get_symbols()))
+        return false;
 
-      if (m_variable[0] && m_variable[1] && *m_variable[0] == *m_variable[1] && *wme->symbols[0] != *wme->symbols[1])
+      if (std::get<0>(m_variable) && std::get<1>(m_variable) && *std::get<0>(m_variable) == *std::get<1>(m_variable) && *std::get<0>(wme->get_symbols()) != *std::get<1>(wme->get_symbols()))
         return false;
-      if (m_variable[0] && m_variable[2] && *m_variable[0] == *m_variable[2] && *wme->symbols[0] != *wme->symbols[2])
+      if (std::get<0>(m_variable) && std::get<2>(m_variable) && *std::get<0>(m_variable) == *std::get<2>(m_variable) && *std::get<0>(wme->get_symbols()) != *std::get<2>(wme->get_symbols()))
         return false;
-      if (m_variable[1] && m_variable[2] && *m_variable[1] == *m_variable[2] && *wme->symbols[1] != *wme->symbols[2])
+      if (std::get<1>(m_variable) && std::get<2>(m_variable) && *std::get<1>(m_variable) == *std::get<2>(m_variable) && *std::get<1>(wme->get_symbols()) != *std::get<2>(wme->get_symbols()))
         return false;
 
       Outputs outputs;
@@ -109,7 +117,7 @@ namespace Zeni {
       {
         Concurrency::Mutex::Lock lock(m_mutex);
         outputs = m_outputs;
-        const auto token = std::make_shared<Token>(wme);
+        const auto token = std::make_shared<Token_Alpha>(wme);
         auto found = m_output_tokens.find(token);
         if (found != m_output_tokens.end()) {
           output_token = *found;
@@ -129,18 +137,24 @@ namespace Zeni {
 
     bool Node_Filter::operator==(const Node &rhs) const {
       if (auto filter = dynamic_cast<const Node_Filter *>(&rhs)) {
-        for (int i = 0; i != 3; ++i) {
-          if ((m_variable[i] != nullptr) ^ (filter->m_variable[i] != nullptr))
-            return false;
-          if (!m_variable[i] && *m_wme.symbols[i] != *filter->m_wme.symbols[i])
-            return false;
-        }
+        if ((std::get<0>(m_variable) != nullptr) ^ (std::get<0>(filter->m_variable) != nullptr))
+          return false;
+        if (!std::get<0>(m_variable) && *std::get<0>(m_wme.get_symbols()) != *std::get<0>(filter->m_wme.get_symbols()))
+          return false;
+        if ((std::get<1>(m_variable) != nullptr) ^ (std::get<1>(filter->m_variable) != nullptr))
+          return false;
+        if (!std::get<1>(m_variable) && *std::get<1>(m_wme.get_symbols()) != *std::get<1>(filter->m_wme.get_symbols()))
+          return false;
+        if ((std::get<2>(m_variable) != nullptr) ^ (std::get<2>(filter->m_variable) != nullptr))
+          return false;
+        if (!std::get<2>(m_variable) && *std::get<2>(m_wme.get_symbols()) != *std::get<2>(filter->m_wme.get_symbols()))
+          return false;
 
-        if (m_variable[0] && m_variable[1] && ((*m_variable[0] == *m_variable[1]) ^ (*filter->m_variable[0] == *filter->m_variable[1])))
+        if (std::get<0>(m_variable) && std::get<1>(m_variable) && ((*std::get<0>(m_variable) == *std::get<1>(m_variable)) ^ (*std::get<0>(filter->m_variable) == *std::get<1>(filter->m_variable))))
           return false;
-        if (m_variable[0] && m_variable[2] && ((*m_variable[0] == *m_variable[2]) ^ (*filter->m_variable[0] == *filter->m_variable[2])))
+        if (std::get<0>(m_variable) && std::get<2>(m_variable) && ((*std::get<0>(m_variable) == *std::get<2>(m_variable)) ^ (*std::get<0>(filter->m_variable) == *std::get<2>(filter->m_variable))))
           return false;
-        if (m_variable[1] && m_variable[2] && ((*m_variable[1] == *m_variable[2]) ^ (*filter->m_variable[1] == *filter->m_variable[2])))
+        if (std::get<1>(m_variable) && std::get<2>(m_variable) && ((*std::get<1>(m_variable) == *std::get<2>(m_variable)) ^ (*std::get<1>(filter->m_variable) == *std::get<2>(filter->m_variable))))
           return false;
 
         return true;

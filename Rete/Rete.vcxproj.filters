@@ -72,6 +72,12 @@
     <ClCompile Include="..\src\Zeni\Rete\Node_Unary.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Token_Alpha.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Token_Beta.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Zeni\Rete\Custom_Data.hpp">
@@ -597,6 +603,12 @@
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Raven_Disconnect_Output.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Token_Alpha.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Token_Beta.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
   </ItemGroup>
