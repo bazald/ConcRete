@@ -60,7 +60,7 @@ static void test_Rete_Network();
 
 int main()
 {
-  test_Thread_Pool();
+  //test_Thread_Pool();
   test_Rete_Network();
 
   return 0;

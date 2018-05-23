@@ -21,8 +21,7 @@ namespace Zeni {
       }
 
       void execute(Raven * const &raven, Job_Queue &job_queue) {
-        if (m_recipient)
-          m_recipient->receive(job_queue, *raven);
+        m_recipient->receive(job_queue, *raven);
       }
 
     private:
