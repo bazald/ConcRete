@@ -1,7 +1,7 @@
 #ifndef ZENI_CONCURRENCY_JOB_H
 #define ZENI_CONCURRENCY_JOB_H
 
-#include "Zeni/Concurrency/Linkage.hpp"
+#include "Linkage.hpp"
 
 #include <memory>
 

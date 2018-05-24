@@ -13,7 +13,7 @@ namespace Zeni {
     }
 
     void Raven_Token_Remove::receive() const {
-      dynamic_cast<Node *>(get_recipient())->receive(*this);
+      dynamic_cast<Pseudonode *>(get_recipient())->receive(*this);
     }
 
   }

@@ -1,7 +1,7 @@
 #ifndef ZENI_RETE_VARIABLE_BINDING_H
 #define ZENI_RETE_VARIABLE_BINDING_H
 
-#include "Zeni/Rete/Token_Index.hpp"
+#include "Token_Index.hpp"
 
 #include <unordered_set>
 

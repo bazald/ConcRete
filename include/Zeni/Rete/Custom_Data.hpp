@@ -1,7 +1,7 @@
 #ifndef ZENI_RETE_CUSTOM_DATA_H
 #define ZENI_RETE_CUSTOM_DATA_H
 
-#include "Zeni/Rete/Linkage.hpp"
+#include "Linkage.hpp"
 
 #include <iosfwd>
 #include <memory>

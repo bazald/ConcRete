@@ -15,14 +15,12 @@ namespace Zeni {
       enum Index { LEFT = 0, CENTER = 1, RIGHT = 2 };
 
     private:
-      Node_Filter(const WME &wme_);
+      Node_Filter(const std::shared_ptr<Network> &network, const WME &wme_);
 
     public:
       ZENI_RETE_LINKAGE static std::shared_ptr<Node_Filter> Create_Or_Increment_Output_Count(const std::shared_ptr<Network> &network, const WME &wme);
 
       ZENI_RETE_LINKAGE const WME & get_wme() const;
-
-      ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> &network, class Locked_Node_Data &locked_node_data) override;
 
       ZENI_RETE_LINKAGE bool receive(const Raven_Token_Insert &raven) override;
       ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &raven) override;

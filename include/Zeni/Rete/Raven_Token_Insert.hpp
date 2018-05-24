@@ -1,7 +1,7 @@
 #ifndef ZENI_RETE_RAVEN_TOKEN_INSERT_H
 #define ZENI_RETE_RAVEN_TOKEN_INSERT_H
 
-#include "Zeni/Rete/Raven_Token.hpp"
+#include "Raven_Token.hpp"
 
 namespace Zeni {
 

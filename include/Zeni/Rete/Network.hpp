@@ -2,7 +2,7 @@
 #define ZENI_RETE_NETWORK_H
 
 #include "Zeni/Concurrency/Maester.hpp"
-#include "Zeni/Rete/Linkage.hpp"
+#include "Node.hpp"
 
 #include <set>
 #include <unordered_set>
@@ -25,7 +25,7 @@ namespace Zeni {
     class Node_Filter;
     class WME;
 
-    class Network : public Concurrency::Maester {
+    class Network : public Pseudonode {
       Network(const Network &) = delete;
       Network & operator=(const Network &) = delete;
 
@@ -86,7 +86,9 @@ namespace Zeni {
       ZENI_RETE_LINKAGE Node_Sharing get_Node_Sharing() const;
       ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
-      ZENI_RETE_LINKAGE void receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) override;
+      ZENI_RETE_LINKAGE void disconnect_output(const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &output) override;
+      ZENI_RETE_LINKAGE bool receive(const Raven_Token_Insert &) override { return false; }
+      ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &) override { return false; }
 
       ZENI_RETE_LINKAGE std::shared_ptr<Node_Filter> find_filter_and_increment_output_count(const std::shared_ptr<Node_Filter> &filter);
 

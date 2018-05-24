@@ -11,7 +11,7 @@ namespace Zeni {
 
   namespace Rete {
 
-    Node_Unary::Unlocked_Node_Unary_Data::Unlocked_Node_Unary_Data(const std::shared_ptr<Node> &input)
+    Node_Unary::Unlocked_Node_Unary_Data::Unlocked_Node_Unary_Data(const std::shared_ptr<Pseudonode> &input)
       : m_input(input)
     {
     }
@@ -21,7 +21,7 @@ namespace Zeni {
     {
     }
 
-    std::shared_ptr<const Node> Node_Unary::Locked_Node_Unary_Data_Const::get_input() const {
+    std::shared_ptr<const Pseudonode> Node_Unary::Locked_Node_Unary_Data_Const::get_input() const {
       return m_data->m_input;
     }
 
@@ -39,7 +39,7 @@ namespace Zeni {
     {
     }
 
-    std::shared_ptr<Node> & Node_Unary::Locked_Node_Unary_Data::modify_input() {
+    std::shared_ptr<Pseudonode> & Node_Unary::Locked_Node_Unary_Data::modify_input() {
       return m_data->m_input;
     }
 
@@ -51,7 +51,7 @@ namespace Zeni {
       return m_data->m_input_antitokens;
     }
 
-    Node_Unary::Node_Unary(const int64_t &height, const int64_t &size, const int64_t &token_size, const std::shared_ptr<Node> &input)
+    Node_Unary::Node_Unary(const int64_t &height, const int64_t &size, const int64_t &token_size, const std::shared_ptr<Pseudonode> &input)
       : Node(height, size, token_size),
       m_unlocked_node_unary_data(std::make_shared<Unlocked_Node_Unary_Data>(input))
     {
@@ -94,7 +94,7 @@ namespace Zeni {
       }
     }
 
-    ZENI_RETE_LINKAGE std::shared_ptr<Node> Node_Unary::get_parent() {
+    ZENI_RETE_LINKAGE std::shared_ptr<Pseudonode> Node_Unary::get_input() {
       Locked_Node_Data locked_node_data(this);
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 

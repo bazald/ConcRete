@@ -1,9 +1,9 @@
 #ifndef ZENI_RETE_TOKEN_H
 #define ZENI_RETE_TOKEN_H
 
-#include "Zeni/Rete/Token_Index.hpp"
-#include "Zeni/Rete/Variable_Binding.hpp"
-#include "Zeni/Rete/WME.hpp"
+#include "Token_Index.hpp"
+#include "Variable_Binding.hpp"
+#include "WME.hpp"
 
 #include <unordered_set>
 

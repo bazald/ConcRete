@@ -124,6 +124,4 @@ void test_Rete_Network() {
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
   (*network)->get_Job_Queue()->wait_for_completion();
-
-  //network->excise_rule("hello-world", false);
 }

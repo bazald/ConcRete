@@ -255,17 +255,17 @@ namespace Zeni {
       }
 
       for (auto &rule : rules)
-        get_Job_Queue()->give(std::make_shared<Raven_Disconnect_Output>(rule.second->get_parent(), sft, rule.second));
+        get_Job_Queue()->give(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second));
     }
 
-    void Network::receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) {
-      const auto &disconnect_output = dynamic_cast<const Raven_Disconnect_Output &>(raven);
-
+    void Network::disconnect_output(const std::shared_ptr<Network> &, const std::shared_ptr<const Node> &output) {
       Network_Locked_Data locked_data(this);
 
-      const auto found = locked_data.get_filters().find(std::dynamic_pointer_cast<Node_Filter>(disconnect_output.get_output()));
+      const auto found = locked_data.get_filters().find(
+        std::const_pointer_cast<Node_Filter>(std::dynamic_pointer_cast<const Node_Filter>(output)));
       assert(found != locked_data.get_filters().end());
       locked_data.modify_filters().erase(found);
+
     }
 
     std::shared_ptr<Node_Filter> Network::find_filter_and_increment_output_count(const std::shared_ptr<Node_Filter> &filter) {
@@ -307,7 +307,7 @@ namespace Zeni {
         auto action = found->second;
         locked_data.modify_rules().erase(found);
         
-        action->get_parent()->disconnect_output(shared_from_this(), action);
+        action->get_input()->disconnect_output(shared_from_this(), action);
         if (user_command)
           std::cerr << '#';
       }
@@ -398,7 +398,7 @@ namespace Zeni {
         //      std::cerr << "Rule '" << action->get_name() << "' replaced." << std::endl;
         //#endif
         assert(found->second != action);
-        found->second->get_parent()->disconnect_output(sft, found->second);
+        found->second->get_input()->disconnect_output(sft, found->second);
         if (user_command && m_printed_output != Printed_Output::None)
           std::cerr << '#';
         found->second = action;
