@@ -100,7 +100,8 @@ void test_Thread_Pool() {
 }
 
 void test_Rete_Network() {
-  const auto network = Zeni::Rete::Network::Create();
+  const auto network =
+    Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::Normal);
 
   std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
     {
@@ -124,6 +125,5 @@ void test_Rete_Network() {
 
   (*network)->get_Job_Queue()->wait_for_completion();
 
-  (*network)->excise_all();
   //network->excise_rule("hello-world", false);
 }

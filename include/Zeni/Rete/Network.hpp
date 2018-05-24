@@ -67,13 +67,13 @@ namespace Zeni {
 
     private:
       Network(const Printed_Output &printed_output);
-      Network(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output);
+      Network(const Printed_Output &printed_output, const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool);
 
       ZENI_RETE_LINKAGE void Destroy();
 
     public:
       ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const Printed_Output &printed_output = Printed_Output::Normal);
-      ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool, const Printed_Output &printed_output = Printed_Output::Normal);
+      ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const Printed_Output &printed_output, const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool);
 
       ZENI_RETE_LINKAGE ~Network();
 
@@ -102,12 +102,12 @@ namespace Zeni {
       ZENI_RETE_LINKAGE void clear_wmes();
 
     private:
-      std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
-      std::shared_ptr<Network_Unlocked_Data> m_unlocked_data;
+      const std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
+      const std::shared_ptr<Network_Unlocked_Data> m_unlocked_data;
 
       // Options
-      Node_Sharing m_node_sharing = Node_Sharing::Enabled;
-      Printed_Output m_printed_output;
+      const Node_Sharing m_node_sharing = Node_Sharing::Enabled;
+      const Printed_Output m_printed_output;
     };
 
   }

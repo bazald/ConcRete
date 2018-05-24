@@ -9,7 +9,7 @@ namespace Zeni {
 
     class Thread_Pool_Pimpl;
 
-    class Thread_Pool {
+    class Thread_Pool : public std::enable_shared_from_this<Thread_Pool> {
       Thread_Pool(const Thread_Pool &) = delete;
       Thread_Pool & operator=(const Thread_Pool &) = delete;
 

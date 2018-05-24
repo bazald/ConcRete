@@ -1,5 +1,7 @@
 #include "Zeni/Rete/WME.hpp"
 
+#include <iostream>
+
 namespace Zeni {
 
   namespace Rete {

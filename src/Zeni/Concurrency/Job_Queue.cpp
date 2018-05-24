@@ -1,5 +1,6 @@
 #include "Zeni/Concurrency/Job_Queue.hpp"
 
+#include <condition_variable>
 #include <thread>
 #include <mutex>
 #include <queue>

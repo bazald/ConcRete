@@ -20,12 +20,45 @@ namespace Zeni {
     }
 
     Node::Node(const int64_t &height, const int64_t &size, const int64_t &token_size)
-      : m_height(height), m_size(size), m_token_size(token_size)
+      : m_height(height), m_size(size), m_token_size(token_size),
+      m_unlocked_node_data(std::make_shared<Unlocked_Node_Data>())
     {
     }
 
-    const Node::Outputs & Node::get_outputs() const {
-      return m_outputs;
+    Node::Locked_Node_Data_Const::Locked_Node_Data_Const(const Node * const &node)
+      : m_lock(node->m_mutex),
+      m_data(node->m_unlocked_node_data)
+    {
+    }
+
+    int64_t Node::Locked_Node_Data_Const::get_output_count() const {
+      return m_data->m_output_count;
+    }
+
+    const Node::Outputs & Node::Locked_Node_Data_Const::get_outputs() const {
+      return m_data->m_outputs;
+    }
+
+    const Tokens & Node::Locked_Node_Data_Const::get_output_tokens() const {
+      return m_data->m_output_tokens;
+    }
+
+    Node::Locked_Node_Data::Locked_Node_Data(Node * const &node)
+      : Locked_Node_Data_Const(node),
+      m_data(node->m_unlocked_node_data)
+    {
+    }
+
+    int64_t & Node::Locked_Node_Data::modify_output_count() {
+      return m_data->m_output_count;
+    }
+
+    Node::Outputs & Node::Locked_Node_Data::modify_outputs() {
+      return m_data->m_outputs;
+    }
+
+    Tokens & Node::Locked_Node_Data::modify_output_tokens() {
+      return m_data->m_output_tokens;
     }
 
     int64_t Node::get_height() const { 
@@ -40,24 +73,19 @@ namespace Zeni {
       return m_token_size;
     }
 
-    int64_t Node::get_output_count() const {
-      Concurrency::Mutex::Lock lock(m_mutex);
-      return m_output_count;
-    }
-
     void Node::increment_output_count() {
-      Concurrency::Mutex::Lock lock(m_mutex);
-      ++m_output_count;
+      Locked_Node_Data locked_node_data(this);
+      ++locked_node_data.modify_output_count();
     }
 
     void Node::connect_output(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       Tokens output_tokens;
 
       {
-        Concurrency::Mutex::Lock lock(m_mutex);
-        output_tokens = m_output_tokens;
-        assert(m_outputs.find(output) == m_outputs.end());
-        m_outputs.insert(output);
+        Locked_Node_Data locked_node_data(this);
+        output_tokens = locked_node_data.get_output_tokens();
+        assert(locked_node_data.get_outputs().find(output) == locked_node_data.get_outputs().end());
+        locked_node_data.modify_outputs().insert(output);
       }
 
       const auto sft = shared_from_this();
@@ -69,15 +97,15 @@ namespace Zeni {
       Tokens output_tokens;
 
       {
-        Concurrency::Mutex::Lock lock(m_mutex);
-        output_tokens = m_output_tokens;
-        const auto found = m_outputs.find(output);
-        assert(found != m_outputs.end());
-        m_outputs.erase(found);
-        --m_output_count;
-        assert(m_output_count >= 0);
-        if (m_output_count == 0)
-          send_disconnect_from_parents(network);
+        Locked_Node_Data locked_node_data(this);
+        output_tokens = locked_node_data.get_output_tokens();
+        const auto found = locked_node_data.get_outputs().find(output);
+        assert(found != locked_node_data.get_outputs().end());
+        locked_node_data.modify_outputs().erase(found);
+        --locked_node_data.modify_output_count();
+        assert(locked_node_data.get_output_count() >= 0);
+        if (locked_node_data.get_output_count() == 0)
+          send_disconnect_from_parents(network, locked_node_data);
       }
 
       const auto sft = shared_from_this();
@@ -86,21 +114,24 @@ namespace Zeni {
     }
 
     void Node::receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) {
-      dynamic_cast<const Raven_Token &>(raven).receive();
+      if (const Raven_Disconnect_Output * const rdo = dynamic_cast<const Raven_Disconnect_Output *>(&raven))
+        disconnect_output(rdo->get_Network(), rdo->get_output());
+      else if (const Raven_Token * const rt = dynamic_cast<const Raven_Token *>(&raven))
+        rt->receive();
+      else
+        abort();
     }
 
     void Node::receive(const Raven_Disconnect_Output &raven) {
-      Concurrency::Mutex::Lock lock(m_mutex);
+      Locked_Node_Data locked_node_data(this);
 
-      if (raven.get_output()->get_output_count() == 0) {
-        const auto found = m_outputs.find(raven.get_output());
-        assert(found != m_outputs.end());
-        m_outputs.erase(found);
-        --m_output_count;
-        assert(m_output_count >= 0);
-        if (m_output_count == 0)
-          send_disconnect_from_parents(raven.get_Network());
-      }
+      const auto found = locked_node_data.get_outputs().find(raven.get_output());
+      assert(found != locked_node_data.get_outputs().end());
+      locked_node_data.modify_outputs().erase(found);
+      --locked_node_data.modify_output_count();
+      assert(locked_node_data.get_output_count() >= 0);
+      if (locked_node_data.get_output_count() == 0)
+        send_disconnect_from_parents(raven.get_Network(), locked_node_data);
     }
 
   }

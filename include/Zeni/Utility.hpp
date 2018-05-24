@@ -1,8 +1,10 @@
 #ifndef ZENI_UTILITY_H
 #define ZENI_UTILITY_H
 
+#include <functional>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace Zeni {
 
