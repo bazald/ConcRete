@@ -60,7 +60,7 @@ namespace Zeni {
     void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> &network, class Locked_Node_Data &locked_node_data) {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      network->get_Job_Queue()->give(std::make_shared<Raven_Disconnect_Output>(locked_node_unary_data.modify_input(), network, shared_from_this()));
+      network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(locked_node_unary_data.modify_input(), network, shared_from_this()));
       locked_node_unary_data.modify_input().reset();
     }
 

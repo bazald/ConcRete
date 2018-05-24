@@ -9,6 +9,7 @@
 
 #include <array>
 #include <iostream>
+#include <list>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -42,9 +43,12 @@ public:
     std::cerr << whisper.get_message() + "\n";
     //++g_num_recvs;
 
+    std::list<std::shared_ptr<Whisper>> whispers;
     Zeni::Concurrency::Mutex::Lock mutex_lock(m_mutex);
-    for(Ptr gossip : m_gossips)
-      job_queue.give(std::make_shared<Whisper>(gossip, whisper.get_message()));
+    for (Ptr gossip : m_gossips)
+      whispers.push_back(std::make_shared<Whisper>(gossip, whisper.get_message()));
+
+    job_queue.give_many(whispers);
   }
 
   void tell(const Ptr &gossip) {
@@ -61,7 +65,7 @@ static void test_Rete_Network();
 
 int main()
 {
-  //test_Thread_Pool();
+  test_Thread_Pool();
   test_Rete_Network();
 
   return 0;
@@ -86,15 +90,21 @@ void test_Thread_Pool() {
   gossips["diane"]->tell(gossips["janae"]);
   gossips["diane"]->tell(gossips["kelly"]);
 
+  std::list<std::shared_ptr<Whisper>> whispers;
   for (std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
-    thread_pool.get_Job_Queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
+    whispers.push_back(std::make_shared<Whisper>(gossips["alice"], message));
+
+  thread_pool.get_Job_Queue()->give_many(whispers);
+  whispers.clear();
+
   //for(int i = 0; i != 1000000; ++i)
   //  thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
 
   thread_pool.get_Job_Queue()->wait_for_completion();
 
   for (std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
-    thread_pool.get_Job_Queue()->give(std::make_shared<Whisper>(gossips["alice"], message));
+    whispers.push_back(std::make_shared<Whisper>(gossips["alice"], message));
+  thread_pool.get_Job_Queue()->give_many(whispers);
 
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;
 }

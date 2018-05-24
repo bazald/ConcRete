@@ -54,7 +54,7 @@ namespace Zeni {
           m_empty.wait(mutex_lock);
       }
 
-      std::pair<std::shared_ptr<Job>, Job_Queue::Status> take() {
+      std::pair<std::shared_ptr<Job>, Job_Queue::Status> take_one() {
         std::unique_lock<std::mutex> mutex_lock(m_mutex);
 
         if (m_jobs.empty()) {
@@ -81,7 +81,7 @@ namespace Zeni {
         return std::make_pair(job, m_status);
       }
 
-      void give(Job_Queue * const pub_this, const std::shared_ptr<Job> &job) {
+      void give_one(Job_Queue * const pub_this, const std::shared_ptr<Job> &job) {
         std::unique_lock<std::mutex> mutex_lock(m_mutex);
 
         if (m_status == Job_Queue::Status::SHUT_DOWN)
@@ -99,7 +99,7 @@ namespace Zeni {
         }
       }
 
-      void give(Job_Queue * const pub_this, std::shared_ptr<Job> &&job) {
+      void give_one(Job_Queue * const pub_this, std::shared_ptr<Job> &&job) {
         std::unique_lock<std::mutex> mutex_lock(m_mutex);
 
         if (m_status == Job_Queue::Status::SHUT_DOWN)
@@ -113,6 +113,20 @@ namespace Zeni {
           // Single-threaded mode
           mutex_lock.release();
           m_mutex.unlock();
+          job->execute(*pub_this);
+        }
+      }
+
+      void give(Job_Queue * const pub_this, const std::shared_ptr<Job> &job) {
+        if (m_status == Job_Queue::Status::SHUT_DOWN)
+          throw Job_Queue::Job_Queue_Must_Not_Be_Shut_Down();
+
+        if (m_dormant_max) {
+          m_jobs.push(job);
+          m_non_empty.notify_one();
+        }
+        else {
+          // Single-threaded mode
           job->execute(*pub_this);
         }
       }
@@ -181,16 +195,20 @@ namespace Zeni {
       return m_impl->wait_for_completion();
     }
 
-    std::pair<std::shared_ptr<Job>, Job_Queue::Status> Job_Queue::take() {
-      return m_impl->take();
+    std::pair<std::shared_ptr<Job>, Job_Queue::Status> Job_Queue::take_one() {
+      return m_impl->take_one();
+    }
+
+    void Job_Queue::give_one(const std::shared_ptr<Job> &job) {
+      return m_impl->give_one(this, job);
+    }
+
+    void Job_Queue::give_one(std::shared_ptr<Job> &&job) {
+      return m_impl->give_one(this, std::move(job));
     }
 
     void Job_Queue::give(const std::shared_ptr<Job> &job) {
       return m_impl->give(this, job);
-    }
-
-    void Job_Queue::give(std::shared_ptr<Job> &&job) {
-      return m_impl->give(this, std::move(job));
     }
 
   }

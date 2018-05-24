@@ -8,7 +8,7 @@ namespace Zeni {
 
   namespace Rete {
 
-    void Pseudonode::receive(Concurrency::Job_Queue &job_queue, const Concurrency::Raven &raven) {
+    void Pseudonode::receive(Concurrency::Job_Queue &, const Concurrency::Raven &raven) {
       dynamic_cast<const Rete::Raven *>(&raven)->receive();
     }
 

@@ -67,14 +67,29 @@ namespace Zeni {
       ZENI_CONCURRENCY_LINKAGE void wait_for_completion();
 
       /// Take a Job off the queue. Will be null if and only if SHUT_DOWN.
-      ZENI_CONCURRENCY_LINKAGE std::pair<std::shared_ptr<Job>, Status> take();
+      ZENI_CONCURRENCY_LINKAGE std::pair<std::shared_ptr<Job>, Status> take_one();
 
       /// Give the queue a new Job. Can throw Job_Queue_Must_Not_Be_Shut_Down.
-      ZENI_CONCURRENCY_LINKAGE void give(const std::shared_ptr<Job> &job);
+      ZENI_CONCURRENCY_LINKAGE void give_one(const std::shared_ptr<Job> &job);
       /// Give the queue a new Job. Can throw Job_Queue_Must_Not_Be_Shut_Down.
-      ZENI_CONCURRENCY_LINKAGE void give(std::shared_ptr<Job> &&job);
+      ZENI_CONCURRENCY_LINKAGE void give_one(std::shared_ptr<Job> &&job);
+      /// Give the queue a new Job. Can throw Job_Queue_Must_Not_Be_Shut_Down.
+
+      template <typename ForwardIterator>
+      void give_many(ForwardIterator first, ForwardIterator last) {
+        Lock lock(*this);
+        while (first != last)
+          give(*first++);
+      }
+
+      template <typename Iterable>
+      void give_many(const Iterable &iterable) {
+        give_many(iterable.begin(), iterable.end());
+      }
 
     private:
+      ZENI_CONCURRENCY_LINKAGE void give(const std::shared_ptr<Job> &job);
+
       Job_Queue_Pimpl * const m_impl;
     };
 

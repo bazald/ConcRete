@@ -254,8 +254,12 @@ namespace Zeni {
         rules.swap(locked_data.modify_rules());
       }
 
+      std::vector<std::shared_ptr<Raven_Disconnect_Output>> ravens;
+      ravens.reserve(rules.size());
       for (auto &rule : rules)
-        get_Job_Queue()->give(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second));
+        ravens.push_back(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second));
+
+      get_Job_Queue()->give_many(ravens);
     }
 
     void Network::disconnect_output(const std::shared_ptr<Network> &, const std::shared_ptr<const Node> &output) {
@@ -283,12 +287,17 @@ namespace Zeni {
 
     void Network::source_filter(const std::shared_ptr<Node_Filter> &filter) {
       const auto sft = shared_from_this();
+      std::vector<std::shared_ptr<Raven_Token_Insert>> ravens;
 
-      Network_Locked_Data locked_data(this);
+      {
+        Network_Locked_Data locked_data(this);
+        locked_data.modify_filters().insert(filter);
+        ravens.reserve(locked_data.get_working_memory().size());
+        for (auto &wme_token : locked_data.get_working_memory())
+          ravens.push_back(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, wme_token.second));
+      }
 
-      locked_data.modify_filters().insert(filter);
-      for (auto &wme_token : locked_data.get_working_memory())
-        m_thread_pool->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, wme_token.second));
+      m_thread_pool->get_Job_Queue()->give_many(ravens);
     }
 
     void Network::excise_rule(const std::string &name, const bool &user_command) {
@@ -341,44 +350,63 @@ namespace Zeni {
     void Network::insert_wme(const std::shared_ptr<const WME> &wme) {
       const auto sft = shared_from_this();
       const auto output_token = std::make_shared<Token_Alpha>(wme);
+      std::vector<std::shared_ptr<Raven_Token_Insert>> ravens;
 
-      Network_Locked_Data locked_data(this);
-
-      locked_data.modify_working_memory().insert(std::make_pair(wme, output_token));
 #ifdef DEBUG_OUTPUT
       std::cerr << "rete.insert" << *wme << std::endl;
 #endif
-      for (auto &filter : locked_data.get_filters())
-        m_thread_pool->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, output_token));
+
+      {
+        Network_Locked_Data locked_data(this);
+
+        locked_data.modify_working_memory().insert(std::make_pair(wme, output_token));
+        ravens.reserve(locked_data.get_filters().size());
+        for (auto &filter : locked_data.get_filters())
+          ravens.push_back(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, output_token));
+      }
+
+      m_thread_pool->get_Job_Queue()->give_many(ravens);
     }
 
     void Network::remove_wme(const std::shared_ptr<const WME> &wme) {
       const auto sft = shared_from_this();
-
-      Network_Locked_Data locked_data(this);
-
-      auto found = locked_data.get_working_memory().find(wme);
-      assert(found != locked_data.get_working_memory().end());
+      std::vector<std::shared_ptr<Raven_Token_Remove>> ravens;
 
 #ifdef DEBUG_OUTPUT
       std::cerr << "rete.remove" << *wme << std::endl;
 #endif
-      for (auto &filter : locked_data.get_filters())
-        m_thread_pool->get_Job_Queue()->give(std::static_pointer_cast<Concurrency::Job>(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, found->second)));
 
-      locked_data.modify_working_memory().erase(found);
+      {
+        Network_Locked_Data locked_data(this);
+
+        auto found = locked_data.get_working_memory().find(wme);
+        assert(found != locked_data.get_working_memory().end());
+
+        ravens.reserve(locked_data.get_filters().size());
+        for (auto &filter : locked_data.get_filters())
+          ravens.push_back(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, found->second));
+        locked_data.modify_working_memory().erase(found);
+      }
+
+      m_thread_pool->get_Job_Queue()->give_many(ravens);
     }
 
     void Network::clear_wmes() {
       const auto sft = shared_from_this();
+      std::vector<std::shared_ptr<Raven_Token_Remove>> ravens;
 
-      Network_Locked_Data locked_data(this);
+      {
+        Network_Locked_Data locked_data(this);
 
-      for (auto &wme_token : locked_data.get_working_memory()) {
-        for (auto &filter : locked_data.get_filters())
-          m_thread_pool->get_Job_Queue()->give(std::static_pointer_cast<Concurrency::Job>(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, wme_token.second)));
+        ravens.reserve(locked_data.get_working_memory().size() * locked_data.get_filters().size());
+        for (auto &wme_token : locked_data.get_working_memory()) {
+          for (auto &filter : locked_data.get_filters())
+            ravens.push_back(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, wme_token.second));
+        }
+        locked_data.modify_working_memory().clear();
       }
-      locked_data.modify_working_memory().clear();
+
+      m_thread_pool->get_Job_Queue()->give_many(ravens);
     }
 
     void Network::source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command) {

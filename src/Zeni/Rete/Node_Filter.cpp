@@ -64,13 +64,13 @@ namespace Zeni {
       if (std::get<1>(m_variable) && std::get<2>(m_variable) && *std::get<1>(m_variable) == *std::get<2>(m_variable) && *std::get<1>(wme->get_symbols()) != *std::get<2>(wme->get_symbols()))
         return false;
 
-      Outputs outputs;
+      const auto sft = shared_from_this();
+      std::vector<std::shared_ptr<Raven_Token_Insert>> ravens;
       
       {
         Locked_Node_Data locked_node_data(this);
         Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-        outputs = locked_node_data.get_outputs();
         auto found = locked_node_unary_data.get_input_antitokens().find(token);
         if (found == locked_node_unary_data.get_input_antitokens().end()) {
           locked_node_unary_data.modify_input_tokens().insert(token);
@@ -80,11 +80,14 @@ namespace Zeni {
           locked_node_unary_data.modify_input_antitokens().erase(found);
           return false;
         }
+
+        ravens.reserve(locked_node_data.get_outputs().size());
+        for (auto &output : locked_node_data.get_outputs())
+          ravens.push_back(std::make_shared<Raven_Token_Insert>(output, raven.get_Network(), sft, token));
       }
 
-      const auto sft = shared_from_this();
-      for (auto &output : outputs)
-        raven.get_Network()->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(output, raven.get_Network(), sft, token));
+      raven.get_Network()->get_Job_Queue()->give_many(ravens);
+
       return true;
     }
 
@@ -107,14 +110,13 @@ namespace Zeni {
       if (std::get<1>(m_variable) && std::get<2>(m_variable) && *std::get<1>(m_variable) == *std::get<2>(m_variable) && *std::get<1>(wme->get_symbols()) != *std::get<2>(wme->get_symbols()))
         return false;
 
-      Outputs outputs;
+      const auto sft = shared_from_this();
+      std::vector<std::shared_ptr<Raven_Token_Remove>> ravens;
 
       {
         Locked_Node_Data locked_node_data(this);
         Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-        outputs = locked_node_data.get_outputs();
-        const auto token = std::make_shared<Token_Alpha>(wme);
         auto found = locked_node_unary_data.get_input_tokens().find(token);
         if (found != locked_node_unary_data.get_input_tokens().end()) {
           locked_node_unary_data.modify_input_tokens().erase(found);
@@ -124,11 +126,14 @@ namespace Zeni {
           locked_node_unary_data.modify_input_antitokens().insert(token);
           return false;
         }
+
+        ravens.reserve(locked_node_data.get_outputs().size());
+        for (auto &output : locked_node_data.get_outputs())
+          ravens.push_back(std::make_shared<Raven_Token_Remove>(output, raven.get_Network(), sft, token));
       }
 
-      const auto sft = shared_from_this();
-      for (auto &output : outputs)
-        raven.get_Network()->get_Job_Queue()->give(std::make_shared<Raven_Token_Remove>(output, raven.get_Network(), sft, token));
+      raven.get_Network()->get_Job_Queue()->give_many(ravens);
+
       return true;
     }
 

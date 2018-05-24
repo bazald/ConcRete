@@ -79,38 +79,45 @@ namespace Zeni {
     }
 
     void Node::connect_output(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
-      Tokens output_tokens;
+      const auto sft = shared_from_this();
+      std::vector<std::shared_ptr<Raven_Token_Insert>> ravens;
 
       {
         Locked_Node_Data locked_node_data(this);
-        output_tokens = locked_node_data.get_output_tokens();
+
         assert(locked_node_data.get_outputs().find(output) == locked_node_data.get_outputs().end());
         locked_node_data.modify_outputs().insert(output);
+
+        ravens.reserve(locked_node_data.get_output_tokens().size());
+        for (auto &output_token : locked_node_data.get_output_tokens())
+          ravens.push_back(std::make_shared<Raven_Token_Insert>(output, network, sft, output_token));
       }
 
-      const auto sft = shared_from_this();
-      for (auto &output_token : output_tokens)
-        network->get_Job_Queue()->give(std::make_shared<Raven_Token_Insert>(output, network, sft, output_token));
+      network->get_Job_Queue()->give_many(ravens);
     }
 
     void Node::disconnect_output(const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &output) {
-      Tokens output_tokens;
+      const auto sft = shared_from_this();
+      std::vector<std::shared_ptr<Raven_Token_Remove>> ravens;
 
       {
         Locked_Node_Data locked_node_data(this);
-        output_tokens = locked_node_data.get_output_tokens();
+
         const auto found = locked_node_data.get_outputs().find(std::const_pointer_cast<Node>(output));
         assert(found != locked_node_data.get_outputs().end());
         locked_node_data.modify_outputs().erase(found);
+
         --locked_node_data.modify_output_count();
         assert(locked_node_data.get_output_count() >= 0);
         if (locked_node_data.get_output_count() == 0)
           send_disconnect_from_parents(network, locked_node_data);
+
+        ravens.reserve(locked_node_data.get_output_tokens().size());
+        for (auto &output_token : locked_node_data.get_output_tokens())
+          ravens.push_back(std::make_shared<Raven_Token_Remove>(std::const_pointer_cast<Node>(output), network, sft, output_token));
       }
 
-      const auto sft = shared_from_this();
-      for (auto &output_token : output_tokens)
-        network->get_Job_Queue()->give(std::make_shared<Raven_Token_Remove>(std::const_pointer_cast<Node>(output), network, sft, output_token));
+      network->get_Job_Queue()->give_many(ravens);
     }
 
   }

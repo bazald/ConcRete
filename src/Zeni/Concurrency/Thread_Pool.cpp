@@ -12,7 +12,7 @@ namespace Zeni {
 
     static void worker(const std::shared_ptr<Job_Queue> &job_queue) {
       for (;;) {
-        const std::pair<std::shared_ptr<Job>, Job_Queue::Status> job_and_status = job_queue->take();
+        const std::pair<std::shared_ptr<Job>, Job_Queue::Status> job_and_status = job_queue->take_one();
         if (job_and_status.second == Job_Queue::Status::SHUT_DOWN)
           break;
         assert(job_and_status.first);
