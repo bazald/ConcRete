@@ -32,13 +32,13 @@ namespace Zeni {
         Friendly_Node_Filter(const std::shared_ptr<Network> &network, const WME &wme_) : Node_Filter(network, wme_) {}
       };
 
-      auto filter = std::make_shared<Friendly_Node_Filter>(network, wme);
-
       if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
-        const auto existing_filter = network->find_filter_and_increment_output_count(filter);
+        const auto existing_filter = network->find_filter_and_increment_output_count(wme);
         if (existing_filter)
           return existing_filter;
       }
+
+      auto filter = std::make_shared<Friendly_Node_Filter>(network, wme);
 
       network->source_filter(filter);
 

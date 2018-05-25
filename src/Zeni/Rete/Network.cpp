@@ -282,11 +282,11 @@ namespace Zeni {
       network->get_Job_Queue()->give_many(std::move(jobs));
     }
 
-    std::shared_ptr<Node_Filter> Network::find_filter_and_increment_output_count(const std::shared_ptr<Node_Filter> &filter) {
+    std::shared_ptr<Node_Filter> Network::find_filter_and_increment_output_count(const WME &wme) {
       Network_Locked_Data locked_data(this);
 
       for (auto &existing_filter : locked_data.get_filters()) {
-        if (*existing_filter == *filter) {
+        if (existing_filter->get_wme() == wme) {
           existing_filter->increment_output_count();
           return existing_filter;
         }

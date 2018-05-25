@@ -90,7 +90,7 @@ namespace Zeni {
       ZENI_RETE_LINKAGE bool receive(const Raven_Token_Insert &) override { return false; }
       ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &) override { return false; }
 
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Filter> find_filter_and_increment_output_count(const std::shared_ptr<Node_Filter> &filter);
+      ZENI_RETE_LINKAGE std::shared_ptr<Node_Filter> find_filter_and_increment_output_count(const WME &wme);
 
       ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command);
       ZENI_RETE_LINKAGE void excise_all();

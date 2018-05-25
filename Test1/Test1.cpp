@@ -142,5 +142,5 @@ void test_Parser() {
 
   Zeni::Rete::Parser parser;
 
-  parser.parse_string(network->get(), "3.14159  -42 hello*world <s> 12");
+  parser.parse_string(network->get(), "sp {\r\n  (<s> ^attr 42)\r\n  (<s> ^attr 3.14159)\r\n-->\r\n}\r\n");
 }
