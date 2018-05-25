@@ -16,8 +16,8 @@ namespace Zeni {
       {
       }
 
-      Maester * get_recipient() const {
-        return m_recipient.get();
+      const std::shared_ptr<Maester> & get_recipient() const {
+        return m_recipient;
       }
 
       void execute(Raven * const &raven, Job_Queue &job_queue) {
@@ -37,7 +37,7 @@ namespace Zeni {
       delete m_impl;
     }
 
-    Maester * Raven::get_recipient() const {
+    const std::shared_ptr<Maester> & Raven::get_recipient() const {
       return m_impl->get_recipient();
     }
 

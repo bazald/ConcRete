@@ -13,7 +13,7 @@ namespace Zeni {
     }
 
     void Raven_Token_Insert::receive() const {
-      dynamic_cast<Pseudonode *>(get_recipient())->receive(*this);
+      std::dynamic_pointer_cast<Pseudonode>(get_recipient())->receive(*this);
     }
 
   }

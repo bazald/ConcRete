@@ -12,7 +12,7 @@ namespace Zeni {
     }
 
     void Raven_Disconnect_Output::receive() const {
-      dynamic_cast<Pseudonode *>(get_recipient())->receive(*this);
+      std::dynamic_pointer_cast<Pseudonode>(get_recipient())->receive(*this);
     }
 
   }

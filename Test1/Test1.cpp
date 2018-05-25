@@ -68,6 +68,7 @@ int main()
 {
   test_Thread_Pool();
   test_Rete_Network();
+  test_Parser();
 
   return 0;
 }
@@ -141,5 +142,7 @@ void test_Parser() {
 
   Zeni::Rete::Parser parser;
 
-  parser.parse_rule(network->get(), "(a b c)\r\n");
+  parser.parse_string(network->get(), "2 + 3 * -7");
+
+  parser.parse_string(network->get(), "(2 + 3) * 7");
 }
