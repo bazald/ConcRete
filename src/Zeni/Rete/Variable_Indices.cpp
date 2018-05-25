@@ -3,7 +3,7 @@
 #include "Zeni/Rete/Node.hpp"
 
 #include <iostream>
-#include <string>
+#include <string_view>
 
 namespace Zeni {
 
@@ -45,18 +45,18 @@ namespace Zeni {
         return *this;
       }
 
-      const std::unordered_multimap<std::string, Token_Index> & get_indices() const {
+      const std::unordered_multimap<std::string_view, Token_Index> & get_indices() const {
         return name_to_index;
       }
 
-      Token_Index find_index(const std::string &name) const {
+      Token_Index find_index(const std::string_view name) const {
         const auto found = name_to_index.find(name);
         if (found != name_to_index.end())
           return found->second;
         return Token_Index();
       }
 
-      std::string find_name(const Token_Index &index) const {
+      std::string_view find_name(const Token_Index &index) const {
         const auto found = index_to_name.find(index);
         if (found != index_to_name.end())
           return found->second;
@@ -91,7 +91,7 @@ namespace Zeni {
         return std::pair<std::string, Token_Index>();
       }
 
-      void insert(const std::string &name, const Token_Index &index) {
+      void insert(const std::string_view name, const Token_Index &index) {
         index_to_name.insert(std::make_pair(index, name));
         name_to_index.insert(std::make_pair(name, index));
 
@@ -129,8 +129,8 @@ namespace Zeni {
       }
 
     private:
-      std::unordered_multimap<Token_Index, std::string> index_to_name;
-      std::unordered_multimap<std::string, Token_Index> name_to_index;
+      std::unordered_multimap<Token_Index, std::string_view> index_to_name;
+      std::unordered_multimap<std::string_view, Token_Index> name_to_index;
 
       std::unordered_multimap<std::pair<int64_t, int64_t>, std::pair<std::string, Token_Index>> rrc_to_both;
       std::unordered_multimap<std::pair<int64_t, int64_t>, std::pair<std::string, Token_Index>> trc_to_both;
@@ -165,35 +165,35 @@ namespace Zeni {
       return *this;
     }
 
-    const std::unordered_multimap<std::string, Token_Index> & Variable_Indices::get_indices() const {
+    const std::unordered_multimap<std::string_view, Token_Index> & Variable_Indices::get_indices() const {
       return m_impl->get_indices();
     }
 
-    Token_Index Variable_Indices::find_index(const std::string &name) const {
+    Token_Index Variable_Indices::find_index(const std::string_view name) const {
       return m_impl->find_index(name);
     }
 
-    std::string Variable_Indices::find_name(const Token_Index &index) const {
+    std::string_view Variable_Indices::find_name(const Token_Index &index) const {
       return m_impl->find_name(index);
     }
 
-    std::string Variable_Indices::find_name_rete(const int64_t &rete_row, const int8_t &column) const {
+    std::string_view Variable_Indices::find_name_rete(const int64_t &rete_row, const int8_t &column) const {
       return m_impl->find_name_rete(rete_row, column);
     }
 
-    std::string Variable_Indices::find_name_token(const int64_t &token_row, const int8_t &column) const {
+    std::string_view Variable_Indices::find_name_token(const int64_t &token_row, const int8_t &column) const {
       return m_impl->find_name_token(token_row, column);
     }
 
-    std::pair<std::string, Token_Index> Variable_Indices::find_both_rete(const int64_t &rete_row, const int8_t &column) const {
+    std::pair<std::string_view, Token_Index> Variable_Indices::find_both_rete(const int64_t &rete_row, const int8_t &column) const {
       return m_impl->find_both_rete(rete_row, column);
     }
 
-    std::pair<std::string, Token_Index> Variable_Indices::find_both_token(const int64_t &token_row, const int8_t &column) const {
+    std::pair<std::string_view, Token_Index> Variable_Indices::find_both_token(const int64_t &token_row, const int8_t &column) const {
       return m_impl->find_both_token(token_row, column);
     }
 
-    void Variable_Indices::insert(const std::string &name, const Token_Index &index) {
+    void Variable_Indices::insert(const std::string_view name, const Token_Index &index) {
       m_impl->insert(name, index);
     }
 

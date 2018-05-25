@@ -11,6 +11,7 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <string_view>
 
 namespace Zeni {
 
@@ -28,7 +29,7 @@ namespace Zeni {
 
     private:
       Network::Filters filters;
-      std::unordered_map<std::string, std::shared_ptr<Node_Action>> rules;
+      std::unordered_map<std::string_view, std::shared_ptr<Node_Action>> rules;
       int64_t rule_name_index = 0;
       std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> working_memory;
     };
@@ -52,7 +53,7 @@ namespace Zeni {
         return m_data->filters;
       }
 
-      const std::unordered_map<std::string, std::shared_ptr<Node_Action>> & get_rules() const {
+      const std::unordered_map<std::string_view, std::shared_ptr<Node_Action>> & get_rules() const {
         return m_data->rules;
       }
 
@@ -83,7 +84,7 @@ namespace Zeni {
         return m_data->filters;
       }
 
-      std::unordered_map<std::string, std::shared_ptr<Node_Action>> & modify_rules() {
+      std::unordered_map<std::string_view, std::shared_ptr<Node_Action>> & modify_rules() {
         return m_data->rules;
       }
 
@@ -206,7 +207,7 @@ namespace Zeni {
       return m_thread_pool;
     }
 
-    std::shared_ptr<Node_Action> Network::get_rule(const std::string &name) const {
+    std::shared_ptr<Node_Action> Network::get_rule(const std::string_view name) const {
       Network_Locked_Data_Const locked_data(this);
 
       const auto found = locked_data.get_rules().find(name);
@@ -216,10 +217,10 @@ namespace Zeni {
       return nullptr;
     }
 
-    std::set<std::string> Network::get_rule_names() const {
+    std::set<std::string_view> Network::get_rule_names() const {
       Network_Locked_Data_Const locked_data(this);
 
-      std::set<std::string> rv;
+      std::set<std::string_view> rv;
       for (auto rule : locked_data.get_rules())
         rv.insert(rule.first);
       return rv;
@@ -247,7 +248,7 @@ namespace Zeni {
 
     void Network::excise_all() {
       const auto sft = shared_from_this();
-      std::unordered_map<std::string, std::shared_ptr<Node_Action>> rules;
+      std::unordered_map<std::string_view, std::shared_ptr<Node_Action>> rules;
 
       {
         Network_Locked_Data locked_data(this);
@@ -309,7 +310,7 @@ namespace Zeni {
       m_thread_pool->get_Job_Queue()->give_many(std::move(jobs));
     }
 
-    void Network::excise_rule(const std::string &name, const bool &user_command) {
+    void Network::excise_rule(const std::string_view name, const bool &user_command) {
       Network_Locked_Data locked_data(this);
 
       auto found = locked_data.get_rules().find(name);
@@ -331,7 +332,7 @@ namespace Zeni {
       }
     }
 
-    std::string Network::next_rule_name(const std::string &prefix) {
+    std::string_view Network::next_rule_name(const std::string_view prefix) {
       Network_Locked_Data locked_data(this);
 
       std::ostringstream oss;
@@ -342,7 +343,7 @@ namespace Zeni {
       return oss.str();
     }
 
-    std::shared_ptr<Node_Action> Network::unname_rule(const std::string &name, const bool &user_command) {
+    std::shared_ptr<Node_Action> Network::unname_rule(const std::string_view name, const bool &user_command) {
       Network_Locked_Data locked_data(this);
 
       std::shared_ptr<Node_Action> ptr;

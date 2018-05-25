@@ -18,7 +18,7 @@ class Whisper : public Zeni::Concurrency::Raven {
 public:
   typedef std::shared_ptr<Whisper> Ptr;
 
-  Whisper(const std::shared_ptr<Zeni::Concurrency::Maester> &recipient, const std::string &message)
+  Whisper(const std::shared_ptr<Zeni::Concurrency::Maester> &recipient, const std::string_view message)
     : Raven(recipient), m_message(message)
   {
   }
@@ -142,7 +142,5 @@ void test_Parser() {
 
   Zeni::Rete::Parser parser;
 
-  parser.parse_string(network->get(), "2 + 3 * -7");
-
-  parser.parse_string(network->get(), "(2 + 3) * 7");
+  parser.parse_string(network->get(), "3.14159  -42 hello*world <s> 12");
 }

@@ -14,7 +14,7 @@ namespace Zeni {
       ZENI_RETE_LINKAGE Parser();
 
       ZENI_RETE_LINKAGE void parse_file(const std::shared_ptr<Network> &network, const std::string &filename);
-      ZENI_RETE_LINKAGE void parse_string(const std::shared_ptr<Network> &network, const std::string &str);
+      ZENI_RETE_LINKAGE void parse_string(const std::shared_ptr<Network> &network, const std::string_view str);
 
     private:
       std::shared_ptr<Parser_Pimpl> m_impl;

@@ -79,8 +79,8 @@ namespace Zeni {
 
       ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Job_Queue> get_Job_Queue() const;
       ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Thread_Pool> get_Thread_Pool() const;
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> get_rule(const std::string &name) const;
-      ZENI_RETE_LINKAGE std::set<std::string> get_rule_names() const;
+      ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> get_rule(const std::string_view name) const;
+      ZENI_RETE_LINKAGE std::set<std::string_view> get_rule_names() const;
       ZENI_RETE_LINKAGE int64_t get_rule_name_index() const;
       ZENI_RETE_LINKAGE void set_rule_name_index(const int64_t &rule_name_index_);
       ZENI_RETE_LINKAGE Node_Sharing get_Node_Sharing() const;
@@ -95,9 +95,9 @@ namespace Zeni {
       ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command);
       ZENI_RETE_LINKAGE void excise_all();
       ZENI_RETE_LINKAGE void source_filter(const std::shared_ptr<Node_Filter> &filter);
-      ZENI_RETE_LINKAGE void excise_rule(const std::string &name, const bool &user_command);
-      ZENI_RETE_LINKAGE std::string next_rule_name(const std::string &prefix);
-      ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> unname_rule(const std::string &name, const bool &user_command);
+      ZENI_RETE_LINKAGE void excise_rule(const std::string_view name, const bool &user_command);
+      ZENI_RETE_LINKAGE std::string_view next_rule_name(const std::string_view prefix);
+      ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> unname_rule(const std::string_view name, const bool &user_command);
 
       ZENI_RETE_LINKAGE void insert_wme(const std::shared_ptr<const WME> &wme);
       ZENI_RETE_LINKAGE void remove_wme(const std::shared_ptr<const WME> &wme);
