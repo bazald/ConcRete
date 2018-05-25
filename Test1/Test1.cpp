@@ -6,10 +6,10 @@
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
+#include "Zeni/Rete/Parser.hpp"
 
 #include <array>
 #include <iostream>
-#include <list>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -43,12 +43,12 @@ public:
     std::cerr << whisper.get_message() + "\n";
     //++g_num_recvs;
 
-    std::list<std::shared_ptr<Whisper>> whispers;
+    std::vector<std::shared_ptr<Zeni::Concurrency::Job>> jobs;
     Zeni::Concurrency::Mutex::Lock mutex_lock(m_mutex);
     for (Ptr gossip : m_gossips)
-      whispers.push_back(std::make_shared<Whisper>(gossip, whisper.get_message()));
+      jobs.emplace_back(std::make_shared<Whisper>(gossip, whisper.get_message()));
 
-    job_queue.give_many(whispers);
+    job_queue.give_many(std::move(jobs));
   }
 
   void tell(const Ptr &gossip) {
@@ -62,6 +62,7 @@ private:
 
 static void test_Thread_Pool();
 static void test_Rete_Network();
+static void test_Parser();
 
 int main()
 {
@@ -90,12 +91,12 @@ void test_Thread_Pool() {
   gossips["diane"]->tell(gossips["janae"]);
   gossips["diane"]->tell(gossips["kelly"]);
 
-  std::list<std::shared_ptr<Whisper>> whispers;
+  std::vector<std::shared_ptr<Zeni::Concurrency::Job>> jobs;
   for (std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
-    whispers.push_back(std::make_shared<Whisper>(gossips["alice"], message));
+    jobs.emplace_back(std::make_shared<Whisper>(gossips["alice"], message));
 
-  thread_pool.get_Job_Queue()->give_many(whispers);
-  whispers.clear();
+  thread_pool.get_Job_Queue()->give_many(std::move(jobs));
+  jobs.clear();
 
   //for(int i = 0; i != 1000000; ++i)
   //  thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
@@ -103,15 +104,14 @@ void test_Thread_Pool() {
   thread_pool.get_Job_Queue()->wait_for_completion();
 
   for (std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
-    whispers.push_back(std::make_shared<Whisper>(gossips["alice"], message));
-  thread_pool.get_Job_Queue()->give_many(whispers);
+    jobs.emplace_back(std::make_shared<Whisper>(gossips["alice"], message));
+  thread_pool.get_Job_Queue()->give_many(std::move(jobs));
 
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;
 }
 
 void test_Rete_Network() {
-  const auto network =
-    Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::Normal);
+  const auto network = Zeni::Rete::Network::Create();
 
   std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
     {
@@ -134,4 +134,12 @@ void test_Rete_Network() {
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
   (*network)->get_Job_Queue()->wait_for_completion();
+}
+
+void test_Parser() {
+  const auto network = Zeni::Rete::Network::Create();
+
+  Zeni::Rete::Parser parser;
+
+  parser.parse_rule(network->get(), "(a b c)\r\n");
 }

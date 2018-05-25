@@ -102,6 +102,9 @@
     <ClCompile Include="..\src\Zeni\Rete\Pseudonode.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Parser.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Zeni\Rete\Custom_Data.hpp">
@@ -640,6 +643,9 @@
     </ClInclude>
     <ClInclude Include="..\PEGTL\include\tao\pegtl.hpp">
       <Filter>Header Files\tao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Parser.hpp">
+      <Filter>Header Files\Zeni</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

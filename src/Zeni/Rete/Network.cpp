@@ -254,22 +254,31 @@ namespace Zeni {
         rules.swap(locked_data.modify_rules());
       }
 
-      std::vector<std::shared_ptr<Raven_Disconnect_Output>> ravens;
-      ravens.reserve(rules.size());
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+      jobs.reserve(rules.size());
       for (auto &rule : rules)
-        ravens.push_back(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second));
+        jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second));
 
-      get_Job_Queue()->give_many(ravens);
+      get_Job_Queue()->give_many(std::move(jobs));
     }
 
-    void Network::disconnect_output(const std::shared_ptr<Network> &, const std::shared_ptr<const Node> &output) {
-      Network_Locked_Data locked_data(this);
+    void Network::disconnect_output(const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &output) {
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
-      const auto found = locked_data.get_filters().find(
-        std::const_pointer_cast<Node_Filter>(std::dynamic_pointer_cast<const Node_Filter>(output)));
-      assert(found != locked_data.get_filters().end());
-      locked_data.modify_filters().erase(found);
+      {
+        Network_Locked_Data locked_data(this);
 
+        const auto found = locked_data.get_filters().find(
+          std::const_pointer_cast<Node_Filter>(std::dynamic_pointer_cast<const Node_Filter>(output)));
+        assert(found != locked_data.get_filters().end());
+        locked_data.modify_filters().erase(found);
+
+        jobs.reserve(locked_data.get_working_memory().size());
+        for (auto &wme_token : locked_data.get_working_memory())
+          jobs.emplace_back(std::make_shared<Raven_Token_Remove>(std::const_pointer_cast<Node>(output), network, nullptr, wme_token.second));
+      }
+
+      network->get_Job_Queue()->give_many(std::move(jobs));
     }
 
     std::shared_ptr<Node_Filter> Network::find_filter_and_increment_output_count(const std::shared_ptr<Node_Filter> &filter) {
@@ -287,17 +296,17 @@ namespace Zeni {
 
     void Network::source_filter(const std::shared_ptr<Node_Filter> &filter) {
       const auto sft = shared_from_this();
-      std::vector<std::shared_ptr<Raven_Token_Insert>> ravens;
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
       {
         Network_Locked_Data locked_data(this);
         locked_data.modify_filters().insert(filter);
-        ravens.reserve(locked_data.get_working_memory().size());
+        jobs.reserve(locked_data.get_working_memory().size());
         for (auto &wme_token : locked_data.get_working_memory())
-          ravens.push_back(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, wme_token.second));
+          jobs.emplace_back(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, wme_token.second));
       }
 
-      m_thread_pool->get_Job_Queue()->give_many(ravens);
+      m_thread_pool->get_Job_Queue()->give_many(std::move(jobs));
     }
 
     void Network::excise_rule(const std::string &name, const bool &user_command) {
@@ -350,7 +359,7 @@ namespace Zeni {
     void Network::insert_wme(const std::shared_ptr<const WME> &wme) {
       const auto sft = shared_from_this();
       const auto output_token = std::make_shared<Token_Alpha>(wme);
-      std::vector<std::shared_ptr<Raven_Token_Insert>> ravens;
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
 #ifdef DEBUG_OUTPUT
       std::cerr << "rete.insert" << *wme << std::endl;
@@ -360,17 +369,17 @@ namespace Zeni {
         Network_Locked_Data locked_data(this);
 
         locked_data.modify_working_memory().insert(std::make_pair(wme, output_token));
-        ravens.reserve(locked_data.get_filters().size());
+        jobs.reserve(locked_data.get_filters().size());
         for (auto &filter : locked_data.get_filters())
-          ravens.push_back(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, output_token));
+          jobs.emplace_back(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, output_token));
       }
 
-      m_thread_pool->get_Job_Queue()->give_many(ravens);
+      m_thread_pool->get_Job_Queue()->give_many(std::move(jobs));
     }
 
     void Network::remove_wme(const std::shared_ptr<const WME> &wme) {
       const auto sft = shared_from_this();
-      std::vector<std::shared_ptr<Raven_Token_Remove>> ravens;
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
 #ifdef DEBUG_OUTPUT
       std::cerr << "rete.remove" << *wme << std::endl;
@@ -382,31 +391,31 @@ namespace Zeni {
         auto found = locked_data.get_working_memory().find(wme);
         assert(found != locked_data.get_working_memory().end());
 
-        ravens.reserve(locked_data.get_filters().size());
+        jobs.reserve(locked_data.get_filters().size());
         for (auto &filter : locked_data.get_filters())
-          ravens.push_back(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, found->second));
+          jobs.emplace_back(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, found->second));
         locked_data.modify_working_memory().erase(found);
       }
 
-      m_thread_pool->get_Job_Queue()->give_many(ravens);
+      m_thread_pool->get_Job_Queue()->give_many(std::move(jobs));
     }
 
     void Network::clear_wmes() {
       const auto sft = shared_from_this();
-      std::vector<std::shared_ptr<Raven_Token_Remove>> ravens;
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
       {
         Network_Locked_Data locked_data(this);
 
-        ravens.reserve(locked_data.get_working_memory().size() * locked_data.get_filters().size());
+        jobs.reserve(locked_data.get_working_memory().size() * locked_data.get_filters().size());
         for (auto &wme_token : locked_data.get_working_memory()) {
           for (auto &filter : locked_data.get_filters())
-            ravens.push_back(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, wme_token.second));
+            jobs.emplace_back(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, wme_token.second));
         }
         locked_data.modify_working_memory().clear();
       }
 
-      m_thread_pool->get_Job_Queue()->give_many(ravens);
+      m_thread_pool->get_Job_Queue()->give_many(std::move(jobs));
     }
 
     void Network::source_rule(const std::shared_ptr<Node_Action> &action, const bool &user_command) {

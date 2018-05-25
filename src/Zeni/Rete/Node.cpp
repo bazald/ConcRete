@@ -80,7 +80,7 @@ namespace Zeni {
 
     void Node::connect_output(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) {
       const auto sft = shared_from_this();
-      std::vector<std::shared_ptr<Raven_Token_Insert>> ravens;
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
       {
         Locked_Node_Data locked_node_data(this);
@@ -88,17 +88,17 @@ namespace Zeni {
         assert(locked_node_data.get_outputs().find(output) == locked_node_data.get_outputs().end());
         locked_node_data.modify_outputs().insert(output);
 
-        ravens.reserve(locked_node_data.get_output_tokens().size());
+        jobs.reserve(locked_node_data.get_output_tokens().size());
         for (auto &output_token : locked_node_data.get_output_tokens())
-          ravens.push_back(std::make_shared<Raven_Token_Insert>(output, network, sft, output_token));
+          jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, network, sft, output_token));
       }
 
-      network->get_Job_Queue()->give_many(ravens);
+      network->get_Job_Queue()->give_many(std::move(jobs));
     }
 
     void Node::disconnect_output(const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &output) {
       const auto sft = shared_from_this();
-      std::vector<std::shared_ptr<Raven_Token_Remove>> ravens;
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
       {
         Locked_Node_Data locked_node_data(this);
@@ -112,12 +112,12 @@ namespace Zeni {
         if (locked_node_data.get_output_count() == 0)
           send_disconnect_from_parents(network, locked_node_data);
 
-        ravens.reserve(locked_node_data.get_output_tokens().size());
+        jobs.reserve(locked_node_data.get_output_tokens().size());
         for (auto &output_token : locked_node_data.get_output_tokens())
-          ravens.push_back(std::make_shared<Raven_Token_Remove>(std::const_pointer_cast<Node>(output), network, sft, output_token));
+          jobs.emplace_back(std::make_shared<Raven_Token_Remove>(std::const_pointer_cast<Node>(output), network, sft, output_token));
       }
 
-      network->get_Job_Queue()->give_many(ravens);
+      network->get_Job_Queue()->give_many(std::move(jobs));
     }
 
   }

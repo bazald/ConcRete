@@ -76,8 +76,12 @@ namespace Zeni {
           --m_dormant;
         }
 
-        const std::shared_ptr<Job> job = m_jobs.front();
-        m_jobs.pop();
+        const std::shared_ptr<Job> job = m_jobs.front().back();
+        m_jobs.front().pop_back();
+
+        if (m_jobs.front().empty())
+          m_jobs.pop();
+
         return std::make_pair(job, m_status);
       }
 
@@ -88,7 +92,7 @@ namespace Zeni {
           throw Job_Queue::Job_Queue_Must_Not_Be_Shut_Down();
 
         if (m_dormant_max) {
-          m_jobs.push(job);
+          m_jobs.emplace(1, job);
           m_non_empty.notify_one();
         }
         else {
@@ -99,41 +103,31 @@ namespace Zeni {
         }
       }
 
-      void give_one(Job_Queue * const pub_this, std::shared_ptr<Job> &&job) {
+      void give_many(Job_Queue * const pub_this, std::vector<std::shared_ptr<Job>> &&jobs) {
+        if (jobs.empty())
+          return;
+
         std::unique_lock<std::mutex> mutex_lock(m_mutex);
 
         if (m_status == Job_Queue::Status::SHUT_DOWN)
           throw Job_Queue::Job_Queue_Must_Not_Be_Shut_Down();
 
         if (m_dormant_max) {
-          m_jobs.push(std::move(job));
-          m_non_empty.notify_one();
+          m_jobs.emplace(std::move(jobs));
+          m_non_empty.notify_all();
         }
         else {
           // Single-threaded mode
           mutex_lock.release();
           m_mutex.unlock();
-          job->execute(*pub_this);
-        }
-      }
-
-      void give(Job_Queue * const pub_this, const std::shared_ptr<Job> &job) {
-        if (m_status == Job_Queue::Status::SHUT_DOWN)
-          throw Job_Queue::Job_Queue_Must_Not_Be_Shut_Down();
-
-        if (m_dormant_max) {
-          m_jobs.push(job);
-          m_non_empty.notify_one();
-        }
-        else {
-          // Single-threaded mode
-          job->execute(*pub_this);
+          for(auto job : jobs)
+            job->execute(*pub_this);
         }
       }
 
     private:
       std::mutex m_mutex;
-      std::queue<std::shared_ptr<Job>> m_jobs;
+      std::queue<std::vector<std::shared_ptr<Job>>> m_jobs;
       std::condition_variable m_empty;
       std::condition_variable m_non_empty;
       Job_Queue::Status m_status = Job_Queue::Status::RUNNING;
@@ -203,12 +197,8 @@ namespace Zeni {
       return m_impl->give_one(this, job);
     }
 
-    void Job_Queue::give_one(std::shared_ptr<Job> &&job) {
-      return m_impl->give_one(this, std::move(job));
-    }
-
-    void Job_Queue::give(const std::shared_ptr<Job> &job) {
-      return m_impl->give(this, job);
+    void Job_Queue::give_many(std::vector<std::shared_ptr<Job>> &&jobs) {
+      return m_impl->give_many(this, std::move(jobs));
     }
 
   }

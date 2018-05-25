@@ -65,7 +65,7 @@ namespace Zeni {
         return false;
 
       const auto sft = shared_from_this();
-      std::vector<std::shared_ptr<Raven_Token_Insert>> ravens;
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
       
       {
         Locked_Node_Data locked_node_data(this);
@@ -81,12 +81,12 @@ namespace Zeni {
           return false;
         }
 
-        ravens.reserve(locked_node_data.get_outputs().size());
+        jobs.reserve(locked_node_data.get_outputs().size());
         for (auto &output : locked_node_data.get_outputs())
-          ravens.push_back(std::make_shared<Raven_Token_Insert>(output, raven.get_Network(), sft, token));
+          jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, raven.get_Network(), sft, token));
       }
 
-      raven.get_Network()->get_Job_Queue()->give_many(ravens);
+      raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
 
       return true;
     }
@@ -111,7 +111,7 @@ namespace Zeni {
         return false;
 
       const auto sft = shared_from_this();
-      std::vector<std::shared_ptr<Raven_Token_Remove>> ravens;
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
       {
         Locked_Node_Data locked_node_data(this);
@@ -127,12 +127,12 @@ namespace Zeni {
           return false;
         }
 
-        ravens.reserve(locked_node_data.get_outputs().size());
+        jobs.reserve(locked_node_data.get_outputs().size());
         for (auto &output : locked_node_data.get_outputs())
-          ravens.push_back(std::make_shared<Raven_Token_Remove>(output, raven.get_Network(), sft, token));
+          jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, raven.get_Network(), sft, token));
       }
 
-      raven.get_Network()->get_Job_Queue()->give_many(ravens);
+      raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
 
       return true;
     }

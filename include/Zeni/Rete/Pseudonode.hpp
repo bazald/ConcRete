@@ -2,7 +2,7 @@
 #define ZENI_RETE_PSEUDONODE_H
 
 #include "Zeni/Concurrency/Maester.hpp"
-#include "Zeni/Rete/Linkage.hpp"
+#include "Linkage.hpp"
 
 namespace Zeni {
 
