@@ -5,17 +5,18 @@
 #include <stack>
 #include <string_view>
 
-#define TAO_PEGTL_NAMESPACE Zeni_Rete_PEGTL
+#define TAO_PEGTL_NAMESPACE Zeni_Rete_PEG
 
 #include "tao/pegtl.hpp"
 #include "tao/pegtl/analyze.hpp"
 
+#include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
 #include "Zeni/Rete/Symbol.hpp"
 
-namespace Zeni::Rete::PEGTL {
+namespace Zeni::Rete::PEG {
 
-  using namespace tao::Zeni_Rete_PEGTL;
+  using namespace tao::Zeni_Rete_PEG;
 
   struct plus_minus : opt<one<'+', '-'>> {};
   struct dot : one<'.'> {};
@@ -50,6 +51,7 @@ namespace Zeni::Rete::PEGTL {
 
   struct Rule_Name : seq<plus<alpha>, star<sor<alnum, one<'-', '_', '*'>>>> {};
   struct Source_Production : seq<string<'s', 'p'>, star<space_comment>, one<'{'>, star<space_comment>,
+    Rule_Name, star<space_comment>,
     Conditions,
     string<'-', '-', '>'>, star<space_comment>,
     one<'}'>> {};
@@ -57,11 +59,13 @@ namespace Zeni::Rete::PEGTL {
   struct Grammar : must<seq<star<space_comment>, list_tail<Source_Production, star<space_comment>>>, eof> {};
 
   struct Data {
-    Data(const std::shared_ptr<Network> network_) : network(network_) {}
+    Data(const std::shared_ptr<Network> network_, const bool user_command_) : network(network_), user_command(user_command_) {}
 
     const std::shared_ptr<Network> network;
-    std::stack<std::pair<std::string_view, std::shared_ptr<Rete::Symbol>>> symbols;
-    std::stack<std::shared_ptr<Node_Filter>> filter_nodes;
+    const bool user_command;
+    std::stack<std::pair<std::string, std::shared_ptr<Rete::Symbol>>> symbols;
+    std::stack<std::shared_ptr<Node_Filter>> filters;
+    std::string rule_name;
   };
 
   template <typename Rule>
@@ -75,7 +79,7 @@ namespace Zeni::Rete::PEGTL {
       double d;
       sin >> d;
       //std::cout << "Double: " << d << std::endl;
-      data.symbols.push(std::make_pair(input.string(), std::make_shared<Symbol_Constant_Float>(d)));
+      data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_Float>(d));
     }
   };
 
@@ -87,7 +91,7 @@ namespace Zeni::Rete::PEGTL {
       int64_t i;
       sin >> i;
       //std::cout << "Int: " << i << std::endl;
-      data.symbols.push(std::make_pair(input.string(), std::make_shared<Symbol_Constant_Int>(i)));
+      data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_Int>(i));
     }
   };
 
@@ -95,10 +99,8 @@ namespace Zeni::Rete::PEGTL {
   struct Action<Constant_String> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      std::stringstream sin(input.string());
-      const std::string s = input.string();
-      //std::cout << "String: " << s << std::endl;
-      data.symbols.push(std::make_pair(input.string(), std::make_shared<Symbol_Constant_String>(s)));
+      //std::cout << "String: " << input.string() << std::endl;
+      data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_String>(input.string()));
     }
   };
 
@@ -110,7 +112,15 @@ namespace Zeni::Rete::PEGTL {
       std::string str = input.string();
       str = str.substr(1, str.length() - 2);
       //std::cout << "Variable: " << str << std::endl;
-      data.symbols.push(std::pair(input.string(), nullptr));
+      data.symbols.emplace(input.string(), nullptr);
+    }
+  };
+
+  template <>
+  struct Action<Rule_Name> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data) {
+      data.rule_name = input.string();
     }
   };
 
@@ -140,9 +150,9 @@ namespace Zeni::Rete::PEGTL {
       if (!third.second)
         second.second = std::make_shared<Symbol_Variable>(Symbol_Variable::Third);
 
-      auto filter = Node_Filter::Create_Or_Increment_Output_Count(data.network, WME(first.second, second.second, third.second));
-
       //std::cout << "Condition: " << input.string() << std::endl;
+
+      data.filters.emplace(Node_Filter::Create_Or_Increment_Output_Count(data.network, WME(first.second, second.second, third.second)));
     }
   };
 
@@ -158,7 +168,17 @@ namespace Zeni::Rete::PEGTL {
   struct Action<Source_Production> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      std::cout << "Source_Production: " << input.string() << std::endl;
+      //std::cout << "Source_Production: " << input.string() << std::endl;
+
+      while (!data.filters.empty()) {
+        Zeni::Rete::Node_Action::Create_Or_Increment_Output_Count(data.network, data.rule_name, data.user_command, data.filters.top(), std::make_shared<Zeni::Rete::Variable_Indices>(),
+          [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
+          std::cout << rete_action.get_name() << " +: " << token << std::endl;
+        }, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
+          std::cout << rete_action.get_name() << " -: " << token << std::endl;
+        });
+        data.filters.pop();
+      }
     }
   };
 
@@ -169,7 +189,7 @@ namespace Zeni::Rete {
   class Parser_Analyzer {
   public:
     Parser_Analyzer() {
-      PEGTL::analyze<PEGTL::Grammar>();
+      PEG::analyze<PEG::Grammar>();
     }
   };
 
@@ -177,10 +197,10 @@ namespace Zeni::Rete {
 
   class Parser_Pimpl : public std::enable_shared_from_this<Parser_Pimpl> {
     template <typename Input>
-    void parse(Input &input, const std::shared_ptr<Network> network) {
-      PEGTL::Data data(network);
+    void parse(Input &input, const std::shared_ptr<Network> network, const bool user_command) {
+      PEG::Data data(network, user_command);
 
-      PEGTL::parse<PEGTL::Grammar, PEGTL::Action>(input, data);
+      PEG::parse<PEG::Grammar, PEG::Action>(input, data);
     }
 
   public:
@@ -188,20 +208,25 @@ namespace Zeni::Rete {
 
     }
 
-    void parse_file(const std::shared_ptr<Network> network, const std::string &filename) {
+    void parse_file(const std::shared_ptr<Network> network, const std::string &filename, const bool user_command) {
+#ifdef _MSC_VER
+      FILE * in_file;
+      fopen_s(&in_file, filename.c_str(), "r");
+#else
       FILE * in_file = std::fopen(filename.c_str(), "r");
-      PEGTL::file_input<PEGTL::tracking_mode::LAZY> input(in_file, filename);
+#endif
+      PEG::file_input<PEG::tracking_mode::LAZY> input(in_file, filename);
 
-      parse(input, network);
+      parse(input, network, user_command);
 
       std::fclose(in_file);
     }
 
-    void parse_string(const std::shared_ptr<Network> network, const std::string_view str) {
-      PEGTL::memory_input<PEGTL::tracking_mode::LAZY>
+    void parse_string(const std::shared_ptr<Network> network, const std::string_view str, const bool user_command) {
+      PEG::memory_input<PEG::tracking_mode::LAZY>
         input(str.data(), str.data() + str.length(), "Zeni::Parser::parse_string(const std::shared_ptr<Network> &, const std::string_view )");
 
-      parse(input, network);
+      parse(input, network, user_command);
     }
 
   private:
@@ -213,12 +238,12 @@ namespace Zeni::Rete {
   {
   }
 
-  void Parser::parse_file(const std::shared_ptr<Network> network, const std::string &filename) {
-    m_impl->parse_file(network, filename);
+  void Parser::parse_file(const std::shared_ptr<Network> network, const std::string &filename, const bool user_command) {
+    m_impl->parse_file(network, filename, user_command);
   }
 
-  void Parser::parse_string(const std::shared_ptr<Network> network, const std::string_view str) {
-    m_impl->parse_string(network, str);
+  void Parser::parse_string(const std::shared_ptr<Network> network, const std::string_view str, const bool user_command) {
+    m_impl->parse_string(network, str, user_command);
   }
 
 }

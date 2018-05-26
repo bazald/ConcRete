@@ -142,5 +142,12 @@ void test_Parser() {
 
   Zeni::Rete::Parser parser;
 
-  parser.parse_string(network->get(), "sp {\r\n  (<s> ^attr 42)\r\n  (<s> ^attr 3.14159)\r\n-->\r\n}\r\n");
+  parser.parse_string(network->get(), "sp {test-rule\r\n  (<s> ^attr 42)\r\n  (<s> ^attr 3.14159)\r\n-->\r\n}\r\n", true);
+
+  (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(
+    std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
+    std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
+    std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
+
+  (*network)->get_Job_Queue()->wait_for_completion();
 }

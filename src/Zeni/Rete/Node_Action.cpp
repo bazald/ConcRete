@@ -42,6 +42,14 @@ namespace Zeni::Rete {
     //  m_retraction(*this, *token);
   }
 
+  std::string Node_Action::get_name() const {
+    return m_name;
+  }
+
+  std::shared_ptr<const Variable_Indices> Node_Action::get_variables() const {
+    return m_variables;
+  }
+
   bool Node_Action::receive(const Raven_Token_Insert &raven) {
     if (Node_Unary::receive(raven)) {
       m_action(*this, *raven.get_Token());

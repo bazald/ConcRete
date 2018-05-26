@@ -147,11 +147,12 @@ namespace Zeni::Rete {
   }
 
 
-  Symbol_Constant_String::Symbol_Constant_String(const std::string_view value_) : m_value(value_) {}
+  Symbol_Constant_String::Symbol_Constant_String(const std::string &value_) : m_value(value_) {}
+  Symbol_Constant_String::Symbol_Constant_String(std::string &&value_) : m_value(std::move(value_)) {}
 
   std::string_view Symbol_Constant_String::get_value() const { return m_value; }
 
-  Symbol_Constant_String * Symbol_Constant_String::clone() const { return new Symbol_Constant_String(get_value()); }
+  Symbol_Constant_String * Symbol_Constant_String::clone() const { return new Symbol_Constant_String(m_value); }
 
   bool Symbol_Constant_String::operator==(const Symbol &rhs) const { return rhs == *this; }
   bool Symbol_Constant_String::operator!=(const Symbol &rhs) const { return rhs != *this; }
@@ -179,7 +180,7 @@ namespace Zeni::Rete {
   bool Symbol_Constant_String::operator==(const char * value_) const { return value_ == m_value; }
 
   size_t Symbol_Constant_String::hash() const {
-    return std::hash<std::string_view>()(m_value);
+    return std::hash<std::string>()(m_value);
   }
 
   std::ostream & Symbol_Constant_String::print(std::ostream &os) const {

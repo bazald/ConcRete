@@ -169,6 +169,7 @@
     <ClCompile Include="..\src\Zeni\Rete\Pseudonode.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Raven.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Raven_Disconnect_Output.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Raven_Token.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Raven_Token_Insert.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Raven_Token_Remove.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Symbol.cpp" />

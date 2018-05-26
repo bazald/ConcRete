@@ -186,7 +186,8 @@ namespace Zeni::Rete {
     Symbol_Constant_String & operator=(const Symbol_Constant_String &) = delete;
 
   public:
-    ZENI_RETE_LINKAGE Symbol_Constant_String(const std::string_view value_);
+    ZENI_RETE_LINKAGE Symbol_Constant_String(const std::string &value_);
+    ZENI_RETE_LINKAGE Symbol_Constant_String(std::string &&value_);
 
     ZENI_RETE_LINKAGE std::string_view get_value() const;
 
@@ -224,7 +225,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const override;
 
   private:
-    const std::string_view m_value;
+    const std::string m_value;
   };
 
   class Symbol_Identifier : public Symbol {

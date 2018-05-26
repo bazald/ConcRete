@@ -43,11 +43,11 @@ namespace Zeni::Rete {
       return *this;
     }
 
-    const std::unordered_multimap<std::string_view, Token_Index> & get_indices() const {
+    const std::unordered_multimap<std::string, Token_Index> & get_indices() const {
       return name_to_index;
     }
 
-    Token_Index find_index(const std::string_view name) const {
+    Token_Index find_index(const std::string &name) const {
       const auto found = name_to_index.find(name);
       if (found != name_to_index.end())
         return found->second;
@@ -127,8 +127,8 @@ namespace Zeni::Rete {
     }
 
   private:
-    std::unordered_multimap<Token_Index, std::string_view> index_to_name;
-    std::unordered_multimap<std::string_view, Token_Index> name_to_index;
+    std::unordered_multimap<Token_Index, std::string> index_to_name;
+    std::unordered_multimap<std::string, Token_Index> name_to_index;
 
     std::unordered_multimap<std::pair<int64_t, int64_t>, std::pair<std::string, Token_Index>> rrc_to_both;
     std::unordered_multimap<std::pair<int64_t, int64_t>, std::pair<std::string, Token_Index>> trc_to_both;
@@ -163,11 +163,11 @@ namespace Zeni::Rete {
     return *this;
   }
 
-  const std::unordered_multimap<std::string_view, Token_Index> & Variable_Indices::get_indices() const {
+  const std::unordered_multimap<std::string, Token_Index> & Variable_Indices::get_indices() const {
     return m_impl->get_indices();
   }
 
-  Token_Index Variable_Indices::find_index(const std::string_view name) const {
+  Token_Index Variable_Indices::find_index(const std::string &name) const {
     return m_impl->find_index(name);
   }
 

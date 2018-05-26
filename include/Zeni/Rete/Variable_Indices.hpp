@@ -23,9 +23,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE Variable_Indices & operator=(const Variable_Indices &rhs);
     ZENI_RETE_LINKAGE Variable_Indices & operator=(Variable_Indices &&rhs);
 
-    ZENI_RETE_LINKAGE const std::unordered_multimap<std::string_view, Token_Index> & get_indices() const;
+    ZENI_RETE_LINKAGE const std::unordered_multimap<std::string, Token_Index> & get_indices() const;
 
-    ZENI_RETE_LINKAGE Token_Index find_index(const std::string_view name) const;
+    ZENI_RETE_LINKAGE Token_Index find_index(const std::string &name) const;
 
     ZENI_RETE_LINKAGE std::string_view find_name(const Token_Index &index) const;
     ZENI_RETE_LINKAGE std::string_view find_name_rete(const int64_t rete_row, const int8_t column) const;

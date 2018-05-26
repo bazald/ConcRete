@@ -24,8 +24,8 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE ~Node_Action();
 
-    ZENI_RETE_LINKAGE const std::string_view get_name() const { return m_name; }
-    ZENI_RETE_LINKAGE std::shared_ptr<const Variable_Indices> get_variables() const { return m_variables; }
+    ZENI_RETE_LINKAGE std::string get_name() const;
+    ZENI_RETE_LINKAGE std::shared_ptr<const Variable_Indices> get_variables() const;
 
     ZENI_RETE_LINKAGE bool receive(const Raven_Token_Insert &raven) override;
     ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &raven) override;
