@@ -1,6 +1,5 @@
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
 
-#include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node.hpp"
 
 namespace Zeni::Rete {

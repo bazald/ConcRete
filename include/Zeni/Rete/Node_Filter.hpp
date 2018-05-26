@@ -16,8 +16,8 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE const WME & get_wme() const;
 
-    ZENI_RETE_LINKAGE bool receive(const Raven_Token_Insert &raven) override;
-    ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &raven) override;
+    ZENI_RETE_LINKAGE void receive(const Raven_Token_Insert &raven) override;
+    ZENI_RETE_LINKAGE void receive(const Raven_Token_Remove &raven) override;
 
     ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
 

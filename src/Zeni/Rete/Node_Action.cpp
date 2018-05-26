@@ -50,22 +50,42 @@ namespace Zeni::Rete {
     return m_variables;
   }
 
-  bool Node_Action::receive(const Raven_Token_Insert &raven) {
-    if (Node_Unary::receive(raven)) {
-      m_action(*this, *raven.get_Token());
-      return true;
+  void Node_Action::receive(const Raven_Token_Insert &raven) {
+    const auto sft = shared_from_this();
+
+    {
+      Locked_Node_Data locked_node_data(this);
+      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+
+      auto found = locked_node_unary_data.get_input_antitokens().find(raven.get_Token());
+      if (found != locked_node_unary_data.get_input_antitokens().end()) {
+        locked_node_unary_data.modify_input_antitokens().erase(found);
+        return;
+      }
+
+      locked_node_unary_data.modify_input_tokens().emplace(raven.get_Token());
     }
-    else
-      return false;
+
+    m_action(*this, *raven.get_Token());
   }
 
-  bool Node_Action::receive(const Raven_Token_Remove &raven) {
-    if (Node_Unary::receive(raven)) {
-      m_retraction(*this, *raven.get_Token());
-      return true;
+  void Node_Action::receive(const Raven_Token_Remove &raven) {
+    const auto sft = shared_from_this();
+
+    {
+      Locked_Node_Data locked_node_data(this);
+      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+
+      auto found = locked_node_unary_data.get_input_tokens().find(raven.get_Token());
+      if (found == locked_node_unary_data.get_input_tokens().end()) {
+        locked_node_unary_data.modify_input_antitokens().emplace(raven.get_Token());
+        return;
+      }
+
+      locked_node_unary_data.modify_input_tokens().erase(found);
     }
-    else
-      return false;
+
+    m_retraction(*this, *raven.get_Token());
   }
 
   bool Node_Action::operator==(const Node &) const {

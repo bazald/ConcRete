@@ -5,8 +5,6 @@
 
 namespace Zeni::Rete {
 
-  class Network;
-  class Node;
   class Token;
 
   class Raven_Token : public Rete::Raven {

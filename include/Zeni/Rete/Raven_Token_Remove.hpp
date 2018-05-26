@@ -5,9 +5,6 @@
 
 namespace Zeni::Rete {
 
-  class Network;
-  class Token;
-
   class Raven_Token_Remove : public Raven_Token {
     Raven_Token_Remove(const Raven_Token_Remove &) = delete;
     Raven_Token_Remove & operator=(const Raven_Token_Remove &) = delete;

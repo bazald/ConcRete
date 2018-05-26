@@ -68,6 +68,7 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE void Destroy();
 
+    ZENI_RETE_LINKAGE void send_connect_to_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
     ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
 
   public:
@@ -85,8 +86,10 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE Node_Sharing get_Node_Sharing() const;
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
-    ZENI_RETE_LINKAGE bool receive(const Raven_Token_Insert &) override;
-    ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &) override;
+    ZENI_RETE_LINKAGE void receive(const Raven_Input_Disable &) override;
+    ZENI_RETE_LINKAGE void receive(const Raven_Input_Enable &) override;
+    ZENI_RETE_LINKAGE void receive(const Raven_Token_Insert &) override;
+    ZENI_RETE_LINKAGE void receive(const Raven_Token_Remove &) override;
 
     ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Node_Action> action, const bool user_command);
     ZENI_RETE_LINKAGE void excise_all();

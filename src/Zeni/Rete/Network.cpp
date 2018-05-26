@@ -3,6 +3,7 @@
 #include "Zeni/Concurrency/Thread_Pool.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
+#include "Zeni/Rete/Raven_Connect_Output.hpp"
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
@@ -188,6 +189,9 @@ namespace Zeni::Rete {
     m_thread_pool->get_Job_Queue()->wait_for_completion();
   }
 
+  void Network::send_connect_to_parents(const std::shared_ptr<Network>, const Locked_Node_Data &)
+  {
+  }
 
   void Network::send_disconnect_from_parents(const std::shared_ptr<Network>, const Locked_Node_Data &)
   {
@@ -267,35 +271,48 @@ namespace Zeni::Rete {
     get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  bool Network::receive(const Raven_Token_Insert &) {
-    return false;
+  void Network::receive(const Raven_Input_Disable &) {
+    abort();
   }
 
-  bool Network::receive(const Raven_Token_Remove &) {
-    return false;
+  void Network::receive(const Raven_Input_Enable &) {
+    abort();
+  }
+
+  void Network::receive(const Raven_Token_Insert &) {
+    abort();
+  }
+
+  void Network::receive(const Raven_Token_Remove &) {
+    abort();
   }
 
   void Network::excise_rule(const std::string &name, const bool user_command) {
-    Locked_Node_Data locked_node_data(this);
-    Locked_Network_Data locked_network_data(this, locked_node_data);
+    std::shared_ptr<Node_Action> action;
 
-    auto found = locked_network_data.get_rules().find(name);
-    if (found == locked_network_data.get_rules().end()) {
-      //#ifndef NDEBUG
-      //      std::cerr << "Rule '" << name << "' not found." << std::endl;
-      //#endif
-    }
-    else {
-      //#ifndef NDEBUG
-      //      std::cerr << "Rule '" << name << "' excised." << std::endl;
-      //#endif
-      auto action = found->second;
-      locked_network_data.modify_rules().erase(found);
+    {
+      Locked_Node_Data locked_node_data(this);
+      Locked_Network_Data locked_network_data(this, locked_node_data);
 
-      action->get_input()->disconnect_output(shared_from_this(), action);
-      if (user_command)
-        std::cerr << '#';
+      auto found = locked_network_data.get_rules().find(name);
+      if (found == locked_network_data.get_rules().end()) {
+        //#ifndef NDEBUG
+        //      std::cerr << "Rule '" << name << "' not found." << std::endl;
+        //#endif
+      }
+      else {
+        //#ifndef NDEBUG
+        //      std::cerr << "Rule '" << name << "' excised." << std::endl;
+        //#endif
+        action = found->second;
+        locked_network_data.modify_rules().erase(found);
+        if (user_command)
+          std::cerr << '#';
+      }
     }
+
+    if(action)
+      get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(action->get_input(), shared_from_this(), action));
   }
 
   std::string Network::next_rule_name(const std::string_view prefix) {
@@ -400,28 +417,35 @@ namespace Zeni::Rete {
   void Network::source_rule(const std::shared_ptr<Node_Action> action, const bool user_command) {
     const auto sft = shared_from_this();
 
-    Locked_Node_Data locked_node_data(this);
-    Locked_Network_Data locked_network_data(this, locked_node_data);
+    std::shared_ptr<Node_Action> excised;
 
-    auto found = locked_network_data.modify_rules().find(action->get_name());
-    if (found == locked_network_data.get_rules().end()) {
-      //#ifndef NDEBUG
-      //      std::cerr << "Rule '" << action->get_name() << "' sourced." << std::endl;
-      //#endif
-      locked_network_data.modify_rules()[action->get_name()] = action;
-    }
-    else {
-      //#ifndef NDEBUG
-      //      std::cerr << "Rule '" << action->get_name() << "' replaced." << std::endl;
-      //#endif
-      assert(found->second != action);
-      found->second->get_input()->disconnect_output(sft, found->second);
+    {
+      Locked_Node_Data locked_node_data(this);
+      Locked_Network_Data locked_network_data(this, locked_node_data);
+
+      auto found = locked_network_data.modify_rules().find(action->get_name());
+      if (found != locked_network_data.get_rules().end()) {
+        //#ifndef NDEBUG
+        //      std::cerr << "Rule '" << action->get_name() << "' replaced." << std::endl;
+        //#endif
+        assert(found->second != action);
+        excised = action;
+        if (user_command && m_printed_output != Printed_Output::None)
+          std::cerr << '#';
+        found->second = action;
+      }
+      else {
+        //#ifndef NDEBUG
+        //      std::cerr << "Rule '" << action->get_name() << "' sourced." << std::endl;
+        //#endif
+        locked_network_data.modify_rules()[action->get_name()] = action;
+      }
       if (user_command && m_printed_output != Printed_Output::None)
-        std::cerr << '#';
-      found->second = action;
+        std::cerr << '*';
     }
-    if (user_command && m_printed_output != Printed_Output::None)
-      std::cerr << '*';
+
+    if(excised)
+      get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(excised->get_input(), sft, excised));
   }
 
   bool Network::operator==(const Node &rhs) const {

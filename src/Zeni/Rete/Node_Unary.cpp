@@ -1,9 +1,10 @@
 #include "Zeni/Rete/Node_Unary.hpp"
 
 #include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/Raven_Connect_Output.hpp"
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"
-#include "Zeni/Rete/Raven_Token_Insert.hpp"
-#include "Zeni/Rete/Raven_Token_Remove.hpp"
+#include "Zeni/Rete/Raven_Input_Disable.hpp"
+#include "Zeni/Rete/Raven_Input_Enable.hpp"
 
 #include <cassert>
 
@@ -21,6 +22,10 @@ namespace Zeni::Rete {
 
   std::shared_ptr<const Node> Node_Unary::Locked_Node_Unary_Data_Const::get_input() const {
     return m_data->m_input;
+  }
+
+  int64_t Node_Unary::Locked_Node_Unary_Data_Const::get_input_enabled() const {
+    return m_data->m_input_enabled;
   }
 
   const Tokens & Node_Unary::Locked_Node_Unary_Data_Const::get_input_tokens() const {
@@ -41,6 +46,10 @@ namespace Zeni::Rete {
     return m_data->m_input;
   }
 
+  int64_t & Node_Unary::Locked_Node_Unary_Data::modify_input_enabled() {
+    return m_data->m_input_enabled;
+  }
+
   Tokens & Node_Unary::Locked_Node_Unary_Data::modify_input_tokens() {
     return m_data->m_input_tokens;
   }
@@ -55,41 +64,17 @@ namespace Zeni::Rete {
   {
   }
 
+  void Node_Unary::send_connect_to_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) {
+    Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+
+    locked_node_unary_data.modify_input()->increment_output_count();
+    network->get_Job_Queue()->give_one(std::make_shared<Raven_Connect_Output>(locked_node_unary_data.modify_input(), network, shared_from_this()));
+  }
+
   void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) {
     Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
     network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(locked_node_unary_data.modify_input(), network, shared_from_this()));
-    locked_node_unary_data.modify_input().reset();
-  }
-
-  bool Node_Unary::receive(const Raven_Token_Insert &raven) {
-    Locked_Node_Data locked_node_data(this);
-    Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
-
-    const auto found = locked_node_unary_data.get_input_antitokens().find(raven.get_Token());
-    if (found == locked_node_unary_data.get_input_antitokens().end()) {
-      locked_node_unary_data.modify_input_tokens().emplace(raven.get_Token());
-      return true;
-    }
-    else {
-      locked_node_unary_data.modify_input_antitokens().erase(found);
-      return false;
-    }
-  }
-
-  bool Node_Unary::receive(const Raven_Token_Remove &raven) {
-    Locked_Node_Data locked_node_data(this);
-    Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
-
-    const auto found = locked_node_unary_data.get_input_tokens().find(raven.get_Token());
-    if (found != locked_node_unary_data.get_input_tokens().end()) {
-      locked_node_unary_data.modify_input_tokens().erase(found);
-      return true;
-    }
-    else {
-      locked_node_unary_data.modify_input_antitokens().emplace(raven.get_Token());
-      return false;
-    }
   }
 
   ZENI_RETE_LINKAGE std::shared_ptr<Node> Node_Unary::get_input() {
@@ -97,6 +82,42 @@ namespace Zeni::Rete {
     Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
     return locked_node_unary_data.modify_input();
+  }
+
+  void Node_Unary::receive(const Raven_Input_Disable &raven) {
+    const auto sft = shared_from_this();
+    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+
+    {
+      Locked_Node_Data locked_node_data(this);
+      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+
+      if (--locked_node_unary_data.modify_input_enabled() == 0) {
+        jobs.reserve(locked_node_data.get_outputs().size());
+        for (auto &output : locked_node_data.get_outputs())
+          jobs.emplace_back(std::make_shared<Raven_Input_Disable>(output, raven.get_Network(), sft));
+      }
+    }
+
+    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+  }
+
+  void Node_Unary::receive(const Raven_Input_Enable &raven) {
+    const auto sft = shared_from_this();
+    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+
+    {
+      Locked_Node_Data locked_node_data(this);
+      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+
+      if (++locked_node_unary_data.modify_input_enabled() == 1) {
+        jobs.reserve(locked_node_data.get_outputs().size());
+        for (auto &output : locked_node_data.get_outputs())
+          jobs.emplace_back(std::make_shared<Raven_Input_Enable>(output, raven.get_Network(), sft));
+      }
+    }
+
+    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
   }
 
 }

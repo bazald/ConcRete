@@ -5,9 +5,6 @@
 
 namespace Zeni::Rete {
 
-  class Network;
-  class Token;
-
   class Raven_Token_Insert : public Raven_Token {
     Raven_Token_Insert(const Raven_Token_Insert &) = delete;
     Raven_Token_Insert operator=(const Raven_Token_Insert &) = delete;

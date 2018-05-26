@@ -33,24 +33,24 @@ namespace Zeni::Rete {
     return std::static_pointer_cast<Node_Filter>(network->connect_output(network, std::make_shared<Friendly_Node_Filter>(network, wme)));
   }
 
-  bool Node_Filter::receive(const Raven_Token_Insert &raven) {
+  void Node_Filter::receive(const Raven_Token_Insert &raven) {
     const auto token = std::dynamic_pointer_cast<const Token_Alpha>(raven.get_Token());
     assert(token);
     const auto &wme = token->get_wme();
 
     if (!std::get<0>(m_variable) && *std::get<0>(m_wme.get_symbols()) != *std::get<0>(wme->get_symbols()))
-      return false;
+      return;
     if (!std::get<1>(m_variable) && *std::get<1>(m_wme.get_symbols()) != *std::get<1>(wme->get_symbols()))
-      return false;
+      return;
     if (!std::get<2>(m_variable) && *std::get<2>(m_wme.get_symbols()) != *std::get<2>(wme->get_symbols()))
-      return false;
+      return;
 
     if (std::get<0>(m_variable) && std::get<1>(m_variable) && *std::get<0>(m_variable) == *std::get<1>(m_variable) && *std::get<0>(wme->get_symbols()) != *std::get<1>(wme->get_symbols()))
-      return false;
+      return;
     if (std::get<0>(m_variable) && std::get<2>(m_variable) && *std::get<0>(m_variable) == *std::get<2>(m_variable) && *std::get<0>(wme->get_symbols()) != *std::get<2>(wme->get_symbols()))
-      return false;
+      return;
     if (std::get<1>(m_variable) && std::get<2>(m_variable) && *std::get<1>(m_variable) == *std::get<2>(m_variable) && *std::get<1>(wme->get_symbols()) != *std::get<2>(wme->get_symbols()))
-      return false;
+      return;
 
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
@@ -60,14 +60,13 @@ namespace Zeni::Rete {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
       auto found = locked_node_unary_data.get_input_antitokens().find(token);
-      if (found == locked_node_unary_data.get_input_antitokens().end()) {
-        locked_node_unary_data.modify_input_tokens().emplace(token);
-        locked_node_data.modify_output_tokens().emplace(token);
-      }
-      else {
+      if (found != locked_node_unary_data.get_input_antitokens().end()) {
         locked_node_unary_data.modify_input_antitokens().erase(found);
-        return false;
+        return;
       }
+
+      locked_node_unary_data.modify_input_tokens().emplace(token);
+      locked_node_data.modify_output_tokens().emplace(token);
 
       jobs.reserve(locked_node_data.get_outputs().size());
       for (auto &output : locked_node_data.get_outputs())
@@ -75,28 +74,26 @@ namespace Zeni::Rete {
     }
 
     raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
-
-    return true;
   }
 
-  bool Node_Filter::receive(const Raven_Token_Remove &raven) {
+  void Node_Filter::receive(const Raven_Token_Remove &raven) {
     const auto token = std::dynamic_pointer_cast<const Token_Alpha>(raven.get_Token());
     assert(token);
     const auto &wme = token->get_wme();
 
     if (!std::get<0>(m_variable) && *std::get<0>(m_wme.get_symbols()) != *std::get<0>(wme->get_symbols()))
-      return false;
+      return;
     if (!std::get<1>(m_variable) && *std::get<1>(m_wme.get_symbols()) != *std::get<1>(wme->get_symbols()))
-      return false;
+      return;
     if (!std::get<2>(m_variable) && *std::get<2>(m_wme.get_symbols()) != *std::get<2>(wme->get_symbols()))
-      return false;
+      return;
 
     if (std::get<0>(m_variable) && std::get<1>(m_variable) && *std::get<0>(m_variable) == *std::get<1>(m_variable) && *std::get<0>(wme->get_symbols()) != *std::get<1>(wme->get_symbols()))
-      return false;
+      return;
     if (std::get<0>(m_variable) && std::get<2>(m_variable) && *std::get<0>(m_variable) == *std::get<2>(m_variable) && *std::get<0>(wme->get_symbols()) != *std::get<2>(wme->get_symbols()))
-      return false;
+      return;
     if (std::get<1>(m_variable) && std::get<2>(m_variable) && *std::get<1>(m_variable) == *std::get<2>(m_variable) && *std::get<1>(wme->get_symbols()) != *std::get<2>(wme->get_symbols()))
-      return false;
+      return;
 
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
@@ -106,14 +103,13 @@ namespace Zeni::Rete {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
       auto found = locked_node_unary_data.get_input_tokens().find(token);
-      if (found != locked_node_unary_data.get_input_tokens().end()) {
-        locked_node_unary_data.modify_input_tokens().erase(found);
-        locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(token));
-      }
-      else {
+      if (found == locked_node_unary_data.get_input_tokens().end()) {
         locked_node_unary_data.modify_input_antitokens().emplace(token);
-        return false;
+        return;
       }
+
+      locked_node_unary_data.modify_input_tokens().erase(found);
+      locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(token));
 
       jobs.reserve(locked_node_data.get_outputs().size());
       for (auto &output : locked_node_data.get_outputs())
@@ -121,8 +117,6 @@ namespace Zeni::Rete {
     }
 
     raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
-
-    return true;
   }
 
   bool Node_Filter::operator==(const Node &rhs) const {

@@ -2,7 +2,6 @@
 
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
-#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
 #include "Zeni/Rete/Token_Alpha.hpp"
@@ -25,7 +24,7 @@ namespace Zeni::Rete {
     return std::static_pointer_cast<Node_Passthrough>(input->connect_output(network, std::make_shared<Friendly_Node_Passthrough>(input)));
   }
 
-  bool Node_Passthrough::receive(const Raven_Token_Insert &raven) {
+  void Node_Passthrough::receive(const Raven_Token_Insert &raven) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
       
@@ -34,14 +33,13 @@ namespace Zeni::Rete {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
       auto found = locked_node_unary_data.get_input_antitokens().find(raven.get_Token());
-      if (found == locked_node_unary_data.get_input_antitokens().end()) {
-        locked_node_unary_data.modify_input_tokens().emplace(raven.get_Token());
-        locked_node_data.modify_output_tokens().emplace(raven.get_Token());
-      }
-      else {
+      if (found != locked_node_unary_data.get_input_antitokens().end()) {
         locked_node_unary_data.modify_input_antitokens().erase(found);
-        return false;
+        return;
       }
+      
+      locked_node_unary_data.modify_input_tokens().emplace(raven.get_Token());
+      locked_node_data.modify_output_tokens().emplace(raven.get_Token());
 
       jobs.reserve(locked_node_data.get_outputs().size());
       for (auto &output : locked_node_data.get_outputs())
@@ -49,11 +47,9 @@ namespace Zeni::Rete {
     }
 
     raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
-
-    return true;
   }
 
-  bool Node_Passthrough::receive(const Raven_Token_Remove &raven) {
+  void Node_Passthrough::receive(const Raven_Token_Remove &raven) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
@@ -62,14 +58,13 @@ namespace Zeni::Rete {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
       auto found = locked_node_unary_data.get_input_tokens().find(raven.get_Token());
-      if (found != locked_node_unary_data.get_input_tokens().end()) {
-        locked_node_unary_data.modify_input_tokens().erase(found);
-        locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(raven.get_Token()));
-      }
-      else {
+      if (found == locked_node_unary_data.get_input_tokens().end()) {
         locked_node_unary_data.modify_input_antitokens().emplace(raven.get_Token());
-        return false;
+        return;
       }
+
+      locked_node_unary_data.modify_input_tokens().erase(found);
+      locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(raven.get_Token()));
 
       jobs.reserve(locked_node_data.get_outputs().size());
       for (auto &output : locked_node_data.get_outputs())
@@ -77,8 +72,6 @@ namespace Zeni::Rete {
     }
 
     raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
-
-    return true;
   }
 
   bool Node_Passthrough::operator==(const Node &rhs) const {

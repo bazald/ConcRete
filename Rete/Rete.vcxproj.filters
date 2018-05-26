@@ -105,6 +105,15 @@
     <ClCompile Include="..\src\Zeni\Rete\Node_Passthrough.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Raven_Input_Disable.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Raven_Input_Enable.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Raven_Connect_Output.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Zeni\Rete\Custom_Data.hpp">
@@ -642,6 +651,15 @@
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Node_Passthrough.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Raven_Input_Disable.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Raven_Input_Enable.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Raven_Connect_Output.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
   </ItemGroup>

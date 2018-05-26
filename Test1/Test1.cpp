@@ -8,6 +8,7 @@
 #include "Zeni/Rete/Node_Filter.hpp"
 #include "Zeni/Rete/Node_Passthrough.hpp"
 #include "Zeni/Rete/Parser.hpp"
+#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 
 #include <array>
 #include <iostream>
@@ -54,7 +55,7 @@ public:
 
   void tell(const Ptr &gossip) {
     Zeni::Concurrency::Mutex::Lock mutex_lock(m_mutex);
-    m_gossips.insert(gossip);
+    m_gossips.emplace(gossip);
   }
 
 private:
@@ -137,6 +138,14 @@ void test_Rete_Network() {
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
   (*network)->get_Job_Queue()->wait_for_completion();
+
+  (*network)->get_Job_Queue()->give_one(std::make_shared<Zeni::Rete::Raven_Disconnect_Output>(filter, network->get(), passthrough));
+
+  (*network)->get_Job_Queue()->wait_for_completion();
+
+  filter->connect_output(network->get(), passthrough);
+  
+  (*network)->get_Job_Queue()->wait_for_completion();
 }
 
 void test_Parser() {
@@ -144,7 +153,7 @@ void test_Parser() {
 
   Zeni::Rete::Parser parser;
 
-  parser.parse_string(network->get(), "sp {test-rule\r\n  (<s> ^attr 42)\r\n  (<s> ^attr 3.14159)\r\n-->\r\n}\r\n", true);
+  parser.parse_string(network->get(), "sp {test-rule\r\n  (<s> ^attr 3.14159)\r\n  (<s> ^attr 42)\r\n-->\r\n}\r\n", true);
 
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(
     std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
