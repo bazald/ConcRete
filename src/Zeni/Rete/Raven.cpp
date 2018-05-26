@@ -4,7 +4,7 @@
 
 namespace Zeni::Rete {
 
-  Raven::Raven(const std::shared_ptr<Pseudonode> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender)
+  Raven::Raven(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender)
     : Concurrency::Raven(recipient), m_network(network), m_sender(sender)
   {
   }

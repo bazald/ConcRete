@@ -96,9 +96,6 @@
     <ClCompile Include="..\src\Zeni\Rete\Raven.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Pseudonode.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Parser.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
@@ -171,9 +168,6 @@
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Raven.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Pseudonode.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\PEGTL\include\tao\pegtl\contrib\icu\utf16.hpp">

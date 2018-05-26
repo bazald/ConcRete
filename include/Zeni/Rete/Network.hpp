@@ -16,19 +16,20 @@ namespace Zeni::Concurrency {
 
 namespace Zeni::Rete {
 
-  class Network_Locked_Data;
-  class Network_Locked_Data_Const;
-  class Network_Unlocked_Data;
+  class Locked_Network_Data;
+  class Locked_Network_Data_Const;
+  class Unlocked_Network_Data;
   class Node_Action;
   class Node_Filter;
   class WME;
 
-  class Network : public Pseudonode {
+  class Network : public Node {
     Network(const Network &) = delete;
     Network & operator=(const Network &) = delete;
 
-    friend class Network_Locked_Data;
-    friend class Network_Locked_Data_Const;
+    friend class Unlocked_Network_Data;
+    friend class Locked_Network_Data_Const;
+    friend class Locked_Network_Data;
 
   protected:
     ZENI_RETE_LINKAGE std::shared_ptr<const Network> shared_from_this() const;
@@ -67,6 +68,8 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE void Destroy();
 
+    ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
+
   public:
     ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const Printed_Output printed_output = Printed_Output::Normal);
     ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> thread_pool);
@@ -82,11 +85,6 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE Node_Sharing get_Node_Sharing() const;
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
-    /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists
-    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output) override;
-    /// Decrements the output count, potentially resulting in cascading disconnects
-    ZENI_RETE_LINKAGE void disconnect_output(const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output) override;
-
     ZENI_RETE_LINKAGE bool receive(const Raven_Token_Insert &) override;
     ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &) override;
 
@@ -100,9 +98,11 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE void remove_wme(const std::shared_ptr<const WME> wme);
     ZENI_RETE_LINKAGE void clear_wmes();
 
+    ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
+
   private:
     const std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
-    const std::shared_ptr<Network_Unlocked_Data> m_unlocked_data;
+    const std::shared_ptr<Unlocked_Network_Data> m_unlocked_data;
 
     // Options
     const Node_Sharing m_node_sharing = Node_Sharing::Enabled;

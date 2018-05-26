@@ -9,7 +9,7 @@
 
 namespace Zeni::Rete {
 
-  Node_Unary::Unlocked_Node_Unary_Data::Unlocked_Node_Unary_Data(const std::shared_ptr<Pseudonode> input)
+  Node_Unary::Unlocked_Node_Unary_Data::Unlocked_Node_Unary_Data(const std::shared_ptr<Node> input)
     : m_input(input)
   {
   }
@@ -19,7 +19,7 @@ namespace Zeni::Rete {
   {
   }
 
-  std::shared_ptr<const Pseudonode> Node_Unary::Locked_Node_Unary_Data_Const::get_input() const {
+  std::shared_ptr<const Node> Node_Unary::Locked_Node_Unary_Data_Const::get_input() const {
     return m_data->m_input;
   }
 
@@ -37,7 +37,7 @@ namespace Zeni::Rete {
   {
   }
 
-  std::shared_ptr<Pseudonode> & Node_Unary::Locked_Node_Unary_Data::modify_input() {
+  std::shared_ptr<Node> & Node_Unary::Locked_Node_Unary_Data::modify_input() {
     return m_data->m_input;
   }
 
@@ -49,7 +49,7 @@ namespace Zeni::Rete {
     return m_data->m_input_antitokens;
   }
 
-  Node_Unary::Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Pseudonode> input)
+  Node_Unary::Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Node> input)
     : Node(height, size, token_size),
     m_unlocked_node_unary_data(std::make_shared<Unlocked_Node_Unary_Data>(input))
   {
@@ -68,7 +68,7 @@ namespace Zeni::Rete {
 
     const auto found = locked_node_unary_data.get_input_antitokens().find(raven.get_Token());
     if (found == locked_node_unary_data.get_input_antitokens().end()) {
-      locked_node_unary_data.modify_input_tokens().insert(raven.get_Token());
+      locked_node_unary_data.modify_input_tokens().emplace(raven.get_Token());
       return true;
     }
     else {
@@ -87,12 +87,12 @@ namespace Zeni::Rete {
       return true;
     }
     else {
-      locked_node_unary_data.modify_input_antitokens().insert(raven.get_Token());
+      locked_node_unary_data.modify_input_antitokens().emplace(raven.get_Token());
       return false;
     }
   }
 
-  ZENI_RETE_LINKAGE std::shared_ptr<Pseudonode> Node_Unary::get_input() {
+  ZENI_RETE_LINKAGE std::shared_ptr<Node> Node_Unary::get_input() {
     Locked_Node_Data locked_node_data(this);
     Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 

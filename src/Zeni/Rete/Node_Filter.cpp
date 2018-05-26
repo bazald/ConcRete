@@ -61,8 +61,8 @@ namespace Zeni::Rete {
 
       auto found = locked_node_unary_data.get_input_antitokens().find(token);
       if (found == locked_node_unary_data.get_input_antitokens().end()) {
-        locked_node_unary_data.modify_input_tokens().insert(token);
-        locked_node_data.modify_output_tokens().insert(token);
+        locked_node_unary_data.modify_input_tokens().emplace(token);
+        locked_node_data.modify_output_tokens().emplace(token);
       }
       else {
         locked_node_unary_data.modify_input_antitokens().erase(found);
@@ -111,7 +111,7 @@ namespace Zeni::Rete {
         locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(token));
       }
       else {
-        locked_node_unary_data.modify_input_antitokens().insert(token);
+        locked_node_unary_data.modify_input_antitokens().emplace(token);
         return false;
       }
 

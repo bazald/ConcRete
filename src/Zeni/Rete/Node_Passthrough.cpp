@@ -11,18 +11,15 @@
 
 namespace Zeni::Rete {
 
-  Node_Passthrough::Node_Passthrough(const std::shared_ptr<Pseudonode> input)
-    : Node_Unary(std::dynamic_pointer_cast<Node>(input) ? std::dynamic_pointer_cast<Node>(input)->get_height() + 1 : 1,
-      std::dynamic_pointer_cast<Node>(input) ? std::dynamic_pointer_cast<Node>(input)->get_size() : 0,
-      std::dynamic_pointer_cast<Node>(input) ? std::dynamic_pointer_cast<Node>(input)->get_token_size() : 0,
-      input)
+  Node_Passthrough::Node_Passthrough(const std::shared_ptr<Node> input)
+    : Node_Unary(input->get_height() + 1, input->get_size() + 1, input->get_token_size(), input)
   {
   }
 
-  std::shared_ptr<Node_Passthrough> Node_Passthrough::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Pseudonode> input) {
+  std::shared_ptr<Node_Passthrough> Node_Passthrough::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Node> input) {
     class Friendly_Node_Passthrough : public Node_Passthrough {
     public:
-      Friendly_Node_Passthrough(const std::shared_ptr<Pseudonode> &input) : Node_Passthrough(input) {}
+      Friendly_Node_Passthrough(const std::shared_ptr<Node> &input) : Node_Passthrough(input) {}
     };
 
     return std::static_pointer_cast<Node_Passthrough>(input->connect_output(network, std::make_shared<Friendly_Node_Passthrough>(input)));
@@ -38,8 +35,8 @@ namespace Zeni::Rete {
 
       auto found = locked_node_unary_data.get_input_antitokens().find(raven.get_Token());
       if (found == locked_node_unary_data.get_input_antitokens().end()) {
-        locked_node_unary_data.modify_input_tokens().insert(raven.get_Token());
-        locked_node_data.modify_output_tokens().insert(raven.get_Token());
+        locked_node_unary_data.modify_input_tokens().emplace(raven.get_Token());
+        locked_node_data.modify_output_tokens().emplace(raven.get_Token());
       }
       else {
         locked_node_unary_data.modify_input_antitokens().erase(found);
@@ -70,7 +67,7 @@ namespace Zeni::Rete {
         locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(raven.get_Token()));
       }
       else {
-        locked_node_unary_data.modify_input_antitokens().insert(raven.get_Token());
+        locked_node_unary_data.modify_input_antitokens().emplace(raven.get_Token());
         return false;
       }
 

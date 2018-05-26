@@ -15,40 +15,34 @@
 
 namespace Zeni::Rete {
 
-  class Network_Unlocked_Data {
-    Network_Unlocked_Data(const Network_Unlocked_Data &) = delete;
-    Network_Unlocked_Data & operator=(const Network_Unlocked_Data &) = delete;
+  class Unlocked_Network_Data {
+    Unlocked_Network_Data(const Unlocked_Network_Data &) = delete;
+    Unlocked_Network_Data & operator=(const Unlocked_Network_Data &) = delete;
 
-    friend Network_Locked_Data_Const;
-    friend Network_Locked_Data;
+    friend class Locked_Network_Data_Const;
+    friend class Locked_Network_Data;
 
   public:
-    Network_Unlocked_Data() {}
+    Unlocked_Network_Data() {}
 
   private:
-    Network::Outputs outputs;
     std::unordered_map<std::string, std::shared_ptr<Node_Action>> rules;
     int64_t rule_name_index = 0;
     std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> working_memory;
   };
 
-  class Network_Locked_Data;
+  class Locked_Network_Data;
 
-  class Network_Locked_Data_Const {
-    Network_Locked_Data_Const(const Network_Locked_Data_Const &) = delete;
-    Network_Locked_Data_Const & operator=(const Network_Locked_Data_Const &) = delete;
+  class Locked_Network_Data_Const {
+    Locked_Network_Data_Const(const Locked_Network_Data_Const &) = delete;
+    Locked_Network_Data_Const & operator=(const Locked_Network_Data_Const &) = delete;
 
-    friend Network_Locked_Data;
+    friend Locked_Network_Data;
 
   public:
-    Network_Locked_Data_Const(const Network *network)
-      : m_lock(network->m_mutex),
-      m_data(network->m_unlocked_data)
+    Locked_Network_Data_Const(const Network * network, const Node::Locked_Node_Data_Const &node_data)
+      : m_data(network->m_unlocked_data)
     {
-    }
-
-    const Network::Outputs & get_outputs() const {
-      return m_data->outputs;
     }
 
     const std::unordered_map<std::string, std::shared_ptr<Node_Action>> & get_rules() const {
@@ -64,22 +58,18 @@ namespace Zeni::Rete {
     }
 
   private:
-    Concurrency::Mutex::Lock m_lock;
-    std::shared_ptr<Network_Unlocked_Data> m_data;
+    const std::shared_ptr<const Unlocked_Network_Data> m_data;
   };
 
-  class Network_Locked_Data : public Network_Locked_Data_Const {
-    Network_Locked_Data(const Network_Locked_Data &) = delete;
-    Network_Locked_Data & operator=(const Network_Locked_Data &) = delete;
+  class Locked_Network_Data : public Locked_Network_Data_Const {
+    Locked_Network_Data(const Locked_Network_Data &) = delete;
+    Locked_Network_Data & operator=(const Locked_Network_Data &) = delete;
 
   public:
-    Network_Locked_Data(Network *network)
-      : Network_Locked_Data_Const(network)
+    Locked_Network_Data(Network * network, const Node::Locked_Node_Data_Const &node_data)
+      : Locked_Network_Data_Const(network, node_data),
+      m_data(network->m_unlocked_data)
     {
-    }
-
-    Network::Outputs & modify_outputs() {
-      return m_data->outputs;
     }
 
     std::unordered_map<std::string, std::shared_ptr<Node_Action>> & modify_rules() {
@@ -93,6 +83,9 @@ namespace Zeni::Rete {
     std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> & modify_working_memory() {
       return m_data->working_memory;
     }
+
+  private:
+    const std::shared_ptr<Unlocked_Network_Data> m_data;
   };
 
   std::shared_ptr<const Network> Network::shared_from_this() const {
@@ -149,8 +142,9 @@ namespace Zeni::Rete {
   }
 
   Network::Network(const Network::Printed_Output printed_output)
-    : m_thread_pool(std::make_shared<Concurrency::Thread_Pool>()),
-    m_unlocked_data(std::make_shared<Network_Unlocked_Data>()),
+    : Node(0, 0, 1),
+    m_thread_pool(std::make_shared<Concurrency::Thread_Pool>()),
+    m_unlocked_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
   }
@@ -170,8 +164,9 @@ namespace Zeni::Rete {
   }
 
   Network::Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool)
-    : m_thread_pool(thread_pool),
-    m_unlocked_data(std::make_shared<Network_Unlocked_Data>()),
+    : Node(0, 0, 1),
+    m_thread_pool(thread_pool),
+    m_unlocked_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
   }
@@ -193,6 +188,11 @@ namespace Zeni::Rete {
     m_thread_pool->get_Job_Queue()->wait_for_completion();
   }
 
+
+  void Network::send_disconnect_from_parents(const std::shared_ptr<Network>, const Locked_Node_Data &)
+  {
+  }
+
   Network::~Network()
   {
   }
@@ -206,34 +206,38 @@ namespace Zeni::Rete {
   }
 
   std::shared_ptr<Node_Action> Network::get_rule(const std::string &name) const {
-    Network_Locked_Data_Const locked_data(this);
+    Locked_Node_Data_Const locked_node_data(this);
+    Locked_Network_Data_Const locked_network_data(this, locked_node_data);
 
-    const auto found = locked_data.get_rules().find(name);
-    if (found != locked_data.get_rules().end())
+    const auto found = locked_network_data.get_rules().find(name);
+    if (found != locked_network_data.get_rules().end())
       return found->second;
 
     return nullptr;
   }
 
   std::set<std::string> Network::get_rule_names() const {
-    Network_Locked_Data_Const locked_data(this);
+    Locked_Node_Data_Const locked_node_data(this);
+    Locked_Network_Data_Const locked_network_data(this, locked_node_data);
 
     std::set<std::string> rv;
-    for (auto rule : locked_data.get_rules())
-      rv.insert(rule.first);
+    for (auto rule : locked_network_data.get_rules())
+      rv.emplace(rule.first);
     return rv;
   }
 
   int64_t Network::get_rule_name_index() const {
-    Network_Locked_Data_Const locked_data(this);
+    Locked_Node_Data_Const locked_node_data(this);
+    Locked_Network_Data_Const locked_network_data(this, locked_node_data);
 
-    return locked_data.get_rule_name_index();
+    return locked_network_data.get_rule_name_index();
   }
 
   void Network::set_rule_name_index(const int64_t rule_name_index_) {
-    Network_Locked_Data locked_data(this);
+    Locked_Node_Data locked_node_data(this);
+    Locked_Network_Data locked_network_data(this, locked_node_data);
 
-    locked_data.modify_rule_name_index() = rule_name_index_;
+    locked_network_data.modify_rule_name_index() = rule_name_index_;
   }
 
   Network::Node_Sharing Network::get_Node_Sharing() const {
@@ -249,8 +253,10 @@ namespace Zeni::Rete {
     std::unordered_map<std::string, std::shared_ptr<Node_Action>> rules;
 
     {
-      Network_Locked_Data locked_data(this);
-      rules.swap(locked_data.modify_rules());
+      Locked_Node_Data locked_node_data(this);
+      Locked_Network_Data locked_network_data(this, locked_node_data);
+
+      rules.swap(locked_network_data.modify_rules());
     }
 
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
@@ -259,50 +265,6 @@ namespace Zeni::Rete {
       jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second));
 
     get_Job_Queue()->give_many(std::move(jobs));
-  }
-
-  std::shared_ptr<Node> Network::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output) {
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
-
-    {
-      Network_Locked_Data locked_data(this);
-
-      if (get_Node_Sharing() == Network::Node_Sharing::Enabled) {
-        for (auto &existing_output : locked_data.get_outputs()) {
-          if (*existing_output == *output) {
-            existing_output->increment_output_count();
-            return existing_output;
-          }
-        }
-      }
-
-      locked_data.modify_outputs().insert(output);
-      jobs.reserve(locked_data.get_working_memory().size());
-      for (auto &wme_token : locked_data.get_working_memory())
-        jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, network, nullptr, wme_token.second));
-    }
-
-    network->get_Job_Queue()->give_many(std::move(jobs));
-
-    return output;
-  }
-
-  void Network::disconnect_output(const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output) {
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
-
-    {
-      Network_Locked_Data locked_data(this);
-
-      const auto found = locked_data.get_outputs().find(std::const_pointer_cast<Node>(output));
-      assert(found != locked_data.get_outputs().end());
-      locked_data.modify_outputs().erase(found);
-
-      jobs.reserve(locked_data.get_working_memory().size());
-      for (auto &wme_token : locked_data.get_working_memory())
-        jobs.emplace_back(std::make_shared<Raven_Token_Remove>(std::const_pointer_cast<Node>(output), network, nullptr, wme_token.second));
-    }
-
-    network->get_Job_Queue()->give_many(std::move(jobs));
   }
 
   bool Network::receive(const Raven_Token_Insert &) {
@@ -314,10 +276,11 @@ namespace Zeni::Rete {
   }
 
   void Network::excise_rule(const std::string &name, const bool user_command) {
-    Network_Locked_Data locked_data(this);
+    Locked_Node_Data locked_node_data(this);
+    Locked_Network_Data locked_network_data(this, locked_node_data);
 
-    auto found = locked_data.get_rules().find(name);
-    if (found == locked_data.get_rules().end()) {
+    auto found = locked_network_data.get_rules().find(name);
+    if (found == locked_network_data.get_rules().end()) {
       //#ifndef NDEBUG
       //      std::cerr << "Rule '" << name << "' not found." << std::endl;
       //#endif
@@ -327,7 +290,7 @@ namespace Zeni::Rete {
       //      std::cerr << "Rule '" << name << "' excised." << std::endl;
       //#endif
       auto action = found->second;
-      locked_data.modify_rules().erase(found);
+      locked_network_data.modify_rules().erase(found);
 
       action->get_input()->disconnect_output(shared_from_this(), action);
       if (user_command)
@@ -336,24 +299,26 @@ namespace Zeni::Rete {
   }
 
   std::string Network::next_rule_name(const std::string_view prefix) {
-    Network_Locked_Data locked_data(this);
+    Locked_Node_Data locked_node_data(this);
+    Locked_Network_Data locked_network_data(this, locked_node_data);
 
     std::ostringstream oss;
     do {
       oss.str("");
-      oss << prefix << ++locked_data.modify_rule_name_index();
-    } while (locked_data.get_rules().find(oss.str()) != locked_data.get_rules().end());
+      oss << prefix << ++locked_network_data.modify_rule_name_index();
+    } while (locked_network_data.get_rules().find(oss.str()) != locked_network_data.get_rules().end());
     return oss.str();
   }
 
   std::shared_ptr<Node_Action> Network::unname_rule(const std::string &name, const bool user_command) {
-    Network_Locked_Data locked_data(this);
+    Locked_Node_Data locked_node_data(this);
+    Locked_Network_Data locked_network_data(this, locked_node_data);
 
     std::shared_ptr<Node_Action> ptr;
-    auto found = locked_data.get_rules().find(name);
-    if (found != locked_data.get_rules().end()) {
+    auto found = locked_network_data.get_rules().find(name);
+    if (found != locked_network_data.get_rules().end()) {
       ptr = found->second;
-      locked_data.modify_rules().erase(found);
+      locked_network_data.modify_rules().erase(found);
       if (user_command)
         std::cerr << '#';
     }
@@ -370,11 +335,13 @@ namespace Zeni::Rete {
 #endif
 
     {
-      Network_Locked_Data locked_data(this);
+      Locked_Node_Data locked_node_data(this);
+      Locked_Network_Data locked_network_data(this, locked_node_data);
 
-      locked_data.modify_working_memory().insert(std::make_pair(wme, output_token));
-      jobs.reserve(locked_data.get_outputs().size());
-      for (auto &output : locked_data.get_outputs())
+      locked_network_data.modify_working_memory().emplace(wme, output_token);
+      locked_node_data.modify_output_tokens().emplace(output_token);
+      jobs.reserve(locked_node_data.get_outputs().size());
+      for (auto &output : locked_node_data.get_outputs())
         jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, sft, nullptr, output_token));
     }
 
@@ -390,15 +357,21 @@ namespace Zeni::Rete {
 #endif
 
     {
-      Network_Locked_Data locked_data(this);
+      Locked_Node_Data locked_node_data(this);
+      Locked_Network_Data locked_network_data(this, locked_node_data);
 
-      auto found = locked_data.get_working_memory().find(wme);
-      assert(found != locked_data.get_working_memory().end());
+      auto found = locked_network_data.get_working_memory().find(wme);
+      assert(found != locked_network_data.get_working_memory().end());
 
-      jobs.reserve(locked_data.get_outputs().size());
-      for (auto &output : locked_data.get_outputs())
-        jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, found->second));
-      locked_data.modify_working_memory().erase(found);
+      auto found2 = locked_node_data.get_output_tokens().find(found->second);
+      assert(found2 != locked_node_data.get_output_tokens().end());
+
+      jobs.reserve(locked_node_data.get_outputs().size());
+      for (auto &output : locked_node_data.get_outputs())
+        jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, *found2));
+
+      locked_node_data.modify_output_tokens().erase(found2);
+      locked_network_data.modify_working_memory().erase(found);
     }
 
     m_thread_pool->get_Job_Queue()->give_many(std::move(jobs));
@@ -409,14 +382,16 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
     {
-      Network_Locked_Data locked_data(this);
+      Locked_Node_Data locked_node_data(this);
+      Locked_Network_Data locked_network_data(this, locked_node_data);
 
-      jobs.reserve(locked_data.get_working_memory().size() * locked_data.get_outputs().size());
-      for (auto &wme_token : locked_data.get_working_memory()) {
-        for (auto &output : locked_data.get_outputs())
-          jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, wme_token.second));
+      jobs.reserve(locked_node_data.get_output_tokens().size() * locked_node_data.get_outputs().size());
+      for (auto &token : locked_node_data.get_output_tokens()) {
+        for (auto &output : locked_node_data.get_outputs())
+          jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, token));
       }
-      locked_data.modify_working_memory().clear();
+      locked_node_data.modify_output_tokens().clear();
+      locked_network_data.modify_working_memory().clear();
     }
 
     m_thread_pool->get_Job_Queue()->give_many(std::move(jobs));
@@ -425,14 +400,15 @@ namespace Zeni::Rete {
   void Network::source_rule(const std::shared_ptr<Node_Action> action, const bool user_command) {
     const auto sft = shared_from_this();
 
-    Network_Locked_Data locked_data(this);
+    Locked_Node_Data locked_node_data(this);
+    Locked_Network_Data locked_network_data(this, locked_node_data);
 
-    auto found = locked_data.modify_rules().find(action->get_name());
-    if (found == locked_data.get_rules().end()) {
+    auto found = locked_network_data.modify_rules().find(action->get_name());
+    if (found == locked_network_data.get_rules().end()) {
       //#ifndef NDEBUG
       //      std::cerr << "Rule '" << action->get_name() << "' sourced." << std::endl;
       //#endif
-      locked_data.modify_rules()[action->get_name()] = action;
+      locked_network_data.modify_rules()[action->get_name()] = action;
     }
     else {
       //#ifndef NDEBUG
@@ -446,6 +422,10 @@ namespace Zeni::Rete {
     }
     if (user_command && m_printed_output != Printed_Output::None)
       std::cerr << '*';
+  }
+
+  bool Network::operator==(const Node &rhs) const {
+    return &rhs == this;
   }
 
 }

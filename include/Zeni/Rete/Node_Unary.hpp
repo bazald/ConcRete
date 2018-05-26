@@ -21,10 +21,10 @@ namespace Zeni::Rete {
       friend Locked_Node_Unary_Data;
 
     public:
-      Unlocked_Node_Unary_Data(const std::shared_ptr<Pseudonode> input);
+      Unlocked_Node_Unary_Data(const std::shared_ptr<Node> input);
 
     private:
-      std::shared_ptr<Pseudonode> m_input;
+      std::shared_ptr<Node> m_input;
       Tokens m_input_tokens;
       Tokens m_input_antitokens;
     };
@@ -38,12 +38,12 @@ namespace Zeni::Rete {
     public:
       ZENI_RETE_LINKAGE Locked_Node_Unary_Data_Const(const Node_Unary * node, const Locked_Node_Data_Const &node_data);
 
-      ZENI_RETE_LINKAGE std::shared_ptr<const Pseudonode> get_input() const;
+      ZENI_RETE_LINKAGE std::shared_ptr<const Node> get_input() const;
       ZENI_RETE_LINKAGE const Tokens & get_input_tokens() const;
       ZENI_RETE_LINKAGE const Tokens & get_input_antitokens() const;
 
     private:
-      std::shared_ptr<const Unlocked_Node_Unary_Data> m_data;
+      const std::shared_ptr<const Unlocked_Node_Unary_Data> m_data;
     };
 
     class Locked_Node_Unary_Data : public Locked_Node_Unary_Data_Const {
@@ -53,16 +53,16 @@ namespace Zeni::Rete {
     public:
       ZENI_RETE_LINKAGE Locked_Node_Unary_Data(Node_Unary * node, const Locked_Node_Data &node_data);
 
-      ZENI_RETE_LINKAGE std::shared_ptr<Pseudonode> & modify_input();
+      ZENI_RETE_LINKAGE std::shared_ptr<Node> & modify_input();
       ZENI_RETE_LINKAGE Tokens & modify_input_tokens();
       ZENI_RETE_LINKAGE Tokens & modify_input_antitokens();
 
     private:
-      std::shared_ptr<Unlocked_Node_Unary_Data> m_data;
+      const std::shared_ptr<Unlocked_Node_Unary_Data> m_data;
     };
 
   protected:
-    Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Pseudonode> input);
+    Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Node> input);
 
     ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
 
@@ -70,7 +70,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &raven) override;
 
   public:
-    ZENI_RETE_LINKAGE std::shared_ptr<Pseudonode> get_input();
+    ZENI_RETE_LINKAGE std::shared_ptr<Node> get_input();
 
   private:
     std::shared_ptr<Unlocked_Node_Unary_Data> m_unlocked_node_unary_data;

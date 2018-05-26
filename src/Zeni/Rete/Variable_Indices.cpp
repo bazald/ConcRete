@@ -90,11 +90,11 @@ namespace Zeni::Rete {
     }
 
     void insert(const std::string_view name, const Token_Index &index) {
-      index_to_name.insert(std::make_pair(index, name));
-      name_to_index.insert(std::make_pair(name, index));
+      index_to_name.emplace(index, name);
+      name_to_index.emplace(name, index);
 
-      rrc_to_both.insert(std::make_pair(std::make_pair(index.rete_row, index.column), std::make_pair(name, index)));
-      trc_to_both.insert(std::make_pair(std::make_pair(index.token_row, index.column), std::make_pair(name, index)));
+      rrc_to_both.emplace(std::make_pair(index.rete_row, index.column), std::make_pair(name, index));
+      trc_to_both.emplace(std::make_pair(index.token_row, index.column), std::make_pair(name, index));
     }
 
     Variable_Indices reindex_for_right_parent_node(const Variable_Bindings &bindings, const Node &left, const Node &right) const {

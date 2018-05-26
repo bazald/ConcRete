@@ -8,14 +8,13 @@ namespace Zeni::Rete {
 
   class Network;
   class Node;
-  class Pseudonode;
 
   class Raven : public Concurrency::Raven {
     Raven(const Raven &) = delete;
     Raven & operator=(const Raven &) = delete;
 
   public:
-    ZENI_RETE_LINKAGE Raven(const std::shared_ptr<Pseudonode> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender);
+    ZENI_RETE_LINKAGE Raven(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender);
 
     ZENI_RETE_LINKAGE const std::shared_ptr<Network> & get_Network() const;
 

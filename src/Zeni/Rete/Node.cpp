@@ -96,7 +96,7 @@ namespace Zeni::Rete {
         }
       }
 
-      locked_node_data.modify_outputs().insert(output);
+      locked_node_data.modify_outputs().emplace(output);
 
       jobs.reserve(locked_node_data.get_output_tokens().size());
       for (auto &output_token : locked_node_data.get_output_tokens())
@@ -120,7 +120,7 @@ namespace Zeni::Rete {
       locked_node_data.modify_outputs().erase(found);
 
       --locked_node_data.modify_output_count();
-      assert(locked_node_data.get_output_count() >= 0);
+      assert(dynamic_cast<Network *>(this) || locked_node_data.get_output_count() >= 0);
       if (locked_node_data.get_output_count() == 0)
         send_disconnect_from_parents(network, locked_node_data);
 
@@ -130,6 +130,14 @@ namespace Zeni::Rete {
     }
 
     network->get_Job_Queue()->give_many(std::move(jobs));
+  }
+
+  void Node::receive(Concurrency::Job_Queue &, const std::shared_ptr<const Concurrency::Raven> raven) {
+    std::dynamic_pointer_cast<const Rete::Raven>(raven)->receive();
+  }
+
+  void Node::receive(const Raven_Disconnect_Output &raven) {
+    disconnect_output(raven.get_Network(), raven.get_sender());
   }
 
 }

@@ -10,7 +10,7 @@ namespace Zeni::Rete {
     Raven_Disconnect_Output & operator=(const Raven_Disconnect_Output &) = delete;
 
   public:
-    ZENI_RETE_LINKAGE Raven_Disconnect_Output(const std::shared_ptr<Pseudonode> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output);
+    ZENI_RETE_LINKAGE Raven_Disconnect_Output(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output);
 
     void receive() const override;
   };
