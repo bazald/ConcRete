@@ -105,7 +105,7 @@ namespace Zeni::Rete {
 
   private:
     const std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
-    const std::shared_ptr<Unlocked_Network_Data> m_unlocked_data;
+    const std::shared_ptr<Unlocked_Network_Data> m_unlocked_network_data;
 
     // Options
     const Node_Sharing m_node_sharing = Node_Sharing::Enabled;

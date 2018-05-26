@@ -11,7 +11,7 @@
 namespace Zeni::Rete {
 
   Node_Passthrough::Node_Passthrough(const std::shared_ptr<Node> input)
-    : Node_Unary(input->get_height() + 1, input->get_size() + 1, input->get_token_size(), input)
+    : Node_Unary(input->get_height() + 1, input->get_size() + 1, input->get_token_size(), input, true)
   {
   }
 

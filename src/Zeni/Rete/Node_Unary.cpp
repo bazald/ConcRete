@@ -10,8 +10,8 @@
 
 namespace Zeni::Rete {
 
-  Node_Unary::Unlocked_Node_Unary_Data::Unlocked_Node_Unary_Data(const std::shared_ptr<Node> input)
-    : m_input(input)
+  Node_Unary::Unlocked_Node_Unary_Data::Unlocked_Node_Unary_Data(const std::shared_ptr<Node> input, const bool enabled)
+    : m_input(input), m_input_enabled(enabled ? 1 : 0)
   {
   }
 
@@ -58,9 +58,9 @@ namespace Zeni::Rete {
     return m_data->m_input_antitokens;
   }
 
-  Node_Unary::Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Node> input)
-    : Node(height, size, token_size),
-    m_unlocked_node_unary_data(std::make_shared<Unlocked_Node_Unary_Data>(input))
+  Node_Unary::Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Node> input, const bool enabled)
+    : Node(height, size, token_size, true),
+    m_unlocked_node_unary_data(std::make_shared<Unlocked_Node_Unary_Data>(input, enabled))
   {
   }
 

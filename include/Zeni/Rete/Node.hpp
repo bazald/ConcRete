@@ -32,7 +32,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::shared_ptr<const Node> shared_from_this() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Node> shared_from_this();
 
-    ZENI_RETE_LINKAGE Node(const int64_t height, const int64_t size, const int64_t token_size);
+    ZENI_RETE_LINKAGE Node(const int64_t height, const int64_t size, const int64_t token_size, const bool increment_output_count);
 
     /// Assumes the lock is held
     ZENI_RETE_LINKAGE virtual void send_connect_to_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) = 0;
@@ -48,10 +48,10 @@ namespace Zeni::Rete {
       friend Locked_Node_Data;
 
     public:
-      Unlocked_Node_Data();
+      Unlocked_Node_Data(const bool increment_output_count);
 
     private:
-      int64_t m_output_count = 1;
+      int64_t m_output_count;
       Outputs m_outputs;
       Outputs m_antioutputs;
       Tokens m_output_tokens;

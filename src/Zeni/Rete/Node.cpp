@@ -18,13 +18,14 @@ namespace Zeni::Rete {
     return std::static_pointer_cast<Node>(Concurrency::Maester::shared_from_this());
   }
 
-  Node::Node(const int64_t height, const int64_t size, const int64_t token_size)
+  Node::Node(const int64_t height, const int64_t size, const int64_t token_size, const bool increment_output_count)
     : m_height(height), m_size(size), m_token_size(token_size),
-    m_unlocked_node_data(std::make_shared<Unlocked_Node_Data>())
+    m_unlocked_node_data(std::make_shared<Unlocked_Node_Data>(increment_output_count))
   {
   }
 
-  Node::Unlocked_Node_Data::Unlocked_Node_Data()
+  Node::Unlocked_Node_Data::Unlocked_Node_Data(const bool increment_output_count)
+    : m_output_count(increment_output_count ? 1 : 0)
   {
   }
 

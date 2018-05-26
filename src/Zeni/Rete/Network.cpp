@@ -42,7 +42,7 @@ namespace Zeni::Rete {
 
   public:
     Locked_Network_Data_Const(const Network * network, const Node::Locked_Node_Data_Const &node_data)
-      : m_data(network->m_unlocked_data)
+      : m_data(network->m_unlocked_network_data)
     {
     }
 
@@ -69,7 +69,7 @@ namespace Zeni::Rete {
   public:
     Locked_Network_Data(Network * network, const Node::Locked_Node_Data_Const &node_data)
       : Locked_Network_Data_Const(network, node_data),
-      m_data(network->m_unlocked_data)
+      m_data(network->m_unlocked_network_data)
     {
     }
 
@@ -143,9 +143,9 @@ namespace Zeni::Rete {
   }
 
   Network::Network(const Network::Printed_Output printed_output)
-    : Node(0, 0, 1),
+    : Node(0, 0, 1, false),
     m_thread_pool(std::make_shared<Concurrency::Thread_Pool>()),
-    m_unlocked_data(std::make_shared<Unlocked_Network_Data>()),
+    m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
   }
@@ -165,9 +165,9 @@ namespace Zeni::Rete {
   }
 
   Network::Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool)
-    : Node(0, 0, 1),
+    : Node(0, 0, 1, false),
     m_thread_pool(thread_pool),
-    m_unlocked_data(std::make_shared<Unlocked_Network_Data>()),
+    m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
   }
@@ -265,7 +265,7 @@ namespace Zeni::Rete {
 
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
     jobs.reserve(rules.size());
-    for (auto &rule : rules)
+    for (auto rule : rules)
       jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second));
 
     get_Job_Queue()->give_many(std::move(jobs));
@@ -429,7 +429,7 @@ namespace Zeni::Rete {
         //      std::cerr << "Rule '" << action->get_name() << "' replaced." << std::endl;
         //#endif
         assert(found->second != action);
-        excised = action;
+        excised = found->second;
         if (user_command && m_printed_output != Printed_Output::None)
           std::cerr << '#';
         found->second = action;

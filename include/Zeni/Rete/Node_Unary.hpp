@@ -21,11 +21,11 @@ namespace Zeni::Rete {
       friend Locked_Node_Unary_Data;
 
     public:
-      Unlocked_Node_Unary_Data(const std::shared_ptr<Node> input);
+      Unlocked_Node_Unary_Data(const std::shared_ptr<Node> input, const bool enabled);
 
     private:
       std::shared_ptr<Node> m_input;
-      int64_t m_input_enabled = 0;
+      int64_t m_input_enabled;
       Tokens m_input_tokens;
       Tokens m_input_antitokens;
     };
@@ -65,7 +65,7 @@ namespace Zeni::Rete {
     };
 
   protected:
-    Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Node> input);
+    Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Node> input, const bool enabled);
 
     ZENI_RETE_LINKAGE void send_connect_to_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
     ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
