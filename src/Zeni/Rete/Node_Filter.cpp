@@ -24,23 +24,13 @@ namespace Zeni::Rete {
     return m_wme;
   }
 
-  std::shared_ptr<Node_Filter> Node_Filter::Create_Or_Increment_Output_Count(const std::shared_ptr<Network> network, const WME &wme) {
+  std::shared_ptr<Node_Filter> Node_Filter::Create(const std::shared_ptr<Network> network, const WME &wme) {
     class Friendly_Node_Filter : public Node_Filter {
     public:
       Friendly_Node_Filter(const std::shared_ptr<Network> &network, const WME &wme_) : Node_Filter(network, wme_) {}
     };
 
-    if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
-      const auto existing_filter = network->find_filter_and_increment_output_count(wme);
-      if (existing_filter)
-        return existing_filter;
-    }
-
-    auto filter = std::make_shared<Friendly_Node_Filter>(network, wme);
-
-    network->source_filter(filter);
-
-    return filter;
+    return std::static_pointer_cast<Node_Filter>(network->connect_output(network, std::make_shared<Friendly_Node_Filter>(network, wme)));
   }
 
   bool Node_Filter::receive(const Raven_Token_Insert &raven) {

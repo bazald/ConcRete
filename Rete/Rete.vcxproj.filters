@@ -105,6 +105,9 @@
     <ClCompile Include="..\src\Zeni\Rete\Raven_Token.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Passthrough.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Zeni\Rete\Custom_Data.hpp">
@@ -642,6 +645,9 @@
       <Filter>Header Files\tao</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Parser.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Passthrough.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
   </ItemGroup>

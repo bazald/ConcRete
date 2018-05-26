@@ -80,14 +80,22 @@ namespace Zeni::Rete {
     ++locked_node_data.modify_output_count();
   }
 
-  void Node::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output) {
+  std::shared_ptr<Node> Node::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
     {
       Locked_Node_Data locked_node_data(this);
 
-      assert(locked_node_data.get_outputs().find(output) == locked_node_data.get_outputs().end());
+      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+        for (auto &existing_output : locked_node_data.get_outputs()) {
+          if (*existing_output == *output) {
+            existing_output->increment_output_count();
+            return existing_output;
+          }
+        }
+      }
+
       locked_node_data.modify_outputs().insert(output);
 
       jobs.reserve(locked_node_data.get_output_tokens().size());
@@ -96,6 +104,8 @@ namespace Zeni::Rete {
     }
 
     network->get_Job_Queue()->give_many(std::move(jobs));
+
+    return output;
   }
 
   void Node::disconnect_output(const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output) {

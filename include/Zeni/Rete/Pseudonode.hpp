@@ -4,6 +4,8 @@
 #include "Zeni/Concurrency/Maester.hpp"
 #include "Linkage.hpp"
 
+#include <unordered_set>
+
 namespace Zeni::Rete {
 
   class Network;
@@ -14,6 +16,10 @@ namespace Zeni::Rete {
 
   class Pseudonode : public Concurrency::Maester {
   public:
+    typedef std::unordered_set<std::shared_ptr<Node>> Outputs;
+
+    /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists
+    ZENI_RETE_LINKAGE virtual std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output) = 0;
     /// Decrements the output count, potentially resulting in cascading disconnects
     ZENI_RETE_LINKAGE virtual void disconnect_output(const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output) = 0;
 

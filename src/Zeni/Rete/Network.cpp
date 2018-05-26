@@ -26,7 +26,7 @@ namespace Zeni::Rete {
     Network_Unlocked_Data() {}
 
   private:
-    Network::Filters filters;
+    Network::Outputs outputs;
     std::unordered_map<std::string, std::shared_ptr<Node_Action>> rules;
     int64_t rule_name_index = 0;
     std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> working_memory;
@@ -47,8 +47,8 @@ namespace Zeni::Rete {
     {
     }
 
-    const Network::Filters & get_filters() const {
-      return m_data->filters;
+    const Network::Outputs & get_outputs() const {
+      return m_data->outputs;
     }
 
     const std::unordered_map<std::string, std::shared_ptr<Node_Action>> & get_rules() const {
@@ -78,8 +78,8 @@ namespace Zeni::Rete {
     {
     }
 
-    Network::Filters & modify_filters() {
-      return m_data->filters;
+    Network::Outputs & modify_outputs() {
+      return m_data->outputs;
     }
 
     std::unordered_map<std::string, std::shared_ptr<Node_Action>> & modify_rules() {
@@ -261,16 +261,41 @@ namespace Zeni::Rete {
     get_Job_Queue()->give_many(std::move(jobs));
   }
 
+  std::shared_ptr<Node> Network::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output) {
+    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+
+    {
+      Network_Locked_Data locked_data(this);
+
+      if (get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+        for (auto &existing_output : locked_data.get_outputs()) {
+          if (*existing_output == *output) {
+            existing_output->increment_output_count();
+            return existing_output;
+          }
+        }
+      }
+
+      locked_data.modify_outputs().insert(output);
+      jobs.reserve(locked_data.get_working_memory().size());
+      for (auto &wme_token : locked_data.get_working_memory())
+        jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, network, nullptr, wme_token.second));
+    }
+
+    network->get_Job_Queue()->give_many(std::move(jobs));
+
+    return output;
+  }
+
   void Network::disconnect_output(const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output) {
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
     {
       Network_Locked_Data locked_data(this);
 
-      const auto found = locked_data.get_filters().find(
-        std::const_pointer_cast<Node_Filter>(std::dynamic_pointer_cast<const Node_Filter>(output)));
-      assert(found != locked_data.get_filters().end());
-      locked_data.modify_filters().erase(found);
+      const auto found = locked_data.get_outputs().find(std::const_pointer_cast<Node>(output));
+      assert(found != locked_data.get_outputs().end());
+      locked_data.modify_outputs().erase(found);
 
       jobs.reserve(locked_data.get_working_memory().size());
       for (auto &wme_token : locked_data.get_working_memory())
@@ -286,34 +311,6 @@ namespace Zeni::Rete {
 
   bool Network::receive(const Raven_Token_Remove &) {
     return false;
-  }
-
-  std::shared_ptr<Node_Filter> Network::find_filter_and_increment_output_count(const WME &wme) {
-    Network_Locked_Data locked_data(this);
-
-    for (auto &existing_filter : locked_data.get_filters()) {
-      if (existing_filter->get_wme() == wme) {
-        existing_filter->increment_output_count();
-        return existing_filter;
-      }
-    }
-
-    return nullptr;
-  }
-
-  void Network::source_filter(const std::shared_ptr<Node_Filter> filter) {
-    const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
-
-    {
-      Network_Locked_Data locked_data(this);
-      locked_data.modify_filters().insert(filter);
-      jobs.reserve(locked_data.get_working_memory().size());
-      for (auto &wme_token : locked_data.get_working_memory())
-        jobs.emplace_back(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, wme_token.second));
-    }
-
-    m_thread_pool->get_Job_Queue()->give_many(std::move(jobs));
   }
 
   void Network::excise_rule(const std::string &name, const bool user_command) {
@@ -376,9 +373,9 @@ namespace Zeni::Rete {
       Network_Locked_Data locked_data(this);
 
       locked_data.modify_working_memory().insert(std::make_pair(wme, output_token));
-      jobs.reserve(locked_data.get_filters().size());
-      for (auto &filter : locked_data.get_filters())
-        jobs.emplace_back(std::make_shared<Raven_Token_Insert>(filter, sft, nullptr, output_token));
+      jobs.reserve(locked_data.get_outputs().size());
+      for (auto &output : locked_data.get_outputs())
+        jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, sft, nullptr, output_token));
     }
 
     m_thread_pool->get_Job_Queue()->give_many(std::move(jobs));
@@ -398,9 +395,9 @@ namespace Zeni::Rete {
       auto found = locked_data.get_working_memory().find(wme);
       assert(found != locked_data.get_working_memory().end());
 
-      jobs.reserve(locked_data.get_filters().size());
-      for (auto &filter : locked_data.get_filters())
-        jobs.emplace_back(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, found->second));
+      jobs.reserve(locked_data.get_outputs().size());
+      for (auto &output : locked_data.get_outputs())
+        jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, found->second));
       locked_data.modify_working_memory().erase(found);
     }
 
@@ -414,10 +411,10 @@ namespace Zeni::Rete {
     {
       Network_Locked_Data locked_data(this);
 
-      jobs.reserve(locked_data.get_working_memory().size() * locked_data.get_filters().size());
+      jobs.reserve(locked_data.get_working_memory().size() * locked_data.get_outputs().size());
       for (auto &wme_token : locked_data.get_working_memory()) {
-        for (auto &filter : locked_data.get_filters())
-          jobs.emplace_back(std::make_shared<Raven_Token_Remove>(filter, sft, nullptr, wme_token.second));
+        for (auto &output : locked_data.get_outputs())
+          jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, wme_token.second));
       }
       locked_data.modify_working_memory().clear();
     }

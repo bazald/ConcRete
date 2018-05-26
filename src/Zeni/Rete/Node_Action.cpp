@@ -8,10 +8,13 @@
 
 namespace Zeni::Rete {
 
-  Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables,
+  Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<Pseudonode> input, const std::shared_ptr<const Variable_Indices> variables,
     const Action &action_,
     const Action &retraction_)
-    : Node_Unary(input->get_height() + 1, input->get_size(), input->get_token_size(), input),
+    : Node_Unary(std::dynamic_pointer_cast<Node>(input) ? std::dynamic_pointer_cast<Node>(input)->get_height() + 1 : 1,
+      std::dynamic_pointer_cast<Node>(input) ? std::dynamic_pointer_cast<Node>(input)->get_size() : 0,
+      std::dynamic_pointer_cast<Node>(input) ? std::dynamic_pointer_cast<Node>(input)->get_token_size() : 0,
+      input),
     m_variables(variables),
     m_name(name_),
     m_action(action_),
@@ -20,10 +23,10 @@ namespace Zeni::Rete {
     assert(!m_name.empty());
   }
 
-  std::shared_ptr<Node_Action> Node_Action::Create_Or_Increment_Output_Count(const std::shared_ptr<Network> network, const std::string_view name, const bool user_action, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
+  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::string_view name, const bool user_action, const std::shared_ptr<Pseudonode> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
     class Friendly_Node_Action : public Node_Action {
     public:
-      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables,
+      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<Pseudonode> &input, const std::shared_ptr<const Variable_Indices> &variables,
         const Action &action_,
         const Action &retraction_) : Node_Action(name_, input, variables, action_, retraction_) {}
     };

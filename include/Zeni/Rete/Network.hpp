@@ -61,8 +61,6 @@ namespace Zeni::Rete {
     enum class ZENI_RETE_LINKAGE Node_Sharing { Enabled, Disabled };
     enum class ZENI_RETE_LINKAGE Printed_Output { Normal, None };
 
-    typedef std::unordered_set<std::shared_ptr<Node_Filter>> Filters;
-
   private:
     Network(const Printed_Output printed_output);
     Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool);
@@ -84,15 +82,16 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE Node_Sharing get_Node_Sharing() const;
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
+    /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists
+    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output) override;
+    /// Decrements the output count, potentially resulting in cascading disconnects
     ZENI_RETE_LINKAGE void disconnect_output(const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output) override;
+
     ZENI_RETE_LINKAGE bool receive(const Raven_Token_Insert &) override;
     ZENI_RETE_LINKAGE bool receive(const Raven_Token_Remove &) override;
 
-    ZENI_RETE_LINKAGE std::shared_ptr<Node_Filter> find_filter_and_increment_output_count(const WME &wme);
-
     ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Node_Action> action, const bool user_command);
     ZENI_RETE_LINKAGE void excise_all();
-    ZENI_RETE_LINKAGE void source_filter(const std::shared_ptr<Node_Filter> filter);
     ZENI_RETE_LINKAGE void excise_rule(const std::string &name, const bool user_command);
     ZENI_RETE_LINKAGE std::string next_rule_name(const std::string_view prefix);
     ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> unname_rule(const std::string &name, const bool user_command);

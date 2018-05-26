@@ -9,14 +9,10 @@ namespace Zeni::Rete {
     Node_Filter(const Node_Filter &) = delete;
     Node_Filter & operator=(const Node_Filter &) = delete;
 
-  public:
-    enum Index { LEFT = 0, CENTER = 1, RIGHT = 2 };
-
-  private:
     Node_Filter(const std::shared_ptr<Network> network, const WME wme_);
 
   public:
-    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Filter> Create_Or_Increment_Output_Count(const std::shared_ptr<Network> network, const WME &wme);
+    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Filter> Create(const std::shared_ptr<Network> network, const WME &wme);
 
     ZENI_RETE_LINKAGE const WME & get_wme() const;
 
@@ -32,5 +28,4 @@ namespace Zeni::Rete {
 
 }
 
-#define ZENI_RETE_FILTER_H_DONE
 #endif

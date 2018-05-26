@@ -152,7 +152,7 @@ namespace Zeni::Rete::PEG {
 
       //std::cout << "Condition: " << input.string() << std::endl;
 
-      data.filters.emplace(Node_Filter::Create_Or_Increment_Output_Count(data.network, WME(first.second, second.second, third.second)));
+      data.filters.emplace(Node_Filter::Create(data.network, WME(first.second, second.second, third.second)));
     }
   };
 
@@ -171,7 +171,7 @@ namespace Zeni::Rete::PEG {
       //std::cout << "Source_Production: " << input.string() << std::endl;
 
       while (!data.filters.empty()) {
-        Zeni::Rete::Node_Action::Create_Or_Increment_Output_Count(data.network, data.rule_name, data.user_command, data.filters.top(), std::make_shared<Zeni::Rete::Variable_Indices>(),
+        Zeni::Rete::Node_Action::Create(data.network, data.rule_name, data.user_command, data.filters.top(), std::make_shared<Zeni::Rete::Variable_Indices>(),
           [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
           std::cout << rete_action.get_name() << " +: " << token << std::endl;
         }, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {

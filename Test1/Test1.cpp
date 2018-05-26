@@ -6,6 +6,7 @@
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
+#include "Zeni/Rete/Node_Passthrough.hpp"
 #include "Zeni/Rete/Parser.hpp"
 
 #include <array>
@@ -124,8 +125,9 @@ void test_Rete_Network() {
     }
   };
 
-  auto filter = Zeni::Rete::Node_Filter::Create_Or_Increment_Output_Count(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-  auto action = Zeni::Rete::Node_Action::Create_Or_Increment_Output_Count(network->get(), "hello-world", false, filter, std::make_shared<Zeni::Rete::Variable_Indices>(),
+  auto filter = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+  auto passthrough = Zeni::Rete::Node_Passthrough::Create(network->get(), filter);
+  auto action = Zeni::Rete::Node_Action::Create(network->get(), "hello-world", false, passthrough, std::make_shared<Zeni::Rete::Variable_Indices>(),
     [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
     std::cout << "Hello world!" << std::endl;
   }, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {

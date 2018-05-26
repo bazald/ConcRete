@@ -164,6 +164,7 @@
     <ClCompile Include="..\src\Zeni\Rete\Node.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node_Action.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node_Filter.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Node_Passthrough.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node_Unary.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Parser.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Pseudonode.cpp" />
@@ -189,6 +190,7 @@
     <ClInclude Include="..\include\Zeni\Rete\Node.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Node_Action.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Node_Filter.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Node_Passthrough.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Node_Unary.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Parser.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Pseudonode.hpp" />

@@ -19,8 +19,6 @@ namespace Zeni::Rete {
     Node & operator=(const Node &) = delete;
 
   public:
-    typedef std::unordered_set<std::shared_ptr<Node>> Outputs;
-
     class Unlocked_Node_Data;
     class Locked_Node_Data_Const;
     class Locked_Node_Data;
@@ -90,8 +88,8 @@ namespace Zeni::Rete {
 
     /// Increment the output count
     ZENI_RETE_LINKAGE void increment_output_count();
-    /// Does *not* increment the output count, under the assumption that gaining access to this object has already resulted in its increment
-    ZENI_RETE_LINKAGE void connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output);
+    /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists
+    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output) override;
     /// Decrements the output count, potentially resulting in cascading disconnects
     ZENI_RETE_LINKAGE void disconnect_output(const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output) override;
 
