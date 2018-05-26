@@ -4,35 +4,29 @@
 #include "Zeni/Utility.hpp"
 #include "Symbol.hpp"
 
-namespace Zeni {
+namespace Zeni::Rete {
 
-  namespace Rete {
+  class WME {
+  public:
+    typedef std::tuple<std::shared_ptr<const Symbol>, std::shared_ptr<const Symbol>, std::shared_ptr<const Symbol>> Symbols;
 
-    class WME;
+    ZENI_RETE_LINKAGE WME();
+    ZENI_RETE_LINKAGE WME(const std::shared_ptr<const Symbol> first, const std::shared_ptr<const Symbol> second, const std::shared_ptr<const Symbol> third);
 
-    class WME {
-    public:
-      typedef std::tuple<std::shared_ptr<const Symbol>, std::shared_ptr<const Symbol>, std::shared_ptr<const Symbol>> Symbols;
+    ZENI_RETE_LINKAGE bool operator==(const WME &rhs) const;
+    ZENI_RETE_LINKAGE bool operator<(const WME &rhs) const;
 
-      ZENI_RETE_LINKAGE WME();
-      ZENI_RETE_LINKAGE WME(const std::shared_ptr<const Symbol> &first, const std::shared_ptr<const Symbol> &second, const std::shared_ptr<const Symbol> &third);
+    ZENI_RETE_LINKAGE const Symbols & get_symbols() const;
+    ZENI_RETE_LINKAGE size_t get_hash() const;
 
-      ZENI_RETE_LINKAGE bool operator==(const WME &rhs) const;
-      ZENI_RETE_LINKAGE bool operator<(const WME &rhs) const;
+    ZENI_RETE_LINKAGE std::ostream & print(std::ostream &os) const;
+    ZENI_RETE_LINKAGE std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices) const;
 
-      ZENI_RETE_LINKAGE const Symbols & get_symbols() const;
-      ZENI_RETE_LINKAGE size_t get_hash() const;
+  private:
+    Symbols m_symbols;
 
-      ZENI_RETE_LINKAGE std::ostream & print(std::ostream &os) const;
-      ZENI_RETE_LINKAGE std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices) const;
-
-    private:
-      Symbols m_symbols;
-
-      size_t m_hashval;
-    };
-
-  }
+    size_t m_hashval;
+  };
 
 }
 

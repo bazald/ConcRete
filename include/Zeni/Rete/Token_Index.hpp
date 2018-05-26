@@ -7,27 +7,23 @@
 #include <cinttypes>
 #include <iosfwd>
 
-namespace Zeni {
+namespace Zeni::Rete {
 
-  namespace Rete {
+  struct ZENI_RETE_LINKAGE Token_Index {
+    Token_Index();
+    Token_Index(const int64_t rete_row_, const int64_t token_row_, const int8_t column_);
 
-    struct ZENI_RETE_LINKAGE Token_Index {
-      Token_Index();
-      Token_Index(const int64_t &rete_row_, const int64_t &token_row_, const int8_t &column_);
+    bool operator==(const Token_Index &rhs) const;
+    bool operator!=(const Token_Index &rhs) const;
+    bool operator<(const Token_Index &rhs) const;
+    bool operator<=(const Token_Index &rhs) const;
+    bool operator>(const Token_Index &rhs) const;
+    bool operator>=(const Token_Index &rhs) const;
 
-      bool operator==(const Token_Index &rhs) const;
-      bool operator!=(const Token_Index &rhs) const;
-      bool operator<(const Token_Index &rhs) const;
-      bool operator<=(const Token_Index &rhs) const;
-      bool operator>(const Token_Index &rhs) const;
-      bool operator>=(const Token_Index &rhs) const;
-
-      int64_t rete_row;
-      int64_t token_row;
-      int8_t column;
-    };
-
-  }
+    int64_t rete_row;
+    int64_t token_row;
+    int8_t column;
+  };
 
 }
 

@@ -4,18 +4,14 @@
 
 #include <cassert>
 
-namespace Zeni {
+namespace Zeni::Rete {
 
-  namespace Rete {
+  void Pseudonode::receive(Concurrency::Job_Queue &, const std::shared_ptr<const Concurrency::Raven> raven) {
+    std::dynamic_pointer_cast<const Rete::Raven>(raven)->receive();
+  }
 
-    void Pseudonode::receive(Concurrency::Job_Queue &, const Concurrency::Raven &raven) {
-      dynamic_cast<const Rete::Raven *>(&raven)->receive();
-    }
-
-    void Pseudonode::receive(const Raven_Disconnect_Output &raven) {
-      disconnect_output(raven.get_Network(), raven.get_sender());
-    }
-
+  void Pseudonode::receive(const Raven_Disconnect_Output &raven) {
+    disconnect_output(raven.get_Network(), raven.get_sender());
   }
 
 }

@@ -1,13 +1,9 @@
 #include "Zeni/Rete/Custom_Data.hpp"
 
-namespace Zeni {
+namespace Zeni::Rete {
 
-  namespace Rete {
+  Custom_Data::Custom_Data() {}
 
-    Custom_Data::Custom_Data() {}
-
-    Custom_Data::~Custom_Data() {}
-
-  }
+  Custom_Data::~Custom_Data() {}
 
 }

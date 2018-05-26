@@ -3,24 +3,20 @@
 
 #include "Network.hpp"
 
-namespace Zeni {
+namespace Zeni::Rete {
 
-  namespace Rete {
+  class Parser_Pimpl;
 
-    class Parser_Pimpl;
+  class Parser {
+  public:
+    ZENI_RETE_LINKAGE Parser();
 
-    class Parser {
-    public:
-      ZENI_RETE_LINKAGE Parser();
+    ZENI_RETE_LINKAGE void parse_file(const std::shared_ptr<Network> network, const std::string &filename);
+    ZENI_RETE_LINKAGE void parse_string(const std::shared_ptr<Network> network, const std::string_view str);
 
-      ZENI_RETE_LINKAGE void parse_file(const std::shared_ptr<Network> &network, const std::string &filename);
-      ZENI_RETE_LINKAGE void parse_string(const std::shared_ptr<Network> &network, const std::string_view str);
-
-    private:
-      std::shared_ptr<Parser_Pimpl> m_impl;
-    };
-
-  }
+  private:
+    std::shared_ptr<Parser_Pimpl> m_impl;
+  };
 
 }
 

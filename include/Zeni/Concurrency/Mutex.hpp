@@ -3,40 +3,36 @@
 
 #include "Linkage.hpp"
 
-namespace Zeni {
+namespace Zeni::Concurrency {
 
-  namespace Concurrency {
+  class Mutex_Pimpl;
+  class Mutex_Lock_Pimpl;
 
-    class Mutex_Pimpl;
-    class Mutex_Lock_Pimpl;
+  class ZENI_CONCURRENCY_LINKAGE Mutex {
+    Mutex(const Mutex &) = delete;
+    Mutex & operator=(const Mutex &) = delete;
 
-    class ZENI_CONCURRENCY_LINKAGE Mutex {
-      Mutex(const Mutex &) = delete;
-      Mutex & operator=(const Mutex &) = delete;
+    friend class Mutex_Lock_Pimpl;
 
-      friend class Mutex_Lock_Pimpl;
+  public:
+    class ZENI_CONCURRENCY_LINKAGE Lock {
+      Lock(const Lock &) = delete;
+      Lock & operator=(const Lock &) = delete;
 
     public:
-      class ZENI_CONCURRENCY_LINKAGE Lock {
-        Lock(const Lock &) = delete;
-        Lock & operator=(const Lock &) = delete;
-
-      public:
-        Lock(Mutex &mutex);
-        ~Lock();
-
-      private:
-        Mutex_Lock_Pimpl * const m_impl;
-      };
-
-      Mutex();
-      ~Mutex();
+      Lock(Mutex &mutex);
+      ~Lock();
 
     private:
-      Mutex_Pimpl * const m_impl;
+      Mutex_Lock_Pimpl * const m_impl;
     };
 
-  }
+    Mutex();
+    ~Mutex();
+
+  private:
+    Mutex_Pimpl * const m_impl;
+  };
 
 }
 

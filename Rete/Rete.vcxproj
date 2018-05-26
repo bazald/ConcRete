@@ -179,7 +179,6 @@
     <ClCompile Include="..\src\Zeni\Rete\Variable_Binding.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\WME.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Working_Memory.cpp" />
     <ClCompile Include="..\src\Zeni\Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -205,7 +204,6 @@
     <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Variable_Indices.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\WME.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Working_Memory.hpp" />
     <ClInclude Include="..\include\Zeni\Utility.hpp" />
     <ClInclude Include="..\PEGTL\include\tao\pegtl.hpp" />
     <ClInclude Include="..\PEGTL\include\tao\pegtl\analysis\analyze_cycles.hpp" />

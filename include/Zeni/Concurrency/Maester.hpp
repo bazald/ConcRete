@@ -4,28 +4,24 @@
 #include "Job_Queue.hpp"
 #include "Mutex.hpp"
 
-namespace Zeni {
+namespace Zeni::Concurrency {
 
-  namespace Concurrency {
+  class Raven;
 
-    class Raven;
+  /// A message recipient virtual base class
+  class Maester : public std::enable_shared_from_this<Maester> {
+    Maester(const Maester &) = delete;
+    Maester & operator=(const Maester &) = delete;
 
-    /// A message recipient virtual base class
-    class Maester : public std::enable_shared_from_this<Maester> {
-      Maester(const Maester &) = delete;
-      Maester & operator=(const Maester &) = delete;
+  protected:
+    ZENI_CONCURRENCY_LINKAGE Maester();
 
-    protected:
-      ZENI_CONCURRENCY_LINKAGE Maester();
+  public:
+    ZENI_CONCURRENCY_LINKAGE virtual void receive(Job_Queue &job_queue, const std::shared_ptr<const Raven> raven) = 0;
 
-    public:
-      ZENI_CONCURRENCY_LINKAGE virtual void receive(Job_Queue &job_queue, const Raven &raven) = 0;
-
-    protected:
-      mutable Mutex m_mutex;
-    };
-
-  }
+  protected:
+    mutable Mutex m_mutex;
+  };
 
 }
 

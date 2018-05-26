@@ -3,24 +3,20 @@
 
 #include "Raven_Token.hpp"
 
-namespace Zeni {
+namespace Zeni::Rete {
 
-  namespace Rete {
+  class Network;
+  class Token;
 
-    class Network;
-    class Token;
+  class Raven_Token_Insert : public Raven_Token {
+    Raven_Token_Insert(const Raven_Token_Insert &) = delete;
+    Raven_Token_Insert operator=(const Raven_Token_Insert &) = delete;
 
-    class Raven_Token_Insert : public Raven_Token {
-      Raven_Token_Insert(const Raven_Token_Insert &) = delete;
-      Raven_Token_Insert operator=(const Raven_Token_Insert &) = delete;
+  public:
+    ZENI_RETE_LINKAGE Raven_Token_Insert(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender, const std::shared_ptr<const Token> token);
 
-    public:
-      ZENI_RETE_LINKAGE Raven_Token_Insert(const std::shared_ptr<Node> &recipient, const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &sender, const std::shared_ptr<const Token> &token);
-
-      void receive() const override;
-    };
-
-  }
+    void receive() const override;
+  };
 
 }
 

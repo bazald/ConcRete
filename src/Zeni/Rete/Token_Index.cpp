@@ -2,48 +2,44 @@
 
 #include <iostream>
 
-namespace Zeni {
+namespace Zeni::Rete {
 
-  namespace Rete {
+  Token_Index::Token_Index()
+    : rete_row(-1), token_row(-1), column(-1)
+  {
+  }
 
-    Token_Index::Token_Index()
-      : rete_row(-1), token_row(-1), column(-1)
-    {
-    }
+  Token_Index::Token_Index(const int64_t rete_row_, const int64_t token_row_, const int8_t column_)
+    : rete_row(rete_row_), token_row(token_row_), column(column_)
+  {
+  }
 
-    Token_Index::Token_Index(const int64_t &rete_row_, const int64_t &token_row_, const int8_t &column_)
-      : rete_row(rete_row_), token_row(token_row_), column(column_)
-    {
-    }
+  bool Token_Index::operator==(const Token_Index &rhs) const {
+    return rete_row == rhs.rete_row && token_row == rhs.token_row && column == rhs.column;
+  }
 
-    bool Token_Index::operator==(const Token_Index &rhs) const {
-      return rete_row == rhs.rete_row && token_row == rhs.token_row && column == rhs.column;
-    }
+  bool Token_Index::operator!=(const Token_Index &rhs) const {
+    return rete_row != rhs.rete_row || token_row != rhs.token_row || column != rhs.column;
+  }
 
-    bool Token_Index::operator!=(const Token_Index &rhs) const {
-      return rete_row != rhs.rete_row || token_row != rhs.token_row || column != rhs.column;
-    }
+  bool Token_Index::operator<(const Token_Index &rhs) const {
+    return (rete_row < rhs.rete_row || (rete_row == rhs.rete_row &&
+      (token_row < rhs.token_row || (token_row == rhs.token_row &&
+      (column < rhs.column)))));
+  }
 
-    bool Token_Index::operator<(const Token_Index &rhs) const {
-      return (rete_row < rhs.rete_row || (rete_row == rhs.rete_row &&
-        (token_row < rhs.token_row || (token_row == rhs.token_row &&
-          (column < rhs.column)))));
-    }
+  bool Token_Index::operator<=(const Token_Index &rhs) const {
+    return (rete_row < rhs.rete_row || (rete_row == rhs.rete_row &&
+      (token_row < rhs.token_row || (token_row == rhs.token_row &&
+      (column <= rhs.column)))));
+  }
 
-    bool Token_Index::operator<=(const Token_Index &rhs) const {
-      return (rete_row < rhs.rete_row || (rete_row == rhs.rete_row &&
-        (token_row < rhs.token_row || (token_row == rhs.token_row &&
-          (column <= rhs.column)))));
-    }
+  bool Token_Index::operator>(const Token_Index &rhs) const {
+    return rhs <= *this;
+  }
 
-    bool Token_Index::operator>(const Token_Index &rhs) const {
-      return rhs <= *this;
-    }
-
-    bool Token_Index::operator>=(const Token_Index &rhs) const {
-      return rhs < *this;
-    }
-
+  bool Token_Index::operator>=(const Token_Index &rhs) const {
+    return rhs < *this;
   }
 
 }

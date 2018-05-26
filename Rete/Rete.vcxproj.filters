@@ -75,9 +75,6 @@
     <ClCompile Include="..\src\Zeni\Rete\WME.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Working_Memory.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Raven_Token_Insert.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
@@ -141,9 +138,6 @@
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\WME.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Working_Memory.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Utility.hpp">

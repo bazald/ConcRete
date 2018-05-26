@@ -2,14 +2,10 @@
 
 #include "Zeni/Concurrency/Raven.hpp"
 
-namespace Zeni {
+namespace Zeni::Concurrency {
 
-  namespace Concurrency {
-
-    Maester::Maester()
-    {
-    }
-
+  Maester::Maester()
+  {
   }
 
 }

@@ -3,19 +3,15 @@
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node.hpp"
 
-namespace Zeni {
+namespace Zeni::Rete {
 
-  namespace Rete {
+  Raven_Token_Remove::Raven_Token_Remove(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender, const std::shared_ptr<const Token> token)
+    : Raven_Token(recipient, network, sender, token)
+  {
+  }
 
-    Raven_Token_Remove::Raven_Token_Remove(const std::shared_ptr<Node> &recipient, const std::shared_ptr<Network> &network, const std::shared_ptr<const Node> &sender, const std::shared_ptr<const Token> &token)
-      : Raven_Token(recipient, network, sender, token)
-    {
-    }
-
-    void Raven_Token_Remove::receive() const {
-      std::dynamic_pointer_cast<Pseudonode>(get_recipient())->receive(*this);
-    }
-
+  void Raven_Token_Remove::receive() const {
+    std::dynamic_pointer_cast<Pseudonode>(get_recipient())->receive(*this);
   }
 
 }

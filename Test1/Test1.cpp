@@ -37,16 +37,16 @@ class Gossip : public Zeni::Concurrency::Maester {
 public:
   typedef std::shared_ptr<Gossip> Ptr;
 
-  void receive(Zeni::Concurrency::Job_Queue &job_queue, const Zeni::Concurrency::Raven &raven) override {
-    const Whisper &whisper = dynamic_cast<const Whisper &>(raven);
+  void receive(Zeni::Concurrency::Job_Queue &job_queue, const std::shared_ptr<const Zeni::Concurrency::Raven> raven) override {
+    const auto whisper = std::dynamic_pointer_cast<const Whisper>(raven);
 
-    std::cerr << whisper.get_message() + "\n";
+    std::cerr << whisper->get_message() + "\n";
     //++g_num_recvs;
 
     std::vector<std::shared_ptr<Zeni::Concurrency::Job>> jobs;
     Zeni::Concurrency::Mutex::Lock mutex_lock(m_mutex);
     for (Ptr gossip : m_gossips)
-      jobs.emplace_back(std::make_shared<Whisper>(gossip, whisper.get_message()));
+      jobs.emplace_back(std::make_shared<Whisper>(gossip, whisper->get_message()));
 
     job_queue.give_many(std::move(jobs));
   }

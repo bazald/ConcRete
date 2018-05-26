@@ -5,14 +5,10 @@
 
 #include <unordered_set>
 
-namespace Zeni {
+namespace Zeni::Rete {
 
-  namespace Rete {
-
-    typedef std::pair<Token_Index, Token_Index> Variable_Binding;
-    typedef std::unordered_set<Variable_Binding> Variable_Bindings;
-
-  }
+  typedef std::pair<Token_Index, Token_Index> Variable_Binding;
+  typedef std::unordered_set<Variable_Binding> Variable_Bindings;
 
 }
 
