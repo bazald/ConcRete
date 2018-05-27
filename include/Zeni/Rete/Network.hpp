@@ -86,8 +86,8 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE Node_Sharing get_Node_Sharing() const;
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
-    ZENI_RETE_LINKAGE void receive(const Raven_Input_Disable &) override;
-    ZENI_RETE_LINKAGE void receive(const Raven_Input_Enable &) override;
+    ZENI_RETE_LINKAGE void receive(const Raven_Status_Empty &) override;
+    ZENI_RETE_LINKAGE void receive(const Raven_Status_Nonempty &) override;
     ZENI_RETE_LINKAGE void receive(const Raven_Token_Insert &) override;
     ZENI_RETE_LINKAGE void receive(const Raven_Token_Remove &) override;
 

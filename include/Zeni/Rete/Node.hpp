@@ -9,10 +9,12 @@ namespace Zeni::Rete {
 
   class Custom_Data;
   class Network;
+  class Raven_Connect_Gate;
   class Raven_Connect_Output;
+  class Raven_Disconnect_Gate;
   class Raven_Disconnect_Output;
-  class Raven_Input_Disable;
-  class Raven_Input_Enable;
+  class Raven_Status_Empty;
+  class Raven_Status_Nonempty;
   class Raven_Token_Insert;
   class Raven_Token_Remove;
 
@@ -34,9 +36,7 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE Node(const int64_t height, const int64_t size, const int64_t token_size, const bool increment_output_count);
 
-    /// Assumes the lock is held
     ZENI_RETE_LINKAGE virtual void send_connect_to_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) = 0;
-    /// Assumes the lock is held
     ZENI_RETE_LINKAGE virtual void send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) = 0;
 
   public:
@@ -55,6 +55,8 @@ namespace Zeni::Rete {
       Outputs m_outputs;
       Outputs m_antioutputs;
       Tokens m_output_tokens;
+      Outputs m_gates;
+      Outputs m_antigates;
     };
 
     class Locked_Node_Data_Const {
@@ -70,6 +72,8 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE const Outputs & get_outputs() const;
       ZENI_RETE_LINKAGE const Outputs & get_antioutputs() const;
       ZENI_RETE_LINKAGE const Tokens & get_output_tokens() const;
+      ZENI_RETE_LINKAGE const Outputs & get_gates() const;
+      ZENI_RETE_LINKAGE const Outputs & get_antigates() const;
 
     private:
       const Concurrency::Mutex::Lock m_lock;
@@ -87,6 +91,8 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE Outputs & modify_outputs();
       ZENI_RETE_LINKAGE Outputs & modify_antioutputs();
       ZENI_RETE_LINKAGE Tokens & modify_output_tokens();
+      ZENI_RETE_LINKAGE Outputs & modify_gates();
+      ZENI_RETE_LINKAGE Outputs & modify_antigates();
 
     private:
       const std::shared_ptr<Unlocked_Node_Data> m_data;
@@ -96,16 +102,20 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE int64_t get_size() const;
     ZENI_RETE_LINKAGE int64_t get_token_size() const;
 
-    /// Increment the output count.
+    /// Increment the output count. Only function that ought to result in a double mutex lock, when a parent Node calls increment_output_count on a child Node.
     ZENI_RETE_LINKAGE void increment_output_count();
+    /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists.
+    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output);
     /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists.
     ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output);
 
     ZENI_RETE_LINKAGE void receive(Concurrency::Job_Queue &job_queue, const std::shared_ptr<const Concurrency::Raven> raven) override;
+    ZENI_RETE_LINKAGE void receive(const Raven_Connect_Gate &raven);
     ZENI_RETE_LINKAGE void receive(const Raven_Connect_Output &raven);
+    ZENI_RETE_LINKAGE void receive(const Raven_Disconnect_Gate &raven);
     ZENI_RETE_LINKAGE void receive(const Raven_Disconnect_Output &raven);
-    ZENI_RETE_LINKAGE virtual void receive(const Raven_Input_Disable &raven) = 0;
-    ZENI_RETE_LINKAGE virtual void receive(const Raven_Input_Enable &raven) = 0;
+    ZENI_RETE_LINKAGE virtual void receive(const Raven_Status_Empty &raven) = 0;
+    ZENI_RETE_LINKAGE virtual void receive(const Raven_Status_Nonempty &raven) = 0;
     ZENI_RETE_LINKAGE virtual void receive(const Raven_Token_Insert &raven) = 0;
     ZENI_RETE_LINKAGE virtual void receive(const Raven_Token_Remove &raven) = 0;
 
