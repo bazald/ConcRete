@@ -41,7 +41,7 @@ namespace Zeni::Rete {
     friend Locked_Network_Data;
 
   public:
-    Locked_Network_Data_Const(const Network * network, const Node::Locked_Node_Data_Const &node_data)
+    Locked_Network_Data_Const(const Network * network, const Node::Locked_Node_Data_Const &)
       : m_data(network->m_unlocked_network_data)
     {
     }

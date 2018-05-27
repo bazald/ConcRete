@@ -129,9 +129,9 @@ void test_Rete_Network() {
   auto filter = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
   auto passthrough = Zeni::Rete::Node_Passthrough::Create(network->get(), filter);
   auto action = Zeni::Rete::Node_Action::Create(network->get(), "hello-world", false, passthrough, std::make_shared<Zeni::Rete::Variable_Indices>(),
-    [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
+    [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
     std::cout << "Hello world!" << std::endl;
-  }, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
+  }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
     std::cout << "Goodbye world!" << std::endl;
   });
 

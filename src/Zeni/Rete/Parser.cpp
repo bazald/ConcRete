@@ -127,7 +127,7 @@ namespace Zeni::Rete::PEG {
   template <>
   struct Action<Condition> {
     template<typename Input>
-    static void apply(const Input &input, Data &data) {
+    static void apply(const Input &, Data &data) {
       auto third = data.symbols.top();
       data.symbols.pop();
       auto second = data.symbols.top();
@@ -156,18 +156,18 @@ namespace Zeni::Rete::PEG {
     }
   };
 
-  template <>
-  struct Action<Conditions> {
-    template<typename Input>
-    static void apply(const Input &input, Data &data) {
-      //std::cout << "Conditions: " << input.string() << std::endl;
-    }
-  };
+  //template <>
+  //struct Action<Conditions> {
+  //  template<typename Input>
+  //  static void apply(const Input &input, Data &data) {
+  //    std::cout << "Conditions: " << input.string() << std::endl;
+  //  }
+  //};
 
   template <>
   struct Action<Source_Production> {
     template<typename Input>
-    static void apply(const Input &input, Data &data) {
+    static void apply(const Input &, Data &data) {
       //std::cout << "Source_Production: " << input.string() << std::endl;
 
       while (!data.filters.empty()) {
@@ -215,7 +215,7 @@ namespace Zeni::Rete {
 #else
       FILE * in_file = std::fopen(filename.c_str(), "r");
 #endif
-      PEG::file_input<PEG::tracking_mode::LAZY> input(in_file, filename);
+      PEG::read_input<PEG::tracking_mode::LAZY> input(in_file, filename);
 
       parse(input, network, user_command);
 

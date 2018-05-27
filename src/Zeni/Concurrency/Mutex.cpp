@@ -1,6 +1,8 @@
 #include "Zeni/Concurrency/Mutex.hpp"
 
+#ifndef DISABLE_MULTITHREADING
 #include <mutex>
+#endif
 
 namespace Zeni::Concurrency {
 
@@ -15,8 +17,10 @@ namespace Zeni::Concurrency {
     {
     }
 
+#ifndef DISABLE_MULTITHREADING
   private:
     std::mutex m_mutex;
+#endif
   };
 
   class Mutex_Lock_Pimpl {
@@ -24,13 +28,19 @@ namespace Zeni::Concurrency {
     Mutex_Lock_Pimpl & operator=(const Mutex_Lock_Pimpl &) = delete;
 
   public:
+#ifdef DISABLE_MULTITHREADING
+    Mutex_Lock_Pimpl(Mutex &)
+#else
     Mutex_Lock_Pimpl(Mutex &mutex)
       : m_lock(mutex.m_impl->m_mutex)
+#endif
     {
     }
 
+#ifndef DISABLE_MULTITHREADING
   private:
     std::lock_guard<std::mutex> m_lock;
+#endif
   };
 
   Mutex::Lock::Lock(Mutex &mutex)

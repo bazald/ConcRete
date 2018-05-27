@@ -4,7 +4,10 @@
 #include <cassert>
 #include <list>
 #include <system_error>
+
+#ifndef DISABLE_MULTITHREADING
 #include <thread>
+#endif
 
 namespace Zeni::Concurrency {
 
@@ -24,13 +27,22 @@ namespace Zeni::Concurrency {
 
   public:
     Thread_Pool_Pimpl()
+#ifdef DISABLE_MULTITHREADING
+      : Thread_Pool_Pimpl(0)
+#else
       : Thread_Pool_Pimpl(std::thread::hardware_concurrency())
+#endif
     {
     }
 
+#ifdef DISABLE_MULTITHREADING
+    Thread_Pool_Pimpl(const size_t)
+#else
     Thread_Pool_Pimpl(const size_t num_threads)
+#endif
       : m_job_queue(std::make_shared<Job_Queue>(0))
     {
+#ifndef DISABLE_MULTITHREADING
       Job_Queue::Lock job_queue_lock(*m_job_queue);
 
       size_t num_threads_created;
@@ -44,13 +56,16 @@ namespace Zeni::Concurrency {
       }
 
       m_job_queue->add_threads(num_threads_created);
+#endif
     }
 
     ~Thread_Pool_Pimpl() {
       m_job_queue->finish();
 
+#ifndef DISABLE_MULTITHREADING
       for (std::thread &worker : m_workers)
         worker.join();
+#endif
     }
 
     std::shared_ptr<Job_Queue> get_Job_Queue() const {
@@ -59,7 +74,9 @@ namespace Zeni::Concurrency {
 
   private:
     std::shared_ptr<Job_Queue> m_job_queue;
+#ifndef DISABLE_MULTITHREADING
     std::list<std::thread> m_workers;
+#endif
   };
 
   Thread_Pool::Thread_Pool()
