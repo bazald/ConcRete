@@ -1,3 +1,9 @@
+#ifdef _MSC_VER
+#define _CRTDBG_MAP_ALLOC  
+#include <stdlib.h>  
+#include <crtdbg.h>  
+#endif
+
 #include "Zeni/Concurrency/Maester.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
 #include "Zeni/Concurrency/Raven.hpp"
@@ -6,7 +12,8 @@
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
-#include "Zeni/Rete/Node_Passthrough.hpp"
+#include "Zeni/Rete/Node_Passthrough_Gated.hpp"
+#include "Zeni/Rete/Node_Unary_Gate.hpp"
 #include "Zeni/Rete/Parser.hpp"
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 
@@ -53,7 +60,7 @@ public:
     job_queue.give_many(std::move(jobs));
   }
 
-  void tell(const Ptr &gossip) {
+  void tell(const Ptr gossip) {
     Zeni::Concurrency::Mutex::Lock mutex_lock(m_mutex);
     m_gossips.emplace(gossip);
   }
@@ -68,6 +75,12 @@ static void test_Parser();
 
 int main()
 {
+#ifdef _MSC_VER
+  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+  _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
+  //_CrtSetBreakAlloc(5472);
+#endif
+
   test_Thread_Pool();
   test_Rete_Network();
   test_Parser();
@@ -126,9 +139,12 @@ void test_Rete_Network() {
     }
   };
 
-  auto filter = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-  auto passthrough = Zeni::Rete::Node_Passthrough::Create(network->get(), filter);
-  auto action = Zeni::Rete::Node_Action::Create(network->get(), "hello-world", false, passthrough, std::make_shared<Zeni::Rete::Variable_Indices>(),
+  auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+  auto filter2 = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+  auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), filter2);
+  //auto passthrough1 = Zeni::Rete::Node_Passthrough::Create(network->get(), filter1);
+  auto gated_passthrough1 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), filter1, unary_gate1);
+  auto action = Zeni::Rete::Node_Action::Create(network->get(), "hello-world", false, gated_passthrough1, std::make_shared<Zeni::Rete::Variable_Indices>(),
     [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
     std::cout << "Hello world!" << std::endl;
   }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -139,13 +155,25 @@ void test_Rete_Network() {
 
   (*network)->get_Job_Queue()->wait_for_completion();
 
-  (*network)->get_Job_Queue()->give_one(std::make_shared<Zeni::Rete::Raven_Disconnect_Output>(filter, network->get(), passthrough));
+  (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
   (*network)->get_Job_Queue()->wait_for_completion();
 
-  filter->connect_output(network->get(), passthrough);
-  
+  (*network)->remove_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+
   (*network)->get_Job_Queue()->wait_for_completion();
+
+  (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+
+  (*network)->get_Job_Queue()->wait_for_completion();
+
+  //(*network)->get_Job_Queue()->give_one(std::make_shared<Zeni::Rete::Raven_Disconnect_Output>(filter, network->get(), passthrough));
+
+  //(*network)->get_Job_Queue()->wait_for_completion();
+
+  //filter->connect_output(network->get(), passthrough);
+  //
+  //(*network)->get_Job_Queue()->wait_for_completion();
 }
 
 void test_Parser() {

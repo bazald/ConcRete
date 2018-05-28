@@ -86,6 +86,8 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE Node_Sharing get_Node_Sharing() const;
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
+    ZENI_RETE_LINKAGE std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() override;
+
     ZENI_RETE_LINKAGE void receive(const Raven_Status_Empty &) override;
     ZENI_RETE_LINKAGE void receive(const Raven_Status_Nonempty &) override;
     ZENI_RETE_LINKAGE void receive(const Raven_Token_Insert &) override;

@@ -266,16 +266,20 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
     jobs.reserve(rules.size());
     for (auto rule : rules)
-      jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second));
+      jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second, true));
 
     get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  void Network::receive(const Raven_Input_Disable &) {
+  std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> Network::get_inputs() {
+    return std::make_pair(nullptr, nullptr);
+  }
+
+  void Network::receive(const Raven_Status_Empty &) {
     abort();
   }
 
-  void Network::receive(const Raven_Input_Enable &) {
+  void Network::receive(const Raven_Status_Nonempty &) {
     abort();
   }
 
@@ -312,7 +316,7 @@ namespace Zeni::Rete {
     }
 
     if(action)
-      get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(action->get_input(), shared_from_this(), action));
+      get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(action->get_input(), shared_from_this(), action, true));
   }
 
   std::string Network::next_rule_name(const std::string_view prefix) {
@@ -445,7 +449,7 @@ namespace Zeni::Rete {
     }
 
     if(excised)
-      get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(excised->get_input(), sft, excised));
+      get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(excised->get_input(), sft, excised, true));
   }
 
   bool Network::operator==(const Node &rhs) const {

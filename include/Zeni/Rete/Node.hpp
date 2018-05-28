@@ -12,6 +12,7 @@ namespace Zeni::Rete {
   class Raven_Connect_Gate;
   class Raven_Connect_Output;
   class Raven_Disconnect_Gate;
+  class Raven_Decrement_Output_Count;
   class Raven_Disconnect_Output;
   class Raven_Status_Empty;
   class Raven_Status_Nonempty;
@@ -102,16 +103,19 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE int64_t get_size() const;
     ZENI_RETE_LINKAGE int64_t get_token_size() const;
 
+    ZENI_RETE_LINKAGE virtual std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() = 0;
+
     /// Increment the output count. Only function that ought to result in a double mutex lock, when a parent Node calls increment_output_count on a child Node.
     ZENI_RETE_LINKAGE void increment_output_count();
     /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists.
-    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output);
+    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output, const bool immediate);
     /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists.
-    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output);
+    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output, const bool immediate);
 
     ZENI_RETE_LINKAGE void receive(Concurrency::Job_Queue &job_queue, const std::shared_ptr<const Concurrency::Raven> raven) override;
     ZENI_RETE_LINKAGE void receive(const Raven_Connect_Gate &raven);
     ZENI_RETE_LINKAGE void receive(const Raven_Connect_Output &raven);
+    ZENI_RETE_LINKAGE void receive(const Raven_Decrement_Output_Count &raven);
     ZENI_RETE_LINKAGE void receive(const Raven_Disconnect_Gate &raven);
     ZENI_RETE_LINKAGE void receive(const Raven_Disconnect_Output &raven);
     ZENI_RETE_LINKAGE virtual void receive(const Raven_Status_Empty &raven) = 0;

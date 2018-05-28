@@ -11,10 +11,6 @@ namespace Zeni::Rete {
 
     Node_Passthrough_Gated(const std::shared_ptr<Node> input, const std::shared_ptr<Node> gate);
 
-  protected:
-    ZENI_RETE_LINKAGE void send_connect_to_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
-    ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
-
   public:
     ZENI_RETE_LINKAGE static std::shared_ptr<Node_Passthrough_Gated> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Node> input, const std::shared_ptr<Node> gate);
 

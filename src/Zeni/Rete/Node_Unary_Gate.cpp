@@ -1,0 +1,127 @@
+#include "Zeni/Rete/Node_Unary_Gate.hpp"
+
+#include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/Node_Action.hpp"
+#include "Zeni/Rete/Raven_Connect_Gate.hpp"
+#include "Zeni/Rete/Raven_Connect_Output.hpp"
+#include "Zeni/Rete/Raven_Disconnect_Gate.hpp"
+#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
+#include "Zeni/Rete/Raven_Status_Empty.hpp"
+#include "Zeni/Rete/Raven_Status_Nonempty.hpp"
+
+#include <cassert>
+
+namespace Zeni::Rete {
+
+  Node_Unary_Gate::Node_Unary_Gate(const std::shared_ptr<Node> input)
+    : Node_Unary(input->get_height(), input->get_size(), 0, input, true)
+  {
+  }
+
+  void Node_Unary_Gate::send_connect_to_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) {
+    Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+
+    get_input()->increment_output_count();
+    network->get_Job_Queue()->give_one(std::make_shared<Raven_Connect_Gate>(get_input(), network, shared_from_this()));
+  }
+
+  void Node_Unary_Gate::send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) {
+    Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+
+    network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Gate>(get_input(), network, shared_from_this()));
+  }
+
+  std::shared_ptr<Node_Unary_Gate> Node_Unary_Gate::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Node> input) {
+    class Friendly_Node_Unary_Gate : public Node_Unary_Gate {
+    public:
+      Friendly_Node_Unary_Gate(const std::shared_ptr<Node> &input) : Node_Unary_Gate(input) {}
+    };
+
+    return std::static_pointer_cast<Node_Unary_Gate>(input->connect_gate(network, std::make_shared<Friendly_Node_Unary_Gate>(input), true));
+  }
+
+  void Node_Unary_Gate::receive(const Raven_Status_Empty &raven) {
+    const auto sft = shared_from_this();
+    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+
+    {
+      Locked_Node_Data locked_node_data(this);
+      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+
+      if (locked_node_unary_data.get_input_tokens().empty()) {
+        locked_node_unary_data.modify_input_antitokens().emplace(std::shared_ptr<Token>());
+        return;
+      }
+
+      locked_node_unary_data.modify_input_tokens().erase(locked_node_unary_data.get_input_tokens().begin());
+
+      jobs.reserve(locked_node_data.get_outputs().size() + locked_node_data.get_gates().size());
+      for (auto &output : locked_node_data.get_outputs()) {
+        const auto inputs = output->get_inputs();
+        jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(inputs.first, raven.get_Network(), output, false));
+        if (inputs.second)
+          jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(inputs.second, raven.get_Network(), output, false));
+      }
+      for (auto &output : locked_node_data.get_gates()) {
+        const auto inputs = output->get_inputs();
+        jobs.emplace_back(std::make_shared<Raven_Disconnect_Gate>(inputs.first, raven.get_Network(), output));
+        if (inputs.second)
+          jobs.emplace_back(std::make_shared<Raven_Disconnect_Gate>(inputs.second, raven.get_Network(), output));
+      }
+    }
+
+    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+  }
+
+  void Node_Unary_Gate::receive(const Raven_Status_Nonempty &raven) {
+    const auto sft = shared_from_this();
+    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+
+    {
+      Locked_Node_Data locked_node_data(this);
+      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+
+      if (!locked_node_unary_data.get_input_antitokens().empty()) {
+        locked_node_unary_data.modify_input_antitokens().erase(locked_node_unary_data.get_input_antitokens().begin());
+        return;
+      }
+
+      locked_node_unary_data.modify_input_tokens().emplace(std::shared_ptr<Token>());
+
+      jobs.reserve(locked_node_data.get_outputs().size() + locked_node_data.get_gates().size());
+      for (auto &output : locked_node_data.get_outputs()) {
+        const auto inputs = output->get_inputs();
+        inputs.first->increment_output_count();
+        jobs.emplace_back(std::make_shared<Raven_Connect_Output>(inputs.first, raven.get_Network(), output));
+        if(inputs.second) {
+          inputs.second->increment_output_count();
+          jobs.emplace_back(std::make_shared<Raven_Connect_Output>(inputs.second, raven.get_Network(), output));
+        }
+      }
+      for (auto &output : locked_node_data.get_gates()) {
+        const auto inputs = output->get_inputs();
+        inputs.first->increment_output_count();
+        jobs.emplace_back(std::make_shared<Raven_Connect_Gate>(inputs.first, raven.get_Network(), output));
+        if (inputs.second) {
+          inputs.second->increment_output_count();
+          jobs.emplace_back(std::make_shared<Raven_Connect_Gate>(inputs.second, raven.get_Network(), output));
+        }
+      }
+    }
+
+    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+  }
+
+  void Node_Unary_Gate::receive(const Raven_Token_Insert &) {
+    abort();
+  }
+
+  void Node_Unary_Gate::receive(const Raven_Token_Remove &) {
+    abort();
+  }
+
+  bool Node_Unary_Gate::operator==(const Node &rhs) const {
+    return dynamic_cast<const Node_Unary_Gate *>(&rhs);
+  }
+
+}

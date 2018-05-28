@@ -105,13 +105,28 @@
     <ClCompile Include="..\src\Zeni\Rete\Node_Passthrough.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Input_Disable.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Input_Enable.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Raven_Connect_Output.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Raven_Connect_Gate.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Raven_Disconnect_Gate.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Raven_Status_Empty.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Raven_Status_Nonempty.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Unary_Gate.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Node_Passthrough_Gated.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Raven_Decrement_Output_Count.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
   </ItemGroup>
@@ -653,13 +668,28 @@
     <ClInclude Include="..\include\Zeni\Rete\Node_Passthrough.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Input_Disable.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Input_Enable.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Raven_Connect_Output.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Raven_Connect_Gate.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Raven_Disconnect_Gate.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Raven_Status_Nonempty.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Raven_Status_Empty.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Unary_Gate.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Node_Passthrough_Gated.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Raven_Decrement_Output_Count.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
   </ItemGroup>

@@ -32,7 +32,7 @@ namespace Zeni::Rete {
 
     network->source_rule(action_fun, user_action);
 
-    input->connect_output(network, action_fun);
+    input->connect_output(network, action_fun, true);
 
     return action_fun;
   }
@@ -48,6 +48,14 @@ namespace Zeni::Rete {
 
   std::shared_ptr<const Variable_Indices> Node_Action::get_variables() const {
     return m_variables;
+  }
+
+  void Node_Action::receive(const Raven_Status_Empty &) {
+    abort();
+  }
+
+  void Node_Action::receive(const Raven_Status_Nonempty &) {
+    abort();
   }
 
   void Node_Action::receive(const Raven_Token_Insert &raven) {

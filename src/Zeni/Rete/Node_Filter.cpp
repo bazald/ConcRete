@@ -3,6 +3,8 @@
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"
+#include "Zeni/Rete/Raven_Status_Empty.hpp"
+#include "Zeni/Rete/Raven_Status_Nonempty.hpp"
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
 #include "Zeni/Rete/Token_Alpha.hpp"
@@ -30,7 +32,15 @@ namespace Zeni::Rete {
       Friendly_Node_Filter(const std::shared_ptr<Network> &network, const WME &wme_) : Node_Filter(network, wme_) {}
     };
 
-    return std::static_pointer_cast<Node_Filter>(network->connect_output(network, std::make_shared<Friendly_Node_Filter>(network, wme)));
+    return std::static_pointer_cast<Node_Filter>(network->connect_output(network, std::make_shared<Friendly_Node_Filter>(network, wme), true));
+  }
+
+  void Node_Filter::receive(const Raven_Status_Empty &) {
+    abort();
+  }
+
+  void Node_Filter::receive(const Raven_Status_Nonempty &) {
+    abort();
   }
 
   void Node_Filter::receive(const Raven_Token_Insert &raven) {
@@ -65,12 +75,18 @@ namespace Zeni::Rete {
         return;
       }
 
+      const bool empty = locked_node_data.get_output_tokens().empty();
+
       locked_node_unary_data.modify_input_tokens().emplace(token);
       locked_node_data.modify_output_tokens().emplace(token);
 
-      jobs.reserve(locked_node_data.get_outputs().size());
+      jobs.reserve(locked_node_data.get_outputs().size() + (empty ? locked_node_data.get_gates().size() : 0));
       for (auto &output : locked_node_data.get_outputs())
         jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, raven.get_Network(), sft, token));
+      if (empty) {
+        for (auto &output : locked_node_data.get_gates())
+          jobs.emplace_back(std::make_shared<Raven_Status_Nonempty>(output, raven.get_Network(), sft));
+      }
     }
 
     raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
@@ -111,9 +127,15 @@ namespace Zeni::Rete {
       locked_node_unary_data.modify_input_tokens().erase(found);
       locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(token));
 
-      jobs.reserve(locked_node_data.get_outputs().size());
+      const bool empty = locked_node_data.get_output_tokens().empty();
+
+      jobs.reserve(locked_node_data.get_outputs().size() + (empty ? locked_node_data.get_gates().size() : 0));
       for (auto &output : locked_node_data.get_outputs())
         jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, raven.get_Network(), sft, token));
+      if (empty) {
+        for (auto &output : locked_node_data.get_gates())
+          jobs.emplace_back(std::make_shared<Raven_Status_Empty>(output, raven.get_Network(), sft));
+      }
     }
 
     raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
