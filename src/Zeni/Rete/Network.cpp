@@ -189,10 +189,6 @@ namespace Zeni::Rete {
     m_thread_pool->get_Job_Queue()->wait_for_completion();
   }
 
-  void Network::send_connect_to_parents(const std::shared_ptr<Network>, const Locked_Node_Data &)
-  {
-  }
-
   void Network::send_disconnect_from_parents(const std::shared_ptr<Network>, const Locked_Node_Data &)
   {
   }

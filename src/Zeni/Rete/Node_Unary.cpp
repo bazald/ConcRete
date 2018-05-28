@@ -8,18 +8,13 @@
 
 namespace Zeni::Rete {
 
-  Node_Unary::Unlocked_Node_Unary_Data::Unlocked_Node_Unary_Data(const bool enabled)
-    : m_input_enabled(enabled ? 1 : 0)
+  Node_Unary::Unlocked_Node_Unary_Data::Unlocked_Node_Unary_Data()
   {
   }
 
   Node_Unary::Locked_Node_Unary_Data_Const::Locked_Node_Unary_Data_Const(const Node_Unary * node, const Locked_Node_Data_Const &)
     : m_data(node->m_unlocked_node_unary_data)
   {
-  }
-
-  int64_t Node_Unary::Locked_Node_Unary_Data_Const::get_input_enabled() const {
-    return m_data->m_input_enabled;
   }
 
   const Tokens & Node_Unary::Locked_Node_Unary_Data_Const::get_input_tokens() const {
@@ -36,10 +31,6 @@ namespace Zeni::Rete {
   {
   }
 
-  int64_t & Node_Unary::Locked_Node_Unary_Data::modify_input_enabled() {
-    return m_data->m_input_enabled;
-  }
-
   Tokens & Node_Unary::Locked_Node_Unary_Data::modify_input_tokens() {
     return m_data->m_input_tokens;
   }
@@ -48,23 +39,14 @@ namespace Zeni::Rete {
     return m_data->m_input_antitokens;
   }
 
-  Node_Unary::Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Node> input, const bool enabled)
+  Node_Unary::Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Node> input)
     : Node(height, size, token_size, true),
-    m_unlocked_node_unary_data(std::make_shared<Unlocked_Node_Unary_Data>(enabled)),
+    m_unlocked_node_unary_data(std::make_shared<Unlocked_Node_Unary_Data>()),
     m_input(input)
   {
   }
 
-  void Node_Unary::send_connect_to_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) {
-    Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
-
-    m_input->increment_output_count();
-    network->get_Job_Queue()->give_one(std::make_shared<Raven_Connect_Output>(m_input, network, shared_from_this()));
-  }
-
-  void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) {
-    Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
-
+  void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &) {
     network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(m_input, network, shared_from_this(), true));
   }
 

@@ -68,6 +68,9 @@ namespace Zeni::Concurrency {
     /// Give the queue many new Jobs. Can throw Job_Queue_Must_Not_Be_Shut_Down.
     ZENI_CONCURRENCY_LINKAGE void give_many(std::vector<std::shared_ptr<Job>> &&jobs);
 
+    /// Give the queue many new Jobs. Can throw Job_Queue_Must_Not_Be_Shut_Down.
+    ZENI_CONCURRENCY_LINKAGE void give_many(const std::vector<std::shared_ptr<Job>> &jobs);
+
   private:
     Job_Queue_Pimpl * const m_impl;
   };

@@ -14,11 +14,15 @@
 namespace Zeni::Rete {
 
   Node_Filter::Node_Filter(const std::shared_ptr<Network> network, const WME wme_)
-    : Node_Unary(1, 1, 1, network, true),
+    : Node_Unary(1, 1, 1, network),
     m_wme(wme_),
     m_variable(std::make_tuple(std::dynamic_pointer_cast<const Symbol_Variable>(std::get<0>(m_wme.get_symbols())),
       std::dynamic_pointer_cast<const Symbol_Variable>(std::get<1>(m_wme.get_symbols())),
       std::dynamic_pointer_cast<const Symbol_Variable>(std::get<2>(m_wme.get_symbols()))))
+  {
+  }
+
+  Node_Filter::~Node_Filter()
   {
   }
 

@@ -161,6 +161,23 @@ namespace Zeni::Concurrency {
 #endif
     }
 
+    void give_many(Job_Queue * const pub_this, const std::vector<std::shared_ptr<Job>> &jobs) {
+      if (jobs.empty())
+        return;
+
+#ifndef DISABLE_MULTITHREADING
+      std::unique_lock<std::mutex> mutex_lock(m_mutex);
+#endif
+
+      if (m_status == Job_Queue::Status::SHUT_DOWN)
+        throw Job_Queue::Job_Queue_Must_Not_Be_Shut_Down();
+
+      m_jobs.emplace(jobs);
+#ifndef DISABLE_MULTITHREADING
+      m_non_empty.notify_all();
+#endif
+    }
+
   private:
 #ifndef DISABLE_MULTITHREADING
     std::mutex m_mutex;
@@ -243,6 +260,10 @@ namespace Zeni::Concurrency {
 
   void Job_Queue::give_many(std::vector<std::shared_ptr<Job>> &&jobs) {
     return m_impl->give_many(this, std::move(jobs));
+  }
+
+  void Job_Queue::give_many(const std::vector<std::shared_ptr<Job>> &jobs) {
+    return m_impl->give_many(this, jobs);
   }
 
 }

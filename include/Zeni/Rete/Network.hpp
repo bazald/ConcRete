@@ -68,7 +68,6 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE void Destroy();
 
-    ZENI_RETE_LINKAGE void send_connect_to_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
     ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
 
   public:

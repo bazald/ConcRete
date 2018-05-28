@@ -37,7 +37,6 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE Node(const int64_t height, const int64_t size, const int64_t token_size, const bool increment_output_count);
 
-    ZENI_RETE_LINKAGE virtual void send_connect_to_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) = 0;
     ZENI_RETE_LINKAGE virtual void send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) = 0;
 
   public:

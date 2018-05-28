@@ -11,7 +11,7 @@ namespace Zeni::Rete {
   Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables,
     const Action &action_,
     const Action &retraction_)
-    : Node_Unary(input->get_height() + 1, input->get_size(), input->get_token_size(), input, true),
+    : Node_Unary(input->get_height() + 1, input->get_size(), input->get_token_size(), input),
     m_variables(variables),
     m_name(name_),
     m_action(action_),
@@ -37,9 +37,8 @@ namespace Zeni::Rete {
     return action_fun;
   }
 
-  Node_Action::~Node_Action() {
-    //for (auto &token : get_input_tokens())
-    //  m_retraction(*this, *token);
+  Node_Action::~Node_Action()
+  {
   }
 
   std::string Node_Action::get_name() const {

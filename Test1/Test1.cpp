@@ -139,17 +139,21 @@ void test_Rete_Network() {
     }
   };
 
-  auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-  auto filter2 = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-  auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), filter2);
-  //auto passthrough1 = Zeni::Rete::Node_Passthrough::Create(network->get(), filter1);
-  auto gated_passthrough1 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), filter1, unary_gate1);
-  auto action = Zeni::Rete::Node_Action::Create(network->get(), "hello-world", false, gated_passthrough1, std::make_shared<Zeni::Rete::Variable_Indices>(),
-    [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-    std::cout << "Hello world!" << std::endl;
-  }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-    std::cout << "Goodbye world!" << std::endl;
-  });
+  {
+    auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+    //auto passthrough1 = Zeni::Rete::Node_Passthrough::Create(network->get(), filter1);
+    auto filter2 = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+    auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), filter2);
+    auto gated_passthrough1 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), filter1, unary_gate1);
+    auto action = Zeni::Rete::Node_Action::Create(network->get(), "hello-world", false, gated_passthrough1, std::make_shared<Zeni::Rete::Variable_Indices>(),
+      [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
+      std::cout << "Hello world!" << std::endl;
+    }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
+      std::cout << "Goodbye world!" << std::endl;
+    });
+  }
+
+  (*network)->get_Job_Queue()->wait_for_completion();
 
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
