@@ -156,6 +156,7 @@
     <ClInclude Include="..\include\Zeni\Concurrency\Linkage.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Maester.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pool.hpp" />
+    <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pools.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Mutex.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Raven.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Thread_Pool.hpp" />
@@ -165,6 +166,7 @@
     <ClCompile Include="..\src\Zeni\Concurrency\Job_Queue.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Maester.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pool.cpp" />
+    <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pools.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Mutex.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Raven.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Thread_Pool.cpp" />

@@ -1,6 +1,5 @@
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Maester.hpp"
-#include "Zeni/Concurrency/Memory_Pool.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
 #include "Zeni/Concurrency/Raven.hpp"
 #include "Zeni/Concurrency/Thread_Pool.hpp"
@@ -76,8 +75,6 @@ int main()
   test_Thread_Pool();
   test_Rete_Network();
   test_Parser();
-
-  Zeni::Concurrency::Memory_Pool::get().clear();
 
   return 0;
 }

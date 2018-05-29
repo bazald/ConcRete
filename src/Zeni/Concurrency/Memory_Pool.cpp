@@ -8,7 +8,6 @@
 
 #include "Zeni/Utility.hpp"
 
-#include <iostream>
 #include <unordered_map>
 
 namespace Zeni::Concurrency {
@@ -62,8 +61,6 @@ namespace Zeni::Concurrency {
     size_t clear() noexcept {
       size_t count = 0;
 
-      Mutex::Lock mutex_lock(m_mutex);
-
       for (auto &freed : m_freed) {
         void * ptr = freed.second;
         while (ptr) {
@@ -80,8 +77,9 @@ namespace Zeni::Concurrency {
     }
 
     /// get a cached memory block or allocate one as needed
-    void * allocate(const size_t size) noexcept {
-      Mutex::Lock mutex_lock(m_mutex);
+    void * allocate(size_t size) noexcept {
+      if (size < sizeof(void *))
+        size = sizeof(void *);
 
       auto &freed = m_freed[size];
 
@@ -110,8 +108,6 @@ namespace Zeni::Concurrency {
 
     /// return a memory block to be cached (and eventually freed)
     void release(void * const ptr) noexcept {
-      Mutex::Lock mutex_lock(m_mutex);
-
       auto &freed = m_freed[size_of(ptr)];
 
 #ifndef NDEBUG
@@ -146,7 +142,6 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    Mutex m_mutex;
     std::unordered_map<size_t, void *, std::hash<size_t>, std::equal_to<size_t>, Mallocator<std::pair<const size_t, void *>>> m_freed;
   };
 
@@ -172,11 +167,6 @@ namespace Zeni::Concurrency {
     get_pimpl()->~Memory_Pool_Pimpl();
   }
 
-  Memory_Pool & Memory_Pool::get() {
-    static Memory_Pool g_memory_pool;
-    return g_memory_pool;
-  }
-
   size_t Memory_Pool::clear() noexcept {
     return get_pimpl()->clear();
   }
@@ -192,43 +182,5 @@ namespace Zeni::Concurrency {
   size_t Memory_Pool::size_of(const void * const ptr) const noexcept {
     return get_pimpl()->size_of(ptr);
   }
-
-  static std::list<std::new_handler, Mallocator<std::new_handler>> g_old_new_handlers;
-  static bool g_unregistered = true;
-
-  static void new_handler() noexcept(false) {
-    if (Memory_Pool::get().clear())
-      return;
-
-    int64_t successful_returns = 0;
-
-    for (const auto &old_handler : g_old_new_handlers) {
-      try {
-        old_handler();
-        ++successful_returns;
-      }
-      catch (const std::bad_alloc &)
-      {
-      }
-    }
-
-    if (!successful_returns)
-      throw std::bad_alloc();
-  }
-
-  void register_new_handler(const bool &force_reregister) noexcept {
-    if(g_unregistered || force_reregister) {
-      const auto old_new_handler = std::set_new_handler(new_handler);
-      if(old_new_handler)
-        g_old_new_handlers.emplace_front(old_new_handler);
-      g_unregistered = false;
-    }
-  }
-
-  static struct Register_New_Handler {
-    Register_New_Handler() {
-      register_new_handler();
-    }
-  } g_register_new_handler;
 
 }

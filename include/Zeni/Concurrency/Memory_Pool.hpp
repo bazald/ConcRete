@@ -4,29 +4,28 @@
 #include "Mutex.hpp"
 
 #include <cstdint>
+#include <memory>
 
 namespace Zeni::Concurrency {
 
   class Memory_Pool_Pimpl;
 
-  class Memory_Pool {
+  class Memory_Pool : std::enable_shared_from_this<Memory_Pool> {
     Memory_Pool(const Memory_Pool &rhs) = delete;
     Memory_Pool & operator=(const Memory_Pool &rhs) = delete;
 
 #ifdef NDEBUG
-    static const int m_pimpl_size = 144;
+    static const int m_pimpl_size = 64;
 #else
-    static const int m_pimpl_size = 160;
+    static const int m_pimpl_size = 80;
 #endif
     static const int m_pimpl_align = 8;
     const Memory_Pool_Pimpl * get_pimpl() const noexcept;
     Memory_Pool_Pimpl * get_pimpl() noexcept;
 
+  public:
     ZENI_CONCURRENCY_LINKAGE Memory_Pool() noexcept;
     ZENI_CONCURRENCY_LINKAGE ~Memory_Pool() noexcept;
-
-  public:
-    ZENI_CONCURRENCY_LINKAGE static Memory_Pool & get();
 
     /// Free any cached memory blocks. Return a count of the number of blocks freed.
     ZENI_CONCURRENCY_LINKAGE size_t clear() noexcept;
@@ -43,8 +42,6 @@ namespace Zeni::Concurrency {
   private:
     alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
   };
-
-  ZENI_CONCURRENCY_LINKAGE void register_new_handler(const bool &force_reregister = false) noexcept;
 
 }
 

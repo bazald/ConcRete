@@ -39,13 +39,16 @@
     <ClInclude Include="..\include\Zeni\Concurrency\Raven.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Concurrency\Thread_Pool.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\Zeni\Utility.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pool.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\Thread_Pool.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pools.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
   </ItemGroup>
@@ -72,6 +75,9 @@
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\New_and_Delete.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pools.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
   </ItemGroup>
