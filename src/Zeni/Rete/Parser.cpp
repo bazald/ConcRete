@@ -75,9 +75,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Constant_Float> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      std::stringstream sin(input.string());
-      double d;
-      sin >> d;
+      const double d = std::stod(input.string());
       //std::cout << "Double: " << d << std::endl;
       data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_Float>(d));
     }
@@ -87,9 +85,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Constant_Int> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      std::stringstream sin(input.string());
-      int64_t i;
-      sin >> i;
+      const int64_t i = std::stoll(input.string());
       //std::cout << "Int: " << i << std::endl;
       data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_Int>(i));
     }
@@ -108,7 +104,6 @@ namespace Zeni::Rete::PEG {
   struct Action<Variable> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      std::stringstream sin(input.string());
       std::string str = input.string();
       str = str.substr(1, str.length() - 2);
       //std::cout << "Variable: " << str << std::endl;
@@ -187,13 +182,17 @@ namespace Zeni::Rete::PEG {
 namespace Zeni::Rete {
 
   class Parser_Analyzer {
-  public:
+  private:
     Parser_Analyzer() {
       PEG::analyze<PEG::Grammar>();
     }
-  };
 
-  static Parser_Analyzer m_parser_analyzer;
+  public:
+    static Parser_Analyzer & get() {
+      static Parser_Analyzer parser_analyzer;
+      return parser_analyzer;
+    }
+  };
 
   class Parser_Pimpl : public std::enable_shared_from_this<Parser_Pimpl> {
     template <typename Input>
@@ -205,7 +204,7 @@ namespace Zeni::Rete {
 
   public:
     Parser_Pimpl() {
-
+      Parser_Analyzer::get();
     }
 
     void parse_file(const std::shared_ptr<Network> network, const std::string &filename, const bool user_command) {

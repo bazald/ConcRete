@@ -45,6 +45,9 @@
     <ClInclude Include="..\include\Zeni\Utility.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pool.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Zeni\Concurrency\Job_Queue.cpp">
@@ -63,6 +66,12 @@
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Utility.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pool.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\New_and_Delete.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
   </ItemGroup>

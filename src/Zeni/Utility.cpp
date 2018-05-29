@@ -6,7 +6,7 @@
 
 namespace Zeni {
 
-  std::string to_string(const double &number) {
+  std::string to_string(const double &number) noexcept {
     std::ostringstream oss;
     oss << std::setprecision(20) << std::fixed << number;
     std::string str = oss.str();

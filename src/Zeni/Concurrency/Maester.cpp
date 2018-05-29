@@ -4,7 +4,7 @@
 
 namespace Zeni::Concurrency {
 
-  Maester::Maester()
+  Maester::Maester() noexcept
   {
   }
 

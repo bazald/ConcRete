@@ -15,7 +15,7 @@ namespace Zeni::Concurrency {
     friend class Mutex_Lock_Pimpl;
 
   public:
-    Mutex_Pimpl()
+    Mutex_Pimpl() noexcept
     {
     }
 
@@ -31,9 +31,9 @@ namespace Zeni::Concurrency {
 
   public:
 #ifdef DISABLE_MULTITHREADING
-    Mutex_Lock_Pimpl(Mutex &)
+    Mutex_Lock_Pimpl(Mutex &) noexcept
 #else
-    Mutex_Lock_Pimpl(Mutex &mutex)
+    Mutex_Lock_Pimpl(Mutex &mutex) noexcept
       : m_lock(mutex.get_pimpl()->m_mutex)
 #endif
     {
@@ -45,23 +45,23 @@ namespace Zeni::Concurrency {
 #endif
   };
 
-  const Mutex_Pimpl * Mutex::get_pimpl() const {
+  const Mutex_Pimpl * Mutex::get_pimpl() const noexcept {
     return reinterpret_cast<const Mutex_Pimpl *>(m_pimpl_storage);
   }
 
-  Mutex_Pimpl * Mutex::get_pimpl() {
+  Mutex_Pimpl * Mutex::get_pimpl() noexcept {
     return reinterpret_cast<Mutex_Pimpl *>(m_pimpl_storage);
   }
 
-  const Mutex_Lock_Pimpl * Mutex::Lock::get_pimpl() const {
+  const Mutex_Lock_Pimpl * Mutex::Lock::get_pimpl() const noexcept {
     return reinterpret_cast<const Mutex_Lock_Pimpl *>(m_pimpl_storage);
   }
 
-  Mutex_Lock_Pimpl * Mutex::Lock::get_pimpl() {
+  Mutex_Lock_Pimpl * Mutex::Lock::get_pimpl() noexcept {
     return reinterpret_cast<Mutex_Lock_Pimpl *>(m_pimpl_storage);
   }
 
-  Mutex::Lock::Lock(Mutex &mutex) {
+  Mutex::Lock::Lock(Mutex &mutex) noexcept {
     new (&m_pimpl_storage) Mutex_Lock_Pimpl(mutex);
   }
 
@@ -75,11 +75,11 @@ namespace Zeni::Concurrency {
     get_pimpl()->~Mutex_Lock_Pimpl();
   }
 
-  Mutex::Mutex() {
+  Mutex::Mutex() noexcept {
     new (&m_pimpl_storage) Mutex_Pimpl;
   }
 
-  Mutex::~Mutex() {
+  Mutex::~Mutex() noexcept {
     static_assert(std::alignment_of<Mutex_Pimpl>::value <= Mutex::m_pimpl_align, "Mutex::m_pimpl_align is too low.");
     ZENI_STATIC_WARNING(std::alignment_of<Mutex_Pimpl>::value >= Mutex::m_pimpl_align, "Mutex::m_pimpl_align is too high.");
 

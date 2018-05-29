@@ -160,7 +160,7 @@ namespace Zeni::Rete {
     return output;
   }
 
-  void Node::receive(Concurrency::Job_Queue &, const std::shared_ptr<const Concurrency::Raven> raven) {
+  void Node::receive(Concurrency::Job_Queue &, const std::shared_ptr<const Concurrency::Raven> raven) noexcept {
     std::dynamic_pointer_cast<const Rete::Raven>(raven)->receive();
   }
 

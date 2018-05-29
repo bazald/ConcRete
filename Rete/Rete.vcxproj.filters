@@ -129,6 +129,9 @@
     <ClCompile Include="..\src\Zeni\Rete\Raven_Decrement_Output_Count.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Zeni\New_and_Delete.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Zeni\Rete\Custom_Data.hpp">

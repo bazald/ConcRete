@@ -12,12 +12,12 @@
 
 namespace Zeni::Concurrency {
 
-  Job_Queue::Job_Queue_Must_Be_Running::Job_Queue_Must_Be_Running()
+  Job_Queue::Job_Queue_Must_Be_Running::Job_Queue_Must_Be_Running() noexcept
     : runtime_error("Invalid operation attempted for a Job_Queue that has shut down or is in the process of being shut down.")
   {
   }
 
-  Job_Queue::Job_Queue_Must_Not_Be_Shut_Down::Job_Queue_Must_Not_Be_Shut_Down()
+  Job_Queue::Job_Queue_Must_Not_Be_Shut_Down::Job_Queue_Must_Not_Be_Shut_Down() noexcept
     : runtime_error("Invalid operation attempted for a Job_Queue that has already been shut down.")
   {
   }
@@ -26,7 +26,7 @@ namespace Zeni::Concurrency {
     friend class Job_Queue_Lock_Pimpl;
 
   public:
-    Job_Queue_Pimpl()
+    Job_Queue_Pimpl() noexcept
 #ifdef DISABLE_MULTITHREADING
       : m_dormant_max(0)
 #else
@@ -36,24 +36,24 @@ namespace Zeni::Concurrency {
     }
 
 #ifdef DISABLE_MULTITHREADING
-    Job_Queue_Pimpl(const size_t)
+    Job_Queue_Pimpl(const size_t) noexcept
       : m_dormant_max(0)
 #else
-    Job_Queue_Pimpl(const size_t num_threads)
+    Job_Queue_Pimpl(const size_t num_threads) noexcept
       : m_dormant_max(num_threads > 1 ? num_threads : 0)
 #endif
     {
     }
 
-    size_t num_threads() const {
+    size_t num_threads() const noexcept {
       return m_dormant_max;
     }
 
-    void add_threads(const size_t threads) {
+    void add_threads(const size_t threads) noexcept {
       m_dormant_max += threads;
     }
 
-    void finish() {
+    void finish() noexcept(false) {
 #ifndef DISABLE_MULTITHREADING
       std::lock_guard<std::mutex> mutex_lock(m_mutex);
 #endif
@@ -71,7 +71,7 @@ namespace Zeni::Concurrency {
       //std::cerr << oss.str();
     }
 
-    void wait_for_completion(Job_Queue * const pub_this) {
+    void wait_for_completion(Job_Queue * const pub_this) noexcept {
 #ifndef DISABLE_MULTITHREADING
       if (m_dormant_max) {
         std::unique_lock<std::mutex> mutex_lock(m_mutex);
@@ -92,7 +92,7 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::pair<std::shared_ptr<Job>, Job_Queue::Status> take_one() {
+    std::pair<std::shared_ptr<Job>, Job_Queue::Status> take_one() noexcept {
 #ifndef DISABLE_MULTITHREADING
       std::unique_lock<std::mutex> mutex_lock(m_mutex);
 #endif
@@ -129,7 +129,7 @@ namespace Zeni::Concurrency {
       return std::make_pair(job, m_status);
     }
 
-    void give_one(const std::shared_ptr<Job> job) {
+    void give_one(const std::shared_ptr<Job> job) noexcept(false) {
 #ifndef DISABLE_MULTITHREADING
       std::unique_lock<std::mutex> mutex_lock(m_mutex);
 #endif
@@ -143,7 +143,7 @@ namespace Zeni::Concurrency {
 #endif
     }
 
-    void give_many(std::vector<std::shared_ptr<Job>> &&jobs) {
+    void give_many(std::vector<std::shared_ptr<Job>> &&jobs) noexcept(false) {
       if (jobs.empty())
         return;
 
@@ -160,7 +160,7 @@ namespace Zeni::Concurrency {
 #endif
     }
 
-    void give_many(const std::vector<std::shared_ptr<Job>> &jobs) {
+    void give_many(const std::vector<std::shared_ptr<Job>> &jobs) noexcept(false) {
       if (jobs.empty())
         return;
 
@@ -189,11 +189,11 @@ namespace Zeni::Concurrency {
     size_t m_dormant_max;
   };
 
-  const Job_Queue_Pimpl * Job_Queue::get_pimpl() const {
+  const Job_Queue_Pimpl * Job_Queue::get_pimpl() const noexcept {
     return reinterpret_cast<const Job_Queue_Pimpl *>(m_pimpl_storage);
   }
 
-  Job_Queue_Pimpl * Job_Queue::get_pimpl() {
+  Job_Queue_Pimpl * Job_Queue::get_pimpl() noexcept {
     return reinterpret_cast<Job_Queue_Pimpl *>(m_pimpl_storage);
   }
 
@@ -203,9 +203,9 @@ namespace Zeni::Concurrency {
 
   public:
 #ifdef DISABLE_MULTITHREADING
-    Job_Queue_Lock_Pimpl(Job_Queue &)
+    Job_Queue_Lock_Pimpl(Job_Queue &) noexcept
 #else
-    Job_Queue_Lock_Pimpl(Job_Queue &job_queue)
+    Job_Queue_Lock_Pimpl(Job_Queue &job_queue) noexcept
       : m_lock(job_queue.get_pimpl()->m_mutex)
 #endif
     {
@@ -217,18 +217,18 @@ namespace Zeni::Concurrency {
 #endif
   };
 
-  const Job_Queue_Lock_Pimpl * Job_Queue::Lock::get_pimpl() const {
+  const Job_Queue_Lock_Pimpl * Job_Queue::Lock::get_pimpl() const noexcept {
     return reinterpret_cast<const Job_Queue_Lock_Pimpl *>(m_pimpl_storage);
   }
-  Job_Queue_Lock_Pimpl * Job_Queue::Lock::get_pimpl() {
+  Job_Queue_Lock_Pimpl * Job_Queue::Lock::get_pimpl() noexcept {
     return reinterpret_cast<Job_Queue_Lock_Pimpl *>(m_pimpl_storage);
   }
 
-  Job_Queue::Lock::Lock(Job_Queue &job_queue) {
+  Job_Queue::Lock::Lock(Job_Queue &job_queue) noexcept {
     new (&m_pimpl_storage) Job_Queue_Lock_Pimpl(job_queue);
   }
 
-  Job_Queue::Lock::~Lock() {
+  Job_Queue::Lock::~Lock() noexcept {
     static_assert(std::alignment_of<Job_Queue_Lock_Pimpl>::value <= Job_Queue::Lock::m_pimpl_align, "Job_Queue::Lock::m_pimpl_align is too low.");
     ZENI_STATIC_WARNING(std::alignment_of<Job_Queue_Lock_Pimpl>::value >= Job_Queue::Lock::m_pimpl_align, "Job_Queue::Lock::m_pimpl_align is too high.");
 
@@ -238,15 +238,15 @@ namespace Zeni::Concurrency {
     get_pimpl()->~Job_Queue_Lock_Pimpl();
   }
 
-  Job_Queue::Job_Queue() {
+  Job_Queue::Job_Queue() noexcept {
     new (&m_pimpl_storage) Job_Queue_Pimpl;
   }
 
-  Job_Queue::Job_Queue(const size_t num_threads) {
+  Job_Queue::Job_Queue(const size_t num_threads) noexcept {
     new (&m_pimpl_storage) Job_Queue_Pimpl(num_threads);
   }
 
-  Job_Queue::~Job_Queue() {
+  Job_Queue::~Job_Queue() noexcept {
     static_assert(std::alignment_of<Job_Queue_Pimpl>::value <= Job_Queue::m_pimpl_align, "Job_Queue::m_pimpl_align is too low.");
     ZENI_STATIC_WARNING(std::alignment_of<Job_Queue_Pimpl>::value >= Job_Queue::m_pimpl_align, "Job_Queue::m_pimpl_align is too high.");
 
@@ -256,35 +256,35 @@ namespace Zeni::Concurrency {
     get_pimpl()->~Job_Queue_Pimpl();
   }
 
-  size_t Job_Queue::num_threads() const {
+  size_t Job_Queue::num_threads() const noexcept {
     return get_pimpl()->num_threads();
   }
 
-  void Job_Queue::add_threads(const size_t threads) {
+  void Job_Queue::add_threads(const size_t threads) noexcept {
     get_pimpl()->add_threads(threads);
   }
 
-  void Job_Queue::finish() {
+  void Job_Queue::finish() noexcept(false) {
     return get_pimpl()->finish();
   }
 
-  void Job_Queue::wait_for_completion() {
+  void Job_Queue::wait_for_completion() noexcept {
     return get_pimpl()->wait_for_completion(this);
   }
 
-  std::pair<std::shared_ptr<Job>, Job_Queue::Status> Job_Queue::take_one() {
+  std::pair<std::shared_ptr<Job>, Job_Queue::Status> Job_Queue::take_one() noexcept {
     return get_pimpl()->take_one();
   }
 
-  void Job_Queue::give_one(const std::shared_ptr<Job> job) {
+  void Job_Queue::give_one(const std::shared_ptr<Job> job) noexcept(false) {
     return get_pimpl()->give_one(job);
   }
 
-  void Job_Queue::give_many(std::vector<std::shared_ptr<Job>> &&jobs) {
+  void Job_Queue::give_many(std::vector<std::shared_ptr<Job>> &&jobs) noexcept(false) {
     return get_pimpl()->give_many(std::move(jobs));
   }
 
-  void Job_Queue::give_many(const std::vector<std::shared_ptr<Job>> &jobs) {
+  void Job_Queue::give_many(const std::vector<std::shared_ptr<Job>> &jobs) noexcept(false) {
     return get_pimpl()->give_many(jobs);
   }
 

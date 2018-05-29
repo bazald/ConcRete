@@ -13,7 +13,7 @@
 
 namespace Zeni::Concurrency {
 
-  static void worker(const std::shared_ptr<Job_Queue> &job_queue) {
+  static void worker(const std::shared_ptr<Job_Queue> &job_queue) noexcept {
     for (;;) {
       const std::pair<std::shared_ptr<Job>, Job_Queue::Status> job_and_status = job_queue->take_one();
       if (job_and_status.second == Job_Queue::Status::SHUT_DOWN)
@@ -28,7 +28,7 @@ namespace Zeni::Concurrency {
     Thread_Pool_Pimpl & operator=(const Thread_Pool_Pimpl &) = delete;
 
   public:
-    Thread_Pool_Pimpl()
+    Thread_Pool_Pimpl() noexcept
 #ifdef DISABLE_MULTITHREADING
       : Thread_Pool_Pimpl(0)
 #else
@@ -38,9 +38,9 @@ namespace Zeni::Concurrency {
     }
 
 #ifdef DISABLE_MULTITHREADING
-    Thread_Pool_Pimpl(const size_t)
+    Thread_Pool_Pimpl(const size_t) noexcept
 #else
-    Thread_Pool_Pimpl(const size_t num_threads)
+    Thread_Pool_Pimpl(const size_t num_threads) noexcept
 #endif
       : m_job_queue(std::make_shared<Job_Queue>(0))
     {
@@ -61,7 +61,7 @@ namespace Zeni::Concurrency {
 #endif
     }
 
-    ~Thread_Pool_Pimpl() {
+    ~Thread_Pool_Pimpl() noexcept {
       m_job_queue->finish();
 
 #ifndef DISABLE_MULTITHREADING
@@ -70,7 +70,7 @@ namespace Zeni::Concurrency {
 #endif
     }
 
-    std::shared_ptr<Job_Queue> get_Job_Queue() const {
+    std::shared_ptr<Job_Queue> get_Job_Queue() const noexcept {
       return m_job_queue;
     }
 
@@ -81,23 +81,23 @@ namespace Zeni::Concurrency {
 #endif
   };
 
-  const Thread_Pool_Pimpl * Thread_Pool::get_pimpl() const {
+  const Thread_Pool_Pimpl * Thread_Pool::get_pimpl() const noexcept {
     return reinterpret_cast<const Thread_Pool_Pimpl *>(m_pimpl_storage);
   }
 
-  Thread_Pool_Pimpl * Thread_Pool::get_pimpl() {
+  Thread_Pool_Pimpl * Thread_Pool::get_pimpl() noexcept {
     return reinterpret_cast<Thread_Pool_Pimpl *>(m_pimpl_storage);
   }
 
-  Thread_Pool::Thread_Pool() {
+  Thread_Pool::Thread_Pool() noexcept {
     new (&m_pimpl_storage) Thread_Pool_Pimpl;
   }
 
-  Thread_Pool::Thread_Pool(const size_t num_threads) {
+  Thread_Pool::Thread_Pool(const size_t num_threads) noexcept {
     new (&m_pimpl_storage) Thread_Pool_Pimpl(num_threads);
   }
 
-  Thread_Pool::~Thread_Pool() {
+  Thread_Pool::~Thread_Pool() noexcept {
     static_assert(std::alignment_of<Thread_Pool_Pimpl>::value <= Thread_Pool::m_pimpl_align, "Thread_Pool::m_pimpl_align is too low.");
     ZENI_STATIC_WARNING(std::alignment_of<Thread_Pool_Pimpl>::value >= Thread_Pool::m_pimpl_align, "Thread_Pool::m_pimpl_align is too high.");
 
@@ -107,7 +107,7 @@ namespace Zeni::Concurrency {
     get_pimpl()->~Thread_Pool_Pimpl();
   }
 
-  std::shared_ptr<Job_Queue> Thread_Pool::get_Job_Queue() const {
+  std::shared_ptr<Job_Queue> Thread_Pool::get_Job_Queue() const noexcept {
     return get_pimpl()->get_Job_Queue();
   }
 

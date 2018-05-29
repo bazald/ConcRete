@@ -1,11 +1,6 @@
-#ifdef _MSC_VER
-#define _CRTDBG_MAP_ALLOC  
-#include <stdlib.h>  
-#include <crtdbg.h>  
-#endif
-
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Maester.hpp"
+#include "Zeni/Concurrency/Memory_Pool.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
 #include "Zeni/Concurrency/Raven.hpp"
 #include "Zeni/Concurrency/Thread_Pool.hpp"
@@ -47,7 +42,7 @@ class Gossip : public Zeni::Concurrency::Maester {
 public:
   typedef std::shared_ptr<Gossip> Ptr;
 
-  void receive(Zeni::Concurrency::Job_Queue &job_queue, const std::shared_ptr<const Zeni::Concurrency::Raven> raven) override {
+  void receive(Zeni::Concurrency::Job_Queue &job_queue, const std::shared_ptr<const Zeni::Concurrency::Raven> raven) noexcept override {
     const auto whisper = std::dynamic_pointer_cast<const Whisper>(raven);
 
     std::cerr << whisper->get_message() + "\n";
@@ -70,23 +65,26 @@ private:
   std::unordered_set<Ptr> m_gossips;
 };
 
+static void test_Memory_Pool();
 static void test_Thread_Pool();
 static void test_Rete_Network();
 static void test_Parser();
 
 int main()
 {
-#ifdef _MSC_VER
-  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-  _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
-  //_CrtSetBreakAlloc(5472);
-#endif
-
+  test_Memory_Pool();
   test_Thread_Pool();
   test_Rete_Network();
   test_Parser();
 
+  Zeni::Concurrency::Memory_Pool::get().clear();
+
   return 0;
+}
+
+void test_Memory_Pool() {
+  int * i_ptr = new int[42];
+  delete[] i_ptr;
 }
 
 void test_Thread_Pool() {
@@ -154,31 +152,19 @@ void test_Rete_Network() {
     });
   }
 
-  //(*network)->get_Job_Queue()->wait_for_completion();
+  (*network)->get_Job_Queue()->wait_for_completion();
 
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-  //(*network)->get_Job_Queue()->wait_for_completion();
+  (*network)->get_Job_Queue()->wait_for_completion();
 
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
-  //(*network)->get_Job_Queue()->wait_for_completion();
+  (*network)->get_Job_Queue()->wait_for_completion();
 
   (*network)->remove_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-  //(*network)->get_Job_Queue()->wait_for_completion();
-
-  //(*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
-
   (*network)->get_Job_Queue()->wait_for_completion();
-
-  //(*network)->get_Job_Queue()->give_one(std::make_shared<Zeni::Rete::Raven_Disconnect_Output>(filter, network->get(), passthrough));
-
-  //(*network)->get_Job_Queue()->wait_for_completion();
-
-  //filter->connect_output(network->get(), passthrough);
-  //
-  //(*network)->get_Job_Queue()->wait_for_completion();
 }
 
 void test_Parser() {

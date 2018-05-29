@@ -111,7 +111,7 @@ namespace Zeni::Rete {
     /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists.
     ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output, const bool immediate);
 
-    ZENI_RETE_LINKAGE void receive(Concurrency::Job_Queue &job_queue, const std::shared_ptr<const Concurrency::Raven> raven) override;
+    ZENI_RETE_LINKAGE void receive(Concurrency::Job_Queue &job_queue, const std::shared_ptr<const Concurrency::Raven> raven) noexcept override;
     ZENI_RETE_LINKAGE void receive(const Raven_Connect_Gate &raven);
     ZENI_RETE_LINKAGE void receive(const Raven_Connect_Output &raven);
     ZENI_RETE_LINKAGE void receive(const Raven_Decrement_Output_Count &raven);

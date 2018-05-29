@@ -11,7 +11,7 @@ namespace Zeni {
   class compare_deref_eq {
   public:
     template <typename Ptr1, typename Ptr2>
-    bool operator()(const Ptr1 &lhs, const Ptr2 &rhs) const {
+    bool operator()(const Ptr1 &lhs, const Ptr2 &rhs) const noexcept {
       return *lhs == *rhs;
     }
   };
@@ -19,7 +19,7 @@ namespace Zeni {
   class compare_deref_lt {
   public:
     template <typename Ptr1, typename Ptr2>
-    bool operator()(const Ptr1 &lhs, const Ptr2 &rhs) const {
+    bool operator()(const Ptr1 &lhs, const Ptr2 &rhs) const noexcept {
       return *lhs < *rhs;
     }
   };
@@ -28,19 +28,19 @@ namespace Zeni {
   class compare_deref_memfun_lt {
   public:
     template <typename Ptr1, typename Ptr2>
-    bool operator()(const Ptr1 &lhs, const Ptr2 &rhs) const {
+    bool operator()(const Ptr1 &lhs, const Ptr2 &rhs) const noexcept {
       return std::bind(MemFun, &*lhs, std::cref(*rhs))() < 0;
     }
   };
 
-  inline size_t hash_combine(const size_t &prev_h, const size_t &new_val) {
+  inline size_t hash_combine(const size_t &prev_h, const size_t &new_val) noexcept {
     return prev_h * 31 + new_val;
   }
 
   class compare_container_deref_eq {
   public:
     template <typename CONTAINER>
-    bool operator()(const CONTAINER &lhs, const CONTAINER &rhs) const {
+    bool operator()(const CONTAINER &lhs, const CONTAINER &rhs) const noexcept {
       if (lhs.size() != rhs.size())
         return false;
       for (auto lt = lhs.begin(), rt = rhs.begin(), lend = lhs.end(); lt != lend; ++lt, ++rt) {
@@ -54,7 +54,7 @@ namespace Zeni {
   class compare_container_deref_lt {
   public:
     template <typename CONTAINER>
-    bool operator()(const CONTAINER &lhs, const CONTAINER &rhs) const {
+    bool operator()(const CONTAINER &lhs, const CONTAINER &rhs) const noexcept {
       if (lhs.size() < rhs.size())
         return true;
       if (lhs.size() > rhs.size())
@@ -73,7 +73,7 @@ namespace Zeni {
   class hash_container {
   public:
     template <typename CONTAINER, typename HASHER>
-    size_t operator()(const CONTAINER &container, const HASHER &hasher) const {
+    size_t operator()(const CONTAINER &container, const HASHER &hasher) const noexcept {
       size_t h = 0;
       for (const auto &entry : container)
         h = hash_combine(h, hasher(entry));
@@ -81,7 +81,7 @@ namespace Zeni {
     }
 
     template <typename CONTAINER>
-    size_t operator()(const CONTAINER &container) const {
+    size_t operator()(const CONTAINER &container) const noexcept {
       return (*this)(container, std::hash<T>());
     }
   };
@@ -90,7 +90,7 @@ namespace Zeni {
   class hash_container_deref {
   public:
     template <typename CONTAINER, typename HASHER>
-    size_t operator()(const CONTAINER &container, const HASHER &hasher = std::hash<T>()) const {
+    size_t operator()(const CONTAINER &container, const HASHER &hasher = std::hash<T>()) const noexcept {
       size_t h = 0;
       for (const auto &entry : container)
         h = hash_combine(h, hasher(*entry));
@@ -98,7 +98,7 @@ namespace Zeni {
     }
 
     template <typename CONTAINER>
-    size_t operator()(const CONTAINER &container) const {
+    size_t operator()(const CONTAINER &container) const noexcept {
       return (*this)(container, std::hash<T>());
     }
   };
@@ -107,7 +107,7 @@ namespace Zeni {
   class hash_deref {
   public:
     template <typename Ptr>
-    size_t operator()(const Ptr &ptr) const {
+    size_t operator()(const Ptr &ptr) const noexcept {
       return std::hash<T>()(*ptr);
     }
   };
@@ -116,14 +116,14 @@ namespace Zeni {
   class hash_deref_first {
   public:
     template <typename PairPtr>
-    size_t operator()(const PairPtr &pp) const {
+    size_t operator()(const PairPtr &pp) const noexcept {
       return std::hash<T>()(*pp.first);
     }
   };
 
   class nullhash {
   public:
-    size_t operator()(const size_t &val) const {
+    size_t operator()(const size_t &val) const noexcept {
       return val;
     }
   };
@@ -185,7 +185,7 @@ namespace Zeni {
 
   /// End STATIC_WARNING implementation
 
-  std::string to_string(const double &number);
+  std::string to_string(const double &number) noexcept;
 
 }
 
@@ -193,7 +193,7 @@ namespace std {
 
   template <typename T, size_t N>
   struct hash<array<T, N>> {
-    size_t operator()(const array<T, N> &a) const {
+    size_t operator()(const array<T, N> &a) const noexcept {
       hash<T> hasher;
       return Zeni::hash_container<T>()(a, hasher);
     }
@@ -201,14 +201,14 @@ namespace std {
 
   template <typename T1, typename T2>
   struct hash<pair<T1, T2>> {
-    size_t operator()(const pair<T1, T2> &p) const {
+    size_t operator()(const pair<T1, T2> &p) const noexcept {
       return Zeni::hash_combine(hash<T1>()(p.first), hash<T2>()(p.second));
     }
   };
 
   template <typename Key, typename Hash, typename Pred, typename Alloc>
   struct hash<unordered_set<Key, Hash, Pred, Alloc>> {
-    size_t operator()(const unordered_set<Key, Hash, Pred, Alloc> &us) const {
+    size_t operator()(const unordered_set<Key, Hash, Pred, Alloc> &us) const noexcept {
       hash<Key> hasher;
       return Zeni::hash_container<Key>()(us, hasher);
     }
@@ -216,7 +216,7 @@ namespace std {
 
   template <typename T, typename Alloc>
   struct hash<vector<T, Alloc>> {
-    size_t operator()(const vector<T, Alloc> &v) const {
+    size_t operator()(const vector<T, Alloc> &v) const noexcept {
       hash<T> hasher;
       return Zeni::hash_container<T>()(v, hasher);
     }
