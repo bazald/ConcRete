@@ -13,6 +13,11 @@ namespace Zeni::Concurrency {
     Raven(const Raven &) = delete;
     Raven & operator=(const Raven &) = delete;
 
+    static const int m_pimpl_size = 16;
+    static const int m_pimpl_align = 8;
+    const Raven_Pimpl * get_pimpl() const;
+    Raven_Pimpl * get_pimpl();
+
   protected:
     ZENI_CONCURRENCY_LINKAGE std::shared_ptr<const Raven> shared_from_this() const;
     ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Raven> shared_from_this();
@@ -26,7 +31,7 @@ namespace Zeni::Concurrency {
     ZENI_CONCURRENCY_LINKAGE void execute(Job_Queue &job_queue) override;
 
   private:
-    Raven_Pimpl * const m_impl;
+    alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
   };
 
 }

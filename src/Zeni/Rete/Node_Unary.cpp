@@ -1,5 +1,6 @@
 #include "Zeni/Rete/Node_Unary.hpp"
 
+#include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Raven_Connect_Output.hpp"
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"

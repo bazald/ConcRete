@@ -134,69 +134,84 @@ namespace Zeni::Rete {
     std::unordered_multimap<std::pair<int64_t, int64_t>, std::pair<std::string, Token_Index>> trc_to_both;
   };
 
-  Variable_Indices::Variable_Indices()
-    : m_impl(new Variable_Indices_Pimpl)
-  {
+  const Variable_Indices_Pimpl * Variable_Indices::get_pimpl() const {
+    return reinterpret_cast<const Variable_Indices_Pimpl *>(m_pimpl_storage);
+  }
+
+  Variable_Indices_Pimpl * Variable_Indices::get_pimpl() {
+    return reinterpret_cast<Variable_Indices_Pimpl *>(m_pimpl_storage);
+  }
+
+  Variable_Indices::Variable_Indices() {
+    new (&m_pimpl_storage) Variable_Indices_Pimpl;
   }
 
   Variable_Indices::~Variable_Indices() {
-    delete m_impl;
+    static_assert(std::alignment_of<Variable_Indices_Pimpl>::value <= Variable_Indices::m_pimpl_align, "Variable_Indices::m_pimpl_align is too low.");
+    ZENI_STATIC_WARNING(std::alignment_of<Variable_Indices_Pimpl>::value >= Variable_Indices::m_pimpl_align, "Variable_Indices::m_pimpl_align is too high.");
+
+    static_assert(sizeof(Variable_Indices_Pimpl) <= sizeof(Variable_Indices::m_pimpl_storage), "Variable_Indices::m_pimpl_size too low.");
+    ZENI_STATIC_WARNING(sizeof(Variable_Indices_Pimpl) >= sizeof(Variable_Indices::m_pimpl_storage), "Variable_Indices::m_pimpl_size too high.");
+
+    get_pimpl()->~Variable_Indices_Pimpl();
   }
 
   Variable_Indices::Variable_Indices(const Variable_Indices &rhs)
-    : m_impl(new Variable_Indices_Pimpl(*rhs.m_impl))
+    : std::enable_shared_from_this<Variable_Indices>(rhs)
   {
+    new (&m_pimpl_storage) Variable_Indices_Pimpl(*rhs.get_pimpl());
   }
 
   Variable_Indices::Variable_Indices(Variable_Indices &&rhs)
-    : m_impl(std::move(rhs.m_impl))
+    : std::enable_shared_from_this<Variable_Indices>(rhs)
   {
+    new (&m_pimpl_storage) Variable_Indices_Pimpl(std::move(*rhs.get_pimpl()));
   }
 
   Variable_Indices & Variable_Indices::operator=(const Variable_Indices &rhs) {
-    *m_impl = *rhs.m_impl;
+    *get_pimpl() = *rhs.get_pimpl();
     return *this;
   }
 
   Variable_Indices & Variable_Indices::operator=(Variable_Indices &&rhs) {
-    *m_impl = std::move(*rhs.m_impl);
+    *get_pimpl() = std::move(*rhs.get_pimpl());
     return *this;
   }
 
   const std::unordered_multimap<std::string, Token_Index> & Variable_Indices::get_indices() const {
-    return m_impl->get_indices();
+    return get_pimpl()->get_indices();
   }
 
   Token_Index Variable_Indices::find_index(const std::string &name) const {
-    return m_impl->find_index(name);
+    return get_pimpl()->find_index(name);
   }
 
   std::string_view Variable_Indices::find_name(const Token_Index &index) const {
-    return m_impl->find_name(index);
+    return get_pimpl()->find_name(index);
   }
 
   std::string_view Variable_Indices::find_name_rete(const int64_t rete_row, const int8_t column) const {
-    return m_impl->find_name_rete(rete_row, column);
+    return get_pimpl()->find_name_rete(rete_row, column);
   }
 
   std::string_view Variable_Indices::find_name_token(const int64_t token_row, const int8_t column) const {
-    return m_impl->find_name_token(token_row, column);
+    return get_pimpl()->find_name_token(token_row, column);
   }
 
   std::pair<std::string_view, Token_Index> Variable_Indices::find_both_rete(const int64_t rete_row, const int8_t column) const {
-    return m_impl->find_both_rete(rete_row, column);
+    return get_pimpl()->find_both_rete(rete_row, column);
   }
 
   std::pair<std::string_view, Token_Index> Variable_Indices::find_both_token(const int64_t token_row, const int8_t column) const {
-    return m_impl->find_both_token(token_row, column);
+    return get_pimpl()->find_both_token(token_row, column);
   }
 
   void Variable_Indices::insert(const std::string_view name, const Token_Index &index) {
-    m_impl->insert(name, index);
+    get_pimpl()->insert(name, index);
   }
 
   Variable_Indices Variable_Indices::reindex_for_right_parent_node(const Variable_Bindings &bindings, const Node &left, const Node &right) const {
-    return m_impl->reindex_for_right_parent_node(bindings, left, right);
+    return get_pimpl()->reindex_for_right_parent_node(bindings, left, right);
   }
 
 }

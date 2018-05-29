@@ -1,5 +1,7 @@
 #include "Zeni/Concurrency/Mutex.hpp"
 
+#include "Zeni/Utility.hpp"
+
 #ifndef DISABLE_MULTITHREADING
 #include <mutex>
 #endif
@@ -32,7 +34,7 @@ namespace Zeni::Concurrency {
     Mutex_Lock_Pimpl(Mutex &)
 #else
     Mutex_Lock_Pimpl(Mutex &mutex)
-      : m_lock(mutex.m_impl->m_mutex)
+      : m_lock(mutex.get_pimpl()->m_mutex)
 #endif
     {
     }
@@ -43,22 +45,48 @@ namespace Zeni::Concurrency {
 #endif
   };
 
-  Mutex::Lock::Lock(Mutex &mutex)
-    : m_impl(new Mutex_Lock_Pimpl(mutex))
-  {
+  const Mutex_Pimpl * Mutex::get_pimpl() const {
+    return reinterpret_cast<const Mutex_Pimpl *>(m_pimpl_storage);
+  }
+
+  Mutex_Pimpl * Mutex::get_pimpl() {
+    return reinterpret_cast<Mutex_Pimpl *>(m_pimpl_storage);
+  }
+
+  const Mutex_Lock_Pimpl * Mutex::Lock::get_pimpl() const {
+    return reinterpret_cast<const Mutex_Lock_Pimpl *>(m_pimpl_storage);
+  }
+
+  Mutex_Lock_Pimpl * Mutex::Lock::get_pimpl() {
+    return reinterpret_cast<Mutex_Lock_Pimpl *>(m_pimpl_storage);
+  }
+
+  Mutex::Lock::Lock(Mutex &mutex) {
+    new (&m_pimpl_storage) Mutex_Lock_Pimpl(mutex);
   }
 
   Mutex::Lock::~Lock() {
-    delete m_impl;
+    static_assert(std::alignment_of<Mutex_Lock_Pimpl>::value <= Mutex::Lock::m_pimpl_align, "Job_Queue::Lock::m_pimpl_align is too low.");
+    ZENI_STATIC_WARNING(std::alignment_of<Mutex_Lock_Pimpl>::value >= Mutex::Lock::m_pimpl_align, "Job_Queue::Lock::m_pimpl_align is too high.");
+
+    static_assert(sizeof(Mutex_Lock_Pimpl) <= sizeof(Mutex::Lock::m_pimpl_storage), "Job_Queue::Lock::m_pimpl_size too low.");
+    ZENI_STATIC_WARNING(sizeof(Mutex_Lock_Pimpl) >= sizeof(Mutex::Lock::m_pimpl_storage), "Job_Queue::Lock::m_pimpl_size too high.");
+
+    get_pimpl()->~Mutex_Lock_Pimpl();
   }
 
-  Mutex::Mutex()
-    : m_impl(new Mutex_Pimpl)
-  {
+  Mutex::Mutex() {
+    new (&m_pimpl_storage) Mutex_Pimpl;
   }
 
   Mutex::~Mutex() {
-    delete m_impl;
+    static_assert(std::alignment_of<Mutex_Pimpl>::value <= Mutex::m_pimpl_align, "Mutex::m_pimpl_align is too low.");
+    ZENI_STATIC_WARNING(std::alignment_of<Mutex_Pimpl>::value >= Mutex::m_pimpl_align, "Mutex::m_pimpl_align is too high.");
+
+    static_assert(sizeof(Mutex_Pimpl) <= sizeof(Mutex::m_pimpl_storage), "Mutex::m_pimpl_size too low.");
+    ZENI_STATIC_WARNING(sizeof(Mutex_Pimpl) >= sizeof(Mutex::m_pimpl_storage), "Mutex::m_pimpl_size too high.");
+
+    get_pimpl()->~Mutex_Pimpl();
   }
 
 }

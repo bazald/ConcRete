@@ -1,5 +1,6 @@
 #include "Zeni/Rete/Node_Filter.hpp"
 
+#include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"

@@ -1,5 +1,6 @@
 #include "Zeni/Rete/Node_Unary_Gate.hpp"
 
+#include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Raven_Connect_Gate.hpp"
@@ -23,7 +24,7 @@ namespace Zeni::Rete {
   {
   }
 
-  void Node_Unary_Gate::send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) {
+  void Node_Unary_Gate::send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &) {
     network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Gate>(get_input(), network, shared_from_this(), true));
   }
 

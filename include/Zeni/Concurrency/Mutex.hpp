@@ -8,30 +8,40 @@ namespace Zeni::Concurrency {
   class Mutex_Pimpl;
   class Mutex_Lock_Pimpl;
 
-  class ZENI_CONCURRENCY_LINKAGE Mutex {
+  class Mutex {
     Mutex(const Mutex &) = delete;
     Mutex & operator=(const Mutex &) = delete;
+
+    static const int m_pimpl_size = 80;
+    static const int m_pimpl_align = 8;
+    const Mutex_Pimpl * get_pimpl() const;
+    Mutex_Pimpl * get_pimpl();
 
     friend class Mutex_Lock_Pimpl;
 
   public:
-    class ZENI_CONCURRENCY_LINKAGE Lock {
+    class Lock {
       Lock(const Lock &) = delete;
       Lock & operator=(const Lock &) = delete;
 
+      static const int m_pimpl_size = 8;
+      static const int m_pimpl_align = 8;
+      const Mutex_Lock_Pimpl * get_pimpl() const;
+      Mutex_Lock_Pimpl * get_pimpl();
+
     public:
-      Lock(Mutex &mutex);
-      ~Lock();
+      ZENI_CONCURRENCY_LINKAGE Lock(Mutex &mutex);
+      ZENI_CONCURRENCY_LINKAGE ~Lock();
 
     private:
-      Mutex_Lock_Pimpl * const m_impl;
+      alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
     };
 
-    Mutex();
-    ~Mutex();
+    ZENI_CONCURRENCY_LINKAGE Mutex();
+    ZENI_CONCURRENCY_LINKAGE ~Mutex();
 
   private:
-    Mutex_Pimpl * const m_impl;
+    alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
   };
 
 }

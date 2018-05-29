@@ -1,11 +1,13 @@
 #ifndef ZENI_CONCURRENCY_MAESTER_H
 #define ZENI_CONCURRENCY_MAESTER_H
 
-#include "Job_Queue.hpp"
 #include "Mutex.hpp"
+
+#include <memory>
 
 namespace Zeni::Concurrency {
 
+  class Job_Queue;
   class Raven;
 
   /// A message recipient virtual base class

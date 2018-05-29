@@ -1,5 +1,6 @@
 #include "Zeni/Rete/Node_Passthrough_Gated.hpp"
 
+#include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Unary_Gate.hpp"
 #include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
@@ -27,6 +28,8 @@ namespace Zeni::Rete {
     }
 
     network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(m_gate, network, shared_from_this(), true));
+    ///// Conditionally on whether it's connected to the input or not :-/
+    //network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(get_input(), network, shared_from_this(), true));
   }
 
   Node_Passthrough_Gated::~Node_Passthrough_Gated() {

@@ -1,6 +1,8 @@
 #include "Zeni/Concurrency/Thread_Pool.hpp"
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
+#include "Zeni/Utility.hpp"
+
 #include <cassert>
 #include <list>
 #include <system_error>
@@ -79,22 +81,34 @@ namespace Zeni::Concurrency {
 #endif
   };
 
-  Thread_Pool::Thread_Pool()
-    : m_impl(new Thread_Pool_Pimpl)
-  {
+  const Thread_Pool_Pimpl * Thread_Pool::get_pimpl() const {
+    return reinterpret_cast<const Thread_Pool_Pimpl *>(m_pimpl_storage);
   }
 
-  Thread_Pool::Thread_Pool(const size_t num_threads)
-    : m_impl(new Thread_Pool_Pimpl(num_threads))
-  {
+  Thread_Pool_Pimpl * Thread_Pool::get_pimpl() {
+    return reinterpret_cast<Thread_Pool_Pimpl *>(m_pimpl_storage);
+  }
+
+  Thread_Pool::Thread_Pool() {
+    new (&m_pimpl_storage) Thread_Pool_Pimpl;
+  }
+
+  Thread_Pool::Thread_Pool(const size_t num_threads) {
+    new (&m_pimpl_storage) Thread_Pool_Pimpl(num_threads);
   }
 
   Thread_Pool::~Thread_Pool() {
-    delete m_impl;
+    static_assert(std::alignment_of<Thread_Pool_Pimpl>::value <= Thread_Pool::m_pimpl_align, "Thread_Pool::m_pimpl_align is too low.");
+    ZENI_STATIC_WARNING(std::alignment_of<Thread_Pool_Pimpl>::value >= Thread_Pool::m_pimpl_align, "Thread_Pool::m_pimpl_align is too high.");
+
+    static_assert(sizeof(Thread_Pool_Pimpl) <= sizeof(Thread_Pool::m_pimpl_storage), "Thread_Pool::m_pimpl_size too low.");
+    ZENI_STATIC_WARNING(sizeof(Thread_Pool_Pimpl) >= sizeof(Thread_Pool::m_pimpl_storage), "Thread_Pool::m_pimpl_size too high.");
+
+    get_pimpl()->~Thread_Pool_Pimpl();
   }
 
   std::shared_ptr<Job_Queue> Thread_Pool::get_Job_Queue() const {
-    return m_impl->get_Job_Queue();
+    return get_pimpl()->get_Job_Queue();
   }
 
 }

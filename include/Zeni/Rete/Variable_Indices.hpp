@@ -1,7 +1,6 @@
 #ifndef ZENI_RETE_VARIABLE_INDICES_H
 #define ZENI_RETE_VARIABLE_INDICES_H
 
-#include "Token_Index.hpp"
 #include "Variable_Binding.hpp"
 
 #include <memory>
@@ -10,9 +9,19 @@
 namespace Zeni::Rete {
 
   class Node;
+  class Token_Index;
   class Variable_Indices_Pimpl;
 
-  class Variable_Indices {
+  class Variable_Indices : std::enable_shared_from_this<Variable_Indices> {
+#ifdef NDEBUG
+    static const int m_pimpl_size = 256;
+#else
+    static const int m_pimpl_size = 320;
+#endif
+    static const int m_pimpl_align = 8;
+    const Variable_Indices_Pimpl * get_pimpl() const;
+    Variable_Indices_Pimpl * get_pimpl();
+
   public:
     ZENI_RETE_LINKAGE Variable_Indices();
     ZENI_RETE_LINKAGE ~Variable_Indices();
@@ -39,7 +48,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE Variable_Indices reindex_for_right_parent_node(const Variable_Bindings &bindings, const Node &left, const Node &right) const;
 
   private:
-    Variable_Indices_Pimpl * const m_impl;
+    alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
   };
 
 }

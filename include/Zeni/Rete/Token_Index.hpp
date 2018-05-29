@@ -9,7 +9,8 @@
 
 namespace Zeni::Rete {
 
-  struct ZENI_RETE_LINKAGE Token_Index {
+  class ZENI_RETE_LINKAGE Token_Index {
+  public:
     Token_Index();
     Token_Index(const int64_t rete_row_, const int64_t token_row_, const int8_t column_);
 

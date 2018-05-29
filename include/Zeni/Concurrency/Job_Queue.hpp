@@ -15,6 +15,11 @@ namespace Zeni::Concurrency {
     Job_Queue(const Job_Queue &) = delete;
     Job_Queue & operator=(const Job_Queue &) = delete;
 
+    static const int m_pimpl_size = 288;
+    static const int m_pimpl_align = 8;
+    const Job_Queue_Pimpl * get_pimpl() const;
+    Job_Queue_Pimpl * get_pimpl();
+
     friend class Job_Queue_Lock_Pimpl;
 
   public:
@@ -30,16 +35,21 @@ namespace Zeni::Concurrency {
       ZENI_CONCURRENCY_LINKAGE Job_Queue_Must_Not_Be_Shut_Down();
     };
 
-    class ZENI_CONCURRENCY_LINKAGE Lock {
+    class Lock {
       Lock(const Lock &) = delete;
       Lock & operator=(const Lock &) = delete;
+      
+      static const int m_pimpl_size = 8;
+      static const int m_pimpl_align = 8;
+      const Job_Queue_Lock_Pimpl * get_pimpl() const;
+      Job_Queue_Lock_Pimpl * get_pimpl();
 
     public:
-      Lock(Job_Queue &job_queue);
-      ~Lock();
+      ZENI_CONCURRENCY_LINKAGE Lock(Job_Queue &job_queue);
+      ZENI_CONCURRENCY_LINKAGE ~Lock();
 
     private:
-      Job_Queue_Lock_Pimpl * const m_impl;
+      alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
     };
 
     /// Initialize the number of threads to std::thread::hardware_concurrency()
@@ -72,7 +82,7 @@ namespace Zeni::Concurrency {
     ZENI_CONCURRENCY_LINKAGE void give_many(const std::vector<std::shared_ptr<Job>> &jobs);
 
   private:
-    Job_Queue_Pimpl * const m_impl;
+    alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
   };
 
 }

@@ -4,6 +4,7 @@
 #include <crtdbg.h>  
 #endif
 
+#include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Maester.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
 #include "Zeni/Concurrency/Raven.hpp"
@@ -153,21 +154,21 @@ void test_Rete_Network() {
     });
   }
 
-  (*network)->get_Job_Queue()->wait_for_completion();
+  //(*network)->get_Job_Queue()->wait_for_completion();
 
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-  (*network)->get_Job_Queue()->wait_for_completion();
+  //(*network)->get_Job_Queue()->wait_for_completion();
 
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
-  (*network)->get_Job_Queue()->wait_for_completion();
+  //(*network)->get_Job_Queue()->wait_for_completion();
 
-  (*network)->remove_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+  (*network)->remove_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-  (*network)->get_Job_Queue()->wait_for_completion();
+  //(*network)->get_Job_Queue()->wait_for_completion();
 
-  (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+  //(*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
   (*network)->get_Job_Queue()->wait_for_completion();
 
