@@ -15,10 +15,10 @@ namespace Zeni::Concurrency {
     Thread_Pool(const Thread_Pool &) = delete;
     Thread_Pool & operator=(const Thread_Pool &) = delete;
 
-#ifdef NDEBUG
-    static const int m_pimpl_size = 80;
-#else
+#if defined(_MSC_VER) && !defined(NDEBUG)
     static const int m_pimpl_size = 96;
+#else
+    static const int m_pimpl_size = 80;
 #endif
     static const int m_pimpl_align = 8;
     const Thread_Pool_Pimpl * get_pimpl() const noexcept;

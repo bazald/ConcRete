@@ -13,10 +13,12 @@ namespace Zeni::Rete {
   class Variable_Indices_Pimpl;
 
   class Variable_Indices : std::enable_shared_from_this<Variable_Indices> {
-#ifdef NDEBUG
+#if defined(_WIN32) && defined(NDEBUG)
     static const int m_pimpl_size = 256;
-#else
+#elif defined(_WIN32)
     static const int m_pimpl_size = 320;
+#else
+    static const int m_pimpl_size = 224;
 #endif
     static const int m_pimpl_align = 8;
     const Variable_Indices_Pimpl * get_pimpl() const;

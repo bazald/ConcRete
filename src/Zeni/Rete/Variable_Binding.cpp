@@ -10,9 +10,9 @@ std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Variable_Bindings 
   if(bindings.empty())
     return os << "[]";
   os << '[';
-  auto bt = bindings.begin();
+  auto bt = bindings.cbegin();
   os << *bt++;
-  while(bt != bindings.end())
+  while(bt != bindings.cend())
     os << ',' << *bt++;
   os << ']';
   return os;

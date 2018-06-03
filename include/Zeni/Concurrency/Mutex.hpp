@@ -12,7 +12,11 @@ namespace Zeni::Concurrency {
     Mutex(const Mutex &) = delete;
     Mutex & operator=(const Mutex &) = delete;
 
+#if defined(_MSC_VER)
     static const int m_pimpl_size = 80;
+#else
+    static const int m_pimpl_size = 40;
+#endif
     static const int m_pimpl_align = 8;
     const Mutex_Pimpl * get_pimpl() const noexcept;
     Mutex_Pimpl * get_pimpl() noexcept;

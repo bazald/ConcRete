@@ -14,10 +14,12 @@ namespace Zeni::Concurrency {
     Memory_Pool(const Memory_Pool &rhs) = delete;
     Memory_Pool & operator=(const Memory_Pool &rhs) = delete;
 
-#ifdef NDEBUG
+#if defined(_MSC_VER) && !defined(NDEBUG)
+    static const int m_pimpl_size = 80;
+#elif defined(_MSC_VER)
     static const int m_pimpl_size = 64;
 #else
-    static const int m_pimpl_size = 80;
+    static const int m_pimpl_size = 56;
 #endif
     static const int m_pimpl_align = 8;
     const Memory_Pool_Pimpl * get_pimpl() const noexcept;

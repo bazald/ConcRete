@@ -207,7 +207,7 @@ namespace Zeni::Rete {
     Locked_Network_Data_Const locked_network_data(this, locked_node_data);
 
     const auto found = locked_network_data.get_rules().find(name);
-    if (found != locked_network_data.get_rules().end())
+    if (found != locked_network_data.get_rules().cend())
       return found->second;
 
     return nullptr;

@@ -4,8 +4,8 @@ RM=rm -f
 # CPPFLAGS=-g $(shell root-config --cflags)
 # LDFLAGS=-g $(shell root-config --ldflags)
 # LDLIBS=$(shell root-config --libs)
-CPPFLAGS=-std=c++17 -g -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -Wall -Iinclude -IPEGTL/include
-LDFLAGS=-g -L. -Wl,-rpath,. -Wl,-rpath-link,.
+CPPFLAGS=-std=c++17 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -Wall -Iinclude -IPEGTL/include
+LDFLAGS=-L. -Wl,-rpath,. -Wl,-rpath-link,.
 LDLIBS=-pthread
 
 CONCURRENCY_SRCS=$(wildcard src/Zeni/Concurrency/*.cpp) src/Zeni/New_and_Delete.cpp src/Zeni/Utility.cpp
@@ -35,9 +35,10 @@ TEST1_OBJS=$(subst .cpp,.o,$(TEST1_SRCS))
 BINARIES=libConcurrency.so libRete.so Test1.out
 
 debug: CPPFLAGS+=-ggdb
+debug: LDFLAGS+=-ggdb
 debug: all
 
-release: CPPFLAGS+=-O3
+release: CPPFLAGS+=-O3 -DNDEBUG
 release: all
 
 all: Test1.out

@@ -43,7 +43,7 @@ namespace Zeni {
     bool operator()(const CONTAINER &lhs, const CONTAINER &rhs) const noexcept {
       if (lhs.size() != rhs.size())
         return false;
-      for (auto lt = lhs.begin(), rt = rhs.begin(), lend = lhs.end(); lt != lend; ++lt, ++rt) {
+      for (auto lt = lhs.cbegin(), rt = rhs.cbegin(), lend = lhs.cend(); lt != lend; ++lt, ++rt) {
         if (**lt != **rt)
           return false;
       }
@@ -59,7 +59,7 @@ namespace Zeni {
         return true;
       if (lhs.size() > rhs.size())
         return false;
-      for (auto lt = lhs.begin(), rt = rhs.begin(), lend = lhs.end(); lt != lend; ++lt, ++rt) {
+      for (auto lt = lhs.cbegin(), rt = rhs.cbegin(), lend = lhs.cend(); lt != lend; ++lt, ++rt) {
         if (**lt < **rt)
           return true;
         else if (**lt > **rt)
