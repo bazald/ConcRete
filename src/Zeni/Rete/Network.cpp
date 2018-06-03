@@ -187,7 +187,7 @@ namespace Zeni::Rete {
 
   void Network::Destroy() {
     excise_all();
-    m_thread_pool->get_Job_Queue()->wait_for_completion();
+    m_thread_pool->finish_jobs();
   }
 
   void Network::send_disconnect_from_parents(const std::shared_ptr<Network>, const Locked_Node_Data &)

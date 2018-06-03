@@ -113,7 +113,7 @@ void test_Thread_Pool() {
   //for(int i = 0; i != 1000000; ++i)
   //  thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
 
-  thread_pool.get_Job_Queue()->wait_for_completion();
+  thread_pool.finish_jobs();
 
   for (std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
     jobs.emplace_back(std::make_shared<Whisper>(gossips["alice"], message));
@@ -149,19 +149,19 @@ void test_Rete_Network() {
     });
   }
 
-  (*network)->get_Job_Queue()->wait_for_completion();
+  (*network)->get_Thread_Pool()->finish_jobs();
 
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-  (*network)->get_Job_Queue()->wait_for_completion();
+  (*network)->get_Thread_Pool()->finish_jobs();
 
   (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
-  (*network)->get_Job_Queue()->wait_for_completion();
+  (*network)->get_Thread_Pool()->finish_jobs();
 
-  (*network)->remove_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+  //(*network)->remove_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-  (*network)->get_Job_Queue()->wait_for_completion();
+  //(*network)->get_Thread_Pool()->finish_jobs();
 }
 
 void test_Parser() {
@@ -176,7 +176,7 @@ void test_Parser() {
     std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
     std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
 
-  (*network)->get_Job_Queue()->wait_for_completion();
+  (*network)->get_Thread_Pool()->finish_jobs();
 
   //(*network)->remove_wme(std::make_shared<Zeni::Rete::WME>(
   //  std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
