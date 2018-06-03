@@ -15,7 +15,7 @@ namespace Zeni::Rete {
   public:
     ZENI_RETE_LINKAGE ~Node_Passthrough();
 
-    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Passthrough> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Node> input);
+    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Passthrough> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input);
 
     ZENI_RETE_LINKAGE void receive(const Raven_Status_Empty &) override;
     ZENI_RETE_LINKAGE void receive(const Raven_Status_Nonempty &) override;

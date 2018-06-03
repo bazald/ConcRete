@@ -10,6 +10,7 @@
 #include "tao/pegtl.hpp"
 #include "tao/pegtl/analyze.hpp"
 
+#include "Zeni/Concurrency/Thread_Pool.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
 #include "Zeni/Rete/Symbol.hpp"
@@ -59,9 +60,10 @@ namespace Zeni::Rete::PEG {
   struct Grammar : must<seq<star<space_comment>, list_tail<Source_Production, star<space_comment>>>, eof> {};
 
   struct Data {
-    Data(const std::shared_ptr<Network> network_, const bool user_command_) : network(network_), user_command(user_command_) {}
+    Data(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_command_) : network(network_), job_queue(job_queue_), user_command(user_command_) {}
 
     const std::shared_ptr<Network> network;
+    const std::shared_ptr<Concurrency::Job_Queue> job_queue;
     const bool user_command;
     std::stack<std::pair<std::string, std::shared_ptr<Rete::Symbol>>> symbols;
     std::stack<std::shared_ptr<Node_Filter>> filters;
@@ -147,7 +149,7 @@ namespace Zeni::Rete::PEG {
 
       //std::cout << "Condition: " << input.string() << std::endl;
 
-      data.filters.emplace(Node_Filter::Create(data.network, WME(first.second, second.second, third.second)));
+      data.filters.emplace(Node_Filter::Create(data.network, data.job_queue, WME(first.second, second.second, third.second)));
     }
   };
 
@@ -166,7 +168,7 @@ namespace Zeni::Rete::PEG {
       //std::cout << "Source_Production: " << input.string() << std::endl;
 
       while (!data.filters.empty()) {
-        Zeni::Rete::Node_Action::Create(data.network, data.rule_name, data.user_command, data.filters.top(), std::make_shared<Zeni::Rete::Variable_Indices>(),
+        Zeni::Rete::Node_Action::Create(data.network, data.job_queue, data.rule_name, data.user_command, data.filters.top(), std::make_shared<Zeni::Rete::Variable_Indices>(),
           [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
           std::cout << rete_action.get_name() << " +: " << token << std::endl;
         }, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
@@ -197,7 +199,7 @@ namespace Zeni::Rete {
   class Parser_Pimpl : public std::enable_shared_from_this<Parser_Pimpl> {
     template <typename Input>
     void parse(Input &input, const std::shared_ptr<Network> network, const bool user_command) {
-      PEG::Data data(network, user_command);
+      PEG::Data data(network, network->get_Thread_Pool()->get_main_Job_Queue(), user_command);
 
       PEG::parse<PEG::Grammar, PEG::Action>(input, data);
     }

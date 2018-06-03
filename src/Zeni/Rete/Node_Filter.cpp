@@ -31,13 +31,13 @@ namespace Zeni::Rete {
     return m_wme;
   }
 
-  std::shared_ptr<Node_Filter> Node_Filter::Create(const std::shared_ptr<Network> network, const WME &wme) {
+  std::shared_ptr<Node_Filter> Node_Filter::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const WME &wme) {
     class Friendly_Node_Filter : public Node_Filter {
     public:
       Friendly_Node_Filter(const std::shared_ptr<Network> &network, const WME &wme_) : Node_Filter(network, wme_) {}
     };
 
-    return std::static_pointer_cast<Node_Filter>(network->connect_output(network, std::make_shared<Friendly_Node_Filter>(network, wme), true));
+    return std::static_pointer_cast<Node_Filter>(network->connect_output(network, job_queue, std::make_shared<Friendly_Node_Filter>(network, wme), true));
   }
 
   void Node_Filter::receive(const Raven_Status_Empty &) {
@@ -94,7 +94,7 @@ namespace Zeni::Rete {
       }
     }
 
-    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+    raven.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   void Node_Filter::receive(const Raven_Token_Remove &raven) {
@@ -143,7 +143,7 @@ namespace Zeni::Rete {
       }
     }
 
-    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+    raven.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   bool Node_Filter::operator==(const Node &rhs) const {

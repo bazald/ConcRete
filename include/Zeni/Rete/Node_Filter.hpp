@@ -14,7 +14,7 @@ namespace Zeni::Rete {
   public:
     ZENI_RETE_LINKAGE ~Node_Filter();
 
-    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Filter> Create(const std::shared_ptr<Network> network, const WME &wme);
+    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Filter> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const WME &wme);
 
     ZENI_RETE_LINKAGE const WME & get_wme() const;
 

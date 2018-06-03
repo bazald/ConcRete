@@ -20,7 +20,7 @@ namespace Zeni::Rete {
     assert(!m_name.empty());
   }
 
-  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::string_view name, const bool user_action, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
+  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
     class Friendly_Node_Action : public Node_Action {
     public:
       Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables,
@@ -30,9 +30,9 @@ namespace Zeni::Rete {
 
     const auto action_fun = std::make_shared<Friendly_Node_Action>(name, input, variables, action, retraction);
 
-    network->source_rule(action_fun, user_action);
+    network->source_rule(job_queue, action_fun, user_action);
 
-    input->connect_output(network, action_fun, true);
+    input->connect_output(network, job_queue, action_fun, true);
 
     return action_fun;
   }

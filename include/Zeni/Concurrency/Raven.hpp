@@ -5,6 +5,7 @@
 
 namespace Zeni::Concurrency {
 
+  class Job_Queue;
   class Maester;
   class Raven_Pimpl;
 
@@ -28,7 +29,7 @@ namespace Zeni::Concurrency {
 
     ZENI_CONCURRENCY_LINKAGE const std::shared_ptr<Maester> & get_recipient() const noexcept;
 
-    ZENI_CONCURRENCY_LINKAGE void execute(Job_Queue &job_queue) noexcept override;
+    ZENI_CONCURRENCY_LINKAGE void execute() noexcept override;
 
   private:
     alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];

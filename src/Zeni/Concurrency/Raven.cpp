@@ -19,8 +19,8 @@ namespace Zeni::Concurrency {
       return m_recipient;
     }
 
-    void execute(const std::shared_ptr<Raven> raven, Job_Queue &job_queue) noexcept {
-      m_recipient->receive(job_queue, raven);
+    void execute(const std::shared_ptr<Raven> raven) noexcept {
+      m_recipient->receive(raven);
     }
 
   private:
@@ -61,8 +61,8 @@ namespace Zeni::Concurrency {
     return get_pimpl()->get_recipient();
   }
 
-  void Raven::execute(Job_Queue &job_queue) noexcept {
-    get_pimpl()->execute(shared_from_this(), job_queue);
+  void Raven::execute() noexcept {
+    get_pimpl()->execute(shared_from_this());
   }
 
 }

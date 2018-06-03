@@ -19,7 +19,7 @@ namespace Zeni::Concurrency {
     ZENI_CONCURRENCY_LINKAGE Maester() noexcept;
 
   public:
-    ZENI_CONCURRENCY_LINKAGE virtual void receive(Job_Queue &job_queue, const std::shared_ptr<const Raven> raven) noexcept = 0;
+    ZENI_CONCURRENCY_LINKAGE virtual void receive(const std::shared_ptr<const Raven> raven) noexcept = 0;
 
   protected:
     mutable Mutex m_mutex;

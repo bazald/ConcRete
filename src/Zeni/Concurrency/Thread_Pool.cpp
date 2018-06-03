@@ -40,7 +40,7 @@ namespace Zeni::Concurrency {
     }
 
     Thread_Pool_Pimpl(Thread_Pool * const pub_this, const int16_t num_threads) noexcept(false)
-      : m_job_queue(std::make_shared<Job_Queue>(pub_this))
+      : m_job_queue(Job_Queue::Create(pub_this))
     {
       m_worker_threads.reserve(num_threads);
       m_job_queues.reserve(num_threads);
@@ -49,7 +49,7 @@ namespace Zeni::Concurrency {
         std::shared_ptr<std::thread> new_thread;
 
         try {
-          auto new_job_queue = std::make_shared<Job_Queue>(pub_this);
+          auto new_job_queue = Job_Queue::Create(pub_this);
           new_thread = std::make_shared<std::thread>(worker, this);
           m_worker_threads.emplace_back(new_thread);
           m_job_queues.emplace_back(std::make_pair(new_thread->get_id(), new_job_queue));
@@ -87,7 +87,7 @@ namespace Zeni::Concurrency {
 #endif
     }
 
-    std::shared_ptr<Job_Queue> get_Job_Queue() const noexcept {
+    std::shared_ptr<Job_Queue> get_main_Job_Queue() const noexcept {
       return m_job_queue;
     }
 
@@ -114,11 +114,11 @@ namespace Zeni::Concurrency {
         for (;;) {
           auto jqt = m_job_queues.begin();
           while (const std::shared_ptr<Job> job = (*jqt).second->try_take_one(true))
-            job->execute(*m_job_queue);
+            job->execute();
 
           while (jqt != m_job_queues.end()) {
             if (const std::shared_ptr<Job> job = (*jqt).second->try_take_one(true)) {
-              job->execute(*m_job_queue);
+              job->execute();
               break;
             }
             else
@@ -170,13 +170,13 @@ namespace Zeni::Concurrency {
           auto jqt = job_queues.begin();
           while (const std::shared_ptr<Job> job = (*jqt)->try_take_one(is_awake)) {
             is_awake = true;
-            job->execute(*job_queues[0]);
+            job->execute();
           }
 
           while(jqt != job_queues.end()) {
             if (const std::shared_ptr<Job> job = (*jqt)->try_take_one(is_awake)) {
               is_awake = true;
-              job->execute(*job_queues[0]);
+              job->execute();
               break;
             }
             else
@@ -254,8 +254,8 @@ namespace Zeni::Concurrency {
     get_pimpl()->~Thread_Pool_Pimpl();
   }
 
-  std::shared_ptr<Job_Queue> Thread_Pool::get_Job_Queue() const noexcept {
-    return get_pimpl()->get_Job_Queue();
+  std::shared_ptr<Job_Queue> Thread_Pool::get_main_Job_Queue() const noexcept {
+    return get_pimpl()->get_main_Job_Queue();
   }
 
   void Thread_Pool::finish_jobs() noexcept(false) {

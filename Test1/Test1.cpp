@@ -41,7 +41,7 @@ class Gossip : public Zeni::Concurrency::Maester {
 public:
   typedef std::shared_ptr<Gossip> Ptr;
 
-  void receive(Zeni::Concurrency::Job_Queue &job_queue, const std::shared_ptr<const Zeni::Concurrency::Raven> raven) noexcept override {
+  void receive(const std::shared_ptr<const Zeni::Concurrency::Raven> raven) noexcept override {
     const auto whisper = std::dynamic_pointer_cast<const Whisper>(raven);
 
     std::cerr << whisper->get_message() + "\n";
@@ -52,7 +52,8 @@ public:
     for (Ptr gossip : m_gossips)
       jobs.emplace_back(std::make_shared<Whisper>(gossip, whisper->get_message()));
 
-    job_queue.give_many(std::move(jobs));
+    const auto job_queue = raven->get_Job_Queue();
+    job_queue->give_many(std::move(jobs));
   }
 
   void tell(const Ptr gossip) {
@@ -107,7 +108,7 @@ void test_Thread_Pool() {
   for (std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
     jobs.emplace_back(std::make_shared<Whisper>(gossips["alice"], message));
 
-  thread_pool.get_Job_Queue()->give_many(std::move(jobs));
+  thread_pool.get_main_Job_Queue()->give_many(std::move(jobs));
   jobs.clear();
 
   //for(int i = 0; i != 1000000; ++i)
@@ -117,7 +118,7 @@ void test_Thread_Pool() {
 
   for (std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
     jobs.emplace_back(std::make_shared<Whisper>(gossips["alice"], message));
-  thread_pool.get_Job_Queue()->give_many(std::move(jobs));
+  thread_pool.get_main_Job_Queue()->give_many(std::move(jobs));
 
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;
 }
@@ -136,12 +137,12 @@ void test_Rete_Network() {
   };
 
   {
-    auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-    //auto passthrough1 = Zeni::Rete::Node_Passthrough::Create(network->get(), filter1);
-    auto filter2 = Zeni::Rete::Node_Filter::Create(network->get(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-    auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), filter2);
-    auto gated_passthrough1 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), filter1, unary_gate1);
-    auto action = Zeni::Rete::Node_Action::Create(network->get(), "hello-world", false, gated_passthrough1, std::make_shared<Zeni::Rete::Variable_Indices>(),
+    auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+    //auto passthrough1 = Zeni::Rete::Node_Passthrough::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1);
+    auto filter2 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+    auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter2);
+    auto gated_passthrough1 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1, unary_gate1);
+    auto action = Zeni::Rete::Node_Action::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), "hello-world", false, gated_passthrough1, std::make_shared<Zeni::Rete::Variable_Indices>(),
       [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
       std::cout << "Hello world!" << std::endl;
     }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -151,15 +152,15 @@ void test_Rete_Network() {
 
   (*network)->get_Thread_Pool()->finish_jobs();
 
-  (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+  (*network)->insert_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
   (*network)->get_Thread_Pool()->finish_jobs();
 
-  (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+  (*network)->insert_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
   (*network)->get_Thread_Pool()->finish_jobs();
 
-  //(*network)->remove_wme(std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+  //(*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
   //(*network)->get_Thread_Pool()->finish_jobs();
 }
@@ -171,17 +172,17 @@ void test_Parser() {
 
   parser.parse_string(network->get(), "sp {test-rule\r\n  (<s> ^attr 42)\r\n  (<s> ^attr 3.14159)\r\n-->\r\n}\r\n", true);
 
-  (*network)->insert_wme(std::make_shared<Zeni::Rete::WME>(
+  (*network)->insert_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(
     std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
     std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
     std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
 
   (*network)->get_Thread_Pool()->finish_jobs();
 
-  //(*network)->remove_wme(std::make_shared<Zeni::Rete::WME>(
+  //(*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(
   //  std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
   //  std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
   //  std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
 
-  //(*network)->get_Job_Queue()->wait_for_completion();
+  //(*network)->get_Thread_Pool()->finish_jobs();
 }

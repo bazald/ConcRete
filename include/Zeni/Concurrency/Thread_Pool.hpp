@@ -31,7 +31,7 @@ namespace Zeni::Concurrency {
     ZENI_CONCURRENCY_LINKAGE Thread_Pool(const int16_t num_threads) noexcept(false);
     ZENI_CONCURRENCY_LINKAGE ~Thread_Pool() noexcept;
 
-    ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Job_Queue> get_Job_Queue() const noexcept;
+    ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Job_Queue> get_main_Job_Queue() const noexcept;
 
     ZENI_CONCURRENCY_LINKAGE void finish_jobs() noexcept(false);
 

@@ -112,7 +112,7 @@ namespace Zeni::Rete {
     ++locked_node_data.modify_output_count();
   }
 
-  std::shared_ptr<Node> Node::connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output, const bool immediate) {
+  std::shared_ptr<Node> Node::connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output, const bool immediate) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
@@ -131,12 +131,12 @@ namespace Zeni::Rete {
     }
 
     if (immediate)
-      network->get_Job_Queue()->give_one(std::make_shared<Raven_Connect_Gate>(sft, network, output));
+      job_queue->give_one(std::make_shared<Raven_Connect_Gate>(sft, network, output));
 
     return output;
   }
 
-  std::shared_ptr<Node> Node::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Node> output, const bool immediate) {
+  std::shared_ptr<Node> Node::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output, const bool immediate) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
@@ -155,12 +155,12 @@ namespace Zeni::Rete {
     }
 
     if (immediate)
-      network->get_Job_Queue()->give_one(std::make_shared<Raven_Connect_Output>(sft, network, output));
+      job_queue->give_one(std::make_shared<Raven_Connect_Output>(sft, network, output));
 
     return output;
   }
 
-  void Node::receive(Concurrency::Job_Queue &, const std::shared_ptr<const Concurrency::Raven> raven) noexcept {
+  void Node::receive(const std::shared_ptr<const Concurrency::Raven> raven) noexcept {
     std::dynamic_pointer_cast<const Rete::Raven>(raven)->receive();
   }
 
@@ -189,7 +189,7 @@ namespace Zeni::Rete {
     }
 
     if (job)
-      raven.get_Network()->get_Job_Queue()->give_one(job);
+      raven.get_Job_Queue()->give_one(job);
   }
 
   void Node::receive(const Raven_Connect_Output &raven) {
@@ -217,7 +217,7 @@ namespace Zeni::Rete {
       }
     }
 
-    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+    raven.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   void Node::receive(const Raven_Decrement_Output_Count &raven) {
@@ -229,7 +229,7 @@ namespace Zeni::Rete {
 
         --locked_node_data.modify_output_count();
         if (locked_node_data.get_output_count() == 0)
-          send_disconnect_from_parents(raven.get_Network(), locked_node_data);
+          send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
     }
   }
 
@@ -249,14 +249,14 @@ namespace Zeni::Rete {
 
       --locked_node_data.modify_output_count();
       if (locked_node_data.get_output_count() == 0)
-        send_disconnect_from_parents(raven.get_Network(), locked_node_data);
+        send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
 
       if (found.first == found.second && !locked_node_data.get_output_tokens().empty())
           job = std::make_shared<Raven_Status_Empty>(std::const_pointer_cast<Node>(raven.get_sender()), raven.get_Network(), sft);
     }
 
     if (job)
-      raven.get_Network()->get_Job_Queue()->give_one(job);
+      raven.get_Job_Queue()->give_one(job);
   }
 
   void Node::receive(const Raven_Disconnect_Output &raven) {
@@ -276,7 +276,7 @@ namespace Zeni::Rete {
       if (raven.decrement_output_count) {
         --locked_node_data.modify_output_count();
         if (locked_node_data.get_output_count() == 0)
-          send_disconnect_from_parents(raven.get_Network(), locked_node_data);
+          send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
       }
 
       if (found.first == found.second) {
@@ -286,7 +286,7 @@ namespace Zeni::Rete {
       }
     }
 
-    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+    raven.get_Job_Queue()->give_many(std::move(jobs));
   }
 
 }

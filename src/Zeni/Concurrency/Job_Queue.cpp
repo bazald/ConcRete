@@ -1,5 +1,6 @@
 #include "Zeni/Concurrency/Job_Queue.hpp"
 
+#include "Zeni/Concurrency/Job.hpp"
 #include "Zeni/Concurrency/Thread_Pool.hpp"
 #include "Zeni/Utility.hpp"
 
@@ -20,7 +21,7 @@ namespace Zeni::Concurrency {
     {
     }
 
-    std::shared_ptr<Job> try_take_one(const bool is_already_awake) noexcept {
+    std::shared_ptr<Job> try_take_one(const std::shared_ptr<Job_Queue> pub_this, const bool is_already_awake) noexcept {
 #ifndef DISABLE_MULTITHREADING
       if (!m_has_jobs.load())
         return nullptr;
@@ -42,6 +43,8 @@ namespace Zeni::Concurrency {
 
       if (m_jobs.empty())
         m_thread_pool->job_queue_emptied();
+
+      job->set_Job_Queue(pub_this);
 
       return job;
     }
@@ -134,8 +137,17 @@ namespace Zeni::Concurrency {
     get_pimpl()->~Job_Queue_Pimpl();
   }
 
+  std::shared_ptr<Job_Queue> Job_Queue::Create(Thread_Pool * const thread_pool) noexcept {
+    class Friendly_Job_Queue : public Job_Queue {
+    public:
+      Friendly_Job_Queue(Thread_Pool * const thread_pool) : Job_Queue(thread_pool) {}
+    };
+
+    return std::make_shared<Friendly_Job_Queue>(thread_pool);
+  }
+
   std::shared_ptr<Job> Job_Queue::try_take_one(const bool is_already_awake) noexcept {
-    return get_pimpl()->try_take_one(is_already_awake);
+    return get_pimpl()->try_take_one(shared_from_this(), is_already_awake);
   }
 
   void Job_Queue::give_one(const std::shared_ptr<Job> job) noexcept(false) {

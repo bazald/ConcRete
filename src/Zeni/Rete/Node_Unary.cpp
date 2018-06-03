@@ -47,8 +47,8 @@ namespace Zeni::Rete {
   {
   }
 
-  void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &) {
-    network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(m_input, network, shared_from_this(), true));
+  void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const Locked_Node_Data &) {
+    job_queue->give_one(std::make_shared<Raven_Disconnect_Output>(m_input, network, shared_from_this(), true));
   }
 
   std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> Node_Unary::get_inputs() {

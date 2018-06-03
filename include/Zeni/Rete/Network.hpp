@@ -68,7 +68,7 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE void Destroy();
 
-    ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) override;
+    ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const Locked_Node_Data &locked_node_data) override;
 
   public:
     ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const Printed_Output printed_output = Printed_Output::Normal);
@@ -76,7 +76,6 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE ~Network();
 
-    ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Job_Queue> get_Job_Queue() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Thread_Pool> get_Thread_Pool() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> get_rule(const std::string &name) const;
     ZENI_RETE_LINKAGE std::set<std::string> get_rule_names() const;
@@ -92,15 +91,15 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE void receive(const Raven_Token_Insert &) override;
     ZENI_RETE_LINKAGE void receive(const Raven_Token_Remove &) override;
 
-    ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Node_Action> action, const bool user_command);
-    ZENI_RETE_LINKAGE void excise_all();
-    ZENI_RETE_LINKAGE void excise_rule(const std::string &name, const bool user_command);
+    ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_command);
+    ZENI_RETE_LINKAGE void excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue);
+    ZENI_RETE_LINKAGE void excise_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &name, const bool user_command);
     ZENI_RETE_LINKAGE std::string next_rule_name(const std::string_view prefix);
     ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> unname_rule(const std::string &name, const bool user_command);
 
-    ZENI_RETE_LINKAGE void insert_wme(const std::shared_ptr<const WME> wme);
-    ZENI_RETE_LINKAGE void remove_wme(const std::shared_ptr<const WME> wme);
-    ZENI_RETE_LINKAGE void clear_wmes();
+    ZENI_RETE_LINKAGE void insert_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme);
+    ZENI_RETE_LINKAGE void remove_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme);
+    ZENI_RETE_LINKAGE void clear_wmes(const std::shared_ptr<Concurrency::Job_Queue> job_queue);
 
     ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
 

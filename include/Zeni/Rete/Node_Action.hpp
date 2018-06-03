@@ -20,7 +20,7 @@ namespace Zeni::Rete {
       const Action &retraction_ = [](const Node_Action &, const Token &) {});
 
   public:
-    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::shared_ptr<Network> network, const std::string_view name, const bool user_action, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction = [](const Node_Action &, const Token &) {});
+    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction = [](const Node_Action &, const Token &) {});
 
     ZENI_RETE_LINKAGE ~Node_Action();
 

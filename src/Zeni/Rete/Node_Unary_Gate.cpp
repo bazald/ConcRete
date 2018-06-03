@@ -24,17 +24,17 @@ namespace Zeni::Rete {
   {
   }
 
-  void Node_Unary_Gate::send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &) {
-    network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Gate>(get_input(), network, shared_from_this(), true));
+  void Node_Unary_Gate::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const Locked_Node_Data &) {
+    job_queue->give_one(std::make_shared<Raven_Disconnect_Gate>(get_input(), network, shared_from_this(), true));
   }
 
-  std::shared_ptr<Node_Unary_Gate> Node_Unary_Gate::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Node> input) {
+  std::shared_ptr<Node_Unary_Gate> Node_Unary_Gate::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input) {
     class Friendly_Node_Unary_Gate : public Node_Unary_Gate {
     public:
       Friendly_Node_Unary_Gate(const std::shared_ptr<Node> &input) : Node_Unary_Gate(input) {}
     };
 
-    return std::static_pointer_cast<Node_Unary_Gate>(input->connect_gate(network, std::make_shared<Friendly_Node_Unary_Gate>(input), true));
+    return std::static_pointer_cast<Node_Unary_Gate>(input->connect_gate(network, job_queue, std::make_shared<Friendly_Node_Unary_Gate>(input), true));
   }
 
   void Node_Unary_Gate::receive(const Raven_Status_Empty &raven) {
@@ -73,7 +73,7 @@ namespace Zeni::Rete {
       }
     }
 
-    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+    raven.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   void Node_Unary_Gate::receive(const Raven_Status_Nonempty &raven) {
@@ -112,7 +112,7 @@ namespace Zeni::Rete {
       }
     }
 
-    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+    raven.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   void Node_Unary_Gate::receive(const Raven_Token_Insert &) {

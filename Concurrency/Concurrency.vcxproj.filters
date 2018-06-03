@@ -80,5 +80,8 @@
     <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pools.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Zeni\Concurrency\Job.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

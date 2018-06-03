@@ -21,13 +21,13 @@ namespace Zeni::Rete {
   {
   }
 
-  std::shared_ptr<Node_Passthrough> Node_Passthrough::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Node> input) {
+  std::shared_ptr<Node_Passthrough> Node_Passthrough::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input) {
     class Friendly_Node_Passthrough : public Node_Passthrough {
     public:
       Friendly_Node_Passthrough(const std::shared_ptr<Node> &input) : Node_Passthrough(input) {}
     };
 
-    return std::static_pointer_cast<Node_Passthrough>(input->connect_output(network, std::make_shared<Friendly_Node_Passthrough>(input), true));
+    return std::static_pointer_cast<Node_Passthrough>(input->connect_output(network, job_queue, std::make_shared<Friendly_Node_Passthrough>(input), true));
   }
 
   void Node_Passthrough::receive(const Raven_Status_Empty &) {
@@ -66,7 +66,7 @@ namespace Zeni::Rete {
       }
     }
 
-    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+    raven.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   void Node_Passthrough::receive(const Raven_Token_Remove &raven) {
@@ -97,7 +97,7 @@ namespace Zeni::Rete {
       }
     }
 
-    raven.get_Network()->get_Job_Queue()->give_many(std::move(jobs));
+    raven.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   bool Node_Passthrough::operator==(const Node &rhs) const {

@@ -17,36 +17,36 @@ namespace Zeni::Rete {
   {
   }
 
-  void Node_Passthrough_Gated::send_disconnect_from_parents(const std::shared_ptr<Network> network, const Locked_Node_Data &locked_node_data) {
+  void Node_Passthrough_Gated::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const Locked_Node_Data &locked_node_data) {
     {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
       if (locked_node_unary_data.get_input_tokens().empty())
-        network->get_Job_Queue()->give_one(std::make_shared<Raven_Decrement_Output_Count>(get_input(), network, shared_from_this()));
+        job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(get_input(), network, shared_from_this()));
       else
-        network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(get_input(), network, shared_from_this(), true));
+        job_queue->give_one(std::make_shared<Raven_Disconnect_Output>(get_input(), network, shared_from_this(), true));
     }
 
-    network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(m_gate, network, shared_from_this(), true));
+    job_queue->give_one(std::make_shared<Raven_Disconnect_Output>(m_gate, network, shared_from_this(), true));
     ///// Conditionally on whether it's connected to the input or not :-/
-    //network->get_Job_Queue()->give_one(std::make_shared<Raven_Disconnect_Output>(get_input(), network, shared_from_this(), true));
+    //job_queue->give_one(std::make_shared<Raven_Disconnect_Output>(get_input(), network, shared_from_this(), true));
   }
 
   Node_Passthrough_Gated::~Node_Passthrough_Gated() {
   }
 
-  std::shared_ptr<Node_Passthrough_Gated> Node_Passthrough_Gated::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Node> input, const std::shared_ptr<Node> gate) {
+  std::shared_ptr<Node_Passthrough_Gated> Node_Passthrough_Gated::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input, const std::shared_ptr<Node> gate) {
     class Friendly_Node_Passthrough_Gated : public Node_Passthrough_Gated {
     public:
       Friendly_Node_Passthrough_Gated(const std::shared_ptr<Node> &input, const std::shared_ptr<Node> gate) : Node_Passthrough_Gated(input, gate) {}
     };
 
     const auto created = std::make_shared<Friendly_Node_Passthrough_Gated>(input, gate);
-    const auto connected = std::dynamic_pointer_cast<Node_Passthrough_Gated>(input->connect_output(network, created, false));
+    const auto connected = std::dynamic_pointer_cast<Node_Passthrough_Gated>(input->connect_output(network, job_queue, created, false));
 
     std::shared_ptr<Node> connected2;
     if (connected == created) {
-      connected2 = gate->connect_output(network, created, true);
+      connected2 = gate->connect_output(network, job_queue, created, true);
       assert(connected2 == created);
     }
 

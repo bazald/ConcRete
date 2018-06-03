@@ -12,7 +12,7 @@ namespace Zeni::Concurrency {
   class Job_Queue_Pimpl;
   class Thread_Pool;
 
-  class Job_Queue {
+  class Job_Queue : public std::enable_shared_from_this<Job_Queue> {
     Job_Queue(const Job_Queue &) = delete;
     Job_Queue & operator=(const Job_Queue &) = delete;
 
@@ -21,9 +21,12 @@ namespace Zeni::Concurrency {
     const Job_Queue_Pimpl * get_pimpl() const noexcept;
     Job_Queue_Pimpl * get_pimpl() noexcept;
 
-  public:
     ZENI_CONCURRENCY_LINKAGE Job_Queue(Thread_Pool * const thread_pool) noexcept;
+
+  public:
     ZENI_CONCURRENCY_LINKAGE ~Job_Queue() noexcept;
+
+    ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Job_Queue> Create(Thread_Pool * const thread_pool) noexcept;
 
     /// Take a Job off the queue. Will be null if and only if SHUT_DOWN.
     ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Job> try_take_one(const bool is_already_awake) noexcept;

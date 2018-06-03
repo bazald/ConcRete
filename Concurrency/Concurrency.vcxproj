@@ -163,6 +163,7 @@
     <ClInclude Include="..\include\Zeni\Utility.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\Zeni\Concurrency\Job.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Job_Queue.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Maester.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pool.cpp" />
