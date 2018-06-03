@@ -1,7 +1,7 @@
-#ifndef ZENI_RETE_LINKAGE_H
-#define ZENI_RETE_LINKAGE_H
+#ifndef ZENI_RETE_LINKAGE_HPP
+#define ZENI_RETE_LINKAGE_HPP
 
-#if !defined(_WINDOWS)
+#if !defined(_WIN32)
 #define ZENI_RETE_EXTERN extern
 #define ZENI_RETE_LINKAGE __attribute__ ((visibility ("default")))
 #elif defined(RETE_EXPORTS)

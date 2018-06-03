@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_NODE_H
-#define ZENI_RETE_NODE_H
+#ifndef ZENI_RETE_NODE_HPP
+#define ZENI_RETE_NODE_HPP
 
 #include "Zeni/Concurrency/Maester.hpp"
 #include "Custom_Data.hpp"

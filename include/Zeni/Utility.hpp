@@ -1,5 +1,5 @@
-#ifndef ZENI_UTILITY_H
-#define ZENI_UTILITY_H
+#ifndef ZENI_UTILITY_HPP
+#define ZENI_UTILITY_HPP
 
 #include <functional>
 #include <string>

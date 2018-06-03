@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_CUSTOM_DATA_H
-#define ZENI_RETE_CUSTOM_DATA_H
+#ifndef ZENI_RETE_CUSTOM_DATA_HPP
+#define ZENI_RETE_CUSTOM_DATA_HPP
 
 #include "Linkage.hpp"
 

@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_NODE_ACTION_H
-#define ZENI_RETE_NODE_ACTION_H
+#ifndef ZENI_RETE_NODE_ACTION_HPP
+#define ZENI_RETE_NODE_ACTION_HPP
 
 #include "Node_Unary.hpp"
 

@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_TOKEN_INDEX_H
-#define ZENI_RETE_TOKEN_INDEX_H
+#ifndef ZENI_RETE_TOKEN_INDEX_HPP
+#define ZENI_RETE_TOKEN_INDEX_HPP
 
 #include "Zeni/Utility.hpp"
 #include "Linkage.hpp"

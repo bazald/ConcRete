@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_SYMBOL_H
-#define ZENI_RETE_SYMBOL_H
+#ifndef ZENI_RETE_SYMBOL_HPP
+#define ZENI_RETE_SYMBOL_HPP
 
 #include "Variable_Indices.hpp"
 

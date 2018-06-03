@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_RAVEN_H
-#define ZENI_RETE_RAVEN_H
+#ifndef ZENI_RETE_RAVEN_HPP
+#define ZENI_RETE_RAVEN_HPP
 
 #include "Zeni/Concurrency/Raven.hpp"
 #include "Linkage.hpp"

@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_NODE_UNARY_GATE_H
-#define ZENI_RETE_NODE_UNARY_GATE_H
+#ifndef ZENI_RETE_NODE_UNARY_GATE_HPP
+#define ZENI_RETE_NODE_UNARY_GATE_HPP
 
 #include "Node_Unary.hpp"
 

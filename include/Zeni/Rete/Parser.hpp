@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_PARSER_H
-#define ZENI_RETE_PARSER_H
+#ifndef ZENI_RETE_PARSER_HPP
+#define ZENI_RETE_PARSER_HPP
 
 #include "Network.hpp"
 

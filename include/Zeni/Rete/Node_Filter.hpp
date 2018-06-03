@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_NODE_FILTER_H
-#define ZENI_RETE_NODE_FILTER_H
+#ifndef ZENI_RETE_NODE_FILTER_HPP
+#define ZENI_RETE_NODE_FILTER_HPP
 
 #include "Node_Unary.hpp"
 

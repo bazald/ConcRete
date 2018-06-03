@@ -16,7 +16,9 @@
 
 namespace Zeni::Concurrency {
 
+#ifndef DISABLE_MULTITHREADING
   static void worker(Thread_Pool_Pimpl * const thread_pool) noexcept;
+#endif
 
   class Thread_Pool_Pimpl {
     Thread_Pool_Pimpl(const Thread_Pool &) = delete;
@@ -25,12 +27,12 @@ namespace Zeni::Concurrency {
   public:
 #ifdef DISABLE_MULTITHREADING
     Thread_Pool_Pimpl(Thread_Pool * const pub_this) noexcept(false)
-      : m_job_queue(std::make_shared<Job_Queue>(pub_this))
+      : m_job_queue(Job_Queue::Create(pub_this))
     {
     }
 
     Thread_Pool_Pimpl(Thread_Pool * const pub_this, const int16_t) noexcept(false)
-      : m_job_queue(std::make_shared<Job_Queue>(pub_this))
+      : m_job_queue(Job_Queue::Create(pub_this))
     {
     }
 #else
@@ -94,7 +96,7 @@ namespace Zeni::Concurrency {
 #ifdef DISABLE_MULTITHREADING
     void finish_jobs() noexcept(false) {
       while (std::shared_ptr<Job> job = m_job_queue->try_take_one(true))
-        job->execute(*m_job_queue);
+        job->execute();
     }
 #else
     void finish_jobs() noexcept(false) {

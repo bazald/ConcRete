@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_RAVEN_TOKEN_H
-#define ZENI_RETE_RAVEN_TOKEN_H
+#ifndef ZENI_RETE_RAVEN_TOKEN_HPP
+#define ZENI_RETE_RAVEN_TOKEN_HPP
 
 #include "Raven.hpp"
 

@@ -1,9 +1,18 @@
-#ifndef ZENI_CONCURRENCY_JOB_H
-#define ZENI_CONCURRENCY_JOB_H
+#ifndef ZENI_CONCURRENCY_JOB_HPP
+#define ZENI_CONCURRENCY_JOB_HPP
 
 #include "Linkage.hpp"
 
 #include <memory>
+
+namespace Zeni::Concurrency {
+  class Job;
+}
+
+namespace std {
+  template class ZENI_CONCURRENCY_LINKAGE std::weak_ptr<Zeni::Concurrency::Job>;
+  template class ZENI_CONCURRENCY_LINKAGE std::enable_shared_from_this<Zeni::Concurrency::Job>;
+}
 
 namespace Zeni::Concurrency {
 
@@ -12,7 +21,7 @@ namespace Zeni::Concurrency {
   class Job_Queue_Pimpl;
 
   /// A Job virtual base class
-  class Job : public std::enable_shared_from_this<Job> {
+  class ZENI_CONCURRENCY_LINKAGE Job : public std::enable_shared_from_this<Job> {
     Job(const Job &) = delete;
     Job & operator=(const Job &) = delete;
 
@@ -22,13 +31,13 @@ namespace Zeni::Concurrency {
     Job_Pimpl * get_pimpl() noexcept;
 
   public:
-    ZENI_CONCURRENCY_LINKAGE Job() noexcept;
-    ZENI_CONCURRENCY_LINKAGE ~Job() noexcept;
+    Job() noexcept;
+    ~Job() noexcept;
 
-    ZENI_CONCURRENCY_LINKAGE const std::shared_ptr<Job_Queue> & get_Job_Queue() const noexcept;
+    const std::shared_ptr<Job_Queue> & get_Job_Queue() const noexcept;
 
     /// The function that gets called by whichever worker pulls this Job off of the Job_Queue
-    ZENI_CONCURRENCY_LINKAGE virtual void execute() noexcept = 0;
+    virtual void execute() noexcept = 0;
 
   private:
     friend Job_Queue_Pimpl;

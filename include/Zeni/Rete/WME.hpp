@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_WME_H
-#define ZENI_RETE_WME_H
+#ifndef ZENI_RETE_WME_HPP
+#define ZENI_RETE_WME_HPP
 
 #include "Zeni/Utility.hpp"
 #include "Symbol.hpp"

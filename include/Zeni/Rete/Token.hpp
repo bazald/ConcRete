@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_TOKEN_H
-#define ZENI_RETE_TOKEN_H
+#ifndef ZENI_RETE_TOKEN_HPP
+#define ZENI_RETE_TOKEN_HPP
 
 #include "Token_Index.hpp"
 #include "Variable_Binding.hpp"

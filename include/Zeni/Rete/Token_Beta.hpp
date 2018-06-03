@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_TOKEN_BETA_H
-#define ZENI_RETE_TOKEN_BETA_H
+#ifndef ZENI_RETE_TOKEN_BETA_HPP
+#define ZENI_RETE_TOKEN_BETA_HPP
 
 #include "Token.hpp"
 
