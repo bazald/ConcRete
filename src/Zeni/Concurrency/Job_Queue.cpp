@@ -23,7 +23,7 @@ namespace Zeni::Concurrency {
 
     std::shared_ptr<Job> try_take_one(const std::shared_ptr<Job_Queue> pub_this, const bool is_already_awake) noexcept {
 #ifndef DISABLE_MULTITHREADING
-      if (!m_has_jobs.load())
+      if (!m_has_jobs.load(std::memory_order_acquire))
         return nullptr;
 
       std::unique_lock<std::mutex> mutex_lock(m_mutex);
@@ -60,7 +60,7 @@ namespace Zeni::Concurrency {
 
 #ifndef DISABLE_MULTITHREADING
       if (nonemptied) {
-        m_has_jobs.store(true);
+        m_has_jobs.store(true, std::memory_order_release);
         m_thread_pool->job_queue_nonemptied();
       }
 #endif
@@ -80,7 +80,7 @@ namespace Zeni::Concurrency {
 
 #ifndef DISABLE_MULTITHREADING
       if (nonemptied) {
-        m_has_jobs.store(true);
+        m_has_jobs.store(true, std::memory_order_release);
         m_thread_pool->job_queue_nonemptied();
       }
 #endif
@@ -100,7 +100,7 @@ namespace Zeni::Concurrency {
 
 #ifndef DISABLE_MULTITHREADING
       if (nonemptied) {
-        m_has_jobs.store(true);
+        m_has_jobs.store(true, std::memory_order_release);
         m_thread_pool->job_queue_nonemptied();
       }
 #endif
