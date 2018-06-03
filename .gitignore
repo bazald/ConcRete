@@ -47,10 +47,13 @@ artifacts/
 
 *_i.c
 *_p.c
+*.depend
 *_i.h
 *.ilk
 *.meta
+*.o
 *.obj
+*.out
 *.pch
 *.pdb
 *.pgc
@@ -67,6 +70,7 @@ artifacts/
 *.vssscc
 .builds
 *.pidb
+*.so
 *.svclog
 *.scc
 

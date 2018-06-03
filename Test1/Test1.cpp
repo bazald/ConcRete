@@ -70,12 +70,71 @@ static void test_Thread_Pool();
 static void test_Rete_Network();
 static void test_Parser();
 
+#if defined(_WIN32)
+
+#include <windows.h>
+#include <tlhelp32.h>
+
+/**
+Returns the thread copunt of the current process or -1 in case of failure.
+*/
+static int GetCurrentThreadCount()
+{
+  // first determine the id of the current process
+  DWORD const  id = GetCurrentProcessId();
+
+  // then get a process list snapshot.
+  HANDLE const  snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0);
+
+  // initialize the process entry structure.
+  PROCESSENTRY32 entry = { 0 };
+  entry.dwSize = sizeof(entry);
+
+  // get the first process info.
+  BOOL  ret = true;
+  ret = Process32First(snapshot, &entry);
+  while (ret && entry.th32ProcessID != id) {
+    ret = Process32Next(snapshot, &entry);
+  }
+  CloseHandle(snapshot);
+  return ret
+    ? entry.cntThreads
+    : -1;
+}
+#else
+static int GetCurrentThreadCount() { return 4; }
+#endif // _WIN32
+
 int main()
 {
+  if (GetCurrentThreadCount() != 4) {
+    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << std::endl;
+    abort();
+  }
+
   test_Memory_Pool();
+  if (GetCurrentThreadCount() != 4) {
+    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << std::endl;
+    abort();
+  }
+
   test_Thread_Pool();
+  if (GetCurrentThreadCount() != 4) {
+    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << std::endl;
+    abort();
+  }
+
   test_Rete_Network();
+  if (GetCurrentThreadCount() != 4) {
+    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << std::endl;
+    abort();
+  }
+
   test_Parser();
+  if (GetCurrentThreadCount() != 4) {
+    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << std::endl;
+    abort();
+  }
 
   return 0;
 }
@@ -160,9 +219,13 @@ void test_Rete_Network() {
 
   (*network)->get_Thread_Pool()->finish_jobs();
 
-  //(*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+  (*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-  //(*network)->get_Thread_Pool()->finish_jobs();
+  (*network)->get_Thread_Pool()->finish_jobs();
+
+  (*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+
+  (*network)->get_Thread_Pool()->finish_jobs();
 }
 
 void test_Parser() {

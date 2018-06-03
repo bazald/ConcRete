@@ -45,7 +45,7 @@ namespace Zeni::Concurrency {
       m_worker_threads.reserve(num_threads);
       m_job_queues.reserve(num_threads);
       m_job_queues.emplace_back(std::make_pair(std::this_thread::get_id(), m_job_queue));
-      for (size_t num_threads_created = 1; num_threads_created < num_threads; ++num_threads_created) {
+      for (int16_t num_threads_created = 1; num_threads_created < num_threads; ++num_threads_created) {
         std::shared_ptr<std::thread> new_thread;
 
         try {

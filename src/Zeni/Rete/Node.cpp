@@ -233,9 +233,10 @@ namespace Zeni::Rete {
     }
   }
 
-  void Node::receive(const Raven_Disconnect_Gate &raven) {
+  bool Node::receive(const Raven_Disconnect_Gate &raven) {
     const auto sft = shared_from_this();
     std::shared_ptr<Concurrency::Job> job;
+    bool disconnecting_from_parents = false;
 
     {
       Locked_Node_Data locked_node_data(this);
@@ -243,13 +244,16 @@ namespace Zeni::Rete {
       auto found = locked_node_data.get_gates().equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
       if (found.first == found.second) {
         locked_node_data.modify_antigates().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
-        return;
+        return false;
       }
       locked_node_data.modify_gates().erase(found.first++);
 
-      --locked_node_data.modify_output_count();
-      if (locked_node_data.get_output_count() == 0)
-        send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
+      if (raven.decrement_output_count) {
+        --locked_node_data.modify_output_count();
+        disconnecting_from_parents = locked_node_data.get_output_count() == 0;
+        if (disconnecting_from_parents)
+          send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
+      }
 
       if (found.first == found.second && !locked_node_data.get_output_tokens().empty())
           job = std::make_shared<Raven_Status_Empty>(std::const_pointer_cast<Node>(raven.get_sender()), raven.get_Network(), sft);
@@ -257,11 +261,14 @@ namespace Zeni::Rete {
 
     if (job)
       raven.get_Job_Queue()->give_one(job);
+
+    return disconnecting_from_parents;
   }
 
-  void Node::receive(const Raven_Disconnect_Output &raven) {
+  bool Node::receive(const Raven_Disconnect_Output &raven) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    bool disconnecting_from_parents = false;
 
     {
       Locked_Node_Data locked_node_data(this);
@@ -269,13 +276,14 @@ namespace Zeni::Rete {
       auto found = locked_node_data.get_outputs().equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
       if (found.first == found.second) {
         locked_node_data.modify_antioutputs().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
-        return;
+        return false;
       }
       locked_node_data.modify_outputs().erase(found.first++);
 
       if (raven.decrement_output_count) {
         --locked_node_data.modify_output_count();
-        if (locked_node_data.get_output_count() == 0)
+        disconnecting_from_parents = locked_node_data.get_output_count() == 0;
+        if (disconnecting_from_parents)
           send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
       }
 
@@ -287,6 +295,8 @@ namespace Zeni::Rete {
     }
 
     raven.get_Job_Queue()->give_many(std::move(jobs));
+
+    return disconnecting_from_parents;
   }
 
 }

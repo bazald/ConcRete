@@ -2,6 +2,7 @@
 
 #include "Zeni/Concurrency/Memory_Pool.hpp"
 
+#include <list>
 #include <memory>
 #include <new>
 #include <unordered_set>

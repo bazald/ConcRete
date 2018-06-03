@@ -3,7 +3,7 @@
 
 #if !defined(_WINDOWS)
 #define ZENI_CONCURRENCY_EXTERN extern
-#define ZENI_CONCURRENCY_LINKAGE
+#define ZENI_CONCURRENCY_LINKAGE __attribute__ ((visibility ("default")))
 #elif defined(CONCURRENCY_EXPORTS)
 #define ZENI_CONCURRENCY_EXTERN
 #define ZENI_CONCURRENCY_LINKAGE __declspec(dllexport)

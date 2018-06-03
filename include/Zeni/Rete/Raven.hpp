@@ -20,7 +20,7 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE const std::shared_ptr<const Node> & get_sender() const;
 
-    virtual void receive() const = 0;
+    ZENI_RETE_LINKAGE virtual void receive() const = 0;
 
   private:
     const std::shared_ptr<Network> m_network;

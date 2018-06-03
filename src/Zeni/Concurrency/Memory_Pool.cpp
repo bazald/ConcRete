@@ -122,7 +122,7 @@ namespace Zeni::Concurrency {
       return reinterpret_cast<const size_t *>(ptr)[-1];
     }
 
-    void Memory_Pool_Pimpl::fill(void * const dest, const uint32_t pattern) noexcept {
+    void fill(void * const dest, const uint32_t pattern) noexcept {
       unsigned char * dd = reinterpret_cast<unsigned char *>(dest);
       const unsigned char * const dend = dd + size_of(dest);
 

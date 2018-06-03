@@ -18,18 +18,13 @@ namespace Zeni::Rete {
   }
 
   void Node_Passthrough_Gated::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const Locked_Node_Data &locked_node_data) {
-    {
-      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+    const auto sft = shared_from_this();
+    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
-      if (locked_node_unary_data.get_input_tokens().empty())
-        job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(get_input(), network, shared_from_this()));
-      else
-        job_queue->give_one(std::make_shared<Raven_Disconnect_Output>(get_input(), network, shared_from_this(), true));
-    }
+    jobs.emplace_back(std::make_shared<Raven_Decrement_Output_Count>(get_input(), network, sft));
+    jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(m_gate, network, sft, true, std::vector<std::shared_ptr<Node>>(1, get_input())));
 
-    job_queue->give_one(std::make_shared<Raven_Disconnect_Output>(m_gate, network, shared_from_this(), true));
-    ///// Conditionally on whether it's connected to the input or not :-/
-    //job_queue->give_one(std::make_shared<Raven_Disconnect_Output>(get_input(), network, shared_from_this(), true));
+    job_queue->give_many(std::move(jobs));
   }
 
   Node_Passthrough_Gated::~Node_Passthrough_Gated() {
