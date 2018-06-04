@@ -29,7 +29,7 @@ RETE_SRCS+=$(wildcard src/Zeni/Rete/Variable_*.cpp)
 RETE_SRCS+=src/Zeni/Rete/WME.cpp
 RETE_OBJS=$(subst .cpp,.o,$(RETE_SRCS))
 
-TEST1_SRCS=$(wildcard Test1/*.cpp)
+TEST1_SRCS=$(wildcard Test1/*.cpp) src/Zeni/New_and_Delete.cpp
 TEST1_OBJS=$(subst .cpp,.o,$(TEST1_SRCS))
 
 BINARIES=libConcurrency.so libRete.so Test1.out
@@ -61,13 +61,12 @@ Test1/Test1.o: Concurrency Rete $(TEST1_SRCS)
 depend: .depend
 
 .depend: $(CONCURRENCY_SRCS) $(RETE_SRCS) $(TEST1_SRCS)
-	$(RM) ./.depend
-	$(CXX) $(CPPFLAGS) -MM $^>>./.depend;
+	$(CXX) $(CPPFLAGS) -MM $^ > ./.depend;
 
 clean:
 	$(RM) $(CONCURRENCY_OBJS) $(RETE_OBJS) $(TEST1_OBJS) $(BINARIES)
 
 distclean: clean
-	$(RM) *~ .depend
+	$(RM) .depend
 
 include .depend

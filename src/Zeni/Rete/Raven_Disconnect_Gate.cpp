@@ -10,21 +10,8 @@ namespace Zeni::Rete {
   {
   }
 
-  Raven_Disconnect_Gate::Raven_Disconnect_Gate(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output, const bool decrement_output_count_, const std::vector<std::shared_ptr<Node>> &forwards_)
-    : Raven(recipient, network, output),
-    decrement_output_count(decrement_output_count_),
-    forwards(forwards_)
-  {
-  }
-
-  Raven_Disconnect_Gate::Raven_Disconnect_Gate(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output, const bool decrement_output_count_, std::vector<std::shared_ptr<Node>> &&forwards_)
-    : Raven(recipient, network, output),
-    decrement_output_count(decrement_output_count_),
-    forwards(std::move(forwards_))
-  {
-  }
-
   void Raven_Disconnect_Gate::receive() const {
+    Zeni::Rete::Counters::g_disconnect_gates_received.fetch_add(1, std::memory_order_acquire);
     std::dynamic_pointer_cast<Node>(get_recipient())->receive(*this);
   }
 

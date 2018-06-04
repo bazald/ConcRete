@@ -13,14 +13,10 @@ namespace Zeni::Rete {
 
   public:
     ZENI_RETE_LINKAGE Raven_Disconnect_Gate(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output, const bool decrement_output_count_);
-    ZENI_RETE_LINKAGE Raven_Disconnect_Gate(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output, const bool decrement_output_count_, const std::vector<std::shared_ptr<Node>> &forwards_);
-    ZENI_RETE_LINKAGE Raven_Disconnect_Gate(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output, const bool decrement_output_count_, std::vector<std::shared_ptr<Node>> &&forwards_);
 
     void receive() const override;
 
     const bool decrement_output_count;
-
-    const std::vector<std::shared_ptr<Node>> forwards;
   };
 
 }

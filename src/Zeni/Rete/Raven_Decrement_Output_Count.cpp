@@ -10,6 +10,7 @@ namespace Zeni::Rete {
   }
 
   void Raven_Decrement_Output_Count::receive() const {
+    Zeni::Rete::Counters::g_decrement_outputs_received.fetch_add(1, std::memory_order_acquire);
     std::dynamic_pointer_cast<Node>(get_recipient())->receive(*this);
   }
 

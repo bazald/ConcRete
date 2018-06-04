@@ -22,7 +22,7 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
     jobs.emplace_back(std::make_shared<Raven_Decrement_Output_Count>(get_input(), network, sft));
-    jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(m_gate, network, sft, true, std::vector<std::shared_ptr<Node>>(1, get_input())));
+    jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(m_gate, network, sft, true));
 
     job_queue->give_many(std::move(jobs));
   }

@@ -10,6 +10,7 @@
 #include "Zeni/Rete/Node_Passthrough_Gated.hpp"
 #include "Zeni/Rete/Node_Unary_Gate.hpp"
 #include "Zeni/Rete/Parser.hpp"
+#include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 
 #include <array>
@@ -64,6 +65,49 @@ public:
 private:
   std::unordered_set<Ptr> m_gossips;
 };
+
+static void debug_dump() {
+  std::cerr << std::endl;
+  std::cerr << "  g_node_increments                             = " << Zeni::Rete::Counters::g_node_increments.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_connect_gates_received                      = " << Zeni::Rete::Counters::g_connect_gates_received.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_disconnect_gates_received                   = " << Zeni::Rete::Counters::g_disconnect_gates_received.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_connect_outputs_received                    = " << Zeni::Rete::Counters::g_connect_outputs_received.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_decrement_outputs_received                  = " << Zeni::Rete::Counters::g_decrement_outputs_received.load(std::memory_order_acquire) << std::endl;
+  std::cerr << std::endl;
+  std::cerr << "  g_disconnect_output_and_decrements_received   = " << Zeni::Rete::Counters::g_disconnect_output_and_decrements_received.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_disconnect_output_but_nodecrements_received = " << Zeni::Rete::Counters::g_disconnect_output_but_nodecrements_received.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_tokens_inserted                             = " << Zeni::Rete::Counters::g_tokens_inserted.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_empties_received                            = " << Zeni::Rete::Counters::g_empties_received.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_nonempties_received                         = " << Zeni::Rete::Counters::g_nonempties_received.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_tokens_removed                              = " << Zeni::Rete::Counters::g_tokens_removed.load(std::memory_order_acquire) << std::endl;
+  std::cerr << std::endl;
+  std::cerr << "  g_extra                                       ="
+    << ' ' << Zeni::Rete::Counters::g_extra[0].load(std::memory_order_acquire)
+    << ' ' << Zeni::Rete::Counters::g_extra[1].load(std::memory_order_acquire)
+    << ' ' << Zeni::Rete::Counters::g_extra[2].load(std::memory_order_acquire)
+    << ' ' << Zeni::Rete::Counters::g_extra[3].load(std::memory_order_acquire)
+    << ' ' << Zeni::Rete::Counters::g_extra[4].load(std::memory_order_acquire)
+    << ' ' << Zeni::Rete::Counters::g_extra[5].load(std::memory_order_acquire)
+    << ' ' << Zeni::Rete::Counters::g_extra[6].load(std::memory_order_acquire)
+    << ' ' << Zeni::Rete::Counters::g_extra[7].load(std::memory_order_acquire) << std::endl;
+  std::cerr << std::endl;
+}
+
+static void debug_reset() {
+  Zeni::Rete::Counters::g_node_increments.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_connect_gates_received.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_connect_outputs_received.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_decrement_outputs_received.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_disconnect_gates_received.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_empties_received.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_nonempties_received.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_disconnect_output_and_decrements_received.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_disconnect_output_but_nodecrements_received.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_tokens_inserted.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_tokens_removed.store(0, std::memory_order_release);
+  for(int i = 0; i != 8; ++i)
+    Zeni::Rete::Counters::g_extra[i].store(0, std::memory_order_release);
+}
 
 static void test_Memory_Pool();
 static void test_Thread_Pool();
@@ -121,20 +165,33 @@ int main()
     abort();
   }
 
+  debug_dump();
+  test_Rete_Network();
+  debug_dump();
+  if (GetCurrentThreadCount() != initial_thread_count) {
+    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
+    abort();
+  }
+  debug_reset();
+
   std::cerr << "Test: ";
-  for (int i = 0; i != 1000; ++i) {
+  for (int i = 1; i != 1001; ++i) {
     std::cerr << ' ' << i;
     test_Rete_Network();
     if (GetCurrentThreadCount() != initial_thread_count) {
       std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
+      debug_dump();
       abort();
     }
+    debug_reset();
   }
+
   std::cerr << std::endl;
 
   test_Parser();
   if (GetCurrentThreadCount() != initial_thread_count) {
     std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
+    debug_dump();
     abort();
   }
 
@@ -211,6 +268,8 @@ void test_Rete_Network() {
     });
 
     //(*network)->get_Thread_Pool()->get_main_Job_Queue()->give_one(
+    //  std::make_shared<Zeni::Rete::Raven_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
+    //(*network)->get_Thread_Pool()->get_main_Job_Queue()->give_one(
     //  std::make_shared<Zeni::Rete::Raven_Disconnect_Output>(network->get(), network->get(), filter1, true));
   }
 
@@ -224,11 +283,11 @@ void test_Rete_Network() {
 
   //(*network)->get_Thread_Pool()->finish_jobs();
 
-  //(*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+  (*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
   //(*network)->get_Thread_Pool()->finish_jobs();
 
-  //(*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+  (*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
   //(*network)->get_Thread_Pool()->finish_jobs();
 }

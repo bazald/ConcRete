@@ -52,15 +52,15 @@ namespace Zeni::Rete {
         return;
       }
 
-      const bool empty = locked_node_data.get_output_tokens().empty();
+      const bool first_insertion = locked_node_data.get_output_tokens().empty();
 
       locked_node_unary_data.modify_input_tokens().emplace(raven.get_Token());
       locked_node_data.modify_output_tokens().emplace(raven.get_Token());
 
-      jobs.reserve(locked_node_data.get_outputs().size() + (empty ? locked_node_data.get_gates().size() : 0));
+      jobs.reserve(locked_node_data.get_outputs().size() + (first_insertion ? locked_node_data.get_gates().size() : 0));
       for (auto &output : locked_node_data.get_outputs())
         jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, raven.get_Network(), sft, raven.get_Token()));
-      if (empty) {
+      if (first_insertion) {
         for (auto &output : locked_node_data.get_gates())
           jobs.emplace_back(std::make_shared<Raven_Status_Nonempty>(output, raven.get_Network(), sft));
       }
@@ -86,12 +86,12 @@ namespace Zeni::Rete {
       locked_node_unary_data.modify_input_tokens().erase(found);
       locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(raven.get_Token()));
 
-      const bool empty = locked_node_data.get_output_tokens().empty();
+      const bool last_removal = locked_node_data.get_output_tokens().empty();
 
-      jobs.reserve(locked_node_data.get_outputs().size() + (empty ? locked_node_data.get_gates().size() : 0));
+      jobs.reserve(locked_node_data.get_outputs().size() + (last_removal ? locked_node_data.get_gates().size() : 0));
       for (auto &output : locked_node_data.get_outputs())
         jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, raven.get_Network(), sft, raven.get_Token()));
-      if (empty) {
+      if (last_removal) {
         for (auto &output : locked_node_data.get_gates())
           jobs.emplace_back(std::make_shared<Raven_Status_Empty>(output, raven.get_Network(), sft));
       }

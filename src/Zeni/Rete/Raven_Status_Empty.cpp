@@ -10,6 +10,7 @@ namespace Zeni::Rete {
   }
 
   void Raven_Status_Empty::receive() const {
+    Zeni::Rete::Counters::g_empties_received.fetch_add(1, std::memory_order_acquire);
     std::dynamic_pointer_cast<Node>(get_recipient())->receive(*this);
   }
 
