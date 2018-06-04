@@ -107,32 +107,34 @@ static int GetCurrentThreadCount() { return 4; }
 
 int main()
 {
-  if (GetCurrentThreadCount() != 4) {
-    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << std::endl;
-    abort();
-  }
+  const int initial_thread_count = GetCurrentThreadCount();
 
   test_Memory_Pool();
-  if (GetCurrentThreadCount() != 4) {
-    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << std::endl;
+  if (GetCurrentThreadCount() != initial_thread_count) {
+    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
     abort();
   }
 
   test_Thread_Pool();
-  if (GetCurrentThreadCount() != 4) {
-    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << std::endl;
+  if (GetCurrentThreadCount() != initial_thread_count) {
+    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
     abort();
   }
 
-  test_Rete_Network();
-  if (GetCurrentThreadCount() != 4) {
-    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << std::endl;
-    abort();
+  std::cerr << "Test: ";
+  for (int i = 0; i != 1000; ++i) {
+    std::cerr << ' ' << i;
+    test_Rete_Network();
+    if (GetCurrentThreadCount() != initial_thread_count) {
+      std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
+      abort();
+    }
   }
+  std::cerr << std::endl;
 
   test_Parser();
-  if (GetCurrentThreadCount() != 4) {
-    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << std::endl;
+  if (GetCurrentThreadCount() != initial_thread_count) {
+    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
     abort();
   }
 
@@ -207,25 +209,28 @@ void test_Rete_Network() {
     }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
       std::cout << "Goodbye world!" << std::endl;
     });
+
+    //(*network)->get_Thread_Pool()->get_main_Job_Queue()->give_one(
+    //  std::make_shared<Zeni::Rete::Raven_Disconnect_Output>(network->get(), network->get(), filter1, true));
   }
 
-  (*network)->get_Thread_Pool()->finish_jobs();
+  //(*network)->get_Thread_Pool()->finish_jobs();
 
   (*network)->insert_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-  (*network)->get_Thread_Pool()->finish_jobs();
+  //(*network)->get_Thread_Pool()->finish_jobs();
 
   (*network)->insert_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
-  (*network)->get_Thread_Pool()->finish_jobs();
+  //(*network)->get_Thread_Pool()->finish_jobs();
 
-  (*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+  //(*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-  (*network)->get_Thread_Pool()->finish_jobs();
+  //(*network)->get_Thread_Pool()->finish_jobs();
 
-  (*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+  //(*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
-  (*network)->get_Thread_Pool()->finish_jobs();
+  //(*network)->get_Thread_Pool()->finish_jobs();
 }
 
 void test_Parser() {

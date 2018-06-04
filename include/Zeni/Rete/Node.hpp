@@ -115,9 +115,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE void receive(const Raven_Connect_Gate &raven);
     ZENI_RETE_LINKAGE void receive(const Raven_Connect_Output &raven);
     ZENI_RETE_LINKAGE void receive(const Raven_Decrement_Output_Count &raven);
-    /// Return true if output count goes to 0 and the disconnection cascades
+    /// Returns true if the last instance of the sender gate has been removed
     ZENI_RETE_LINKAGE virtual bool receive(const Raven_Disconnect_Gate &raven);
-    /// Return true if output count goes to 0 and the disconnection cascades
+    /// Returns true if the last instance of the sender output has been removed
     ZENI_RETE_LINKAGE virtual bool receive(const Raven_Disconnect_Output &raven);
     ZENI_RETE_LINKAGE virtual void receive(const Raven_Status_Empty &raven) = 0;
     ZENI_RETE_LINKAGE virtual void receive(const Raven_Status_Nonempty &raven) = 0;
