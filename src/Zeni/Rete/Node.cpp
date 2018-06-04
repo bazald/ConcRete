@@ -41,17 +41,16 @@ namespace Zeni::Rete {
     return std::static_pointer_cast<Node>(Concurrency::Maester::shared_from_this());
   }
 
-  Node::Node(const int64_t height, const int64_t size, const int64_t token_size, const bool increment_output_count)
+  Node::Node(const int64_t height, const int64_t size, const int64_t token_size)
     : m_height(height), m_size(size), m_token_size(token_size),
-    m_unlocked_node_data(std::make_shared<Unlocked_Node_Data>(increment_output_count))
+    m_unlocked_node_data(std::make_shared<Unlocked_Node_Data>())
   {
   }
 
-  Node::Unlocked_Node_Data::Unlocked_Node_Data(const bool increment_output_count)
-    : m_output_count(increment_output_count ? 1 : 0)
+  Node::Unlocked_Node_Data::Unlocked_Node_Data()
+    : m_output_count(1)
   {
-    if(increment_output_count)
-      Counters::g_node_increments.fetch_add(1, std::memory_order_relaxed);
+    Counters::g_node_increments.fetch_add(1, std::memory_order_relaxed);
   }
 
   Node::Locked_Node_Data_Const::Locked_Node_Data_Const(const Node * node)
@@ -126,10 +125,14 @@ namespace Zeni::Rete {
     return m_token_size;
   }
 
-  void Node::increment_output_count() {
-    Counters::g_node_increments.fetch_add(1, std::memory_order_relaxed);
+  bool Node::try_increment_output_count() {
     Locked_Node_Data locked_node_data(this);
-    ++locked_node_data.modify_output_count();
+    if (locked_node_data.get_output_count() > 0) {
+      Counters::g_node_increments.fetch_add(1, std::memory_order_relaxed);
+      ++locked_node_data.modify_output_count();
+      return true;
+    }
+    return false;
   }
 
   std::shared_ptr<Node> Node::connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output, const bool immediate) {
@@ -142,9 +145,8 @@ namespace Zeni::Rete {
       if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
         for (auto &existing_output : locked_node_data.get_gates()) {
           if (*existing_output == *output) {
-            if (immediate)
-              existing_output->increment_output_count();
-            return existing_output;
+            if (existing_output->try_increment_output_count())
+              return existing_output;
           }
         }
       }
@@ -166,9 +168,8 @@ namespace Zeni::Rete {
       if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
         for (auto &existing_output : locked_node_data.get_outputs()) {
           if (*existing_output == *output) {
-            if (immediate)
-              existing_output->increment_output_count();
-            return existing_output;
+            if (existing_output->try_increment_output_count())
+              return existing_output;
           }
         }
       }

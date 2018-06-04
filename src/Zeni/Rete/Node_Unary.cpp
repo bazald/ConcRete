@@ -41,7 +41,7 @@ namespace Zeni::Rete {
   }
 
   Node_Unary::Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Node> input)
-    : Node(height, size, token_size, true),
+    : Node(height, size, token_size),
     m_unlocked_node_unary_data(std::make_shared<Unlocked_Node_Unary_Data>()),
     m_input(input)
   {

@@ -153,8 +153,8 @@ namespace Zeni::Rete {
   }
 
   Network::Network(const Network::Printed_Output printed_output)
-    : Node(0, 0, 1, false),
-    m_thread_pool(std::make_shared<Concurrency::Thread_Pool>()),
+    : Node(0, 0, 1),
+    m_thread_pool(Concurrency::Thread_Pool::Create()),
     m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
@@ -175,7 +175,7 @@ namespace Zeni::Rete {
   }
 
   Network::Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool)
-    : Node(0, 0, 1, false),
+    : Node(0, 0, 1),
     m_thread_pool(thread_pool),
     m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)

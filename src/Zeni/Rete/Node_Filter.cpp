@@ -3,6 +3,7 @@
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
+#include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 #include "Zeni/Rete/Raven_Status_Empty.hpp"
 #include "Zeni/Rete/Raven_Status_Nonempty.hpp"
@@ -37,7 +38,13 @@ namespace Zeni::Rete {
       Friendly_Node_Filter(const std::shared_ptr<Network> &network, const WME &wme_) : Node_Filter(network, wme_) {}
     };
 
-    return std::static_pointer_cast<Node_Filter>(network->connect_output(network, job_queue, std::make_shared<Friendly_Node_Filter>(network, wme), true));
+    const auto created = std::make_shared<Friendly_Node_Filter>(network, wme);
+    const auto connected = std::static_pointer_cast<Node_Filter>(network->connect_output(network, job_queue, created, true));
+
+    if (connected != created)
+      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(created, network, created));
+
+    return connected;
   }
 
   void Node_Filter::receive(const Raven_Status_Empty &) {

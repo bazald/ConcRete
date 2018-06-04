@@ -54,7 +54,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::shared_ptr<const Node> shared_from_this() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Node> shared_from_this();
 
-    ZENI_RETE_LINKAGE Node(const int64_t height, const int64_t size, const int64_t token_size, const bool increment_output_count);
+    ZENI_RETE_LINKAGE Node(const int64_t height, const int64_t size, const int64_t token_size);
 
     ZENI_RETE_LINKAGE virtual void send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const Locked_Node_Data &locked_node_data) = 0;
 
@@ -67,7 +67,7 @@ namespace Zeni::Rete {
       friend Locked_Node_Data;
 
     public:
-      Unlocked_Node_Data(const bool increment_output_count);
+      Unlocked_Node_Data();
 
     private:
       int64_t m_output_count;
@@ -123,11 +123,11 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE virtual std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() = 0;
 
-    /// Increment the output count. Only function that ought to result in a double mutex lock, when a parent Node calls increment_output_count on a child Node.
-    ZENI_RETE_LINKAGE void increment_output_count();
-    /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists.
+    /// Increments the output count if greater than 0 and returns true, otherwise returns false. Only function that ought to result in a double mutex lock, when a parent Node calls increment_output_count on a child Node.
+    ZENI_RETE_LINKAGE bool try_increment_output_count();
+    /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
     ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output, const bool immediate);
-    /// Find an existing equivalent to output and return it, or return the new output if no equivalent exists.
+    /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
     ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output, const bool immediate);
 
     ZENI_RETE_LINKAGE void receive(const std::shared_ptr<const Concurrency::Raven> raven) noexcept override;

@@ -37,15 +37,16 @@ namespace Zeni::Rete {
     };
 
     const auto created = std::make_shared<Friendly_Node_Passthrough_Gated>(input, gate);
-    const auto connected = std::dynamic_pointer_cast<Node_Passthrough_Gated>(input->connect_output(network, job_queue, created, false));
+    const auto connected1 = std::dynamic_pointer_cast<Node_Passthrough_Gated>(input->connect_output(network, job_queue, created, false));
+    const auto connected2 = std::dynamic_pointer_cast<Node_Passthrough_Gated>(gate->connect_output(network, job_queue, connected1, true));
 
-    std::shared_ptr<Node> connected2;
-    if (connected == created) {
-      connected2 = gate->connect_output(network, job_queue, created, true);
-      assert(connected2 == created);
-    }
+    if (connected1 != created)
+      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(created, network, created));
 
-    return connected;
+    if (connected2 != connected1) // Seems weird, but probably possible.
+      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(connected1, network, connected1));
+
+    return connected2;
   }
 
   std::shared_ptr<const Node> Node_Passthrough_Gated::get_gate() const {

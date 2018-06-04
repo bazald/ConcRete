@@ -246,6 +246,24 @@ namespace Zeni::Concurrency {
     new (&m_pimpl_storage) Thread_Pool_Pimpl(this, num_threads);
   }
 
+  std::shared_ptr<Thread_Pool> Thread_Pool::Create() noexcept(false) {
+    class Friendly_Thread_Pool : public Thread_Pool {
+    public:
+      Friendly_Thread_Pool() : Thread_Pool() {}
+    };
+
+    return std::make_shared<Friendly_Thread_Pool>();
+  }
+
+  std::shared_ptr<Thread_Pool> Thread_Pool::Create(const int16_t num_threads) noexcept(false) {
+    class Friendly_Thread_Pool : public Thread_Pool {
+    public:
+      Friendly_Thread_Pool(const int16_t num_threads) : Thread_Pool() {}
+    };
+
+    return std::make_shared<Friendly_Thread_Pool>(num_threads);
+  }
+
   Thread_Pool::~Thread_Pool() noexcept {
     static_assert(std::alignment_of<Thread_Pool_Pimpl>::value <= Thread_Pool::m_pimpl_align, "Thread_Pool::m_pimpl_align is too low.");
     ZENI_STATIC_WARNING(std::alignment_of<Thread_Pool_Pimpl>::value >= Thread_Pool::m_pimpl_align, "Thread_Pool::m_pimpl_align is too high.");

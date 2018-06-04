@@ -24,11 +24,17 @@ namespace Zeni::Concurrency {
     const Thread_Pool_Pimpl * get_pimpl() const noexcept;
     Thread_Pool_Pimpl * get_pimpl() noexcept;
 
-  public:
     /// Initialize the number of threads to std::thread::hardware_concurrency()
     ZENI_CONCURRENCY_LINKAGE Thread_Pool() noexcept(false);
-    /// Initialize the number of threads to 0 for single-threaded operation, anything else for multithreaded
+    /// Initialize the number of threads to 0 or 1 for single-threaded operation, anything higher for multithreaded
     ZENI_CONCURRENCY_LINKAGE Thread_Pool(const int16_t num_threads) noexcept(false);
+
+  public:
+    /// Initialize the number of threads to std::thread::hardware_concurrency()
+    ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Thread_Pool> Create() noexcept(false);
+    /// Initialize the number of threads to 0 or 1 for single-threaded operation, anything higher for multithreaded
+    ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Thread_Pool> Create(const int16_t num_threads) noexcept(false);
+
     ZENI_CONCURRENCY_LINKAGE ~Thread_Pool() noexcept;
 
     ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Job_Queue> get_main_Job_Queue() const noexcept;

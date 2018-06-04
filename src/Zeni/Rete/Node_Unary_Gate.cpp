@@ -34,7 +34,13 @@ namespace Zeni::Rete {
       Friendly_Node_Unary_Gate(const std::shared_ptr<Node> &input) : Node_Unary_Gate(input) {}
     };
 
-    return std::static_pointer_cast<Node_Unary_Gate>(input->connect_gate(network, job_queue, std::make_shared<Friendly_Node_Unary_Gate>(input), true));
+    const auto created = std::make_shared<Friendly_Node_Unary_Gate>(input);
+    const auto connected = std::static_pointer_cast<Node_Unary_Gate>(input->connect_gate(network, job_queue, created, true));
+
+    if (connected != created)
+      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(created, network, created));
+
+    return connected;
   }
 
   void Node_Unary_Gate::receive(const Raven_Disconnect_Gate &raven) {
@@ -48,7 +54,6 @@ namespace Zeni::Rete {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
       if (!locked_node_unary_data.get_input_tokens().empty()) {
-        Counters::g_extra[3].fetch_add(1, std::memory_order_relaxed);
         const auto inputs = std::const_pointer_cast<Node>(raven.get_sender())->get_inputs();
         jobs.emplace_back(std::make_shared<Raven_Disconnect_Gate>(inputs.first, raven.get_Network(), raven.get_sender(), false));
         if (inputs.second)
