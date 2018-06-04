@@ -40,12 +40,6 @@ namespace Zeni::Rete {
     const auto connected1 = std::dynamic_pointer_cast<Node_Passthrough_Gated>(input->connect_output(network, job_queue, created, false));
     const auto connected2 = std::dynamic_pointer_cast<Node_Passthrough_Gated>(gate->connect_output(network, job_queue, connected1, true));
 
-    if (connected1 != created)
-      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(created, network, created));
-
-    if (connected2 != connected1) // Seems weird, but probably possible.
-      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(connected1, network, connected1));
-
     return connected2;
   }
 

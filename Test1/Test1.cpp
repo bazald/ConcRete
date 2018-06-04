@@ -256,12 +256,12 @@ void test_Rete_Network() {
   };
 
   {
-    auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-    //auto passthrough1 = Zeni::Rete::Node_Passthrough::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1);
-    auto filter2 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-    auto unary_gate2 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter2);
-    auto gated_passthrough12 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1, unary_gate2);
-    auto action = Zeni::Rete::Node_Action::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), "hello-world", false, gated_passthrough12, std::make_shared<Zeni::Rete::Variable_Indices>(),
+    auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+    //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter0);
+    auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+    auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1);
+    auto gated_passthrough01 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter0, unary_gate1);
+    auto action = Zeni::Rete::Node_Action::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), "hello-world", false, gated_passthrough01, std::make_shared<Zeni::Rete::Variable_Indices>(),
       [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
       std::cout << "Hello world!" << std::endl;
     }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -289,11 +289,11 @@ void test_Rete_Network() {
   //(*network)->get_Thread_Pool()->finish_jobs();
 
   {
-    auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-    auto filter2 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-    auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1);
-    auto gated_passthrough21 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter2, unary_gate1);
-    auto action = Zeni::Rete::Node_Action::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), "gday-world", false, gated_passthrough21, std::make_shared<Zeni::Rete::Variable_Indices>(),
+    auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+    auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+    auto unary_gate0 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter0);
+    auto gated_passthrough10 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1, unary_gate0);
+    auto action = Zeni::Rete::Node_Action::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), "gday-world", false, gated_passthrough10, std::make_shared<Zeni::Rete::Variable_Indices>(),
       [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
       std::cout << "G'day world!" << std::endl;
     }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {

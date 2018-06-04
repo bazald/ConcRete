@@ -131,8 +131,8 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output, const bool immediate);
 
     ZENI_RETE_LINKAGE void receive(const std::shared_ptr<const Concurrency::Raven> raven) noexcept override;
-    ZENI_RETE_LINKAGE void receive(const Raven_Connect_Gate &raven);
-    ZENI_RETE_LINKAGE void receive(const Raven_Connect_Output &raven);
+    ZENI_RETE_LINKAGE virtual void receive(const Raven_Connect_Gate &raven);
+    ZENI_RETE_LINKAGE virtual void receive(const Raven_Connect_Output &raven);
     ZENI_RETE_LINKAGE void receive(const Raven_Decrement_Output_Count &raven);
     ZENI_RETE_LINKAGE virtual void receive(const Raven_Disconnect_Gate &raven);
     ZENI_RETE_LINKAGE virtual void receive(const Raven_Disconnect_Output &raven);
@@ -144,6 +144,10 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual bool operator==(const Node &rhs) const = 0;
 
     protected:
+    /// Returns true if the first instance of the sender gate has been inserted
+    ZENI_RETE_LINKAGE virtual bool receive(const Raven_Connect_Gate &raven, Locked_Node_Data &locked_node_data);
+    /// Returns true if the first instance of the sender output has been inserted
+    ZENI_RETE_LINKAGE virtual bool receive(const Raven_Connect_Output &raven, Locked_Node_Data &locked_node_data);
     /// Returns true if the last instance of the sender gate has been removed
     ZENI_RETE_LINKAGE virtual bool receive(const Raven_Disconnect_Gate &raven, Locked_Node_Data &locked_node_data);
     /// Returns true if the last instance of the sender output has been removed

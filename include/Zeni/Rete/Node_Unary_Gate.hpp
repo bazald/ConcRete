@@ -19,6 +19,8 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE static std::shared_ptr<Node_Unary_Gate> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input);
 
+    ZENI_RETE_LINKAGE void receive(const Raven_Connect_Gate &raven) override;
+    ZENI_RETE_LINKAGE void receive(const Raven_Connect_Output &raven) override;
     ZENI_RETE_LINKAGE void receive(const Raven_Disconnect_Gate &raven) override;
     ZENI_RETE_LINKAGE void receive(const Raven_Disconnect_Output &raven) override;
     ZENI_RETE_LINKAGE void receive(const Raven_Status_Empty &) override;

@@ -145,8 +145,10 @@ namespace Zeni::Rete {
       if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
         for (auto &existing_output : locked_node_data.get_gates()) {
           if (*existing_output == *output) {
-            if (existing_output->try_increment_output_count())
+            if (existing_output->try_increment_output_count()) {
+              job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(output, network, output));
               return existing_output;
+            }
           }
         }
       }
@@ -168,8 +170,10 @@ namespace Zeni::Rete {
       if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
         for (auto &existing_output : locked_node_data.get_outputs()) {
           if (*existing_output == *output) {
-            if (existing_output->try_increment_output_count())
+            if (existing_output->try_increment_output_count()) {
+              job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(output, network, output));
               return existing_output;
+            }
           }
         }
       }
@@ -186,53 +190,13 @@ namespace Zeni::Rete {
   }
 
   void Node::receive(const Raven_Connect_Gate &raven) {
-    const auto sft = shared_from_this();
-    std::shared_ptr<Concurrency::Job> job;
-
-    {
-      Locked_Node_Data locked_node_data(this);
-
-      const auto found = locked_node_data.get_antigates().equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
-      if (found.first != found.second) {
-        locked_node_data.modify_antigates().erase(found.first);
-        return;
-      }
-
-      const bool first_insertion = locked_node_data.get_gates().find(std::const_pointer_cast<Node>(raven.get_sender())) == locked_node_data.get_gates().cend();
-      locked_node_data.modify_gates().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
-
-      if (first_insertion && !locked_node_data.get_output_tokens().empty())
-        job = std::make_shared<Raven_Status_Nonempty>(std::const_pointer_cast<Node>(raven.get_sender()), raven.get_Network(), sft);
-    }
-
-    if (job)
-      raven.get_Job_Queue()->give_one(job);
+    Locked_Node_Data locked_node_data(this);
+    receive(raven, locked_node_data);
   }
 
   void Node::receive(const Raven_Connect_Output &raven) {
-    const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
-
-    {
-      Locked_Node_Data locked_node_data(this);
-
-      const auto found = locked_node_data.get_antioutputs().equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
-      if (found.first != found.second) {
-        locked_node_data.modify_antioutputs().erase(found.first);
-        return;
-      }
-
-      const bool first_insertion = locked_node_data.get_outputs().find(std::const_pointer_cast<Node>(raven.get_sender())) == locked_node_data.get_outputs().cend();
-      locked_node_data.modify_outputs().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
-
-      if (first_insertion) {
-        jobs.reserve(locked_node_data.get_output_tokens().size());
-        for (auto &output_token : locked_node_data.get_output_tokens())
-          jobs.emplace_back(std::make_shared<Raven_Token_Insert>(std::const_pointer_cast<Node>(raven.get_sender()), raven.get_Network(), sft, output_token));
-      }
-    }
-
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    Locked_Node_Data locked_node_data(this);
+    receive(raven, locked_node_data);
   }
 
   void Node::receive(const Raven_Decrement_Output_Count &raven) {
@@ -256,6 +220,58 @@ namespace Zeni::Rete {
   void Node::receive(const Raven_Disconnect_Output &raven) {
     Locked_Node_Data locked_node_data(this);
     receive(raven, locked_node_data);
+  }
+
+  bool Node::receive(const Raven_Connect_Gate &raven, Locked_Node_Data &locked_node_data) {
+    const auto sft = shared_from_this();
+    std::shared_ptr<Concurrency::Job> job;
+    bool first_insertion = false;
+
+    {
+      const auto found = locked_node_data.get_antigates().equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
+      if (found.first != found.second) {
+        locked_node_data.modify_antigates().erase(found.first);
+        return false;
+      }
+
+      first_insertion = locked_node_data.get_gates().find(std::const_pointer_cast<Node>(raven.get_sender())) == locked_node_data.get_gates().cend();
+      locked_node_data.modify_gates().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
+
+      if (first_insertion && !locked_node_data.get_output_tokens().empty())
+        job = std::make_shared<Raven_Status_Nonempty>(std::const_pointer_cast<Node>(raven.get_sender()), raven.get_Network(), sft);
+    }
+
+    if (job)
+      raven.get_Job_Queue()->give_one(job);
+
+    return first_insertion;
+  }
+
+  bool Node::receive(const Raven_Connect_Output &raven, Locked_Node_Data &locked_node_data) {
+    const auto sft = shared_from_this();
+    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    bool first_insertion = false;
+
+    {
+      const auto found = locked_node_data.get_antioutputs().equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
+      if (found.first != found.second) {
+        locked_node_data.modify_antioutputs().erase(found.first);
+        return false;
+      }
+
+      first_insertion = locked_node_data.get_outputs().find(std::const_pointer_cast<Node>(raven.get_sender())) == locked_node_data.get_outputs().cend();
+      locked_node_data.modify_outputs().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
+
+      if (first_insertion) {
+        jobs.reserve(locked_node_data.get_output_tokens().size());
+        for (auto &output_token : locked_node_data.get_output_tokens())
+          jobs.emplace_back(std::make_shared<Raven_Token_Insert>(std::const_pointer_cast<Node>(raven.get_sender()), raven.get_Network(), sft, output_token));
+      }
+    }
+
+    raven.get_Job_Queue()->give_many(std::move(jobs));
+
+    return first_insertion;
   }
 
   bool Node::receive(const Raven_Disconnect_Gate &raven, Locked_Node_Data &locked_node_data) {
