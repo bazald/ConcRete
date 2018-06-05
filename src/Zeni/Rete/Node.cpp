@@ -13,10 +13,13 @@
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
 
 #include <cassert>
+//#include <iostream>
+//#include <typeinfo>
 
 namespace Zeni::Rete::Counters {
 
   ZENI_RETE_LINKAGE std::atomic_int64_t g_node_increments = 0;
+  ZENI_RETE_LINKAGE std::atomic_int64_t g_try_increment_output_counts = 0;
   ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_gates_received = 0;
   ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_outputs_received = 0;
   ZENI_RETE_LINKAGE std::atomic_int64_t g_decrement_outputs_received = 0;
@@ -129,58 +132,54 @@ namespace Zeni::Rete {
     Locked_Node_Data locked_node_data(this);
     if (locked_node_data.get_output_count() > 0) {
       Counters::g_node_increments.fetch_add(1, std::memory_order_relaxed);
+      Counters::g_try_increment_output_counts.fetch_add(1, std::memory_order_relaxed);
       ++locked_node_data.modify_output_count();
       return true;
     }
     return false;
   }
 
-  std::shared_ptr<Node> Node::connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output, const bool immediate) {
+  std::shared_ptr<Node> Node::connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
-    {
+    if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
       Locked_Node_Data locked_node_data(this);
 
-      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
-        for (auto &existing_output : locked_node_data.get_gates()) {
-          if (*existing_output == *output) {
-            if (existing_output->try_increment_output_count()) {
-              job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(output, network, output));
-              return existing_output;
-            }
+      /// TODO: Find a way to kill this loop! Optimize!
+      for (auto &existing_output : locked_node_data.get_gates()) {
+        if (*existing_output == *output) {
+          if (existing_output->try_increment_output_count()) {
+            Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
+            return existing_output;
           }
         }
       }
     }
 
-    if (immediate)
-      job_queue->give_one(std::make_shared<Raven_Connect_Gate>(sft, network, output));
+    job_queue->give_one(std::make_shared<Raven_Connect_Gate>(sft, network, output));
 
     return output;
   }
 
-  std::shared_ptr<Node> Node::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output, const bool immediate) {
+  std::shared_ptr<Node> Node::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
 
-    {
+    if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
+
       Locked_Node_Data locked_node_data(this);
 
-      if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
-        for (auto &existing_output : locked_node_data.get_outputs()) {
-          if (*existing_output == *output) {
-            if (existing_output->try_increment_output_count()) {
-              job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(output, network, output));
-              return existing_output;
-            }
+      /// TODO: Find a way to kill this loop! Optimize!
+      for (auto &existing_output : locked_node_data.get_outputs()) {
+        if (*existing_output == *output) {
+          if (existing_output->try_increment_output_count()) {
+            Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
+            return existing_output;
           }
         }
       }
     }
 
-    if (immediate)
-      job_queue->give_one(std::make_shared<Raven_Connect_Output>(sft, network, output));
+    job_queue->give_one(std::make_shared<Raven_Connect_Output>(sft, network, output));
 
     return output;
   }
@@ -207,6 +206,7 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
 
       --locked_node_data.modify_output_count();
+      //std::cerr << "Decrement to " << locked_node_data.get_output_count() << ": " << typeid(*this).name() << std::endl;
       if (locked_node_data.get_output_count() == 0)
         send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
     }
@@ -292,6 +292,7 @@ namespace Zeni::Rete {
 
       if (raven.decrement_output_count) {
         --locked_node_data.modify_output_count();
+        //std::cerr << "Decrement to " << locked_node_data.get_output_count() << ": " << typeid(*this).name() << std::endl;
         if (locked_node_data.get_output_count() == 0)
           send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
       }
@@ -324,6 +325,7 @@ namespace Zeni::Rete {
 
       if (raven.decrement_output_count) {
         --locked_node_data.modify_output_count();
+        //std::cerr << "Decrement to " << locked_node_data.get_output_count() << ": " << typeid(*this).name() << std::endl;
         if (locked_node_data.get_output_count() == 0)
           send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
       }

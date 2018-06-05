@@ -32,7 +32,7 @@ namespace Zeni::Rete {
 
     network->source_rule(job_queue, action_fun, user_action);
 
-    input->connect_output(network, job_queue, action_fun, true);
+    input->connect_output(network, job_queue, action_fun);
 
     return action_fun;
   }

@@ -3,6 +3,7 @@
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
+#include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
 #include "Zeni/Rete/Raven_Status_Empty.hpp"
 #include "Zeni/Rete/Raven_Status_Nonempty.hpp"
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
@@ -28,7 +29,12 @@ namespace Zeni::Rete {
     };
 
     const auto created = std::make_shared<Friendly_Node_Passthrough>(input);
-    const auto connected = std::static_pointer_cast<Node_Passthrough>(input->connect_output(network, job_queue, created, true));
+    const auto connected = std::static_pointer_cast<Node_Passthrough>(input->connect_output(network, job_queue, created));
+
+    if (connected != created) {
+      Zeni::Rete::Counters::g_decrement_outputs_received.fetch_sub(1, std::memory_order_acquire);
+      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(input, network, created));
+    }
 
     return connected;
   }

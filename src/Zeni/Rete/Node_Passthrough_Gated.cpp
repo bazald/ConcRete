@@ -37,10 +37,17 @@ namespace Zeni::Rete {
     };
 
     const auto created = std::make_shared<Friendly_Node_Passthrough_Gated>(input, gate);
-    const auto connected1 = std::dynamic_pointer_cast<Node_Passthrough_Gated>(input->connect_output(network, job_queue, created, false));
-    const auto connected2 = std::dynamic_pointer_cast<Node_Passthrough_Gated>(gate->connect_output(network, job_queue, connected1, true));
+    const auto connected = std::dynamic_pointer_cast<Node_Passthrough_Gated>(gate->connect_output(network, job_queue, created));
 
-    return connected2;
+    if (connected != created) {
+      Zeni::Rete::Counters::g_decrement_outputs_received.fetch_sub(2, std::memory_order_acquire);
+      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+      jobs.emplace_back(std::make_shared<Raven_Decrement_Output_Count>(gate, network, created));
+      jobs.emplace_back(std::make_shared<Raven_Decrement_Output_Count>(input, network, created));
+      job_queue->give_many(std::move(jobs));
+    }
+
+    return connected;
   }
 
   std::shared_ptr<const Node> Node_Passthrough_Gated::get_gate() const {

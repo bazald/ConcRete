@@ -10,6 +10,7 @@
 namespace Zeni::Rete::Counters {
 
   extern ZENI_RETE_LINKAGE std::atomic_int64_t g_node_increments;
+  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_try_increment_output_counts;
   extern ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_gates_received;
   extern ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_outputs_received;
   extern ZENI_RETE_LINKAGE std::atomic_int64_t g_decrement_outputs_received;
@@ -126,9 +127,9 @@ namespace Zeni::Rete {
     /// Increments the output count if greater than 0 and returns true, otherwise returns false. Only function that ought to result in a double mutex lock, when a parent Node calls increment_output_count on a child Node.
     ZENI_RETE_LINKAGE bool try_increment_output_count();
     /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
-    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output, const bool immediate);
+    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output);
     /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
-    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output, const bool immediate);
+    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output);
 
     ZENI_RETE_LINKAGE void receive(const std::shared_ptr<const Concurrency::Raven> raven) noexcept override;
     ZENI_RETE_LINKAGE virtual void receive(const Raven_Connect_Gate &raven);

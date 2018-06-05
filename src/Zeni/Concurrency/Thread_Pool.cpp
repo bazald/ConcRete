@@ -221,8 +221,23 @@ namespace Zeni::Concurrency {
 #endif
   };
 
-#ifndef DISABLE_MULTITHREADING
+#ifdef DISABLE_MULTITHREADING
+  static int64_t g_total_thread_count = 0;
+#else
+  static std::atomic_int64_t g_total_thread_count = 0;
+
   void worker(Thread_Pool_Pimpl * const thread_pool) noexcept {
+    const class Count {
+    public:
+      Count() {
+        g_total_thread_count.fetch_add(1, std::memory_order_relaxed);
+      }
+
+      ~Count() {
+        g_total_thread_count.fetch_sub(1, std::memory_order_relaxed);
+      }
+    } count;
+
     std::shared_ptr<Job_Queue> my_job_queue;
     std::vector<std::shared_ptr<Job_Queue>> other_job_queues;
 
@@ -272,6 +287,14 @@ namespace Zeni::Concurrency {
     ZENI_STATIC_WARNING(sizeof(Thread_Pool_Pimpl) >= sizeof(Thread_Pool::m_pimpl_storage), "Thread_Pool::m_pimpl_size too high.");
 
     get_pimpl()->~Thread_Pool_Pimpl();
+  }
+
+  int64_t Thread_Pool::get_total_workers() noexcept {
+#ifdef DISABLE_MULTITHREADING
+    return 0;
+#else
+    return g_total_thread_count.load(std::memory_order_acquire);
+#endif
   }
 
   std::shared_ptr<Job_Queue> Thread_Pool::get_main_Job_Queue() const noexcept {

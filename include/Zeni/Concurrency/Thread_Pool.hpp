@@ -37,6 +37,9 @@ namespace Zeni::Concurrency {
 
     ZENI_CONCURRENCY_LINKAGE ~Thread_Pool() noexcept;
 
+    /// Get the total number of worker threads across all pools
+    ZENI_CONCURRENCY_LINKAGE static int64_t get_total_workers() noexcept;
+
     ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Job_Queue> get_main_Job_Queue() const noexcept;
 
     ZENI_CONCURRENCY_LINKAGE void finish_jobs() noexcept(false);

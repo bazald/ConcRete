@@ -5,6 +5,7 @@
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
 #include "Zeni/Rete/Raven_Connect_Output.hpp"
+#include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
@@ -158,6 +159,7 @@ namespace Zeni::Rete {
     m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
+    Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
   }
 
   std::shared_ptr<Network::Instantiation> Network::Create(const Network::Printed_Output printed_output) {
@@ -180,6 +182,7 @@ namespace Zeni::Rete {
     m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
+    Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
   }
 
   std::shared_ptr<Network::Instantiation> Network::Create(const Network::Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> thread_pool) {
@@ -318,7 +321,7 @@ namespace Zeni::Rete {
     }
 
     if(action)
-      job_queue->give_one(std::make_shared<Raven_Disconnect_Output>(action->get_input(), shared_from_this(), action, true));
+      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(action, shared_from_this(), action));
   }
 
   std::string Network::next_rule_name(const std::string_view prefix) {
@@ -460,7 +463,7 @@ namespace Zeni::Rete {
     }
 
     if(excised)
-      job_queue->give_one(std::make_shared<Raven_Disconnect_Output>(excised->get_input(), sft, excised, true));
+      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(excised, sft, excised));
   }
 
   bool Network::operator==(const Node &rhs) const {

@@ -69,6 +69,7 @@ private:
 static void debug_dump() {
   std::cerr << std::endl;
   std::cerr << "  g_node_increments                             = " << Zeni::Rete::Counters::g_node_increments.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_try_increment_output_counts                 = " << Zeni::Rete::Counters::g_try_increment_output_counts.load(std::memory_order_acquire) << std::endl;
   std::cerr << "  g_connect_outputs_received                    = " << Zeni::Rete::Counters::g_connect_outputs_received.load(std::memory_order_acquire) << std::endl;
   std::cerr << "  g_connect_gates_received                      = " << Zeni::Rete::Counters::g_connect_gates_received.load(std::memory_order_acquire) << std::endl;
   std::cerr << "  g_disconnect_gates_received                   = " << Zeni::Rete::Counters::g_disconnect_gates_received.load(std::memory_order_acquire) << std::endl;
@@ -96,6 +97,7 @@ static void debug_dump() {
 
 static void debug_reset() {
   Zeni::Rete::Counters::g_node_increments.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_try_increment_output_counts.store(0, std::memory_order_release);
   Zeni::Rete::Counters::g_connect_gates_received.store(0, std::memory_order_release);
   Zeni::Rete::Counters::g_connect_outputs_received.store(0, std::memory_order_release);
   Zeni::Rete::Counters::g_decrement_outputs_received.store(0, std::memory_order_release);
@@ -115,72 +117,35 @@ static void test_Thread_Pool();
 static void test_Rete_Network();
 static void test_Parser();
 
-#if defined(_WIN32)
-
-#include <windows.h>
-#include <tlhelp32.h>
-
-/**
-Returns the thread copunt of the current process or -1 in case of failure.
-*/
-static int GetCurrentThreadCount()
-{
-  // first determine the id of the current process
-  DWORD const  id = GetCurrentProcessId();
-
-  // then get a process list snapshot.
-  HANDLE const  snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0);
-
-  // initialize the process entry structure.
-  PROCESSENTRY32 entry = { 0 };
-  entry.dwSize = sizeof(entry);
-
-  // get the first process info.
-  BOOL  ret = true;
-  ret = Process32First(snapshot, &entry);
-  while (ret && entry.th32ProcessID != id) {
-    ret = Process32Next(snapshot, &entry);
-  }
-  CloseHandle(snapshot);
-  return ret
-    ? entry.cntThreads
-    : -1;
-}
-#else
-static int GetCurrentThreadCount() { return 4; }
-#endif // _WIN32
-
 int main()
 {
-  const int initial_thread_count = GetCurrentThreadCount();
-
   test_Memory_Pool();
-  if (GetCurrentThreadCount() != initial_thread_count) {
-    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
+  if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
     abort();
   }
 
   test_Thread_Pool();
-  if (GetCurrentThreadCount() != initial_thread_count) {
-    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
+  if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
     abort();
   }
 
   debug_dump();
   test_Rete_Network();
   debug_dump();
-  if (GetCurrentThreadCount() != initial_thread_count) {
-    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
+  if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
     abort();
   }
   debug_reset();
 
   std::cerr << "Test: ";
-  for (int i = 1; i != 1001; ++i) {
+  for (int i = 1; i != 11; ++i) {
     std::cerr << ' ' << i;
     test_Rete_Network();
-    if (GetCurrentThreadCount() != initial_thread_count) {
-      std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
+    if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
       debug_dump();
       abort();
     }
@@ -190,8 +155,8 @@ int main()
   std::cerr << std::endl;
 
   test_Parser();
-  if (GetCurrentThreadCount() != initial_thread_count) {
-    std::cerr << "GetCurrentThreadCount() = " << GetCurrentThreadCount() << " instead of " << initial_thread_count << std::endl;
+  if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
     debug_dump();
     abort();
   }
@@ -245,74 +210,79 @@ void test_Thread_Pool() {
 void test_Rete_Network() {
   const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, Zeni::Concurrency::Thread_Pool::Create());
 
-  std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
+  for (int i = 0; i != 101; ++i) {
+    std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
+      {
+        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(1),
+        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(2),
+        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(3),
+        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(4),
+        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(5)
+      }
+    };
+
     {
-      std::make_shared<Zeni::Rete::Symbol_Constant_Int>(1),
-      std::make_shared<Zeni::Rete::Symbol_Constant_Int>(2),
-      std::make_shared<Zeni::Rete::Symbol_Constant_Int>(3),
-      std::make_shared<Zeni::Rete::Symbol_Constant_Int>(4),
-      std::make_shared<Zeni::Rete::Symbol_Constant_Int>(5)
+      auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter0);
+      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+      auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1);
+      auto gated_passthrough01 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter0, unary_gate1);
+      auto action = Zeni::Rete::Node_Action::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), "hello-world", false, gated_passthrough01, std::make_shared<Zeni::Rete::Variable_Indices>(),
+        [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
+        std::cout << '(';
+      }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
+        std::cout << ')';
+      });
+
+      //(*network)->get_Thread_Pool()->get_main_Job_Queue()->give_one(
+      //  std::make_shared<Zeni::Rete::Raven_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
+      //(*network)->get_Thread_Pool()->get_main_Job_Queue()->give_one(
+      //  std::make_shared<Zeni::Rete::Raven_Disconnect_Output>(network->get(), network->get(), filter1, true));
     }
-  };
 
-  {
-    auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-    //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter0);
-    auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-    auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1);
-    auto gated_passthrough01 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter0, unary_gate1);
-    auto action = Zeni::Rete::Node_Action::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), "hello-world", false, gated_passthrough01, std::make_shared<Zeni::Rete::Variable_Indices>(),
-      [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-      std::cout << "Hello world!" << std::endl;
-    }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-      std::cout << "Goodbye world!" << std::endl;
-    });
+    //(*network)->get_Thread_Pool()->finish_jobs();
 
-    //(*network)->get_Thread_Pool()->get_main_Job_Queue()->give_one(
-    //  std::make_shared<Zeni::Rete::Raven_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
-    //(*network)->get_Thread_Pool()->get_main_Job_Queue()->give_one(
-    //  std::make_shared<Zeni::Rete::Raven_Disconnect_Output>(network->get(), network->get(), filter1, true));
+    (*network)->insert_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+
+    //(*network)->get_Thread_Pool()->finish_jobs();
+
+    (*network)->insert_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+
+    //(*network)->get_Thread_Pool()->finish_jobs();
+
+    (*network)->excise_rule((*network)->get_Thread_Pool()->get_main_Job_Queue(), "hello-world", false);
+
+    //(*network)->get_Thread_Pool()->finish_jobs();
+
+    {
+      auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter0);
+      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+      auto unary_gate0 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter0);
+      auto gated_passthrough10 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1, unary_gate0);
+      auto action = Zeni::Rete::Node_Action::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), "gday-world", false, gated_passthrough10, std::make_shared<Zeni::Rete::Variable_Indices>(),
+        [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
+        std::cout << '[';
+      }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
+        std::cout << ']';
+      });
+
+      //(*network)->get_Thread_Pool()->get_main_Job_Queue()->give_one(
+      //  std::make_shared<Zeni::Rete::Raven_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
+    }
+
+    //(*network)->get_Thread_Pool()->finish_jobs();
+
+    (*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+
+    //(*network)->get_Thread_Pool()->finish_jobs();
+
+    (*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+
+    //(*network)->get_Thread_Pool()->finish_jobs();
+
+    //(*network)->excise_all((*network)->get_Thread_Pool()->get_main_Job_Queue());
   }
-
-  //(*network)->get_Thread_Pool()->finish_jobs();
-
-  (*network)->insert_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
-
-  //(*network)->get_Thread_Pool()->finish_jobs();
-
-  (*network)->insert_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
-
-  //(*network)->get_Thread_Pool()->finish_jobs();
-
-  (*network)->excise_rule((*network)->get_Thread_Pool()->get_main_Job_Queue(), "hello-world", false);
-
-  //(*network)->get_Thread_Pool()->finish_jobs();
-
-  {
-    auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-    auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-    auto unary_gate0 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter0);
-    auto gated_passthrough10 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), filter1, unary_gate0);
-    auto action = Zeni::Rete::Node_Action::Create(network->get(), (*network)->get_Thread_Pool()->get_main_Job_Queue(), "gday-world", false, gated_passthrough10, std::make_shared<Zeni::Rete::Variable_Indices>(),
-      [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-      std::cout << "G'day world!" << std::endl;
-    }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-      std::cout << "G'bye world!" << std::endl;
-    });
-
-    //(*network)->get_Thread_Pool()->get_main_Job_Queue()->give_one(
-    //  std::make_shared<Zeni::Rete::Raven_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
-  }
-
-  //(*network)->get_Thread_Pool()->finish_jobs();
-
-  (*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
-
-  //(*network)->get_Thread_Pool()->finish_jobs();
-
-  (*network)->remove_wme((*network)->get_Thread_Pool()->get_main_Job_Queue(), std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
-
-  //(*network)->get_Thread_Pool()->finish_jobs();
 }
 
 void test_Parser() {
