@@ -202,7 +202,7 @@ namespace Zeni::Rete {
     m_thread_pool->finish_jobs();
   }
 
-  void Network::send_disconnect_from_parents(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const Locked_Node_Data &)
+  void Network::send_disconnect_from_parents(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>)
   {
   }
 

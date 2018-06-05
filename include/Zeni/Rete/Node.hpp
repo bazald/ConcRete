@@ -10,7 +10,7 @@
 namespace Zeni::Rete::Counters {
 
   extern ZENI_RETE_LINKAGE std::atomic_int64_t g_node_increments;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_try_increment_output_counts;
+  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_try_increment_child_counts;
   extern ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_gates_received;
   extern ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_outputs_received;
   extern ZENI_RETE_LINKAGE std::atomic_int64_t g_decrement_outputs_received;
@@ -57,7 +57,7 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE Node(const int64_t height, const int64_t size, const int64_t token_size);
 
-    ZENI_RETE_LINKAGE virtual void send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const Locked_Node_Data &locked_node_data) = 0;
+    ZENI_RETE_LINKAGE virtual void send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) = 0;
 
   public:
     class Unlocked_Node_Data {
@@ -71,7 +71,6 @@ namespace Zeni::Rete {
       Unlocked_Node_Data();
 
     private:
-      int64_t m_output_count;
       Outputs m_outputs;
       Outputs m_antioutputs;
       Tokens m_output_tokens;
@@ -88,7 +87,6 @@ namespace Zeni::Rete {
     public:
       ZENI_RETE_LINKAGE Locked_Node_Data_Const(const Node * node);
 
-      ZENI_RETE_LINKAGE int64_t get_output_count() const;
       ZENI_RETE_LINKAGE const Outputs & get_outputs() const;
       ZENI_RETE_LINKAGE const Outputs & get_antioutputs() const;
       ZENI_RETE_LINKAGE const Tokens & get_output_tokens() const;
@@ -107,7 +105,6 @@ namespace Zeni::Rete {
     public:
       ZENI_RETE_LINKAGE Locked_Node_Data(Node * node);
 
-      ZENI_RETE_LINKAGE int64_t & modify_output_count();
       ZENI_RETE_LINKAGE Outputs & modify_outputs();
       ZENI_RETE_LINKAGE Outputs & modify_antioutputs();
       ZENI_RETE_LINKAGE Tokens & modify_output_tokens();
@@ -124,8 +121,8 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE virtual std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() = 0;
 
-    /// Increments the output count if greater than 0 and returns true, otherwise returns false. Only function that ought to result in a double mutex lock, when a parent Node calls increment_output_count on a child Node.
-    ZENI_RETE_LINKAGE bool try_increment_output_count();
+    /// Increments the child count if greater than 0 and returns true, otherwise returns false.
+    ZENI_RETE_LINKAGE bool try_increment_child_count();
     /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
     ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output);
     /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
@@ -155,9 +152,17 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual bool receive(const Raven_Disconnect_Output &raven, Locked_Node_Data &locked_node_data);
 
   private:
+    int64_t decrement_child_count();
+
     const int64_t m_height;
     const int64_t m_size;
     const int64_t m_token_size;
+
+#ifdef DISABLE_MULTITHREADING
+    int64_t m_child_count = 1;
+#else
+    std::atomic_int64_t m_child_count = 1;
+#endif
 
     std::shared_ptr<Unlocked_Node_Data> m_unlocked_node_data;
 

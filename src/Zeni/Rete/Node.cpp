@@ -19,7 +19,7 @@
 namespace Zeni::Rete::Counters {
 
   ZENI_RETE_LINKAGE std::atomic_int64_t g_node_increments = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_try_increment_output_counts = 0;
+  ZENI_RETE_LINKAGE std::atomic_int64_t g_try_increment_child_counts = 0;
   ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_gates_received = 0;
   ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_outputs_received = 0;
   ZENI_RETE_LINKAGE std::atomic_int64_t g_decrement_outputs_received = 0;
@@ -50,9 +50,7 @@ namespace Zeni::Rete {
   {
   }
 
-  Node::Unlocked_Node_Data::Unlocked_Node_Data()
-    : m_output_count(1)
-  {
+  Node::Unlocked_Node_Data::Unlocked_Node_Data() {
     Counters::g_node_increments.fetch_add(1, std::memory_order_relaxed);
   }
 
@@ -60,10 +58,6 @@ namespace Zeni::Rete {
     : m_lock(node->m_mutex),
     m_data(node->m_unlocked_node_data)
   {
-  }
-
-  int64_t Node::Locked_Node_Data_Const::get_output_count() const {
-    return m_data->m_output_count;
   }
 
   const Node::Outputs & Node::Locked_Node_Data_Const::get_outputs() const {
@@ -90,10 +84,6 @@ namespace Zeni::Rete {
     : Locked_Node_Data_Const(node),
     m_data(node->m_unlocked_node_data)
   {
-  }
-
-  int64_t & Node::Locked_Node_Data::modify_output_count() {
-    return m_data->m_output_count;
   }
 
   Node::Outputs & Node::Locked_Node_Data::modify_outputs() {
@@ -128,15 +118,31 @@ namespace Zeni::Rete {
     return m_token_size;
   }
 
-  bool Node::try_increment_output_count() {
-    Locked_Node_Data locked_node_data(this);
-    if (locked_node_data.get_output_count() > 0) {
-      Counters::g_node_increments.fetch_add(1, std::memory_order_relaxed);
-      Counters::g_try_increment_output_counts.fetch_add(1, std::memory_order_relaxed);
-      ++locked_node_data.modify_output_count();
-      return true;
+  bool Node::try_increment_child_count() {
+#ifdef DISABLE_MULTITHREADING
+    if (m_child_count == 0)
+      return false;
+    ++m_child_count;
+#else
+    for (;;) {
+      int64_t child_count = m_child_count.load(std::memory_order_acquire);
+      if (child_count == 0)
+        return false;
+      if (m_child_count.compare_exchange_weak(child_count, child_count + 1, std::memory_order_acq_rel))
+        break;
     }
-    return false;
+#endif
+    Counters::g_node_increments.fetch_add(1, std::memory_order_relaxed);
+    Counters::g_try_increment_child_counts.fetch_add(1, std::memory_order_relaxed);
+    return true;
+  }
+
+  int64_t Node::decrement_child_count() {
+#ifdef DISABLE_MULTITHREADING
+    return --m_child_count;
+#else
+    return m_child_count.fetch_sub(1, std::memory_order_acq_rel) - 1;
+#endif
   }
 
   std::shared_ptr<Node> Node::connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output) {
@@ -148,7 +154,7 @@ namespace Zeni::Rete {
       /// TODO: Find a way to kill this loop! Optimize!
       for (auto &existing_output : locked_node_data.get_gates()) {
         if (*existing_output == *output) {
-          if (existing_output->try_increment_output_count()) {
+          if (existing_output->try_increment_child_count()) {
             Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
             return existing_output;
           }
@@ -171,7 +177,7 @@ namespace Zeni::Rete {
       /// TODO: Find a way to kill this loop! Optimize!
       for (auto &existing_output : locked_node_data.get_outputs()) {
         if (*existing_output == *output) {
-          if (existing_output->try_increment_output_count()) {
+          if (existing_output->try_increment_child_count()) {
             Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
             return existing_output;
           }
@@ -199,17 +205,8 @@ namespace Zeni::Rete {
   }
 
   void Node::receive(const Raven_Decrement_Output_Count &raven) {
-    const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
-
-    {
-      Locked_Node_Data locked_node_data(this);
-
-      --locked_node_data.modify_output_count();
-      //std::cerr << "Decrement to " << locked_node_data.get_output_count() << ": " << typeid(*this).name() << std::endl;
-      if (locked_node_data.get_output_count() == 0)
-        send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
-    }
+      if (decrement_child_count() == 0)
+        send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue());
   }
 
   void Node::receive(const Raven_Disconnect_Gate &raven) {
@@ -290,12 +287,8 @@ namespace Zeni::Rete {
       else
         locked_node_data.modify_antigates().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
 
-      if (raven.decrement_output_count) {
-        --locked_node_data.modify_output_count();
-        //std::cerr << "Decrement to " << locked_node_data.get_output_count() << ": " << typeid(*this).name() << std::endl;
-        if (locked_node_data.get_output_count() == 0)
-          send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
-      }
+      if (raven.decrement_output_count && decrement_child_count() == 0)
+        send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue());
 
       if (erased_last && !locked_node_data.get_output_tokens().empty())
         job = std::make_shared<Raven_Status_Empty>(std::const_pointer_cast<Node>(raven.get_sender()), raven.get_Network(), sft);
@@ -323,12 +316,8 @@ namespace Zeni::Rete {
       else
         locked_node_data.modify_antioutputs().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
 
-      if (raven.decrement_output_count) {
-        --locked_node_data.modify_output_count();
-        //std::cerr << "Decrement to " << locked_node_data.get_output_count() << ": " << typeid(*this).name() << std::endl;
-        if (locked_node_data.get_output_count() == 0)
-          send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue(), locked_node_data);
-      }
+      if (raven.decrement_output_count && decrement_child_count() == 0)
+        send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue());
 
       if (erased_last) {
         jobs.reserve(locked_node_data.get_output_tokens().size());

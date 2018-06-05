@@ -69,7 +69,7 @@ private:
 static void debug_dump() {
   std::cerr << std::endl;
   std::cerr << "  g_node_increments                             = " << Zeni::Rete::Counters::g_node_increments.load(std::memory_order_acquire) << std::endl;
-  std::cerr << "  g_try_increment_output_counts                 = " << Zeni::Rete::Counters::g_try_increment_output_counts.load(std::memory_order_acquire) << std::endl;
+  std::cerr << "  g_try_increment_child_counts                 = " << Zeni::Rete::Counters::g_try_increment_child_counts.load(std::memory_order_acquire) << std::endl;
   std::cerr << "  g_connect_outputs_received                    = " << Zeni::Rete::Counters::g_connect_outputs_received.load(std::memory_order_acquire) << std::endl;
   std::cerr << "  g_connect_gates_received                      = " << Zeni::Rete::Counters::g_connect_gates_received.load(std::memory_order_acquire) << std::endl;
   std::cerr << "  g_disconnect_gates_received                   = " << Zeni::Rete::Counters::g_disconnect_gates_received.load(std::memory_order_acquire) << std::endl;
@@ -97,7 +97,7 @@ static void debug_dump() {
 
 static void debug_reset() {
   Zeni::Rete::Counters::g_node_increments.store(0, std::memory_order_release);
-  Zeni::Rete::Counters::g_try_increment_output_counts.store(0, std::memory_order_release);
+  Zeni::Rete::Counters::g_try_increment_child_counts.store(0, std::memory_order_release);
   Zeni::Rete::Counters::g_connect_gates_received.store(0, std::memory_order_release);
   Zeni::Rete::Counters::g_connect_outputs_received.store(0, std::memory_order_release);
   Zeni::Rete::Counters::g_decrement_outputs_received.store(0, std::memory_order_release);
