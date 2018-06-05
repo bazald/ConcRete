@@ -57,7 +57,7 @@ namespace Zeni::Rete {
     {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      if (!locked_node_unary_data.get_input_tokens().empty()) {
+      if (!locked_node_unary_data.get_input_tokens().positive.empty()) {
         const auto inputs = std::const_pointer_cast<Node>(raven.get_sender())->get_inputs();
         jobs.emplace_back(std::make_shared<Raven_Connect_Gate>(inputs.first, raven.get_Network(), raven.get_sender()));
         if (inputs.second)
@@ -80,7 +80,7 @@ namespace Zeni::Rete {
     {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      if (!locked_node_unary_data.get_input_tokens().empty()) {
+      if (!locked_node_unary_data.get_input_tokens().positive.empty()) {
         const auto inputs = std::const_pointer_cast<Node>(raven.get_sender())->get_inputs();
         jobs.emplace_back(std::make_shared<Raven_Connect_Output>(inputs.first, raven.get_Network(), raven.get_sender()));
         if (inputs.second)
@@ -103,7 +103,7 @@ namespace Zeni::Rete {
     {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      if (!locked_node_unary_data.get_input_tokens().empty()) {
+      if (!locked_node_unary_data.get_input_tokens().positive.empty()) {
         const auto inputs = std::const_pointer_cast<Node>(raven.get_sender())->get_inputs();
         jobs.emplace_back(std::make_shared<Raven_Disconnect_Gate>(inputs.first, raven.get_Network(), raven.get_sender(), false));
         if (inputs.second)
@@ -126,7 +126,7 @@ namespace Zeni::Rete {
     {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      if (!locked_node_unary_data.get_input_tokens().empty()) {
+      if (!locked_node_unary_data.get_input_tokens().positive.empty()) {
         const auto inputs = std::const_pointer_cast<Node>(raven.get_sender())->get_inputs();
         jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(inputs.first, raven.get_Network(), raven.get_sender(), false));
         if(inputs.second)
@@ -145,29 +145,29 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      if (locked_node_unary_data.get_input_tokens().empty()) {
-        locked_node_unary_data.modify_input_antitokens().emplace(std::shared_ptr<Token>());
+      if (locked_node_unary_data.get_input_tokens().positive.empty()) {
+        locked_node_unary_data.modify_input_tokens().negative.emplace(std::shared_ptr<Token>());
         return;
       }
 
-      locked_node_unary_data.modify_input_tokens().erase(locked_node_unary_data.get_input_tokens().begin());
-      if (!locked_node_unary_data.get_input_tokens().empty())
+      locked_node_unary_data.modify_input_tokens().positive.erase(locked_node_unary_data.get_input_tokens().positive.begin());
+      if (!locked_node_unary_data.get_input_tokens().positive.empty())
         return;
 
       size_t num_jobs = 0;
-      for (auto &output : locked_node_data.get_outputs())
+      for (auto &output : locked_node_data.get_outputs().positive)
         num_jobs += output->get_inputs().second ? 2 : 1;
-      for (auto &output : locked_node_data.get_gates())
+      for (auto &output : locked_node_data.get_gates().positive)
         num_jobs += output->get_inputs().second ? 2 : 1;
 
       jobs.reserve(num_jobs);
-      for (auto &output : locked_node_data.get_outputs()) {
+      for (auto &output : locked_node_data.get_outputs().positive) {
         const auto inputs = output->get_inputs();
         jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(inputs.first, raven.get_Network(), output, false));
         if (inputs.second)
           jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(inputs.second, raven.get_Network(), output, false));
       }
-      for (auto &output : locked_node_data.get_gates()) {
+      for (auto &output : locked_node_data.get_gates().positive) {
         const auto inputs = output->get_inputs();
         jobs.emplace_back(std::make_shared<Raven_Disconnect_Gate>(inputs.first, raven.get_Network(), output, false));
         if (inputs.second)
@@ -186,30 +186,30 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      if (!locked_node_unary_data.get_input_antitokens().empty()) {
-        locked_node_unary_data.modify_input_antitokens().erase(locked_node_unary_data.get_input_antitokens().begin());
+      if (!locked_node_unary_data.get_input_tokens().negative.empty()) {
+        locked_node_unary_data.modify_input_tokens().negative.erase(locked_node_unary_data.get_input_tokens().negative.begin());
         return;
       }
 
-      const bool first_insertion = locked_node_unary_data.get_input_tokens().empty();
-      locked_node_unary_data.modify_input_tokens().emplace(std::shared_ptr<Token>());
+      const bool first_insertion = locked_node_unary_data.get_input_tokens().positive.empty();
+      locked_node_unary_data.modify_input_tokens().positive.emplace(std::shared_ptr<Token>());
       if (!first_insertion)
         return;
 
       size_t num_jobs = 0;
-      for (auto &output : locked_node_data.get_outputs())
+      for (auto &output : locked_node_data.get_outputs().positive)
         num_jobs += output->get_inputs().second ? 2 : 1;
-      for (auto &output : locked_node_data.get_gates())
+      for (auto &output : locked_node_data.get_gates().positive)
         num_jobs += output->get_inputs().second ? 2 : 1;
 
       jobs.reserve(num_jobs);
-      for (auto &output : locked_node_data.get_outputs()) {
+      for (auto &output : locked_node_data.get_outputs().positive) {
         const auto inputs = output->get_inputs();
         jobs.emplace_back(std::make_shared<Raven_Connect_Output>(inputs.first, raven.get_Network(), output));
         if(inputs.second)
           jobs.emplace_back(std::make_shared<Raven_Connect_Output>(inputs.second, raven.get_Network(), output));
       }
-      for (auto &output : locked_node_data.get_gates()) {
+      for (auto &output : locked_node_data.get_gates().positive) {
         const auto inputs = output->get_inputs();
         jobs.emplace_back(std::make_shared<Raven_Connect_Gate>(inputs.first, raven.get_Network(), output));
         if (inputs.second)

@@ -64,20 +64,12 @@ namespace Zeni::Rete {
     return m_data->m_outputs;
   }
 
-  const Node::Outputs & Node::Locked_Node_Data_Const::get_antioutputs() const {
-    return m_data->m_antioutputs;
-  }
-
-  const Tokens & Node::Locked_Node_Data_Const::get_output_tokens() const {
+  const Tokens_Output & Node::Locked_Node_Data_Const::get_output_tokens() const {
     return m_data->m_output_tokens;
   }
 
   const Node::Outputs & Node::Locked_Node_Data_Const::get_gates() const {
     return m_data->m_gates;
-  }
-
-  const Node::Outputs & Node::Locked_Node_Data_Const::get_antigates() const {
-    return m_data->m_antigates;
   }
 
   Node::Locked_Node_Data::Locked_Node_Data(Node * node)
@@ -90,20 +82,12 @@ namespace Zeni::Rete {
     return m_data->m_outputs;
   }
 
-  Node::Outputs & Node::Locked_Node_Data::modify_antioutputs() {
-    return m_data->m_antioutputs;
-  }
-
-  Tokens & Node::Locked_Node_Data::modify_output_tokens() {
+  Tokens_Output & Node::Locked_Node_Data::modify_output_tokens() {
     return m_data->m_output_tokens;
   }
 
   Node::Outputs & Node::Locked_Node_Data::modify_gates() {
     return m_data->m_gates;
-  }
-
-  Node::Outputs & Node::Locked_Node_Data::modify_antigates() {
-    return m_data->m_antigates;
   }
 
   int64_t Node::get_height() const {
@@ -152,7 +136,7 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
 
       /// TODO: Find a way to kill this loop! Optimize!
-      for (auto &existing_output : locked_node_data.get_gates()) {
+      for (auto &existing_output : locked_node_data.get_gates().positive) {
         if (*existing_output == *output) {
           if (existing_output->try_increment_child_count()) {
             Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
@@ -175,7 +159,7 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
 
       /// TODO: Find a way to kill this loop! Optimize!
-      for (auto &existing_output : locked_node_data.get_outputs()) {
+      for (auto &existing_output : locked_node_data.get_outputs().positive) {
         if (*existing_output == *output) {
           if (existing_output->try_increment_child_count()) {
             Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
@@ -225,14 +209,14 @@ namespace Zeni::Rete {
     bool first_insertion = false;
 
     {
-      const auto found = locked_node_data.get_antigates().equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
+      const auto found = locked_node_data.get_gates().negative.equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
       if (found.first != found.second) {
-        locked_node_data.modify_antigates().erase(found.first);
+        locked_node_data.modify_gates().negative.erase(found.first);
         return false;
       }
 
-      first_insertion = locked_node_data.get_gates().find(std::const_pointer_cast<Node>(raven.get_sender())) == locked_node_data.get_gates().cend();
-      locked_node_data.modify_gates().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
+      first_insertion = locked_node_data.get_gates().positive.find(std::const_pointer_cast<Node>(raven.get_sender())) == locked_node_data.get_gates().positive.cend();
+      locked_node_data.modify_gates().positive.emplace(std::const_pointer_cast<Node>(raven.get_sender()));
 
       if (first_insertion && !locked_node_data.get_output_tokens().empty())
         job = std::make_shared<Raven_Status_Nonempty>(std::const_pointer_cast<Node>(raven.get_sender()), raven.get_Network(), sft);
@@ -250,14 +234,14 @@ namespace Zeni::Rete {
     bool first_insertion = false;
 
     {
-      const auto found = locked_node_data.get_antioutputs().equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
+      const auto found = locked_node_data.get_outputs().negative.equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
       if (found.first != found.second) {
-        locked_node_data.modify_antioutputs().erase(found.first);
+        locked_node_data.modify_outputs().negative.erase(found.first);
         return false;
       }
 
-      first_insertion = locked_node_data.get_outputs().find(std::const_pointer_cast<Node>(raven.get_sender())) == locked_node_data.get_outputs().cend();
-      locked_node_data.modify_outputs().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
+      first_insertion = locked_node_data.get_outputs().positive.find(std::const_pointer_cast<Node>(raven.get_sender())) == locked_node_data.get_outputs().positive.cend();
+      locked_node_data.modify_outputs().positive.emplace(std::const_pointer_cast<Node>(raven.get_sender()));
 
       if (first_insertion) {
         jobs.reserve(locked_node_data.get_output_tokens().size());
@@ -279,13 +263,13 @@ namespace Zeni::Rete {
     {
       //Locked_Node_Data locked_node_data(this);
 
-      auto found = locked_node_data.get_gates().equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
+      auto found = locked_node_data.get_gates().positive.equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
       if (found.first != found.second) {
-        locked_node_data.modify_gates().erase(found.first++);
+        locked_node_data.modify_gates().positive.erase(found.first++);
         erased_last = found.first == found.second;
       }
       else
-        locked_node_data.modify_antigates().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
+        locked_node_data.modify_gates().negative.emplace(std::const_pointer_cast<Node>(raven.get_sender()));
 
       if (raven.decrement_output_count && decrement_child_count() == 0)
         send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue());
@@ -308,13 +292,13 @@ namespace Zeni::Rete {
     {
       //Locked_Node_Data locked_node_data(this);
 
-      auto found = locked_node_data.get_outputs().equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
+      auto found = locked_node_data.get_outputs().positive.equal_range(std::const_pointer_cast<Node>(raven.get_sender()));
       if (found.first != found.second) {
-        locked_node_data.modify_outputs().erase(found.first++);
+        locked_node_data.modify_outputs().positive.erase(found.first++);
         erased_last = found.first == found.second;
       }
       else
-        locked_node_data.modify_antioutputs().emplace(std::const_pointer_cast<Node>(raven.get_sender()));
+        locked_node_data.modify_outputs().negative.emplace(std::const_pointer_cast<Node>(raven.get_sender()));
 
       if (raven.decrement_output_count && decrement_child_count() == 0)
         send_disconnect_from_parents(raven.get_Network(), raven.get_Job_Queue());

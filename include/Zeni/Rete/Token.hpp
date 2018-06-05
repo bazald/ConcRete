@@ -28,7 +28,14 @@ namespace Zeni::Rete {
     int64_t m_size;
   };
 
-  typedef std::unordered_multiset<std::shared_ptr<const Token> /*, Zeni::hash_deref<Token>, Zeni::compare_deref_eq*/> Tokens;
+  typedef std::unordered_multiset<std::shared_ptr<const Token> /*, Zeni::hash_deref<Token>, Zeni::compare_deref_eq*/> Token_Multiset;
+
+  struct Tokens_Input {
+    Token_Multiset positive;
+    Token_Multiset negative;
+  };
+
+  typedef Token_Multiset Tokens_Output;
 
 }
 

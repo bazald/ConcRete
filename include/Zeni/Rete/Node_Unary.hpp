@@ -24,8 +24,7 @@ namespace Zeni::Rete {
       Unlocked_Node_Unary_Data();
 
     private:
-      Tokens m_input_tokens;
-      Tokens m_input_antitokens;
+      Tokens_Input m_input_tokens;
     };
 
     class Locked_Node_Unary_Data_Const {
@@ -37,8 +36,7 @@ namespace Zeni::Rete {
     public:
       ZENI_RETE_LINKAGE Locked_Node_Unary_Data_Const(const Node_Unary * node, const Locked_Node_Data_Const &node_data);
 
-      ZENI_RETE_LINKAGE const Tokens & get_input_tokens() const;
-      ZENI_RETE_LINKAGE const Tokens & get_input_antitokens() const;
+      ZENI_RETE_LINKAGE const Tokens_Input & get_input_tokens() const;
 
     private:
       const std::shared_ptr<const Unlocked_Node_Unary_Data> m_data;
@@ -51,8 +49,7 @@ namespace Zeni::Rete {
     public:
       ZENI_RETE_LINKAGE Locked_Node_Unary_Data(Node_Unary * node, const Locked_Node_Data &node_data);
 
-      ZENI_RETE_LINKAGE Tokens & modify_input_tokens();
-      ZENI_RETE_LINKAGE Tokens & modify_input_antitokens();
+      ZENI_RETE_LINKAGE Tokens_Input & modify_input_tokens();
 
     private:
       const std::shared_ptr<Unlocked_Node_Unary_Data> m_data;

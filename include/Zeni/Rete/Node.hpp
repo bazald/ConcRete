@@ -45,7 +45,10 @@ namespace Zeni::Rete {
     Node & operator=(const Node &) = delete;
 
   public:
-    typedef std::unordered_multiset<std::shared_ptr<Node>> Outputs;
+    struct Outputs {
+      std::unordered_multiset<std::shared_ptr<Node>> positive;
+      std::unordered_multiset<std::shared_ptr<Node>> negative;
+    };
 
     class Unlocked_Node_Data;
     class Locked_Node_Data_Const;
@@ -71,11 +74,9 @@ namespace Zeni::Rete {
       Unlocked_Node_Data();
 
     private:
-      Outputs m_outputs;
-      Outputs m_antioutputs;
-      Tokens m_output_tokens;
       Outputs m_gates;
-      Outputs m_antigates;
+      Outputs m_outputs;
+      Tokens_Output m_output_tokens;
     };
 
     class Locked_Node_Data_Const {
@@ -87,11 +88,9 @@ namespace Zeni::Rete {
     public:
       ZENI_RETE_LINKAGE Locked_Node_Data_Const(const Node * node);
 
-      ZENI_RETE_LINKAGE const Outputs & get_outputs() const;
-      ZENI_RETE_LINKAGE const Outputs & get_antioutputs() const;
-      ZENI_RETE_LINKAGE const Tokens & get_output_tokens() const;
       ZENI_RETE_LINKAGE const Outputs & get_gates() const;
-      ZENI_RETE_LINKAGE const Outputs & get_antigates() const;
+      ZENI_RETE_LINKAGE const Outputs & get_outputs() const;
+      ZENI_RETE_LINKAGE const Tokens_Output & get_output_tokens() const;
 
     private:
       const Concurrency::Mutex::Lock m_lock;
@@ -105,11 +104,9 @@ namespace Zeni::Rete {
     public:
       ZENI_RETE_LINKAGE Locked_Node_Data(Node * node);
 
-      ZENI_RETE_LINKAGE Outputs & modify_outputs();
-      ZENI_RETE_LINKAGE Outputs & modify_antioutputs();
-      ZENI_RETE_LINKAGE Tokens & modify_output_tokens();
       ZENI_RETE_LINKAGE Outputs & modify_gates();
-      ZENI_RETE_LINKAGE Outputs & modify_antigates();
+      ZENI_RETE_LINKAGE Outputs & modify_outputs();
+      ZENI_RETE_LINKAGE Tokens_Output & modify_output_tokens();
 
     private:
       const std::shared_ptr<Unlocked_Node_Data> m_data;

@@ -372,8 +372,8 @@ namespace Zeni::Rete {
 
       locked_network_data.modify_wme_tokens().emplace(wme, output_token);
       locked_node_data.modify_output_tokens().emplace(output_token);
-      jobs.reserve(locked_node_data.get_outputs().size());
-      for (auto &output : locked_node_data.get_outputs())
+      jobs.reserve(locked_node_data.get_outputs().positive.size());
+      for (auto &output : locked_node_data.get_outputs().positive)
         jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, sft, nullptr, output_token));
     }
 
@@ -401,8 +401,8 @@ namespace Zeni::Rete {
       auto found2 = locked_node_data.get_output_tokens().find(found->second);
       assert(found2 != locked_node_data.get_output_tokens().end());
 
-      jobs.reserve(locked_node_data.get_outputs().size());
-      for (auto &output : locked_node_data.get_outputs())
+      jobs.reserve(locked_node_data.get_outputs().positive.size());
+      for (auto &output : locked_node_data.get_outputs().positive)
         jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, *found2));
 
       locked_node_data.modify_output_tokens().erase(found2);
@@ -420,9 +420,9 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
       Locked_Network_Data locked_network_data(this, locked_node_data);
 
-      jobs.reserve(locked_node_data.get_output_tokens().size() * locked_node_data.get_outputs().size());
+      jobs.reserve(locked_node_data.get_output_tokens().size() * locked_node_data.get_outputs().positive.size());
       for (auto &token : locked_node_data.get_output_tokens()) {
-        for (auto &output : locked_node_data.get_outputs())
+        for (auto &output : locked_node_data.get_outputs().positive)
           jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, token));
       }
       locked_node_data.modify_output_tokens().clear();

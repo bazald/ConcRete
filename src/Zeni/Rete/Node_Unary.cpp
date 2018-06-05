@@ -18,12 +18,8 @@ namespace Zeni::Rete {
   {
   }
 
-  const Tokens & Node_Unary::Locked_Node_Unary_Data_Const::get_input_tokens() const {
+  const Tokens_Input & Node_Unary::Locked_Node_Unary_Data_Const::get_input_tokens() const {
     return m_data->m_input_tokens;
-  }
-
-  const Tokens & Node_Unary::Locked_Node_Unary_Data_Const::get_input_antitokens() const {
-    return m_data->m_input_antitokens;
   }
 
   Node_Unary::Locked_Node_Unary_Data::Locked_Node_Unary_Data(Node_Unary * node, const Locked_Node_Data &data)
@@ -32,12 +28,8 @@ namespace Zeni::Rete {
   {
   }
 
-  Tokens & Node_Unary::Locked_Node_Unary_Data::modify_input_tokens() {
+  Tokens_Input & Node_Unary::Locked_Node_Unary_Data::modify_input_tokens() {
     return m_data->m_input_tokens;
-  }
-
-  Tokens & Node_Unary::Locked_Node_Unary_Data::modify_input_antitokens() {
-    return m_data->m_input_antitokens;
   }
 
   Node_Unary::Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const std::shared_ptr<Node> input)

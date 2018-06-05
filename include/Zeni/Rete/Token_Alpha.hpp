@@ -19,8 +19,6 @@ namespace Zeni::Rete {
     std::shared_ptr<const WME> m_wme;
   };
 
-  typedef std::unordered_multiset<std::shared_ptr<const Token> /*, Zeni::hash_deref<Token>, Zeni::compare_deref_eq*/> Tokens;
-
 }
 
 #endif
