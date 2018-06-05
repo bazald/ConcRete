@@ -83,22 +83,26 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      auto found = locked_node_unary_data.get_input_tokens().negative.find(token);
-      if (found != locked_node_unary_data.get_input_tokens().negative.end()) {
-        locked_node_unary_data.modify_input_tokens().negative.erase(found);
+      const Outputs &gates = locked_node_data.get_gates();
+      const Outputs &outputs = locked_node_data.get_outputs();
+      Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
+
+      auto found = tokens_input.negative.find(token);
+      if (found != tokens_input.negative.end()) {
+        tokens_input.negative.erase(found);
         return;
       }
 
       const bool empty = locked_node_data.get_output_tokens().empty();
 
-      locked_node_unary_data.modify_input_tokens().positive.emplace(token);
+      tokens_input.positive.emplace(token);
       locked_node_data.modify_output_tokens().emplace(token);
 
-      jobs.reserve(locked_node_data.get_outputs().positive.size() + (empty ? locked_node_data.get_gates().positive.size() : 0));
-      for (auto &output : locked_node_data.get_outputs().positive)
+      jobs.reserve(outputs.positive.size() + (empty ? gates.positive.size() : 0));
+      for (auto &output : outputs.positive)
         jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, raven.get_Network(), sft, token));
       if (empty) {
-        for (auto &output : locked_node_data.get_gates().positive)
+        for (auto &output : gates.positive)
           jobs.emplace_back(std::make_shared<Raven_Status_Nonempty>(output, raven.get_Network(), sft));
       }
     }
@@ -132,22 +136,26 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      auto found = locked_node_unary_data.get_input_tokens().positive.find(token);
-      if (found == locked_node_unary_data.get_input_tokens().positive.end()) {
-        locked_node_unary_data.modify_input_tokens().negative.emplace(token);
+      const Outputs &gates = locked_node_data.get_gates();
+      const Outputs &outputs = locked_node_data.get_outputs();
+      Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
+
+      auto found = tokens_input.positive.find(token);
+      if (found == tokens_input.positive.end()) {
+        tokens_input.negative.emplace(token);
         return;
       }
 
-      locked_node_unary_data.modify_input_tokens().positive.erase(found);
+      tokens_input.positive.erase(found);
       locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(token));
 
       const bool empty = locked_node_data.get_output_tokens().empty();
 
-      jobs.reserve(locked_node_data.get_outputs().positive.size() + (empty ? locked_node_data.get_gates().positive.size() : 0));
-      for (auto &output : locked_node_data.get_outputs().positive)
+      jobs.reserve(outputs.positive.size() + (empty ? gates.positive.size() : 0));
+      for (auto &output : outputs.positive)
         jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, raven.get_Network(), sft, token));
       if (empty) {
-        for (auto &output : locked_node_data.get_gates().positive)
+        for (auto &output : gates.positive)
           jobs.emplace_back(std::make_shared<Raven_Status_Empty>(output, raven.get_Network(), sft));
       }
     }

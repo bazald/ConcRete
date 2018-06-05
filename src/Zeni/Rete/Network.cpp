@@ -26,13 +26,17 @@ namespace Zeni::Rete {
     friend class Locked_Network_Data;
 
   public:
+    struct WMEs {
+      std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> positive;
+      std::unordered_multiset<std::shared_ptr<const WME>, hash_deref<WME>, compare_deref_eq> negative;
+    };
+
     Unlocked_Network_Data() {}
 
   private:
     std::unordered_map<std::string, std::shared_ptr<Node_Action>> m_rules;
     int64_t m_rule_name_index = 0;
-    std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> m_wme_tokens;
-    std::unordered_multiset<std::shared_ptr<const WME>, hash_deref<WME>, compare_deref_eq> m_antiwmes;
+    WMEs m_wmes;
   };
 
   class Locked_Network_Data;
@@ -57,12 +61,8 @@ namespace Zeni::Rete {
       return m_data->m_rule_name_index;
     }
 
-    const std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> & get_wme_tokens() const {
-      return m_data->m_wme_tokens;
-    }
-
-    const std::unordered_multiset<std::shared_ptr<const WME>, hash_deref<WME>, compare_deref_eq> & get_antiwmes() const {
-      return m_data->m_antiwmes;
+    const Unlocked_Network_Data::WMEs & get_wmes() const {
+      return m_data->m_wmes;
     }
 
   private:
@@ -88,12 +88,8 @@ namespace Zeni::Rete {
       return m_data->m_rule_name_index;
     }
 
-    std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> & modify_wme_tokens() {
-      return m_data->m_wme_tokens;
-    }
-
-    std::unordered_multiset<std::shared_ptr<const WME>, hash_deref<WME>, compare_deref_eq> & modify_antiwmes() {
-      return m_data->m_antiwmes;
+    Unlocked_Network_Data::WMEs & modify_wmes() const {
+      return m_data->m_wmes;
     }
 
   private:
@@ -364,16 +360,19 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
       Locked_Network_Data locked_network_data(this, locked_node_data);
 
-      auto found = locked_network_data.get_antiwmes().find(wme);
-      if (found != locked_network_data.get_antiwmes().end()) {
-        locked_network_data.modify_antiwmes().erase(found);
+      const Outputs &outputs = locked_node_data.get_outputs();
+      Unlocked_Network_Data::WMEs &wmes = locked_network_data.modify_wmes();
+
+      auto found = wmes.negative.find(wme);
+      if (found != wmes.negative.end()) {
+        wmes.negative.erase(found);
         return;
       }
 
-      locked_network_data.modify_wme_tokens().emplace(wme, output_token);
+      wmes.positive.emplace(wme, output_token);
       locked_node_data.modify_output_tokens().emplace(output_token);
-      jobs.reserve(locked_node_data.get_outputs().positive.size());
-      for (auto &output : locked_node_data.get_outputs().positive)
+      jobs.reserve(outputs.positive.size());
+      for (auto &output : outputs.positive)
         jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, sft, nullptr, output_token));
     }
 
@@ -392,21 +391,24 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
       Locked_Network_Data locked_network_data(this, locked_node_data);
 
-      auto found = locked_network_data.get_wme_tokens().find(wme);
-      if (found == locked_network_data.get_wme_tokens().end()) {
-        locked_network_data.modify_antiwmes().emplace(wme);
+      const Outputs &outputs = locked_node_data.get_outputs();
+      Unlocked_Network_Data::WMEs &wmes = locked_network_data.modify_wmes();
+
+      auto found = wmes.positive.find(wme);
+      if (found == wmes.positive.end()) {
+        wmes.negative.emplace(wme);
         return;
       }
 
       auto found2 = locked_node_data.get_output_tokens().find(found->second);
       assert(found2 != locked_node_data.get_output_tokens().end());
 
-      jobs.reserve(locked_node_data.get_outputs().positive.size());
-      for (auto &output : locked_node_data.get_outputs().positive)
+      jobs.reserve(outputs.positive.size());
+      for (auto &output : outputs.positive)
         jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, *found2));
 
       locked_node_data.modify_output_tokens().erase(found2);
-      locked_network_data.modify_wme_tokens().erase(found);
+      wmes.positive.erase(found);
     }
 
     job_queue->give_many(std::move(jobs));
@@ -420,13 +422,16 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
       Locked_Network_Data locked_network_data(this, locked_node_data);
 
-      jobs.reserve(locked_node_data.get_output_tokens().size() * locked_node_data.get_outputs().positive.size());
+      const Outputs &outputs = locked_node_data.get_outputs();
+      Unlocked_Network_Data::WMEs &wmes = locked_network_data.modify_wmes();
+
+      jobs.reserve(locked_node_data.get_output_tokens().size() * outputs.positive.size());
       for (auto &token : locked_node_data.get_output_tokens()) {
-        for (auto &output : locked_node_data.get_outputs().positive)
+        for (auto &output : outputs.positive)
           jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, token));
       }
       locked_node_data.modify_output_tokens().clear();
-      locked_network_data.modify_wme_tokens().clear();
+      wmes.positive.clear();
     }
 
     job_queue->give_many(std::move(jobs));

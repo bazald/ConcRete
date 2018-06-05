@@ -64,13 +64,15 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      auto found = locked_node_unary_data.get_input_tokens().negative.find(raven.get_Token());
-      if (found != locked_node_unary_data.get_input_tokens().negative.end()) {
-        locked_node_unary_data.modify_input_tokens().negative.erase(found);
+      Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
+
+      auto found = tokens_input.negative.find(raven.get_Token());
+      if (found != tokens_input.negative.end()) {
+        tokens_input.negative.erase(found);
         return;
       }
 
-      locked_node_unary_data.modify_input_tokens().positive.emplace(raven.get_Token());
+      tokens_input.positive.emplace(raven.get_Token());
     }
 
     m_action(*this, *raven.get_Token());
@@ -83,13 +85,15 @@ namespace Zeni::Rete {
       Locked_Node_Data locked_node_data(this);
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
 
-      auto found = locked_node_unary_data.get_input_tokens().positive.find(raven.get_Token());
-      if (found == locked_node_unary_data.get_input_tokens().positive.end()) {
-        locked_node_unary_data.modify_input_tokens().negative.emplace(raven.get_Token());
+      Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
+
+      auto found = tokens_input.positive.find(raven.get_Token());
+      if (found == tokens_input.positive.end()) {
+        tokens_input.negative.emplace(raven.get_Token());
         return;
       }
 
-      locked_node_unary_data.modify_input_tokens().positive.erase(found);
+      tokens_input.positive.erase(found);
     }
 
     m_retraction(*this, *raven.get_Token());
