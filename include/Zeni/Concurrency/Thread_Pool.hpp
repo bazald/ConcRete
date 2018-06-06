@@ -1,33 +1,27 @@
 #ifndef ZENI_CONCURRENCY_THREAD_POOL_HPP
 #define ZENI_CONCURRENCY_THREAD_POOL_HPP
 
-#include "Linkage.hpp"
+#include "IThread_Pool.hpp"
 
-#include <memory>
+#ifndef DISABLE_MULTITHREADING
+#include <atomic>
+#include <thread>
+#include <vector>
+#endif
 
 namespace Zeni::Concurrency {
 
-  class Job_Queue;
-  class Job_Queue_Pimpl;
-  class Thread_Pool_Pimpl;
+  class Thread_Pool;
+  void worker(Thread_Pool * const thread_pool) noexcept;
 
-  class Thread_Pool : public std::enable_shared_from_this<Thread_Pool> {
+  class Thread_Pool : public IThread_Pool, public std::enable_shared_from_this<Thread_Pool> {
     Thread_Pool(const Thread_Pool &) = delete;
     Thread_Pool & operator=(const Thread_Pool &) = delete;
 
-#if defined(_MSC_VER) && !defined(NDEBUG)
-    static const int m_pimpl_size = 96;
-#else
-    static const int m_pimpl_size = 80;
-#endif
-    static const int m_pimpl_align = 8;
-    const Thread_Pool_Pimpl * get_pimpl() const noexcept;
-    Thread_Pool_Pimpl * get_pimpl() noexcept;
-
     /// Initialize the number of threads to std::thread::hardware_concurrency()
-    ZENI_CONCURRENCY_LINKAGE Thread_Pool() noexcept(false);
+    Thread_Pool() noexcept(false);
     /// Initialize the number of threads to 0 or 1 for single-threaded operation, anything higher for multithreaded
-    ZENI_CONCURRENCY_LINKAGE Thread_Pool(const int16_t num_threads) noexcept(false);
+    Thread_Pool(const int16_t num_threads) noexcept(false);
 
   public:
     /// Initialize the number of threads to std::thread::hardware_concurrency()
@@ -40,17 +34,27 @@ namespace Zeni::Concurrency {
     /// Get the total number of worker threads across all pools
     ZENI_CONCURRENCY_LINKAGE static int64_t get_total_workers() noexcept;
 
-    ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Job_Queue> get_main_Job_Queue() const noexcept;
+    ZENI_CONCURRENCY_LINKAGE std::shared_ptr<IJob_Queue> get_main_Job_Queue() const noexcept override;
 
-    ZENI_CONCURRENCY_LINKAGE void finish_jobs() noexcept(false);
+    ZENI_CONCURRENCY_LINKAGE void finish_jobs() noexcept(false) override;
 
   private:
-    friend Job_Queue_Pimpl;
-    ZENI_CONCURRENCY_LINKAGE void worker_awakened() noexcept;
-    ZENI_CONCURRENCY_LINKAGE void job_queue_emptied() noexcept;
-    ZENI_CONCURRENCY_LINKAGE void job_queue_nonemptied() noexcept;
+    void worker_awakened() noexcept override;
+    void job_queue_emptied() noexcept override;
+    void job_queue_nonemptied() noexcept override;
 
-    alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
+    void worker_thread_work() noexcept;
+
+    std::shared_ptr<IJob_Queue> m_job_queue;
+#ifndef DISABLE_MULTITHREADING
+    friend void worker(Thread_Pool * const thread_pool) noexcept;
+    std::vector<std::shared_ptr<std::thread>> m_worker_threads;
+    std::vector<std::pair<std::thread::id, std::shared_ptr<IJob_Queue>>> m_job_queues;
+    std::atomic_int16_t m_awake_workers = 0;
+    std::atomic_int16_t m_nonempty_job_queues = 0;
+    std::atomic_bool m_initialized = false;
+    std::atomic<std::thread::id> m_failed_thread_id;
+#endif
   };
 
 }

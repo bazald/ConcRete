@@ -51,12 +51,24 @@
     <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pools.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\IJob.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\IMemory_Pool.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\Mallocator.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\IJob_Queue.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\IThread_Pool.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Zeni\Concurrency\Job_Queue.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Concurrency\Maester.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Concurrency\Mutex.cpp">
@@ -81,6 +93,12 @@
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Concurrency\Job.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Concurrency\IThread_Pool.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Concurrency\IJob_Queue.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
   </ItemGroup>

@@ -16,7 +16,7 @@ namespace Zeni::Concurrency {
     Maester & operator=(const Maester &) = delete;
 
   protected:
-    ZENI_CONCURRENCY_LINKAGE Maester() noexcept;
+    ZENI_CONCURRENCY_LINKAGE Maester() = default;
 
   public:
     ZENI_CONCURRENCY_LINKAGE virtual void receive(const std::shared_ptr<const Raven> raven) noexcept = 0;
