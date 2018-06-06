@@ -19,7 +19,7 @@ namespace Zeni::Rete {
 
   void Node_Passthrough_Gated::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     jobs.emplace_back(std::make_shared<Raven_Decrement_Output_Count>(get_input(), network, sft));
     jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(m_gate, network, sft, true));
@@ -41,7 +41,7 @@ namespace Zeni::Rete {
 
     if (connected != created) {
       Zeni::Rete::Counters::g_decrement_outputs_received.fetch_sub(2, std::memory_order_acquire);
-      std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+      std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
       jobs.emplace_back(std::make_shared<Raven_Decrement_Output_Count>(gate, network, created));
       jobs.emplace_back(std::make_shared<Raven_Decrement_Output_Count>(input, network, created));
       job_queue->give_many(std::move(jobs));

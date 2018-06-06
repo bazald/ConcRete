@@ -13,13 +13,13 @@ namespace Zeni::Concurrency {
     Job & operator=(const Job &) = delete;
 
   public:
-    Job() = default;
+    ZENI_CONCURRENCY_LINKAGE Job() = default;
 
     ZENI_CONCURRENCY_LINKAGE const std::shared_ptr<Job_Queue> & get_Job_Queue() const noexcept override;
 
   private:
-    void set_Job_Queue(const std::shared_ptr<Job_Queue> &job_queue) noexcept override;
-    void set_Job_Queue(std::shared_ptr<Job_Queue> &&job_queue) noexcept override;
+    ZENI_CONCURRENCY_LINKAGE void set_Job_Queue(const std::shared_ptr<Job_Queue> &job_queue) noexcept override;
+    ZENI_CONCURRENCY_LINKAGE void set_Job_Queue(std::shared_ptr<Job_Queue> &&job_queue) noexcept override;
 
     std::shared_ptr<Job_Queue> m_job_queue;
   };

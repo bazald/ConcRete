@@ -48,7 +48,7 @@ public:
     std::cerr << whisper->get_message() + "\n";
     //++g_num_recvs;
 
-    std::vector<std::shared_ptr<Zeni::Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
     Zeni::Concurrency::Mutex::Lock mutex_lock(m_mutex);
     for (Ptr gossip : m_gossips)
       jobs.emplace_back(std::make_shared<Whisper>(gossip, whisper->get_message()));
@@ -188,7 +188,7 @@ void test_Thread_Pool() {
   gossips["diane"]->tell(gossips["janae"]);
   gossips["diane"]->tell(gossips["kelly"]);
 
-  std::vector<std::shared_ptr<Zeni::Concurrency::Job>> jobs;
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
   for (std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
     jobs.emplace_back(std::make_shared<Whisper>(gossips["alice"], message));
 

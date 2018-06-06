@@ -1,7 +1,7 @@
 #ifndef ZENI_CONCURRENCY_MUTEX_HPP
 #define ZENI_CONCURRENCY_MUTEX_HPP
 
-#include "Linkage.hpp"
+#include "Internal/Linkage.hpp"
 
 namespace Zeni::Concurrency {
 

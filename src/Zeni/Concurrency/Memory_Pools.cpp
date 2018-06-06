@@ -1,7 +1,7 @@
 #include "Zeni/Concurrency/Memory_Pools.hpp"
 
-#include "Zeni/Concurrency/Memory_Pool.hpp"
-#include "Zeni/Concurrency/Mallocator.hpp"
+#include "Zeni/Concurrency/Internal/Mallocator.hpp"
+#include "Zeni/Concurrency/Internal/Memory_Pool_Impl.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
 
 #include <list>
@@ -34,12 +34,12 @@ namespace Zeni::Concurrency {
       return memory_pools;
     }
 
-    std::shared_ptr<IMemory_Pool> get_pool() noexcept(false) {
+    std::shared_ptr<Memory_Pool> get_pool() noexcept(false) {
       auto memory_pool = m_memory_pool.lock();
       if (memory_pool)
         return memory_pool;
 
-      memory_pool = std::allocate_shared<Memory_Pool>(Mallocator<Memory_Pool>());
+      memory_pool = std::allocate_shared<Memory_Pool_Impl>(Mallocator<Memory_Pool_Impl>());
       m_memory_pool = memory_pool;
       m_clearer = std::allocate_shared<Clearer>(Mallocator<Clearer>());
 
@@ -87,7 +87,7 @@ namespace Zeni::Concurrency {
     Memory_Pools_Pimpl::get().new_handler();
   }
 
-  std::shared_ptr<IMemory_Pool> Memory_Pools::get_pool() noexcept(false) {
+  std::shared_ptr<Memory_Pool> Memory_Pools::get_pool() noexcept(false) {
     return Memory_Pools_Pimpl::get().get_pool();
   }
 

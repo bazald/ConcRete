@@ -1,37 +1,34 @@
-#ifndef ZENI_CONCURRENCY_MEMORY_POOL_HPP
-#define ZENI_CONCURRENCY_MEMORY_POOL_HPP
+#ifndef ZENI_CONCURRENCY_IMEMORY_POOL_HPP
+#define ZENI_CONCURRENCY_IMEMORY_POOL_HPP
 
-#include "IMemory_Pool.hpp"
-#include "Mallocator.hpp"
+#include "Internal/Linkage.hpp"
 
-#include <unordered_map>
+#include <cstdint>
+#include <memory>
 
 namespace Zeni::Concurrency {
 
-  class Memory_Pool : public IMemory_Pool, public std::enable_shared_from_this<Memory_Pool> {
-    Memory_Pool(const Memory_Pool &rhs) = delete;
-    Memory_Pool & operator=(const Memory_Pool &rhs) = delete;
+  class Memory_Pool {
+    Memory_Pool(const Memory_Pool &) = delete;
+    Memory_Pool & operator=(const Memory_Pool &) = delete;
+
+  protected:
+    ZENI_CONCURRENCY_LINKAGE Memory_Pool() = default;
 
   public:
-    ZENI_CONCURRENCY_LINKAGE Memory_Pool() noexcept;
-    ZENI_CONCURRENCY_LINKAGE ~Memory_Pool() noexcept;
+    ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Memory_Pool> Create() noexcept(false);
 
     /// Free any cached memory blocks. Return a count of the number of blocks freed.
-    ZENI_CONCURRENCY_LINKAGE size_t clear() noexcept override;
+    ZENI_CONCURRENCY_LINKAGE virtual size_t clear() noexcept = 0;
 
     /// Get a cached memory block or allocate one as needed.
-    ZENI_CONCURRENCY_LINKAGE void * allocate(const size_t size) noexcept override;
+    ZENI_CONCURRENCY_LINKAGE virtual void * allocate(const size_t size) noexcept = 0;
 
     /// Return a memory block to be cached (and eventually freed).
-    ZENI_CONCURRENCY_LINKAGE void release(void * const ptr) noexcept override;
+    ZENI_CONCURRENCY_LINKAGE virtual void release(void * const ptr) noexcept = 0;
 
     /// Get the size of a memory block (not counting header information used to store the size).
-    ZENI_CONCURRENCY_LINKAGE size_t size_of(const void * const ptr) const noexcept override;
-
-  private:
-    void Memory_Pool::fill(void * const dest, const uint32_t pattern) noexcept;
-
-    std::unordered_map<size_t, void *, std::hash<size_t>, std::equal_to<size_t>, Mallocator<std::pair<const size_t, void *>>> m_freed;
+    ZENI_CONCURRENCY_LINKAGE virtual size_t size_of(const void * const ptr) const noexcept = 0;
   };
 
 }

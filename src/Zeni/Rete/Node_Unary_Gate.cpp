@@ -52,7 +52,7 @@ namespace Zeni::Rete {
     if (!first_insertion)
       return;
 
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
@@ -77,7 +77,7 @@ namespace Zeni::Rete {
     if (!first_insertion)
       return;
 
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
@@ -102,7 +102,7 @@ namespace Zeni::Rete {
     if (!erased_last)
       return;
 
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
@@ -127,7 +127,7 @@ namespace Zeni::Rete {
     if (!erased_last)
       return;
 
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
       Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
@@ -147,7 +147,7 @@ namespace Zeni::Rete {
 
   void Node_Unary_Gate::receive(const Raven_Status_Empty &raven) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
       Locked_Node_Data locked_node_data(this);
@@ -192,7 +192,7 @@ namespace Zeni::Rete {
 
   void Node_Unary_Gate::receive(const Raven_Status_Nonempty &raven) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
       Locked_Node_Data locked_node_data(this);

@@ -49,7 +49,7 @@ namespace Zeni::Rete {
 
   void Node_Passthrough::receive(const Raven_Token_Insert &raven) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
       
     {
       Locked_Node_Data locked_node_data(this);
@@ -84,7 +84,7 @@ namespace Zeni::Rete {
 
   void Node_Passthrough::receive(const Raven_Token_Remove &raven) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
       Locked_Node_Data locked_node_data(this);

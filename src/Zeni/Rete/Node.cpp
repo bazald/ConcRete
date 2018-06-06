@@ -209,7 +209,7 @@ namespace Zeni::Rete {
 
   bool Node::receive(const Raven_Connect_Gate &raven, Locked_Node_Data &locked_node_data) {
     const auto sft = shared_from_this();
-    std::shared_ptr<Concurrency::Job> job;
+    std::shared_ptr<Concurrency::IJob> job;
     bool first_insertion = false;
 
     {
@@ -236,7 +236,7 @@ namespace Zeni::Rete {
 
   bool Node::receive(const Raven_Connect_Output &raven, Locked_Node_Data &locked_node_data) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
     bool first_insertion = false;
 
     {
@@ -265,7 +265,7 @@ namespace Zeni::Rete {
 
   bool Node::receive(const Raven_Disconnect_Gate &raven, Locked_Node_Data &locked_node_data) {
     const auto sft = shared_from_this();
-    std::shared_ptr<Concurrency::Job> job;
+    std::shared_ptr<Concurrency::IJob> job;
     bool erased_last = false;
 
     {
@@ -294,7 +294,7 @@ namespace Zeni::Rete {
 
   bool Node::receive(const Raven_Disconnect_Output &raven, Locked_Node_Data &locked_node_data) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
     bool erased_last = false;
 
     {

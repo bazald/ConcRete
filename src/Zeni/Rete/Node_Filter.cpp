@@ -77,7 +77,7 @@ namespace Zeni::Rete {
       return;
 
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
       
     {
       Locked_Node_Data locked_node_data(this);
@@ -130,7 +130,7 @@ namespace Zeni::Rete {
       return;
 
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
       Locked_Node_Data locked_node_data(this);

@@ -264,7 +264,7 @@ namespace Zeni::Rete {
       rules.swap(locked_network_data.modify_rules());
     }
 
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
     jobs.reserve(rules.size());
     for (auto rule : rules)
       jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second, true));
@@ -350,7 +350,7 @@ namespace Zeni::Rete {
   void Network::insert_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme) {
     const auto sft = shared_from_this();
     const auto output_token = std::make_shared<Token_Alpha>(wme);
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
 #ifdef DEBUG_OUTPUT
     std::cerr << "rete.insert" << *wme << std::endl;
@@ -381,7 +381,7 @@ namespace Zeni::Rete {
 
   void Network::remove_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
 #ifdef DEBUG_OUTPUT
     std::cerr << "rete.remove" << *wme << std::endl;
@@ -416,7 +416,7 @@ namespace Zeni::Rete {
 
   void Network::clear_wmes(const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::Job>> jobs;
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
       Locked_Node_Data locked_node_data(this);

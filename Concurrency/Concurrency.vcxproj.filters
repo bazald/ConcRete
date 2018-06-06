@@ -19,18 +19,24 @@
     <Filter Include="Source Files\Zeni">
       <UniqueIdentifier>{c409d3d0-f63a-493b-b1e9-c8a207160c4d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Zeni\Internal">
+      <UniqueIdentifier>{3b8845cb-19df-4d5f-9263-fd7119040aa3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Zeni\Internal">
+      <UniqueIdentifier>{98f37c7b-e5ac-4fea-8e4b-4bfa7cc7e9da}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\Zeni\Concurrency\Job.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\Zeni\Concurrency\Job_Queue.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Concurrency\Linkage.hpp">
+    <ClInclude Include="..\include\Zeni\Concurrency\Maester.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Concurrency\Maester.hpp">
+    <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pool.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pools.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Concurrency\Mutex.hpp">
@@ -39,37 +45,43 @@
     <ClInclude Include="..\include\Zeni\Concurrency\Raven.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Utility.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pool.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\Zeni\Concurrency\Thread_Pool.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pools.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Concurrency\IJob.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Concurrency\IMemory_Pool.hpp">
+    <ClInclude Include="..\include\Zeni\Concurrency\Job.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Concurrency\Mallocator.hpp">
-      <Filter>Header Files\Zeni</Filter>
+    <ClInclude Include="..\include\Zeni\Concurrency\Internal\Job_Queue_Impl.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Concurrency\IJob_Queue.hpp">
-      <Filter>Header Files\Zeni</Filter>
+    <ClInclude Include="..\include\Zeni\Concurrency\Internal\Linkage.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Concurrency\IThread_Pool.hpp">
+    <ClInclude Include="..\include\Zeni\Concurrency\Internal\Mallocator.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\Internal\Memory_Pool_Impl.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Concurrency\Internal\Thread_Pool_Impl.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Utility.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\Zeni\Concurrency\Job_Queue.cpp">
-      <Filter>Source Files\Zeni</Filter>
+    <ClCompile Include="..\src\Zeni\Concurrency\Internal\Memory_Pool_Impl.cpp">
+      <Filter>Source Files\Zeni\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Concurrency\Internal\Thread_Pool_Impl.cpp">
+      <Filter>Source Files\Zeni\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Concurrency\Internal\Job_Queue_Impl.cpp">
+      <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Concurrency\Mutex.cpp">
       <Filter>Source Files\Zeni</Filter>
@@ -80,7 +92,13 @@
     <ClCompile Include="..\src\Zeni\Concurrency\Thread_Pool.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Zeni\Utility.cpp">
+    <ClCompile Include="..\src\Zeni\Concurrency\Job.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Concurrency\Job_Queue.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pools.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pool.cpp">
@@ -89,16 +107,7 @@
     <ClCompile Include="..\src\Zeni\New_and_Delete.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pools.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Concurrency\Job.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Concurrency\IThread_Pool.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Concurrency\IJob_Queue.cpp">
+    <ClCompile Include="..\src\Zeni\Utility.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
   </ItemGroup>
