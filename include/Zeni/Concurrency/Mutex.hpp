@@ -3,6 +3,15 @@
 
 #include "Internal/Linkage.hpp"
 
+#ifndef DISABLE_MULTITHREADING
+#include <mutex>
+
+namespace std {
+  template class ZENI_CONCURRENCY_LINKAGE std::lock_guard<std::mutex>;
+  class ZENI_CONCURRENCY_LINKAGE std::mutex;
+}
+#endif
+
 namespace Zeni::Concurrency {
 
   class Mutex_Pimpl;
@@ -12,40 +21,26 @@ namespace Zeni::Concurrency {
     Mutex(const Mutex &) = delete;
     Mutex & operator=(const Mutex &) = delete;
 
-#if defined(_MSC_VER)
-    static const int m_pimpl_size = 80;
-#else
-    static const int m_pimpl_size = 40;
-#endif
-    static const int m_pimpl_align = 8;
-    const Mutex_Pimpl * get_pimpl() const noexcept;
-    Mutex_Pimpl * get_pimpl() noexcept;
-
-    friend class Mutex_Lock_Pimpl;
-
   public:
     class ZENI_CONCURRENCY_LINKAGE Lock {
       Lock(const Lock &) = delete;
       Lock & operator=(const Lock &) = delete;
 
-      static const int m_pimpl_size = 8;
-      static const int m_pimpl_align = 8;
-      const Mutex_Lock_Pimpl * get_pimpl() const noexcept;
-      Mutex_Lock_Pimpl * get_pimpl() noexcept;
-
     public:
       Lock(Mutex &mutex) noexcept;
-      ~Lock() noexcept;
 
     private:
-      alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
+#ifndef DISABLE_MULTITHREADING
+      std::lock_guard<std::mutex> m_lock;
+#endif
     };
 
-    Mutex() noexcept;
-    ~Mutex() noexcept;
+    Mutex() noexcept = default;
 
   private:
-    alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
+#ifndef DISABLE_MULTITHREADING
+    std::mutex m_mutex;
+#endif
   };
 
 }
