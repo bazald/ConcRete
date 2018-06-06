@@ -30,10 +30,12 @@ namespace Zeni::Concurrency {
     ZENI_CONCURRENCY_LINKAGE virtual void finish_jobs() noexcept(false) = 0;
 
   private:
+#ifndef DISABLE_MULTITHREADING
     friend Job_Queue_Impl;
     virtual void worker_awakened() noexcept = 0;
     virtual void job_queue_emptied() noexcept = 0;
     virtual void job_queue_nonemptied() noexcept = 0;
+#endif
   };
 
 }

@@ -39,14 +39,15 @@ namespace Zeni::Concurrency {
     void finish_jobs() noexcept(false) override;
 
   private:
+    std::shared_ptr<Job_Queue> m_job_queue;
+
+#ifndef DISABLE_MULTITHREADING
     void worker_awakened() noexcept override;
     void job_queue_emptied() noexcept override;
     void job_queue_nonemptied() noexcept override;
 
     void worker_thread_work() noexcept;
 
-    std::shared_ptr<Job_Queue> m_job_queue;
-#ifndef DISABLE_MULTITHREADING
     friend void worker(Thread_Pool_Impl * const thread_pool) noexcept;
     std::vector<std::shared_ptr<std::thread>> m_worker_threads;
     std::vector<std::pair<std::thread::id, std::shared_ptr<Job_Queue>>> m_job_queues;

@@ -28,7 +28,7 @@ namespace Zeni::Concurrency {
     if (!m_has_jobs.load(std::memory_order_acquire))
       return nullptr;
 
-    std::unique_lock<std::mutex> mutex_lock(m_mutex);
+    std::lock_guard<std::mutex> mutex_lock(m_mutex);
 #endif
 
     if (m_jobs.empty())
@@ -40,11 +40,13 @@ namespace Zeni::Concurrency {
     if (m_jobs.front().empty())
       m_jobs.pop();
 
+#ifndef DISABLE_MULTITHREADING
     if (!is_already_awake)
       m_thread_pool->worker_awakened();
 
     if (m_jobs.empty())
       m_thread_pool->job_queue_emptied();
+#endif
 
     job->set_Job_Queue(shared_from_this());
 
