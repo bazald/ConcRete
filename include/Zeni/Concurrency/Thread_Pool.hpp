@@ -1,7 +1,9 @@
-#ifndef ZENI_CONCURRENCY_ITHREAD_POOL_HPP
-#define ZENI_CONCURRENCY_ITHREAD_POOL_HPP
+#ifndef ZENI_CONCURRENCY_THREAD_POOL_HPP
+#define ZENI_CONCURRENCY_THREAD_POOL_HPP
 
 #include "Internal/Linkage.hpp"
+
+#include "Job_Queue.hpp"
 
 #include <memory>
 

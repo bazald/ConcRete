@@ -8,7 +8,7 @@ CPPFLAGS=-std=c++17 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -Wall 
 LDFLAGS=-L. -Wl,-rpath,. -Wl,-rpath-link,.
 LDLIBS=-pthread
 
-CONCURRENCY_SRCS=$(wildcard src/Zeni/Concurrency/*.cpp) src/Zeni/New_and_Delete.cpp src/Zeni/Utility.cpp
+CONCURRENCY_SRCS=$(wildcard src/Zeni/Concurrency/*.cpp) $(wildcard src/Zeni/Concurrency/Internal/*.cpp) src/Zeni/New_and_Delete.cpp src/Zeni/Utility.cpp
 CONCURRENCY_OBJS=$(subst .cpp,.o,$(CONCURRENCY_SRCS))
 
 RETE_SRCS=src/Zeni/New_and_Delete.cpp src/Zeni/Utility.cpp

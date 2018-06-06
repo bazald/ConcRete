@@ -1,5 +1,5 @@
-#ifndef ZENI_CONCURRENCY_MEMORY_POOL_HPP
-#define ZENI_CONCURRENCY_MEMORY_POOL_HPP
+#ifndef ZENI_CONCURRENCY_MEMORY_POOL_IMPL_HPP
+#define ZENI_CONCURRENCY_MEMORY_POOL_IMPL_HPP
 
 #include "../Memory_Pool.hpp"
 #include "Mallocator.hpp"

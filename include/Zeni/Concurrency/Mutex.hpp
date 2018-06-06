@@ -8,7 +8,7 @@ namespace Zeni::Concurrency {
   class Mutex_Pimpl;
   class Mutex_Lock_Pimpl;
 
-  class Mutex {
+  class ZENI_CONCURRENCY_LINKAGE Mutex {
     Mutex(const Mutex &) = delete;
     Mutex & operator=(const Mutex &) = delete;
 
@@ -24,7 +24,7 @@ namespace Zeni::Concurrency {
     friend class Mutex_Lock_Pimpl;
 
   public:
-    class Lock {
+    class ZENI_CONCURRENCY_LINKAGE Lock {
       Lock(const Lock &) = delete;
       Lock & operator=(const Lock &) = delete;
 
@@ -34,15 +34,15 @@ namespace Zeni::Concurrency {
       Mutex_Lock_Pimpl * get_pimpl() noexcept;
 
     public:
-      ZENI_CONCURRENCY_LINKAGE Lock(Mutex &mutex) noexcept;
-      ZENI_CONCURRENCY_LINKAGE ~Lock() noexcept;
+      Lock(Mutex &mutex) noexcept;
+      ~Lock() noexcept;
 
     private:
       alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
     };
 
-    ZENI_CONCURRENCY_LINKAGE Mutex() noexcept;
-    ZENI_CONCURRENCY_LINKAGE ~Mutex() noexcept;
+    Mutex() noexcept;
+    ~Mutex() noexcept;
 
   private:
     alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];

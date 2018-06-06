@@ -1,10 +1,18 @@
-#ifndef ZENI_CONCURRENCY_IJOB_QUEUE_HPP
-#define ZENI_CONCURRENCY_IJOB_QUEUE_HPP
+#ifndef ZENI_CONCURRENCY_JOB_QUEUE_HPP
+#define ZENI_CONCURRENCY_JOB_QUEUE_HPP
 
 #include "Internal/Linkage.hpp"
 
 #include <memory>
 #include <vector>
+
+namespace Zeni::Concurrency {
+  class Job_Queue;
+}
+
+namespace std {
+  template class ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Zeni::Concurrency::Job_Queue>;
+}
 
 namespace Zeni::Concurrency {
 
