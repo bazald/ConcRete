@@ -10,7 +10,7 @@
 
 namespace Zeni::Concurrency {
 
-  static void new_handler() noexcept;
+  static void new_handler() noexcept(false);
 
   class Memory_Pools_Pimpl {
     Memory_Pools_Pimpl(const Memory_Pools_Pimpl &) = delete;
@@ -64,11 +64,9 @@ namespace Zeni::Concurrency {
       return cleared;
     }
 
-    void new_handler() noexcept {
-      if (m_memory_pools.empty())
+    void new_handler() noexcept(false) {
+      if (!clear_pools())
         m_old_handler();
-      else if (!clear_pools())
-        abort();
     }
 
   private:
@@ -86,7 +84,7 @@ namespace Zeni::Concurrency {
   thread_local std::shared_ptr<Memory_Pool> Memory_Pools_Pimpl::m_memory_pool;
   thread_local std::shared_ptr<Memory_Pools_Pimpl::Clearer> Memory_Pools_Pimpl::m_clearer;
 
-  void new_handler() noexcept {
+  void new_handler() noexcept(false) {
     Memory_Pools_Pimpl::get().new_handler();
   }
 
