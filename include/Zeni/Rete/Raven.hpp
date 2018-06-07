@@ -2,7 +2,7 @@
 #define ZENI_RETE_RAVEN_HPP
 
 #include "Zeni/Concurrency/Raven.hpp"
-#include "Linkage.hpp"
+#include "Internal/Linkage.hpp"
 
 namespace Zeni::Rete {
 

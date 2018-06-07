@@ -2,7 +2,7 @@
 #define ZENI_RETE_TOKEN_INDEX_HPP
 
 #include "Zeni/Utility.hpp"
-#include "Linkage.hpp"
+#include "Internal/Linkage.hpp"
 
 #include <cinttypes>
 #include <iosfwd>

@@ -1,5 +1,6 @@
 #include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 
+#include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Node.hpp"
 
 namespace Zeni::Rete {
@@ -12,9 +13,9 @@ namespace Zeni::Rete {
 
   void Raven_Disconnect_Output::receive() const {
     if (decrement_output_count)
-      Zeni::Rete::Counters::g_disconnect_output_and_decrements_received.fetch_add(1, std::memory_order_acquire);
+      DEBUG_COUNTER_INCREMENT(g_disconnect_output_and_decrements_received, 1);
     else
-      Zeni::Rete::Counters::g_disconnect_output_but_nodecrements_received.fetch_add(1, std::memory_order_acquire);
+      DEBUG_COUNTER_INCREMENT(g_disconnect_output_but_nodecrements_received, 1);
     std::dynamic_pointer_cast<Node>(get_recipient())->receive(*this);
   }
 

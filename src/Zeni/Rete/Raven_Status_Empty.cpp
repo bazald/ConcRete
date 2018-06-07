@@ -1,5 +1,6 @@
 #include "Zeni/Rete/Raven_Status_Empty.hpp"
 
+#include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Node.hpp"
 
 namespace Zeni::Rete {
@@ -10,7 +11,7 @@ namespace Zeni::Rete {
   }
 
   void Raven_Status_Empty::receive() const {
-    Zeni::Rete::Counters::g_empties_received.fetch_add(1, std::memory_order_acquire);
+    DEBUG_COUNTER_INCREMENT(g_empties_received, 1);
     std::dynamic_pointer_cast<Node>(get_recipient())->receive(*this);
   }
 

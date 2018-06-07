@@ -1,5 +1,6 @@
 #include "Zeni/Rete/Raven_Token_Insert.hpp"
 
+#include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Node.hpp"
 
 namespace Zeni::Rete {
@@ -10,7 +11,7 @@ namespace Zeni::Rete {
   }
 
   void Raven_Token_Insert::receive() const {
-    Zeni::Rete::Counters::g_tokens_inserted.fetch_add(1, std::memory_order_acquire);
+    DEBUG_COUNTER_INCREMENT(g_tokens_inserted, 1);
     std::dynamic_pointer_cast<Node>(get_recipient())->receive(*this);
   }
 

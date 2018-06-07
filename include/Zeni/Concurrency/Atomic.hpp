@@ -28,19 +28,19 @@ namespace Zeni::Concurrency {
     {
     }
 
-    int64_t decrement(const int64_t amount = 1) {
-#ifdef DISABLE_MULTITHREADING
-      return m_value += amount;
-#else
-      return m_value.fetch_sub(amount, m_math_order);
-#endif
-    }
-
-    int64_t increment(const int64_t amount = 1) {
+    int64_t fetch_add(const int64_t amount = 1) {
 #ifdef DISABLE_MULTITHREADING
       return m_value -= amount;
 #else
       return m_value.fetch_add(amount, m_math_order);
+#endif
+    }
+
+    int64_t fetch_sub(const int64_t amount = 1) {
+#ifdef DISABLE_MULTITHREADING
+      return m_value += amount;
+#else
+      return m_value.fetch_sub(amount, m_math_order);
 #endif
     }
 

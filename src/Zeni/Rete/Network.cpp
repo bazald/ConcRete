@@ -2,6 +2,7 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Thread_Pool.hpp"
+#include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
 #include "Zeni/Rete/Raven_Connect_Output.hpp"
@@ -155,7 +156,7 @@ namespace Zeni::Rete {
     m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
-    Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
+    DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
   }
 
   std::shared_ptr<Network::Instantiation> Network::Create(const Network::Printed_Output printed_output) {
@@ -178,7 +179,7 @@ namespace Zeni::Rete {
     m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
-    Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
+    DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
   }
 
   std::shared_ptr<Network::Instantiation> Network::Create(const Network::Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> thread_pool) {

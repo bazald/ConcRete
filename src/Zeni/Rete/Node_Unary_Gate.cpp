@@ -1,6 +1,7 @@
 #include "Zeni/Rete/Node_Unary_Gate.hpp"
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
+#include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Raven_Connect_Gate.hpp"
@@ -38,7 +39,7 @@ namespace Zeni::Rete {
     const auto connected = std::static_pointer_cast<Node_Unary_Gate>(input->connect_gate(network, job_queue, created));
 
     if (connected != created) {
-      Zeni::Rete::Counters::g_decrement_outputs_received.fetch_sub(1, std::memory_order_acquire);
+      DEBUG_COUNTER_DECREMENT(g_decrement_outputs_received, 1);
       job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(input, network, created));
     }
 

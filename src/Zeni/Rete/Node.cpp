@@ -1,6 +1,7 @@
 #include "Zeni/Rete/Node.hpp"
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
+#include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Raven_Connect_Gate.hpp"
 #include "Zeni/Rete/Raven_Connect_Output.hpp"
@@ -13,26 +14,6 @@
 #include "Zeni/Rete/Raven_Token_Remove.hpp"
 
 #include <cassert>
-//#include <iostream>
-//#include <typeinfo>
-
-namespace Zeni::Rete::Counters {
-
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_node_increments = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_try_increment_child_counts = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_gates_received = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_outputs_received = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_decrement_outputs_received = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_disconnect_gates_received = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_disconnect_output_and_decrements_received = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_disconnect_output_but_nodecrements_received = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_empties_received = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_nonempties_received = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_tokens_inserted = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_tokens_removed = 0;
-  ZENI_RETE_LINKAGE std::atomic_int64_t g_extra[8] = {{0},{0},{0},{0},{0},{0},{0},{0}};
-
-}
 
 namespace Zeni::Rete {
 
@@ -51,7 +32,7 @@ namespace Zeni::Rete {
   }
 
   Node::Unlocked_Node_Data::Unlocked_Node_Data() {
-    Counters::g_node_increments.fetch_add(1, std::memory_order_relaxed);
+    DEBUG_COUNTER_INCREMENT(g_node_increments, 1);
   }
 
   Node::Locked_Node_Data_Const::Locked_Node_Data_Const(const Node * node)
@@ -116,8 +97,8 @@ namespace Zeni::Rete {
         break;
     }
 #endif
-    Counters::g_node_increments.fetch_add(1, std::memory_order_relaxed);
-    Counters::g_try_increment_child_counts.fetch_add(1, std::memory_order_relaxed);
+    DEBUG_COUNTER_INCREMENT(g_node_increments, 1);
+    DEBUG_COUNTER_INCREMENT(g_try_increment_child_counts, 1);
     return true;
   }
 
@@ -141,7 +122,7 @@ namespace Zeni::Rete {
       for (auto &existing_output : gates.positive) {
         if (*existing_output == *output) {
           if (existing_output->try_increment_child_count()) {
-            Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
+            DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
             return existing_output;
           }
         }
@@ -166,7 +147,7 @@ namespace Zeni::Rete {
       for (auto &existing_output : outputs.positive) {
         if (*existing_output == *output) {
           if (existing_output->try_increment_child_count()) {
-            Counters::g_node_increments.fetch_sub(1, std::memory_order_relaxed);
+            DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
             return existing_output;
           }
         }

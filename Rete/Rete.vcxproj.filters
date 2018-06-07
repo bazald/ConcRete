@@ -19,6 +19,12 @@
     <Filter Include="Source Files\Zeni">
       <UniqueIdentifier>{9366535d-f754-428c-8ace-3acf376c924e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Zeni\Internal">
+      <UniqueIdentifier>{99d6f46a-4379-43d1-b53b-eaf18a74896f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Zeni\Internal">
+      <UniqueIdentifier>{56f9f170-b86c-4c6e-9578-7144ac0c2fd4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Zeni\Rete\Custom_Data.cpp">
@@ -114,6 +120,9 @@
     <ClCompile Include="..\src\Zeni\New_and_Delete.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Internal\Debug_Counters.cpp">
+      <Filter>Source Files\Zeni\Internal</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Zeni\Rete\Custom_Data.hpp">
@@ -208,6 +217,9 @@
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Raven_Decrement_Output_Count.hpp">
       <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Internal\Debug_Counters.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

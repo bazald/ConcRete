@@ -1,29 +1,12 @@
 #ifndef ZENI_RETE_NODE_HPP
 #define ZENI_RETE_NODE_HPP
 
+#include "Zeni/Concurrency/Atomic.hpp"
 #include "Zeni/Concurrency/Maester.hpp"
 #include "Custom_Data.hpp"
 #include "Token.hpp"
 
 #include <atomic>
-
-namespace Zeni::Rete::Counters {
-
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_node_increments;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_try_increment_child_counts;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_gates_received;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_connect_outputs_received;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_decrement_outputs_received;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_disconnect_gates_received;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_disconnect_output_and_decrements_received;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_disconnect_output_but_nodecrements_received;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_empties_received;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_nonempties_received;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_tokens_inserted;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_tokens_removed;
-  extern ZENI_RETE_LINKAGE std::atomic_int64_t g_extra[8];
-
-}
 
 namespace Zeni::Rete {
 
