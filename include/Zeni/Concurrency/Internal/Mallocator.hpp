@@ -1,6 +1,10 @@
 #ifndef ZENI_CONCURRENCY_MALLOCATOR_HPP
 #define ZENI_CONCURRENCY_MALLOCATOR_HPP
 
+#include <cstddef>
+#include <cstdlib>
+#include <new>
+
 namespace Zeni::Concurrency {
 
   template <class T> struct Mallocator {

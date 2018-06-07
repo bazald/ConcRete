@@ -23,6 +23,7 @@
     <ClInclude Include="..\include\Zeni\Concurrency\Internal\Job_Queue_Impl.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Internal\Linkage.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Internal\Mallocator.hpp" />
+    <ClInclude Include="..\include\Zeni\Concurrency\Internal\Memory_Pools_Impl.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Internal\Memory_Pool_Impl.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Internal\Thread_Pool_Impl.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Job.hpp" />
@@ -37,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Zeni\Concurrency\Internal\Job_Queue_Impl.cpp" />
+    <ClCompile Include="..\src\Zeni\Concurrency\Internal\Memory_Pools_Impl.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Internal\Memory_Pool_Impl.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Internal\Thread_Pool_Impl.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Job.cpp" />

@@ -8,15 +8,14 @@
 
 namespace std {
   template class ZENI_CONCURRENCY_LINKAGE std::lock_guard<std::mutex>;
+#ifdef _WIN32
   class ZENI_CONCURRENCY_LINKAGE std::mutex;
+#endif
 }
 #endif
 
 namespace Zeni::Concurrency {
-
-  class Mutex_Pimpl;
-  class Mutex_Lock_Pimpl;
-
+  
   class ZENI_CONCURRENCY_LINKAGE Mutex {
     Mutex(const Mutex &) = delete;
     Mutex & operator=(const Mutex &) = delete;

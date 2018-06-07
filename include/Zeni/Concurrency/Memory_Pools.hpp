@@ -3,7 +3,6 @@
 
 #include "Internal/Linkage.hpp"
 
-#include <cstdint>
 #include <memory>
 
 namespace Zeni::Concurrency {
