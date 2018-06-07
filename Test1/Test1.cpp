@@ -1,5 +1,6 @@
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Maester.hpp"
+#include "Zeni/Concurrency/Memory_Pools.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
 #include "Zeni/Concurrency/Raven.hpp"
 #include "Zeni/Concurrency/Thread_Pool.hpp"
@@ -112,20 +113,20 @@ static void debug_reset() {
     Zeni::Rete::Counters::g_extra[i].store(0, std::memory_order_release);
 }
 
-static void test_Memory_Pool();
 static void test_Thread_Pool();
+static void test_Memory_Pool();
 static void test_Rete_Network();
 static void test_Parser();
 
 int main()
 {
-  test_Memory_Pool();
+  test_Thread_Pool();
   if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
     std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
     abort();
   }
 
-  test_Thread_Pool();
+  test_Memory_Pool();
   if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
     std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
     abort();
@@ -164,11 +165,6 @@ int main()
   return 0;
 }
 
-void test_Memory_Pool() {
-  int * i_ptr = new int[42];
-  delete[] i_ptr;
-}
-
 void test_Thread_Pool() {
   std::unordered_map<std::string, Gossip::Ptr> gossips;
 
@@ -205,6 +201,57 @@ void test_Thread_Pool() {
   thread_pool->get_main_Job_Queue()->give_many(std::move(jobs));
 
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;
+}
+
+static std::atomic_int64_t g_memory_test_complete = false;
+
+void test_Memory_Pool() {
+  class Pool_Clearer : public Zeni::Concurrency::Job {
+  public:
+    void execute() noexcept override {
+      do {
+        Zeni::Concurrency::Memory_Pools::clear_pools();
+      } while (g_memory_test_complete.load(std::memory_order_acquire) == false);
+    }
+  };
+
+  class List_Runner : public Zeni::Concurrency::Job {
+  public:
+    void execute() noexcept override {
+      std::list<int> numbers;
+      for (int i = 0; i != 1000; ++i)
+        numbers.push_back(i);
+      while (!numbers.empty())
+        numbers.pop_back();
+    }
+  };
+
+  class Thread_Runner : public Zeni::Concurrency::Job {
+  public:
+    void execute() noexcept override {
+      {
+        auto thread_pool = Zeni::Concurrency::Thread_Pool::Create(3);
+
+        std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+        for (int i = 0; i != 100; ++i)
+          jobs.push_back(std::make_shared<List_Runner>());
+        thread_pool->get_main_Job_Queue()->give_many(jobs);
+
+        thread_pool->finish_jobs();
+      }
+
+      g_memory_test_complete.store(true, std::memory_order_release);
+    }
+  };
+
+  auto thread_pool = Zeni::Concurrency::Thread_Pool::Create(2);
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  jobs.push_back(std::make_shared<Pool_Clearer>());
+  jobs.push_back(std::make_shared<Thread_Runner>());
+  thread_pool->get_main_Job_Queue()->give_many(jobs);
+
+  thread_pool->finish_jobs();
 }
 
 void test_Rete_Network() {

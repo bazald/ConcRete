@@ -16,6 +16,8 @@ namespace Zeni::Concurrency {
 
   public:
     ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Memory_Pool> get_pool() noexcept(false);
+
+    ZENI_CONCURRENCY_LINKAGE static void clear_pools() noexcept(false);
   };
 
 }

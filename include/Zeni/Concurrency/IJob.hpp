@@ -21,7 +21,7 @@ namespace Zeni::Concurrency {
     virtual const std::shared_ptr<Job_Queue> & get_Job_Queue() const noexcept = 0;
 
     /// The function that gets called by whichever worker pulls this Job off of the Job_Queue
-     virtual void execute() noexcept = 0;
+    virtual void execute() noexcept = 0;
 
   private:
     friend Job_Queue_Impl;
