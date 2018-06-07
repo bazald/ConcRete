@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\Zeni\Concurrency\Atomic.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\IJob.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Internal\Job_Queue_Impl.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Internal\Linkage.hpp" />
