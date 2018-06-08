@@ -1,21 +1,28 @@
 #ifndef ZENI_RETE_PARSER_HPP
 #define ZENI_RETE_PARSER_HPP
 
-#include "Network.hpp"
+#include "Zeni/Concurrency/Job_Queue.hpp"
+#include "Internal/Linkage.hpp"
+
+#include <memory>
+#include <string_view>
 
 namespace Zeni::Rete {
 
-  class Parser_Pimpl;
+  class Network;
 
-  class Parser {
+  class Parser : public std::enable_shared_from_this<Parser> {
+    Parser(const Parser &) = delete;
+    Parser & operator=(const Parser &) = delete;
+
+  protected:
+    Parser() = default;
+
   public:
-    ZENI_RETE_LINKAGE Parser();
+    ZENI_RETE_LINKAGE static std::shared_ptr<Parser> Create();
 
-    ZENI_RETE_LINKAGE void parse_file(const std::shared_ptr<Network> network, const std::string &filename, const bool user_command);
-    ZENI_RETE_LINKAGE void parse_string(const std::shared_ptr<Network> network, const std::string_view str, const bool user_command);
-
-  private:
-    std::shared_ptr<Parser_Pimpl> m_impl;
+    ZENI_RETE_LINKAGE virtual void parse_file(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &filename, const bool user_command) = 0;
+    ZENI_RETE_LINKAGE virtual void parse_string(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view str, const bool user_command) = 0;
   };
 
 }

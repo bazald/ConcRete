@@ -89,11 +89,11 @@ namespace Zeni::Rete {
       return false;
     ++m_child_count;
 #else
+    int64_t child_count = m_child_count.load();
     for (;;) {
-      int64_t child_count = m_child_count.load(std::memory_order_acquire);
       if (child_count == 0)
         return false;
-      if (m_child_count.compare_exchange_weak(child_count, child_count + 1, std::memory_order_acq_rel))
+      if (m_child_count.compare_exchange_weak(child_count, child_count + 1))
         break;
     }
 #endif
@@ -106,7 +106,7 @@ namespace Zeni::Rete {
 #ifdef DISABLE_MULTITHREADING
     return --m_child_count;
 #else
-    return m_child_count.fetch_sub(1, std::memory_order_acq_rel) - 1;
+    return m_child_count.fetch_sub(1) - 1;
 #endif
   }
 

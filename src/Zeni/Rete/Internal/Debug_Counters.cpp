@@ -6,19 +6,19 @@
 
 namespace Zeni::Rete::Debug_Counters {
 
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_node_increments = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_try_increment_child_counts = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_connect_gates_received = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_connect_outputs_received = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_decrement_outputs_received = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_disconnect_gates_received = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_disconnect_output_and_decrements_received = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_disconnect_output_but_nodecrements_received = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_empties_received = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_nonempties_received = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_tokens_inserted = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<> g_tokens_removed = 0;
-  ZENI_RETE_LINKAGE std::array<Zeni::Concurrency::Atomic_int64_t<>, 8> g_extra;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_node_increments = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_try_increment_child_counts = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_connect_gates_received = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_connect_outputs_received = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_decrement_outputs_received = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_disconnect_gates_received = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_disconnect_output_and_decrements_received = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_disconnect_output_but_nodecrements_received = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_empties_received = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_nonempties_received = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_tokens_inserted = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_tokens_removed = 0;
+  ZENI_RETE_LINKAGE std::array<Zeni::Concurrency::Atomic_int64_t<true>, 8> g_extra;
 
   void print(std::ostream &os) {
     os << std::endl;

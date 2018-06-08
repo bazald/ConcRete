@@ -6,8 +6,6 @@
 #include "Custom_Data.hpp"
 #include "Token.hpp"
 
-#include <atomic>
-
 namespace Zeni::Rete {
 
   class Custom_Data;
@@ -138,11 +136,7 @@ namespace Zeni::Rete {
     const int64_t m_size;
     const int64_t m_token_size;
 
-#ifdef DISABLE_MULTITHREADING
-    int64_t m_child_count = 1;
-#else
-    std::atomic_int64_t m_child_count = 1;
-#endif
+    Concurrency::Atomic_int64_t<false> m_child_count = 1;
 
     std::shared_ptr<Unlocked_Node_Data> m_unlocked_node_data;
 

@@ -162,6 +162,8 @@
     <ClCompile Include="..\src\Zeni\New_and_Delete.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Custom_Data.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Internal\Debug_Counters.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Internal\Parser_Impl.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Internal\Variable_Indices_Impl.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Network.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node_Action.cpp" />
@@ -195,7 +197,9 @@
   <ItemGroup>
     <ClInclude Include="..\include\Zeni\Rete\Custom_Data.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Internal\Debug_Counters.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Linkage.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Internal\Linkage.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Internal\Parser_Impl.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Internal\Variable_Indices_Impl.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Network.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Node.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Node_Action.hpp" />

@@ -10,47 +10,31 @@ namespace Zeni::Rete {
 
   class Node;
   class Token_Index;
-  class Variable_Indices_Pimpl;
 
   class Variable_Indices : std::enable_shared_from_this<Variable_Indices> {
-#if defined(_WIN32) && defined(NDEBUG)
-    static const int m_pimpl_size = 256;
-#elif defined(_WIN32)
-    static const int m_pimpl_size = 320;
-#else
-    static const int m_pimpl_size = 224;
-#endif
-    static const int m_pimpl_align = 8;
-    const Variable_Indices_Pimpl * get_pimpl() const;
-    Variable_Indices_Pimpl * get_pimpl();
+    Variable_Indices(const Variable_Indices &) = delete;
+    Variable_Indices & operator=(const Variable_Indices &) = delete;
+
+  protected:
+    Variable_Indices() = default;
 
   public:
-    ZENI_RETE_LINKAGE Variable_Indices();
-    ZENI_RETE_LINKAGE ~Variable_Indices();
+    ZENI_RETE_LINKAGE static std::shared_ptr<Variable_Indices> Create();
 
-    ZENI_RETE_LINKAGE Variable_Indices(const Variable_Indices &rhs);
-    ZENI_RETE_LINKAGE Variable_Indices(Variable_Indices &&rhs);
+    ZENI_RETE_LINKAGE virtual const std::unordered_multimap<std::string, Token_Index> & get_indices() const = 0;
 
-    ZENI_RETE_LINKAGE Variable_Indices & operator=(const Variable_Indices &rhs);
-    ZENI_RETE_LINKAGE Variable_Indices & operator=(Variable_Indices &&rhs);
+    ZENI_RETE_LINKAGE virtual Token_Index find_index(const std::string &name) const = 0;
 
-    ZENI_RETE_LINKAGE const std::unordered_multimap<std::string, Token_Index> & get_indices() const;
+    ZENI_RETE_LINKAGE virtual std::string_view find_name(const Token_Index &index) const = 0;
+    ZENI_RETE_LINKAGE virtual std::string_view find_name_rete(const int64_t rete_row, const int8_t column) const = 0;
+    ZENI_RETE_LINKAGE virtual std::string_view find_name_token(const int64_t token_row, const int8_t column) const = 0;
 
-    ZENI_RETE_LINKAGE Token_Index find_index(const std::string &name) const;
+    ZENI_RETE_LINKAGE virtual std::pair<std::string_view, Token_Index> find_both_rete(const int64_t rete_row, const int8_t column) const = 0;
+    ZENI_RETE_LINKAGE virtual std::pair<std::string_view, Token_Index> find_both_token(const int64_t token_row, const int8_t column) const = 0;
 
-    ZENI_RETE_LINKAGE std::string_view find_name(const Token_Index &index) const;
-    ZENI_RETE_LINKAGE std::string_view find_name_rete(const int64_t rete_row, const int8_t column) const;
-    ZENI_RETE_LINKAGE std::string_view find_name_token(const int64_t token_row, const int8_t column) const;
+    ZENI_RETE_LINKAGE virtual void insert(const std::string_view name, const Token_Index &index) = 0;
 
-    ZENI_RETE_LINKAGE std::pair<std::string_view, Token_Index> find_both_rete(const int64_t rete_row, const int8_t column) const;
-    ZENI_RETE_LINKAGE std::pair<std::string_view, Token_Index> find_both_token(const int64_t token_row, const int8_t column) const;
-
-    ZENI_RETE_LINKAGE void insert(const std::string_view name, const Token_Index &index);
-
-    ZENI_RETE_LINKAGE Variable_Indices reindex_for_right_parent_node(const Variable_Bindings &bindings, const Node &left, const Node &right) const;
-
-  private:
-    alignas(m_pimpl_align) char m_pimpl_storage[m_pimpl_size];
+    ZENI_RETE_LINKAGE virtual std::shared_ptr<Variable_Indices> reindex_for_right_parent_node(const Variable_Bindings &bindings, const Node &left, const Node &right) const = 0;
   };
 
 }
