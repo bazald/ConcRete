@@ -10,11 +10,11 @@ namespace Zeni::Rete {
     Message_Status_Nonempty & operator=(const Message_Status_Nonempty &) = delete;
 
   public:
-    ZENI_RETE_LINKAGE Message_Status_Nonempty(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> child);
+    ZENI_RETE_LINKAGE Message_Status_Nonempty(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<Node> child);
 
     void receive() const override;
 
-    const std::shared_ptr<const Node> child;
+    const std::shared_ptr<Node> child;
   };
 
 }

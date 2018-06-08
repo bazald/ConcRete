@@ -372,8 +372,8 @@ namespace Zeni::Rete {
 
       wmes.positive.emplace(wme, output_token);
       locked_node_data.modify_output_tokens().emplace(output_token);
-      jobs.reserve(outputs.positive.size());
-      for (auto &output : outputs.positive)
+      jobs.reserve(outputs.size());
+      for (auto &output : outputs)
         jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, sft, nullptr, output_token));
     }
 
@@ -404,8 +404,8 @@ namespace Zeni::Rete {
       auto found2 = locked_node_data.get_output_tokens().find(found->second);
       assert(found2 != locked_node_data.get_output_tokens().end());
 
-      jobs.reserve(outputs.positive.size());
-      for (auto &output : outputs.positive)
+      jobs.reserve(outputs.size());
+      for (auto &output : outputs)
         jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, nullptr, *found2));
 
       locked_node_data.modify_output_tokens().erase(found2);
@@ -426,9 +426,9 @@ namespace Zeni::Rete {
       const Outputs &outputs = locked_node_data.get_outputs();
       Unlocked_Network_Data::WMEs &wmes = locked_network_data.modify_wmes();
 
-      jobs.reserve(locked_node_data.get_output_tokens().size() * outputs.positive.size());
+      jobs.reserve(locked_node_data.get_output_tokens().size() * outputs.size());
       for (auto &token : locked_node_data.get_output_tokens()) {
-        for (auto &output : outputs.positive)
+        for (auto &output : outputs)
           jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, nullptr, token));
       }
       locked_node_data.modify_output_tokens().clear();

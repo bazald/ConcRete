@@ -119,7 +119,7 @@ namespace Zeni::Rete {
       const Outputs &gates = locked_node_data.get_gates();
 
       /// TODO: Find a way to kill this loop! Optimize!
-      for (auto &existing_output : gates.positive) {
+      for (auto &existing_output : gates) {
         if (*existing_output == *output) {
           if (existing_output->try_increment_child_count()) {
             DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
@@ -144,7 +144,7 @@ namespace Zeni::Rete {
       const Outputs &outputs = locked_node_data.get_outputs();
 
       /// TODO: Find a way to kill this loop! Optimize!
-      for (auto &existing_output : outputs.positive) {
+      for (auto &existing_output : outputs) {
         if (*existing_output == *output) {
           if (existing_output->try_increment_child_count()) {
             DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
@@ -196,17 +196,10 @@ namespace Zeni::Rete {
     {
       Outputs &gates = locked_node_data.modify_gates();
 
-      const auto found = gates.negative.equal_range(std::const_pointer_cast<Node>(message.child));
-      if (found.first != found.second) {
-        gates.negative.erase(found.first);
-        return false;
-      }
-
-      first_insertion = gates.positive.find(std::const_pointer_cast<Node>(message.child)) == gates.positive.cend();
-      gates.positive.emplace(std::const_pointer_cast<Node>(message.child));
+      first_insertion = gates.try_emplace(message.child);
 
       if (first_insertion && !locked_node_data.get_output_tokens().empty())
-        job = std::make_shared<Message_Status_Nonempty>(std::const_pointer_cast<Node>(message.child), message.network, sft);
+        job = std::make_shared<Message_Status_Nonempty>(message.child, message.network, sft);
     }
 
     if (job)
@@ -223,19 +216,12 @@ namespace Zeni::Rete {
     {
       Outputs &outputs = locked_node_data.modify_outputs();
 
-      const auto found = outputs.negative.equal_range(std::const_pointer_cast<Node>(message.child));
-      if (found.first != found.second) {
-        outputs.negative.erase(found.first);
-        return false;
-      }
-
-      first_insertion = outputs.positive.find(std::const_pointer_cast<Node>(message.child)) == outputs.positive.cend();
-      outputs.positive.emplace(std::const_pointer_cast<Node>(message.child));
+      first_insertion = outputs.try_emplace(message.child);
 
       if (first_insertion) {
         jobs.reserve(locked_node_data.get_output_tokens().size());
         for (auto &output_token : locked_node_data.get_output_tokens())
-          jobs.emplace_back(std::make_shared<Message_Token_Insert>(std::const_pointer_cast<Node>(message.child), message.network, sft, output_token));
+          jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, output_token));
       }
     }
 
@@ -252,19 +238,13 @@ namespace Zeni::Rete {
     {
       Outputs &gates = locked_node_data.modify_gates();
 
-      auto found = gates.positive.equal_range(std::const_pointer_cast<Node>(message.child));
-      if (found.first != found.second) {
-        gates.positive.erase(found.first++);
-        erased_last = found.first == found.second;
-      }
-      else
-        gates.negative.emplace(std::const_pointer_cast<Node>(message.child));
+      erased_last = gates.try_erase(message.child);
 
       if (message.decrement_output_count && decrement_child_count() == 0)
         send_disconnect_from_parents(message.network, message.get_Job_Queue());
 
       if (erased_last && !locked_node_data.get_output_tokens().empty())
-        job = std::make_shared<Message_Status_Empty>(std::const_pointer_cast<Node>(message.child), message.network, sft);
+        job = std::make_shared<Message_Status_Empty>(message.child, message.network, sft);
     }
 
     if (job)
@@ -281,13 +261,7 @@ namespace Zeni::Rete {
     {
       Outputs &outputs = locked_node_data.modify_outputs();
 
-      auto found = outputs.positive.equal_range(std::const_pointer_cast<Node>(message.child));
-      if (found.first != found.second) {
-        outputs.positive.erase(found.first++);
-        erased_last = found.first == found.second;
-      }
-      else
-        outputs.negative.emplace(std::const_pointer_cast<Node>(message.child));
+      erased_last = outputs.try_erase(message.child);
 
       if (message.decrement_output_count && decrement_child_count() == 0)
         send_disconnect_from_parents(message.network, message.get_Job_Queue());
@@ -295,7 +269,7 @@ namespace Zeni::Rete {
       if (erased_last) {
         jobs.reserve(locked_node_data.get_output_tokens().size());
         for (auto &output_token : locked_node_data.get_output_tokens())
-          jobs.emplace_back(std::make_shared<Message_Token_Remove>(std::const_pointer_cast<Node>(message.child), message.network, sft, output_token));
+          jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, output_token));
       }
     }
 

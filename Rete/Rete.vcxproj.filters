@@ -227,5 +227,8 @@
     <ClInclude Include="..\include\Zeni\Rete\Message_Decrement_Child_Count.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Internal\Antiable_Set.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

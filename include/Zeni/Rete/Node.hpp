@@ -3,6 +3,7 @@
 
 #include "Zeni/Concurrency/Atomic.hpp"
 #include "Zeni/Concurrency/Recipient.hpp"
+#include "Internal/Antiable_Set.hpp"
 #include "Custom_Data.hpp"
 #include "Token.hpp"
 
@@ -26,10 +27,7 @@ namespace Zeni::Rete {
     Node & operator=(const Node &) = delete;
 
   public:
-    struct Outputs {
-      std::unordered_multiset<std::shared_ptr<Node>> positive;
-      std::unordered_multiset<std::shared_ptr<Node>> negative;
-    };
+    typedef Antiable_Set<std::shared_ptr<Node>> Outputs;
 
     class Unlocked_Node_Data;
     class Locked_Node_Data_Const;

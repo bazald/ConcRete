@@ -10,11 +10,11 @@ namespace Zeni::Rete {
     Message_Disconnect_Output & operator=(const Message_Disconnect_Output &) = delete;
 
   public:
-    ZENI_RETE_LINKAGE Message_Disconnect_Output(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> child, const bool decrement_output_count_);
+    ZENI_RETE_LINKAGE Message_Disconnect_Output(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<Node> child, const bool decrement_output_count_);
 
     void receive() const override;
 
-    const std::shared_ptr<const Node> child;
+    const std::shared_ptr<Node> child;
     const bool decrement_output_count;
   };
 

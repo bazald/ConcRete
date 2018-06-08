@@ -99,11 +99,11 @@ namespace Zeni::Rete {
       tokens_input.positive.emplace(token);
       locked_node_data.modify_output_tokens().emplace(token);
 
-      jobs.reserve(outputs.positive.size() + (empty ? gates.positive.size() : 0));
-      for (auto &output : outputs.positive)
+      jobs.reserve(outputs.size() + (empty ? gates.size() : 0));
+      for (auto &output : outputs)
         jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, token));
       if (empty) {
-        for (auto &output : gates.positive)
+        for (auto &output : gates)
           jobs.emplace_back(std::make_shared<Message_Status_Nonempty>(output, message.network, sft));
       }
     }
@@ -152,11 +152,11 @@ namespace Zeni::Rete {
 
       const bool empty = locked_node_data.get_output_tokens().empty();
 
-      jobs.reserve(outputs.positive.size() + (empty ? gates.positive.size() : 0));
-      for (auto &output : outputs.positive)
+      jobs.reserve(outputs.size() + (empty ? gates.size() : 0));
+      for (auto &output : outputs)
         jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, token));
       if (empty) {
-        for (auto &output : gates.positive)
+        for (auto &output : gates)
           jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, message.network, sft));
       }
     }

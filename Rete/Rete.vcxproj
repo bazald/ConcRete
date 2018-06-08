@@ -195,6 +195,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Zeni\Rete\Custom_Data.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Internal\Antiable_Set.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Internal\Debug_Counters.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Internal\Linkage.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Internal\Parser_Impl.hpp" />

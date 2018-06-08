@@ -168,19 +168,19 @@ namespace Zeni::Rete {
         return;
 
       size_t num_jobs = 0;
-      for (auto &output : outputs.positive)
+      for (auto &output : outputs)
         num_jobs += output->get_inputs().second ? 2 : 1;
-      for (auto &output : gates.positive)
+      for (auto &output : gates)
         num_jobs += output->get_inputs().second ? 2 : 1;
 
       jobs.reserve(num_jobs);
-      for (auto &output : outputs.positive) {
+      for (auto &output : outputs) {
         const auto inputs = output->get_inputs();
         jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.network, output, false));
         if (inputs.second)
           jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.second, message.network, output, false));
       }
-      for (auto &output : gates.positive) {
+      for (auto &output : gates) {
         const auto inputs = output->get_inputs();
         jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.network, output, false));
         if (inputs.second)
@@ -214,19 +214,19 @@ namespace Zeni::Rete {
         return;
 
       size_t num_jobs = 0;
-      for (auto &output : outputs.positive)
+      for (auto &output : outputs)
         num_jobs += output->get_inputs().second ? 2 : 1;
-      for (auto &output : gates.positive)
+      for (auto &output : gates)
         num_jobs += output->get_inputs().second ? 2 : 1;
 
       jobs.reserve(num_jobs);
-      for (auto &output : outputs.positive) {
+      for (auto &output : outputs) {
         const auto inputs = output->get_inputs();
         jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.first, message.network, output));
         if(inputs.second)
           jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.second, message.network, output));
       }
-      for (auto &output : gates.positive) {
+      for (auto &output : gates) {
         const auto inputs = output->get_inputs();
         jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.first, message.network, output));
         if (inputs.second)
