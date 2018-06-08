@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <list>
+#include <random>
 #include <system_error>
 
 namespace Zeni::Concurrency {
@@ -169,6 +170,8 @@ namespace Zeni::Concurrency {
         job_queues.emplace_back(jqt->second);
       for (auto jqt = m_job_queues.cbegin(); jqt != mine; ++jqt)
         job_queues.emplace_back(jqt->second);
+
+      std::shuffle(job_queues.begin(), job_queues.end(), std::mt19937(std::random_device()()));
     }
 
     bool is_awake = false;
