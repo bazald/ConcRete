@@ -66,16 +66,16 @@ namespace Zeni::Rete {
 
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
 
-      auto found = tokens_input.negative.find(message.get_Token());
+      auto found = tokens_input.negative.find(message.token);
       if (found != tokens_input.negative.end()) {
         tokens_input.negative.erase(found);
         return;
       }
 
-      tokens_input.positive.emplace(message.get_Token());
+      tokens_input.positive.emplace(message.token);
     }
 
-    m_action(*this, *message.get_Token());
+    m_action(*this, *message.token);
   }
 
   void Node_Action::receive(const Message_Token_Remove &message) {
@@ -87,16 +87,16 @@ namespace Zeni::Rete {
 
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
 
-      auto found = tokens_input.positive.find(message.get_Token());
+      auto found = tokens_input.positive.find(message.token);
       if (found == tokens_input.positive.end()) {
-        tokens_input.negative.emplace(message.get_Token());
+        tokens_input.negative.emplace(message.token);
         return;
       }
 
       tokens_input.positive.erase(found);
     }
 
-    m_retraction(*this, *message.get_Token());
+    m_retraction(*this, *message.token);
   }
 
   bool Node_Action::operator==(const Node &) const {

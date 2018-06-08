@@ -5,7 +5,7 @@
 
 namespace Zeni::Rete {
 
-  class Message_Status_Nonempty : public Rete::Message {
+  class Message_Status_Nonempty : public Message {
     Message_Status_Nonempty(const Message_Status_Nonempty &) = delete;
     Message_Status_Nonempty & operator=(const Message_Status_Nonempty &) = delete;
 

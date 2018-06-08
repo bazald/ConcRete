@@ -5,7 +5,7 @@
 
 namespace Zeni::Rete {
 
-  class Message_Disconnect_Output : public Rete::Message {
+  class Message_Disconnect_Output : public Message {
     Message_Disconnect_Output(const Message_Disconnect_Output &) = delete;
     Message_Disconnect_Output & operator=(const Message_Disconnect_Output &) = delete;
 

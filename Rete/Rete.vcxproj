@@ -181,7 +181,6 @@
     <ClCompile Include="..\src\Zeni\Rete\Message_Disconnect_Output.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Message_Status_Empty.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Message_Status_Nonempty.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Message_Token.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Message_Token_Insert.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Message_Token_Remove.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Symbol.cpp" />
@@ -224,7 +223,6 @@
     <ClInclude Include="..\include\Zeni\Rete\Token_Alpha.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Token_Beta.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Token_Index.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Message_Token.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Variable_Indices.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\WME.hpp" />

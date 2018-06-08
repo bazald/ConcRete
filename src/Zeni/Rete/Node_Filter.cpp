@@ -59,7 +59,7 @@ namespace Zeni::Rete {
   }
 
   void Node_Filter::receive(const Message_Token_Insert &message) {
-    const auto token = std::dynamic_pointer_cast<const Token_Alpha>(message.get_Token());
+    const auto token = std::dynamic_pointer_cast<const Token_Alpha>(message.token);
     assert(token);
     const auto &wme = token->get_wme();
 
@@ -112,7 +112,7 @@ namespace Zeni::Rete {
   }
 
   void Node_Filter::receive(const Message_Token_Remove &message) {
-    const auto token = std::dynamic_pointer_cast<const Token_Alpha>(message.get_Token());
+    const auto token = std::dynamic_pointer_cast<const Token_Alpha>(message.token);
     assert(token);
     const auto &wme = token->get_wme();
 

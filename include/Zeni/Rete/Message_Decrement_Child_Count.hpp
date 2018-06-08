@@ -5,7 +5,7 @@
 
 namespace Zeni::Rete {
 
-  class Message_Decrement_Child_Count : public Rete::Message {
+  class Message_Decrement_Child_Count : public Message {
     Message_Decrement_Child_Count(const Message_Decrement_Child_Count &) = delete;
     Message_Decrement_Child_Count & operator=(const Message_Decrement_Child_Count &) = delete;
 

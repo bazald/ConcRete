@@ -114,9 +114,6 @@
     <ClCompile Include="..\src\Zeni\Rete\Message_Status_Nonempty.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Message_Token.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Message_Token_Insert.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
@@ -216,9 +213,6 @@
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Message_Status_Nonempty.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Message_Token.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Message_Token_Insert.hpp">

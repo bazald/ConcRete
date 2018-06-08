@@ -5,7 +5,7 @@
 
 namespace Zeni::Rete {
 
-  class Message_Connect_Gate : public Rete::Message {
+  class Message_Connect_Gate : public Message {
     Message_Connect_Gate(const Message_Connect_Gate &) = delete;
     Message_Connect_Gate & operator=(const Message_Connect_Gate &) = delete;
 
