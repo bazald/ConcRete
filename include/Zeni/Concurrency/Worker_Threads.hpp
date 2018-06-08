@@ -1,5 +1,5 @@
-#ifndef ZENI_CONCURRENCY_THREAD_POOL_HPP
-#define ZENI_CONCURRENCY_THREAD_POOL_HPP
+#ifndef ZENI_CONCURRENCY_WORKER_THREADS_HPP
+#define ZENI_CONCURRENCY_WORKER_THREADS_HPP
 
 #include "Internal/Linkage.hpp"
 
@@ -12,17 +12,17 @@ namespace Zeni::Concurrency {
   class Job_Queue;
   class Job_Queue_Impl;
 
-  class Thread_Pool {
-    Thread_Pool(const Thread_Pool &) = delete;
-    Thread_Pool & operator=(const Thread_Pool &) = delete;
+  class Worker_Threads {
+    Worker_Threads(const Worker_Threads &) = delete;
+    Worker_Threads & operator=(const Worker_Threads &) = delete;
 
   public:
-    ZENI_CONCURRENCY_LINKAGE Thread_Pool() = default;
+    ZENI_CONCURRENCY_LINKAGE Worker_Threads() = default;
 
     /// Initialize the number of threads to std::thread::hardware_concurrency()
-    ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Thread_Pool> Create() noexcept(false);
+    ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Worker_Threads> Create() noexcept(false);
     /// Initialize the number of threads to 0 or 1 for single-threaded operation, anything higher for multithreaded
-    ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Thread_Pool> Create(const int16_t num_threads) noexcept(false);
+    ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Worker_Threads> Create(const int16_t num_threads) noexcept(false);
 
     /// Get the total number of worker threads across all pools
     ZENI_CONCURRENCY_LINKAGE static int64_t get_total_workers() noexcept;

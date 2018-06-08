@@ -1,4 +1,4 @@
-#include "Zeni/Concurrency/Internal/Thread_Pool_Impl.hpp"
+#include "Zeni/Concurrency/Internal/Worker_Threads_Impl.hpp"
 
 #include "Zeni/Concurrency/IJob.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
@@ -11,43 +11,43 @@
 namespace Zeni::Concurrency {
 
 #ifndef DISABLE_MULTITHREADING
-  void worker(Thread_Pool_Impl * const thread_pool) noexcept;
+  void worker(Worker_Threads_Impl * const worker_threads) noexcept;
 #endif
 
-  std::shared_ptr<Thread_Pool_Impl> Thread_Pool_Impl::Create() noexcept(false) {
-    class Friendly_Thread_Pool_Impl : public Thread_Pool_Impl
+  std::shared_ptr<Worker_Threads_Impl> Worker_Threads_Impl::Create() noexcept(false) {
+    class Friendly_Worker_Threads_Impl : public Worker_Threads_Impl
     {
     };
 
-    return std::make_shared<Friendly_Thread_Pool_Impl>();
+    return std::make_shared<Friendly_Worker_Threads_Impl>();
   }
 
-  std::shared_ptr<Thread_Pool_Impl> Thread_Pool_Impl::Create(const int16_t num_threads) noexcept(false) {
-    class Friendly_Thread_Pool_Impl : public Thread_Pool_Impl {
+  std::shared_ptr<Worker_Threads_Impl> Worker_Threads_Impl::Create(const int16_t num_threads) noexcept(false) {
+    class Friendly_Worker_Threads_Impl : public Worker_Threads_Impl {
     public:
-      Friendly_Thread_Pool_Impl(const int16_t num_threads) : Thread_Pool_Impl(num_threads) {}
+      Friendly_Worker_Threads_Impl(const int16_t num_threads) : Worker_Threads_Impl(num_threads) {}
     };
 
-    return std::make_shared<Friendly_Thread_Pool_Impl>(num_threads);
+    return std::make_shared<Friendly_Worker_Threads_Impl>(num_threads);
   }
 
 #ifdef DISABLE_MULTITHREADING
-  Thread_Pool_Impl::Thread_Pool_Impl() noexcept(false)
+  Worker_Threads_Impl::Worker_Threads_Impl() noexcept(false)
     : m_job_queue(Job_Queue::Create(this))
   {
   }
 
-  Thread_Pool_Impl::Thread_Pool_Impl(const int16_t) noexcept(false)
+  Worker_Threads_Impl::Worker_Threads_Impl(const int16_t) noexcept(false)
     : m_job_queue(Job_Queue::Create(this))
   {
   }
 #else
-  Thread_Pool_Impl::Thread_Pool_Impl() noexcept(false)
-    : Thread_Pool_Impl(std::thread::hardware_concurrency())
+  Worker_Threads_Impl::Worker_Threads_Impl() noexcept(false)
+    : Worker_Threads_Impl(std::thread::hardware_concurrency())
   {
   }
 
-  Thread_Pool_Impl::Thread_Pool_Impl(const int16_t num_threads) noexcept(false)
+  Worker_Threads_Impl::Worker_Threads_Impl(const int16_t num_threads) noexcept(false)
     : m_job_queue(Job_Queue::Create(this))
   {
     m_worker_threads.reserve(num_threads);
@@ -85,7 +85,7 @@ namespace Zeni::Concurrency {
   }
 #endif
 
-  Thread_Pool_Impl::~Thread_Pool_Impl() noexcept {
+  Worker_Threads_Impl::~Worker_Threads_Impl() noexcept {
     finish_jobs();
 
 #ifndef DISABLE_MULTITHREADING
@@ -95,17 +95,17 @@ namespace Zeni::Concurrency {
 #endif
   }
 
-  std::shared_ptr<Job_Queue> Thread_Pool_Impl::get_main_Job_Queue() const noexcept {
+  std::shared_ptr<Job_Queue> Worker_Threads_Impl::get_main_Job_Queue() const noexcept {
     return m_job_queue;
   }
 
 #ifdef DISABLE_MULTITHREADING
-  void Thread_Pool_Impl::finish_jobs() noexcept(false) {
+  void Worker_Threads_Impl::finish_jobs() noexcept(false) {
     while (std::shared_ptr<IJob> job = m_job_queue->try_take_one(true))
       job->execute();
   }
 #else
-  void Thread_Pool_Impl::finish_jobs() noexcept(false) {
+  void Worker_Threads_Impl::finish_jobs() noexcept(false) {
     for (;;) {
       int16_t nonempty_job_queues = m_nonempty_job_queues.load(std::memory_order_acquire);
       if (nonempty_job_queues <= 0) {
@@ -139,19 +139,19 @@ namespace Zeni::Concurrency {
     }
   }
 
-  void Thread_Pool_Impl::worker_awakened() noexcept {
+  void Worker_Threads_Impl::worker_awakened() noexcept {
     m_awake_workers.fetch_add(1, std::memory_order_relaxed);
   }
 
-  void Thread_Pool_Impl::job_queue_emptied() noexcept {
+  void Worker_Threads_Impl::job_queue_emptied() noexcept {
     m_nonempty_job_queues.fetch_sub(1, std::memory_order_relaxed);
   }
 
-  void Thread_Pool_Impl::job_queue_nonemptied() noexcept {
+  void Worker_Threads_Impl::job_queue_nonemptied() noexcept {
     m_nonempty_job_queues.fetch_add(1, std::memory_order_relaxed);
   }
 
-  void Thread_Pool_Impl::worker_thread_work() noexcept {
+  void Worker_Threads_Impl::worker_thread_work() noexcept {
     const auto thread_id = std::this_thread::get_id();
     while (!m_initialized.load(std::memory_order_acquire)) {
       if (m_failed_thread_id.load(std::memory_order_acquire) == thread_id)
@@ -220,7 +220,7 @@ namespace Zeni::Concurrency {
 #else
   static std::atomic_int64_t g_total_thread_count = 0;
 
-  void worker(Thread_Pool_Impl * const thread_pool_impl) noexcept {
+  void worker(Worker_Threads_Impl * const worker_threads_impl) noexcept {
     const class Count {
     public:
       Count() {
@@ -235,11 +235,11 @@ namespace Zeni::Concurrency {
     std::shared_ptr<Job_Queue> my_job_queue;
     std::vector<std::shared_ptr<Job_Queue>> other_job_queues;
 
-    thread_pool_impl->worker_thread_work();
+    worker_threads_impl->worker_thread_work();
   }
 #endif
 
-  int64_t Thread_Pool_Impl::get_total_workers() noexcept {
+  int64_t Worker_Threads_Impl::get_total_workers() noexcept {
 #ifdef DISABLE_MULTITHREADING
     return 0;
 #else

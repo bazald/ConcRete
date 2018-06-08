@@ -1,8 +1,8 @@
 #include "Zeni/Rete/Node_Action.hpp"
 
+#include "Zeni/Rete/Message_Token_Insert.hpp"
+#include "Zeni/Rete/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Network.hpp"
-#include "Zeni/Rete/Raven_Token_Insert.hpp"
-#include "Zeni/Rete/Raven_Token_Remove.hpp"
 
 #include <cassert>
 
@@ -49,15 +49,15 @@ namespace Zeni::Rete {
     return m_variables;
   }
 
-  void Node_Action::receive(const Raven_Status_Empty &) {
+  void Node_Action::receive(const Message_Status_Empty &) {
     abort();
   }
 
-  void Node_Action::receive(const Raven_Status_Nonempty &) {
+  void Node_Action::receive(const Message_Status_Nonempty &) {
     abort();
   }
 
-  void Node_Action::receive(const Raven_Token_Insert &raven) {
+  void Node_Action::receive(const Message_Token_Insert &message) {
     const auto sft = shared_from_this();
 
     {
@@ -66,19 +66,19 @@ namespace Zeni::Rete {
 
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
 
-      auto found = tokens_input.negative.find(raven.get_Token());
+      auto found = tokens_input.negative.find(message.get_Token());
       if (found != tokens_input.negative.end()) {
         tokens_input.negative.erase(found);
         return;
       }
 
-      tokens_input.positive.emplace(raven.get_Token());
+      tokens_input.positive.emplace(message.get_Token());
     }
 
-    m_action(*this, *raven.get_Token());
+    m_action(*this, *message.get_Token());
   }
 
-  void Node_Action::receive(const Raven_Token_Remove &raven) {
+  void Node_Action::receive(const Message_Token_Remove &message) {
     const auto sft = shared_from_this();
 
     {
@@ -87,16 +87,16 @@ namespace Zeni::Rete {
 
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
 
-      auto found = tokens_input.positive.find(raven.get_Token());
+      auto found = tokens_input.positive.find(message.get_Token());
       if (found == tokens_input.positive.end()) {
-        tokens_input.negative.emplace(raven.get_Token());
+        tokens_input.negative.emplace(message.get_Token());
         return;
       }
 
       tokens_input.positive.erase(found);
     }
 
-    m_retraction(*this, *raven.get_Token());
+    m_retraction(*this, *message.get_Token());
   }
 
   bool Node_Action::operator==(const Node &) const {

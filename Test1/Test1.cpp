@@ -1,19 +1,19 @@
 #include "Zeni/Concurrency/Job_Queue.hpp"
-#include "Zeni/Concurrency/Maester.hpp"
 #include "Zeni/Concurrency/Memory_Pools.hpp"
+#include "Zeni/Concurrency/Message.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
-#include "Zeni/Concurrency/Raven.hpp"
-#include "Zeni/Concurrency/Thread_Pool.hpp"
+#include "Zeni/Concurrency/Recipient.hpp"
+#include "Zeni/Concurrency/Worker_Threads.hpp"
 
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
+#include "Zeni/Rete/Message_Decrement_Output_Count.hpp"
+#include "Zeni/Rete/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
 #include "Zeni/Rete/Node_Passthrough_Gated.hpp"
 #include "Zeni/Rete/Node_Unary_Gate.hpp"
 #include "Zeni/Rete/Parser.hpp"
-#include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
-#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 
 #include <array>
 #include <iostream>
@@ -22,12 +22,12 @@
 #include <unordered_map>
 #include <unordered_set>
 
-class Whisper : public Zeni::Concurrency::Raven {
+class Whisper : public Zeni::Concurrency::Message {
 public:
   typedef std::shared_ptr<Whisper> Ptr;
 
-  Whisper(const std::shared_ptr<Zeni::Concurrency::Maester> &recipient, const std::string_view message)
-    : Raven(recipient), m_message(message)
+  Whisper(const std::shared_ptr<Zeni::Concurrency::Recipient> &recipient, const std::string_view message)
+    : Message(recipient), m_message(message)
   {
   }
 
@@ -41,12 +41,12 @@ private:
 
 //static std::atomic_int64_t g_num_recvs = 0;
 
-class Gossip : public Zeni::Concurrency::Maester {
+class Gossip : public Zeni::Concurrency::Recipient {
 public:
   typedef std::shared_ptr<Gossip> Ptr;
 
-  void receive(const std::shared_ptr<const Zeni::Concurrency::Raven> raven) noexcept override {
-    const auto whisper = std::dynamic_pointer_cast<const Whisper>(raven);
+  void receive(const std::shared_ptr<const Zeni::Concurrency::Message> message) noexcept override {
+    const auto whisper = std::dynamic_pointer_cast<const Whisper>(message);
 
     std::cerr << whisper->get_message() + "\n";
     //++g_num_recvs;
@@ -56,7 +56,7 @@ public:
     for (Ptr gossip : m_gossips)
       jobs.emplace_back(std::make_shared<Whisper>(gossip, whisper->get_message()));
 
-    const auto job_queue = raven->get_Job_Queue();
+    const auto job_queue = message->get_Job_Queue();
     job_queue->give_many(std::move(jobs));
   }
 
@@ -69,30 +69,30 @@ private:
   std::unordered_set<Ptr> m_gossips;
 };
 
-static void test_Thread_Pool();
+static void test_Worker_Threads();
 static void test_Memory_Pool();
 static void test_Rete_Network();
 static void test_Parser();
 
 int main()
 {
-  test_Thread_Pool();
-  if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
-    std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
+  test_Worker_Threads();
+  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
     abort();
   }
 
   test_Memory_Pool();
-  if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
-    std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
+  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
     abort();
   }
 
   Zeni::Rete::Debug_Counters::print(std::cerr);
   test_Rete_Network();
   Zeni::Rete::Debug_Counters::print(std::cerr);
-  if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
-    std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
+  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
     abort();
   }
   Zeni::Rete::Debug_Counters::reset();
@@ -101,8 +101,8 @@ int main()
   for (int i = 1; i != 11; ++i) {
     std::cerr << ' ' << i;
     test_Rete_Network();
-    if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
       Zeni::Rete::Debug_Counters::print(std::cerr);
       abort();
     }
@@ -112,8 +112,8 @@ int main()
   std::cerr << std::endl;
 
   test_Parser();
-  if (Zeni::Concurrency::Thread_Pool::get_total_workers() != 0) {
-    std::cerr << "Total Workers = " << Zeni::Concurrency::Thread_Pool::get_total_workers() << std::endl;
+  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
     Zeni::Rete::Debug_Counters::print(std::cerr);
     abort();
   }
@@ -121,10 +121,11 @@ int main()
   return 0;
 }
 
-void test_Thread_Pool() {
+void test_Worker_Threads() {
   std::unordered_map<std::string, Gossip::Ptr> gossips;
 
-  auto thread_pool = Zeni::Concurrency::Thread_Pool::Create();
+  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
+  const auto job_queue = worker_threads->get_main_Job_Queue();
 
   for (std::string name : {"alice", "betty", "carol", "diane", "ellen", "farah", "gabby", "helen", "irene", "janae", "kelly"})
     gossips[name] = std::make_shared<Gossip>();
@@ -144,17 +145,17 @@ void test_Thread_Pool() {
   for (std::string message : {"Hi.", "Want to hear a joke?", "Why did the chicken cross the road?", "To get to the other side!"})
     jobs.emplace_back(std::make_shared<Whisper>(gossips["alice"], message));
 
-  thread_pool->get_main_Job_Queue()->give_many(std::move(jobs));
+  job_queue->give_many(std::move(jobs));
   jobs.clear();
 
   //for(int i = 0; i != 1000000; ++i)
-  //  thread_pool.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
+  //  worker_threads.get_queue()->give(std::make_shared<Whisper>(gossips["alice"], "Meh."));
 
-  thread_pool->finish_jobs();
+  worker_threads->finish_jobs();
 
   for (std::string message : {"I get it.", "That was a bad one.", "I'm sorry. :-("})
     jobs.emplace_back(std::make_shared<Whisper>(gossips["alice"], message));
-  thread_pool->get_main_Job_Queue()->give_many(std::move(jobs));
+  job_queue->give_many(std::move(jobs));
 
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;
 }
@@ -186,33 +187,33 @@ void test_Memory_Pool() {
   public:
     void execute() noexcept override {
       {
-        auto thread_pool = Zeni::Concurrency::Thread_Pool::Create(3);
+        auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(3);
 
         std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
         for (int i = 0; i != 100; ++i)
           jobs.push_back(std::make_shared<List_Runner>());
-        thread_pool->get_main_Job_Queue()->give_many(jobs);
+        worker_threads->get_main_Job_Queue()->give_many(jobs);
 
-        thread_pool->finish_jobs();
+        worker_threads->finish_jobs();
       }
 
       g_memory_test_complete.store(true, std::memory_order_release);
     }
   };
 
-  auto thread_pool = Zeni::Concurrency::Thread_Pool::Create(2);
+  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(2);
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
   jobs.push_back(std::make_shared<Pool_Clearer>());
   jobs.push_back(std::make_shared<Thread_Runner>());
-  thread_pool->get_main_Job_Queue()->give_many(jobs);
+  worker_threads->get_main_Job_Queue()->give_many(jobs);
 
-  thread_pool->finish_jobs();
+  worker_threads->finish_jobs();
 }
 
 void test_Rete_Network() {
-  const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, Zeni::Concurrency::Thread_Pool::Create());
-  const auto job_queue = (*network)->get_Thread_Pool()->get_main_Job_Queue();
+  const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, Zeni::Concurrency::Worker_Threads::Create());
+  const auto job_queue = (*network)->get_Worker_Threads()->get_main_Job_Queue();
 
   for (int i = 0; i != 101; ++i) {
     std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
@@ -239,24 +240,24 @@ void test_Rete_Network() {
       });
 
       //job_queue->give_one(
-      //  std::make_shared<Zeni::Rete::Raven_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
+      //  std::make_shared<Zeni::Rete::Message_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
       //job_queue->give_one(
-      //  std::make_shared<Zeni::Rete::Raven_Disconnect_Output>(network->get(), network->get(), filter1, true));
+      //  std::make_shared<Zeni::Rete::Message_Disconnect_Output>(network->get(), network->get(), filter1, true));
     }
 
-    //(*network)->get_Thread_Pool()->finish_jobs();
+    //(*network)->get_Worker_Threads()->finish_jobs();
 
     (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-    //(*network)->get_Thread_Pool()->finish_jobs();
+    //(*network)->get_Worker_Threads()->finish_jobs();
 
     (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
-    //(*network)->get_Thread_Pool()->finish_jobs();
+    //(*network)->get_Worker_Threads()->finish_jobs();
 
     (*network)->excise_rule(job_queue, "hello-world", false);
 
-    //(*network)->get_Thread_Pool()->finish_jobs();
+    //(*network)->get_Worker_Threads()->finish_jobs();
 
     {
       auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
@@ -272,18 +273,18 @@ void test_Rete_Network() {
       });
 
       //job_queue->give_one(
-      //  std::make_shared<Zeni::Rete::Raven_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
+      //  std::make_shared<Zeni::Rete::Message_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
     }
 
-    //(*network)->get_Thread_Pool()->finish_jobs();
+    //(*network)->get_Worker_Threads()->finish_jobs();
 
     (*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
 
-    //(*network)->get_Thread_Pool()->finish_jobs();
+    //(*network)->get_Worker_Threads()->finish_jobs();
 
     (*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
-    //(*network)->get_Thread_Pool()->finish_jobs();
+    //(*network)->get_Worker_Threads()->finish_jobs();
 
     //(*network)->excise_all(job_queue);
   }
@@ -291,7 +292,7 @@ void test_Rete_Network() {
 
 void test_Parser() {
   const auto network = Zeni::Rete::Network::Create();
-  const auto job_queue = (*network)->get_Thread_Pool()->get_main_Job_Queue();
+  const auto job_queue = (*network)->get_Worker_Threads()->get_main_Job_Queue();
 
   auto parser = Zeni::Rete::Parser::Create();
 
@@ -302,12 +303,12 @@ void test_Parser() {
     std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
     std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
 
-  (*network)->get_Thread_Pool()->finish_jobs();
+  (*network)->get_Worker_Threads()->finish_jobs();
 
   //(*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(
   //  std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
   //  std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
   //  std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
 
-  //(*network)->get_Thread_Pool()->finish_jobs();
+  //(*network)->get_Worker_Threads()->finish_jobs();
 }

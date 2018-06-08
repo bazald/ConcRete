@@ -2,15 +2,15 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
+#include "Zeni/Rete/Message_Connect_Gate.hpp"
+#include "Zeni/Rete/Message_Connect_Output.hpp"
+#include "Zeni/Rete/Message_Decrement_Output_Count.hpp"
+#include "Zeni/Rete/Message_Disconnect_Gate.hpp"
+#include "Zeni/Rete/Message_Disconnect_Output.hpp"
+#include "Zeni/Rete/Message_Status_Empty.hpp"
+#include "Zeni/Rete/Message_Status_Nonempty.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
-#include "Zeni/Rete/Raven_Connect_Gate.hpp"
-#include "Zeni/Rete/Raven_Connect_Output.hpp"
-#include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
-#include "Zeni/Rete/Raven_Disconnect_Gate.hpp"
-#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
-#include "Zeni/Rete/Raven_Status_Empty.hpp"
-#include "Zeni/Rete/Raven_Status_Nonempty.hpp"
 
 #include <cassert>
 
@@ -26,7 +26,7 @@ namespace Zeni::Rete {
   }
 
   void Node_Unary_Gate::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
-    job_queue->give_one(std::make_shared<Raven_Disconnect_Gate>(get_input(), network, shared_from_this(), true));
+    job_queue->give_one(std::make_shared<Message_Disconnect_Gate>(get_input(), network, shared_from_this(), true));
   }
 
   std::shared_ptr<Node_Unary_Gate> Node_Unary_Gate::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input) {
@@ -40,16 +40,16 @@ namespace Zeni::Rete {
 
     if (connected != created) {
       DEBUG_COUNTER_DECREMENT(g_decrement_outputs_received, 1);
-      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(input, network, created));
+      job_queue->give_one(std::make_shared<Message_Decrement_Output_Count>(input, network, created));
     }
 
     return connected;
   }
 
-  void Node_Unary_Gate::receive(const Raven_Connect_Gate &raven) {
+  void Node_Unary_Gate::receive(const Message_Connect_Gate &message) {
     Locked_Node_Data locked_node_data(this);
 
-    const bool first_insertion = Node::receive(raven, locked_node_data);
+    const bool first_insertion = Node::receive(message, locked_node_data);
     if (!first_insertion)
       return;
 
@@ -61,20 +61,20 @@ namespace Zeni::Rete {
       const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
 
       if (!tokens_input.positive.empty()) {
-        const auto inputs = std::const_pointer_cast<Node>(raven.get_sender())->get_inputs();
-        jobs.emplace_back(std::make_shared<Raven_Connect_Gate>(inputs.first, raven.get_Network(), raven.get_sender()));
+        const auto inputs = std::const_pointer_cast<Node>(message.get_sender())->get_inputs();
+        jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.first, message.get_Network(), message.get_sender()));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Raven_Connect_Gate>(inputs.second, raven.get_Network(), raven.get_sender()));
+          jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.second, message.get_Network(), message.get_sender()));
       }
     }
 
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  void Node_Unary_Gate::receive(const Raven_Connect_Output &raven) {
+  void Node_Unary_Gate::receive(const Message_Connect_Output &message) {
     Locked_Node_Data locked_node_data(this);
 
-    const bool first_insertion = Node::receive(raven, locked_node_data);
+    const bool first_insertion = Node::receive(message, locked_node_data);
     if (!first_insertion)
       return;
 
@@ -86,20 +86,20 @@ namespace Zeni::Rete {
       const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
 
       if (!tokens_input.positive.empty()) {
-        const auto inputs = std::const_pointer_cast<Node>(raven.get_sender())->get_inputs();
-        jobs.emplace_back(std::make_shared<Raven_Connect_Output>(inputs.first, raven.get_Network(), raven.get_sender()));
+        const auto inputs = std::const_pointer_cast<Node>(message.get_sender())->get_inputs();
+        jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.first, message.get_Network(), message.get_sender()));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Raven_Connect_Output>(inputs.second, raven.get_Network(), raven.get_sender()));
+          jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.second, message.get_Network(), message.get_sender()));
       }
     }
 
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  void Node_Unary_Gate::receive(const Raven_Disconnect_Gate &raven) {
+  void Node_Unary_Gate::receive(const Message_Disconnect_Gate &message) {
     Locked_Node_Data locked_node_data(this);
 
-    const bool erased_last = Node::receive(raven, locked_node_data);
+    const bool erased_last = Node::receive(message, locked_node_data);
     if (!erased_last)
       return;
 
@@ -111,20 +111,20 @@ namespace Zeni::Rete {
       const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
 
       if (!tokens_input.positive.empty()) {
-        const auto inputs = std::const_pointer_cast<Node>(raven.get_sender())->get_inputs();
-        jobs.emplace_back(std::make_shared<Raven_Disconnect_Gate>(inputs.first, raven.get_Network(), raven.get_sender(), false));
+        const auto inputs = std::const_pointer_cast<Node>(message.get_sender())->get_inputs();
+        jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.get_Network(), message.get_sender(), false));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Raven_Disconnect_Gate>(inputs.second, raven.get_Network(), raven.get_sender(), false));
+          jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.second, message.get_Network(), message.get_sender(), false));
       }
     }
 
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  void Node_Unary_Gate::receive(const Raven_Disconnect_Output &raven) {
+  void Node_Unary_Gate::receive(const Message_Disconnect_Output &message) {
     Locked_Node_Data locked_node_data(this);
 
-    const bool erased_last = Node::receive(raven, locked_node_data);
+    const bool erased_last = Node::receive(message, locked_node_data);
     if (!erased_last)
       return;
 
@@ -136,17 +136,17 @@ namespace Zeni::Rete {
       const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
 
       if (!tokens_input.positive.empty()) {
-        const auto inputs = std::const_pointer_cast<Node>(raven.get_sender())->get_inputs();
-        jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(inputs.first, raven.get_Network(), raven.get_sender(), false));
+        const auto inputs = std::const_pointer_cast<Node>(message.get_sender())->get_inputs();
+        jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.get_Network(), message.get_sender(), false));
         if(inputs.second)
-          jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(inputs.second, raven.get_Network(), raven.get_sender(), false));
+          jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.second, message.get_Network(), message.get_sender(), false));
       }
     }
 
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  void Node_Unary_Gate::receive(const Raven_Status_Empty &raven) {
+  void Node_Unary_Gate::receive(const Message_Status_Empty &message) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
@@ -176,22 +176,22 @@ namespace Zeni::Rete {
       jobs.reserve(num_jobs);
       for (auto &output : outputs.positive) {
         const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(inputs.first, raven.get_Network(), output, false));
+        jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.get_Network(), output, false));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(inputs.second, raven.get_Network(), output, false));
+          jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.second, message.get_Network(), output, false));
       }
       for (auto &output : gates.positive) {
         const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Raven_Disconnect_Gate>(inputs.first, raven.get_Network(), output, false));
+        jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.get_Network(), output, false));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Raven_Disconnect_Gate>(inputs.second, raven.get_Network(), output, false));
+          jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.second, message.get_Network(), output, false));
       }
     }
 
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  void Node_Unary_Gate::receive(const Raven_Status_Nonempty &raven) {
+  void Node_Unary_Gate::receive(const Message_Status_Nonempty &message) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
@@ -222,26 +222,26 @@ namespace Zeni::Rete {
       jobs.reserve(num_jobs);
       for (auto &output : outputs.positive) {
         const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Raven_Connect_Output>(inputs.first, raven.get_Network(), output));
+        jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.first, message.get_Network(), output));
         if(inputs.second)
-          jobs.emplace_back(std::make_shared<Raven_Connect_Output>(inputs.second, raven.get_Network(), output));
+          jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.second, message.get_Network(), output));
       }
       for (auto &output : gates.positive) {
         const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Raven_Connect_Gate>(inputs.first, raven.get_Network(), output));
+        jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.first, message.get_Network(), output));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Raven_Connect_Gate>(inputs.second, raven.get_Network(), output));
+          jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.second, message.get_Network(), output));
       }
     }
 
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  void Node_Unary_Gate::receive(const Raven_Token_Insert &) {
+  void Node_Unary_Gate::receive(const Message_Token_Insert &) {
     abort();
   }
 
-  void Node_Unary_Gate::receive(const Raven_Token_Remove &) {
+  void Node_Unary_Gate::receive(const Message_Token_Remove &) {
     abort();
   }
 

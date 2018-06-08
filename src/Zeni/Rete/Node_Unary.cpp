@@ -1,9 +1,9 @@
 #include "Zeni/Rete/Node_Unary.hpp"
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
+#include "Zeni/Rete/Message_Connect_Output.hpp"
+#include "Zeni/Rete/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Network.hpp"
-#include "Zeni/Rete/Raven_Connect_Output.hpp"
-#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 
 #include <cassert>
 
@@ -40,7 +40,7 @@ namespace Zeni::Rete {
   }
 
   void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
-    job_queue->give_one(std::make_shared<Raven_Disconnect_Output>(m_input, network, shared_from_this(), true));
+    job_queue->give_one(std::make_shared<Message_Disconnect_Output>(m_input, network, shared_from_this(), true));
   }
 
   std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> Node_Unary::get_inputs() {

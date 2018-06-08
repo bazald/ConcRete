@@ -2,11 +2,11 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
+#include "Zeni/Rete/Message_Decrement_Output_Count.hpp"
+#include "Zeni/Rete/Message_Connect_Output.hpp"
+#include "Zeni/Rete/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Unary_Gate.hpp"
-#include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
-#include "Zeni/Rete/Raven_Connect_Output.hpp"
-#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
 
 #include <cassert>
 
@@ -22,8 +22,8 @@ namespace Zeni::Rete {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
-    jobs.emplace_back(std::make_shared<Raven_Decrement_Output_Count>(get_input(), network, sft));
-    jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(m_gate, network, sft, true));
+    jobs.emplace_back(std::make_shared<Message_Decrement_Output_Count>(get_input(), network, sft));
+    jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(m_gate, network, sft, true));
 
     job_queue->give_many(std::move(jobs));
   }
@@ -43,8 +43,8 @@ namespace Zeni::Rete {
     if (connected != created) {
       DEBUG_COUNTER_DECREMENT(g_decrement_outputs_received, 2);
       std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
-      jobs.emplace_back(std::make_shared<Raven_Decrement_Output_Count>(gate, network, created));
-      jobs.emplace_back(std::make_shared<Raven_Decrement_Output_Count>(input, network, created));
+      jobs.emplace_back(std::make_shared<Message_Decrement_Output_Count>(gate, network, created));
+      jobs.emplace_back(std::make_shared<Message_Decrement_Output_Count>(input, network, created));
       job_queue->give_many(std::move(jobs));
     }
 

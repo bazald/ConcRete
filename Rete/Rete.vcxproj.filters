@@ -60,12 +60,6 @@
     <ClCompile Include="..\src\Zeni\Rete\WME.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Token_Insert.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Token_Remove.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Unary.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
@@ -75,43 +69,16 @@
     <ClCompile Include="..\src\Zeni\Rete\Token_Beta.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Disconnect_Output.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Parser.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Token.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Passthrough.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Connect_Output.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Connect_Gate.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Disconnect_Gate.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Status_Empty.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Status_Nonempty.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Unary_Gate.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Node_Passthrough_Gated.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\Zeni\Rete\Raven_Decrement_Output_Count.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\New_and_Delete.cpp">
@@ -127,6 +94,39 @@
       <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message_Connect_Gate.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message_Connect_Output.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message_Decrement_Output_Count.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message_Disconnect_Gate.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message_Disconnect_Output.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message_Status_Empty.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message_Status_Nonempty.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message_Token.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message_Token_Insert.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Zeni\Rete\Message_Token_Remove.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
   </ItemGroup>
@@ -167,19 +167,7 @@
     <ClInclude Include="..\include\Zeni\Utility.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Token.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Token_Insert.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Token_Remove.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Node_Unary.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Disconnect_Output.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Token_Alpha.hpp">
@@ -188,37 +176,16 @@
     <ClInclude Include="..\include\Zeni\Rete\Token_Beta.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Parser.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Node_Passthrough.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Connect_Output.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Connect_Gate.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Disconnect_Gate.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Status_Nonempty.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Status_Empty.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Node_Unary_Gate.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Node_Passthrough_Gated.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\Zeni\Rete\Raven_Decrement_Output_Count.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Internal\Debug_Counters.hpp">
@@ -232,6 +199,39 @@
     </ClInclude>
     <ClInclude Include="..\include\Zeni\Rete\Internal\Parser_Impl.hpp">
       <Filter>Header Files\Zeni\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message_Connect_Gate.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message_Connect_Output.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message_Decrement_Output_Count.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message_Disconnect_Gate.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message_Disconnect_Output.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message_Status_Empty.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message_Status_Nonempty.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message_Token.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message_Token_Insert.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Zeni\Rete\Message_Token_Remove.hpp">
+      <Filter>Header Files\Zeni</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -18,10 +18,10 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE const WME & get_wme() const;
 
-    ZENI_RETE_LINKAGE void receive(const Raven_Status_Empty &) override;
-    ZENI_RETE_LINKAGE void receive(const Raven_Status_Nonempty &) override;
-    ZENI_RETE_LINKAGE void receive(const Raven_Token_Insert &raven) override;
-    ZENI_RETE_LINKAGE void receive(const Raven_Token_Remove &raven) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Status_Empty &) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Status_Nonempty &) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Token_Insert &message) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &message) override;
 
     ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
 

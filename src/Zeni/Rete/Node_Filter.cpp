@@ -2,14 +2,14 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
+#include "Zeni/Rete/Message_Decrement_Output_Count.hpp"
+#include "Zeni/Rete/Message_Disconnect_Output.hpp"
+#include "Zeni/Rete/Message_Status_Empty.hpp"
+#include "Zeni/Rete/Message_Status_Nonempty.hpp"
+#include "Zeni/Rete/Message_Token_Insert.hpp"
+#include "Zeni/Rete/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
-#include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
-#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
-#include "Zeni/Rete/Raven_Status_Empty.hpp"
-#include "Zeni/Rete/Raven_Status_Nonempty.hpp"
-#include "Zeni/Rete/Raven_Token_Insert.hpp"
-#include "Zeni/Rete/Raven_Token_Remove.hpp"
 #include "Zeni/Rete/Token_Alpha.hpp"
 
 #include <cassert>
@@ -44,22 +44,22 @@ namespace Zeni::Rete {
 
     if (connected != created) {
       DEBUG_COUNTER_DECREMENT(g_decrement_outputs_received, 1);
-      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(network, network, created));
+      job_queue->give_one(std::make_shared<Message_Decrement_Output_Count>(network, network, created));
     }
 
     return connected;
   }
 
-  void Node_Filter::receive(const Raven_Status_Empty &) {
+  void Node_Filter::receive(const Message_Status_Empty &) {
     abort();
   }
 
-  void Node_Filter::receive(const Raven_Status_Nonempty &) {
+  void Node_Filter::receive(const Message_Status_Nonempty &) {
     abort();
   }
 
-  void Node_Filter::receive(const Raven_Token_Insert &raven) {
-    const auto token = std::dynamic_pointer_cast<const Token_Alpha>(raven.get_Token());
+  void Node_Filter::receive(const Message_Token_Insert &message) {
+    const auto token = std::dynamic_pointer_cast<const Token_Alpha>(message.get_Token());
     assert(token);
     const auto &wme = token->get_wme();
 
@@ -101,18 +101,18 @@ namespace Zeni::Rete {
 
       jobs.reserve(outputs.positive.size() + (empty ? gates.positive.size() : 0));
       for (auto &output : outputs.positive)
-        jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, raven.get_Network(), sft, token));
+        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.get_Network(), sft, token));
       if (empty) {
         for (auto &output : gates.positive)
-          jobs.emplace_back(std::make_shared<Raven_Status_Nonempty>(output, raven.get_Network(), sft));
+          jobs.emplace_back(std::make_shared<Message_Status_Nonempty>(output, message.get_Network(), sft));
       }
     }
 
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  void Node_Filter::receive(const Raven_Token_Remove &raven) {
-    const auto token = std::dynamic_pointer_cast<const Token_Alpha>(raven.get_Token());
+  void Node_Filter::receive(const Message_Token_Remove &message) {
+    const auto token = std::dynamic_pointer_cast<const Token_Alpha>(message.get_Token());
     assert(token);
     const auto &wme = token->get_wme();
 
@@ -154,14 +154,14 @@ namespace Zeni::Rete {
 
       jobs.reserve(outputs.positive.size() + (empty ? gates.positive.size() : 0));
       for (auto &output : outputs.positive)
-        jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, raven.get_Network(), sft, token));
+        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.get_Network(), sft, token));
       if (empty) {
         for (auto &output : gates.positive)
-          jobs.emplace_back(std::make_shared<Raven_Status_Empty>(output, raven.get_Network(), sft));
+          jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, message.get_Network(), sft));
       }
     }
 
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   bool Node_Filter::operator==(const Node &rhs) const {

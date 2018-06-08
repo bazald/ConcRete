@@ -2,13 +2,13 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
+#include "Zeni/Rete/Message_Decrement_Output_Count.hpp"
+#include "Zeni/Rete/Message_Status_Empty.hpp"
+#include "Zeni/Rete/Message_Status_Nonempty.hpp"
+#include "Zeni/Rete/Message_Token_Insert.hpp"
+#include "Zeni/Rete/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
-#include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
-#include "Zeni/Rete/Raven_Status_Empty.hpp"
-#include "Zeni/Rete/Raven_Status_Nonempty.hpp"
-#include "Zeni/Rete/Raven_Token_Insert.hpp"
-#include "Zeni/Rete/Raven_Token_Remove.hpp"
 
 #include <cassert>
 
@@ -34,21 +34,21 @@ namespace Zeni::Rete {
 
     if (connected != created) {
       DEBUG_COUNTER_DECREMENT(g_decrement_outputs_received, 1);
-      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(input, network, created));
+      job_queue->give_one(std::make_shared<Message_Decrement_Output_Count>(input, network, created));
     }
 
     return connected;
   }
 
-  void Node_Passthrough::receive(const Raven_Status_Empty &) {
+  void Node_Passthrough::receive(const Message_Status_Empty &) {
     abort();
   }
 
-  void Node_Passthrough::receive(const Raven_Status_Nonempty &) {
+  void Node_Passthrough::receive(const Message_Status_Nonempty &) {
     abort();
   }
 
-  void Node_Passthrough::receive(const Raven_Token_Insert &raven) {
+  void Node_Passthrough::receive(const Message_Token_Insert &message) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
       
@@ -60,7 +60,7 @@ namespace Zeni::Rete {
       const Outputs &outputs = locked_node_data.get_outputs();
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
 
-      auto found = tokens_input.negative.find(raven.get_Token());
+      auto found = tokens_input.negative.find(message.get_Token());
       if (found != tokens_input.negative.end()) {
         tokens_input.negative.erase(found);
         return;
@@ -68,22 +68,22 @@ namespace Zeni::Rete {
 
       const bool first_insertion = locked_node_data.get_output_tokens().empty();
 
-      tokens_input.positive.emplace(raven.get_Token());
-      locked_node_data.modify_output_tokens().emplace(raven.get_Token());
+      tokens_input.positive.emplace(message.get_Token());
+      locked_node_data.modify_output_tokens().emplace(message.get_Token());
 
       jobs.reserve(outputs.positive.size() + (first_insertion ? gates.positive.size() : 0));
       for (auto &output : outputs.positive)
-        jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, raven.get_Network(), sft, raven.get_Token()));
+        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.get_Network(), sft, message.get_Token()));
       if (first_insertion) {
         for (auto &output : gates.positive)
-          jobs.emplace_back(std::make_shared<Raven_Status_Nonempty>(output, raven.get_Network(), sft));
+          jobs.emplace_back(std::make_shared<Message_Status_Nonempty>(output, message.get_Network(), sft));
       }
     }
 
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  void Node_Passthrough::receive(const Raven_Token_Remove &raven) {
+  void Node_Passthrough::receive(const Message_Token_Remove &message) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
@@ -95,27 +95,27 @@ namespace Zeni::Rete {
       const Outputs &outputs = locked_node_data.get_outputs();
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
 
-      auto found = tokens_input.positive.find(raven.get_Token());
+      auto found = tokens_input.positive.find(message.get_Token());
       if (found == tokens_input.positive.end()) {
-        tokens_input.negative.emplace(raven.get_Token());
+        tokens_input.negative.emplace(message.get_Token());
         return;
       }
 
       tokens_input.positive.erase(found);
-      locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(raven.get_Token()));
+      locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(message.get_Token()));
 
       const bool last_removal = locked_node_data.get_output_tokens().empty();
 
       jobs.reserve(outputs.positive.size() + (last_removal ? gates.positive.size() : 0));
       for (auto &output : outputs.positive)
-        jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, raven.get_Network(), sft, raven.get_Token()));
+        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.get_Network(), sft, message.get_Token()));
       if (last_removal) {
         for (auto &output : gates.positive)
-          jobs.emplace_back(std::make_shared<Raven_Status_Empty>(output, raven.get_Network(), sft));
+          jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, message.get_Network(), sft));
       }
     }
 
-    raven.get_Job_Queue()->give_many(std::move(jobs));
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   bool Node_Passthrough::operator==(const Node &rhs) const {

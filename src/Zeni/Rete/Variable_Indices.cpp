@@ -1,5 +1,7 @@
 #include "Zeni/Rete/Internal/Variable_Indices_Impl.hpp"
 
+#include <iostream>
+
 namespace Zeni::Rete {
 
   std::shared_ptr<Variable_Indices> Variable_Indices::Create() {

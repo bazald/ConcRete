@@ -1,7 +1,7 @@
 #ifndef ZENI_RETE_NETWORK_HPP
 #define ZENI_RETE_NETWORK_HPP
 
-#include "Zeni/Concurrency/Maester.hpp"
+#include "Zeni/Concurrency/Recipient.hpp"
 #include "Node.hpp"
 
 #include <set>
@@ -10,7 +10,7 @@
 namespace Zeni::Concurrency {
 
   class Job_Queue;
-  class Thread_Pool;
+  class Worker_Threads;
 
 }
 
@@ -64,7 +64,7 @@ namespace Zeni::Rete {
 
   private:
     Network(const Printed_Output printed_output);
-    Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool);
+    Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Worker_Threads> &worker_threads);
 
     ZENI_RETE_LINKAGE void Destroy();
 
@@ -72,11 +72,11 @@ namespace Zeni::Rete {
 
   public:
     ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const Printed_Output printed_output = Printed_Output::Normal);
-    ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> thread_pool);
+    ZENI_RETE_LINKAGE static std::shared_ptr<Instantiation> Create(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Worker_Threads> worker_threads);
 
     ZENI_RETE_LINKAGE ~Network();
 
-    ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Thread_Pool> get_Thread_Pool() const;
+    ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Worker_Threads> get_Worker_Threads() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> get_rule(const std::string &name) const;
     ZENI_RETE_LINKAGE std::set<std::string> get_rule_names() const;
     ZENI_RETE_LINKAGE int64_t get_rule_name_index() const;
@@ -86,10 +86,10 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() override;
 
-    ZENI_RETE_LINKAGE void receive(const Raven_Status_Empty &) override;
-    ZENI_RETE_LINKAGE void receive(const Raven_Status_Nonempty &) override;
-    ZENI_RETE_LINKAGE void receive(const Raven_Token_Insert &) override;
-    ZENI_RETE_LINKAGE void receive(const Raven_Token_Remove &) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Status_Empty &) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Status_Nonempty &) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Token_Insert &) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &) override;
 
     ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_command);
     ZENI_RETE_LINKAGE void excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue);
@@ -104,7 +104,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
 
   private:
-    const std::shared_ptr<Concurrency::Thread_Pool> m_thread_pool;
+    const std::shared_ptr<Concurrency::Worker_Threads> m_worker_threads;
     const std::shared_ptr<Unlocked_Network_Data> m_unlocked_network_data;
 
     // Options

@@ -12,7 +12,9 @@ CONCURRENCY_SRCS=$(wildcard src/Zeni/Concurrency/*.cpp) $(wildcard src/Zeni/Conc
 CONCURRENCY_OBJS=$(subst .cpp,.o,$(CONCURRENCY_SRCS))
 
 RETE_SRCS=src/Zeni/New_and_Delete.cpp src/Zeni/Utility.cpp
+RETE_SRCS+=$(wildcard src/Zeni/Rete/Internal/*.cpp)
 RETE_SRCS+=src/Zeni/Rete/Custom_Data.cpp
+RETE_SRCS+=$(wildcard src/Zeni/Rete/Message*.cpp)
 RETE_SRCS+=src/Zeni/Rete/Network.cpp
 RETE_SRCS+=src/Zeni/Rete/Node_Action.cpp
 RETE_SRCS+=src/Zeni/Rete/Node.cpp
@@ -22,7 +24,6 @@ RETE_SRCS+=src/Zeni/Rete/Node_Passthrough_Gated.cpp
 RETE_SRCS+=src/Zeni/Rete/Node_Unary.cpp
 RETE_SRCS+=src/Zeni/Rete/Node_Unary_Gate.cpp
 RETE_SRCS+=src/Zeni/Rete/Parser.cpp
-RETE_SRCS+=$(wildcard src/Zeni/Rete/Raven*.cpp)
 RETE_SRCS+=src/Zeni/Rete/Symbol.cpp
 RETE_SRCS+=$(wildcard src/Zeni/Rete/Token*.cpp)
 RETE_SRCS+=$(wildcard src/Zeni/Rete/Variable_*.cpp)

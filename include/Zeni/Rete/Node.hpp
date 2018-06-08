@@ -2,7 +2,7 @@
 #define ZENI_RETE_NODE_HPP
 
 #include "Zeni/Concurrency/Atomic.hpp"
-#include "Zeni/Concurrency/Maester.hpp"
+#include "Zeni/Concurrency/Recipient.hpp"
 #include "Custom_Data.hpp"
 #include "Token.hpp"
 
@@ -10,17 +10,17 @@ namespace Zeni::Rete {
 
   class Custom_Data;
   class Network;
-  class Raven_Connect_Gate;
-  class Raven_Connect_Output;
-  class Raven_Disconnect_Gate;
-  class Raven_Decrement_Output_Count;
-  class Raven_Disconnect_Output;
-  class Raven_Status_Empty;
-  class Raven_Status_Nonempty;
-  class Raven_Token_Insert;
-  class Raven_Token_Remove;
+  class Message_Connect_Gate;
+  class Message_Connect_Output;
+  class Message_Disconnect_Gate;
+  class Message_Decrement_Output_Count;
+  class Message_Disconnect_Output;
+  class Message_Status_Empty;
+  class Message_Status_Nonempty;
+  class Message_Token_Insert;
+  class Message_Token_Remove;
 
-  class Node : public Concurrency::Maester
+  class Node : public Concurrency::Recipient
   {
     Node(const Node &) = delete;
     Node & operator=(const Node &) = delete;
@@ -106,28 +106,28 @@ namespace Zeni::Rete {
     /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
     ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output);
 
-    ZENI_RETE_LINKAGE void receive(const std::shared_ptr<const Concurrency::Raven> raven) noexcept override;
-    ZENI_RETE_LINKAGE virtual void receive(const Raven_Connect_Gate &raven);
-    ZENI_RETE_LINKAGE virtual void receive(const Raven_Connect_Output &raven);
-    ZENI_RETE_LINKAGE void receive(const Raven_Decrement_Output_Count &raven);
-    ZENI_RETE_LINKAGE virtual void receive(const Raven_Disconnect_Gate &raven);
-    ZENI_RETE_LINKAGE virtual void receive(const Raven_Disconnect_Output &raven);
-    ZENI_RETE_LINKAGE virtual void receive(const Raven_Status_Empty &raven) = 0;
-    ZENI_RETE_LINKAGE virtual void receive(const Raven_Status_Nonempty &raven) = 0;
-    ZENI_RETE_LINKAGE virtual void receive(const Raven_Token_Insert &raven) = 0;
-    ZENI_RETE_LINKAGE virtual void receive(const Raven_Token_Remove &raven) = 0;
+    ZENI_RETE_LINKAGE void receive(const std::shared_ptr<const Concurrency::Message> message) noexcept override;
+    ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Gate &message);
+    ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Output &message);
+    ZENI_RETE_LINKAGE void receive(const Message_Decrement_Output_Count &message);
+    ZENI_RETE_LINKAGE virtual void receive(const Message_Disconnect_Gate &message);
+    ZENI_RETE_LINKAGE virtual void receive(const Message_Disconnect_Output &message);
+    ZENI_RETE_LINKAGE virtual void receive(const Message_Status_Empty &message) = 0;
+    ZENI_RETE_LINKAGE virtual void receive(const Message_Status_Nonempty &message) = 0;
+    ZENI_RETE_LINKAGE virtual void receive(const Message_Token_Insert &message) = 0;
+    ZENI_RETE_LINKAGE virtual void receive(const Message_Token_Remove &message) = 0;
 
     ZENI_RETE_LINKAGE virtual bool operator==(const Node &rhs) const = 0;
 
     protected:
     /// Returns true if the first instance of the sender gate has been inserted
-    ZENI_RETE_LINKAGE virtual bool receive(const Raven_Connect_Gate &raven, Locked_Node_Data &locked_node_data);
+    ZENI_RETE_LINKAGE virtual bool receive(const Message_Connect_Gate &message, Locked_Node_Data &locked_node_data);
     /// Returns true if the first instance of the sender output has been inserted
-    ZENI_RETE_LINKAGE virtual bool receive(const Raven_Connect_Output &raven, Locked_Node_Data &locked_node_data);
+    ZENI_RETE_LINKAGE virtual bool receive(const Message_Connect_Output &message, Locked_Node_Data &locked_node_data);
     /// Returns true if the last instance of the sender gate has been removed
-    ZENI_RETE_LINKAGE virtual bool receive(const Raven_Disconnect_Gate &raven, Locked_Node_Data &locked_node_data);
+    ZENI_RETE_LINKAGE virtual bool receive(const Message_Disconnect_Gate &message, Locked_Node_Data &locked_node_data);
     /// Returns true if the last instance of the sender output has been removed
-    ZENI_RETE_LINKAGE virtual bool receive(const Raven_Disconnect_Output &raven, Locked_Node_Data &locked_node_data);
+    ZENI_RETE_LINKAGE virtual bool receive(const Message_Disconnect_Output &message, Locked_Node_Data &locked_node_data);
 
   private:
     int64_t decrement_child_count();

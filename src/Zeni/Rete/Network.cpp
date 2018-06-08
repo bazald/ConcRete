@@ -1,15 +1,15 @@
 #include "Zeni/Rete/Network.hpp"
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
-#include "Zeni/Concurrency/Thread_Pool.hpp"
+#include "Zeni/Concurrency/Worker_Threads.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
+#include "Zeni/Rete/Message_Connect_Output.hpp"
+#include "Zeni/Rete/Message_Decrement_Output_Count.hpp"
+#include "Zeni/Rete/Message_Disconnect_Output.hpp"
+#include "Zeni/Rete/Message_Token_Insert.hpp"
+#include "Zeni/Rete/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
-#include "Zeni/Rete/Raven_Connect_Output.hpp"
-#include "Zeni/Rete/Raven_Decrement_Output_Count.hpp"
-#include "Zeni/Rete/Raven_Disconnect_Output.hpp"
-#include "Zeni/Rete/Raven_Token_Insert.hpp"
-#include "Zeni/Rete/Raven_Token_Remove.hpp"
 #include "Zeni/Rete/Token_Alpha.hpp"
 
 #include <cassert>
@@ -98,11 +98,11 @@ namespace Zeni::Rete {
   };
 
   std::shared_ptr<const Network> Network::shared_from_this() const {
-    return std::static_pointer_cast<const Network>(Concurrency::Maester::shared_from_this());
+    return std::static_pointer_cast<const Network>(Concurrency::Recipient::shared_from_this());
   }
 
   std::shared_ptr<Network> Network::shared_from_this() {
-    return std::static_pointer_cast<Network>(Concurrency::Maester::shared_from_this());
+    return std::static_pointer_cast<Network>(Concurrency::Recipient::shared_from_this());
   }
 
   Network::Instantiation::Instantiation(const std::shared_ptr<Network> network)
@@ -152,7 +152,7 @@ namespace Zeni::Rete {
 
   Network::Network(const Network::Printed_Output printed_output)
     : Node(0, 0, 1),
-    m_thread_pool(Concurrency::Thread_Pool::Create()),
+    m_worker_threads(Concurrency::Worker_Threads::Create()),
     m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
@@ -173,30 +173,30 @@ namespace Zeni::Rete {
     return network_instantiation;
   }
 
-  Network::Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool)
+  Network::Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Worker_Threads> &worker_threads)
     : Node(0, 0, 1),
-    m_thread_pool(thread_pool),
+    m_worker_threads(worker_threads),
     m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
     DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
   }
 
-  std::shared_ptr<Network::Instantiation> Network::Create(const Network::Printed_Output printed_output, const std::shared_ptr<Concurrency::Thread_Pool> thread_pool) {
+  std::shared_ptr<Network::Instantiation> Network::Create(const Network::Printed_Output printed_output, const std::shared_ptr<Concurrency::Worker_Threads> worker_threads) {
     class Friendly_Network : public Network {
     public:
-      Friendly_Network(const Network::Printed_Output &printed_output, const std::shared_ptr<Concurrency::Thread_Pool> &thread_pool)
-        : Network(printed_output, thread_pool)
+      Friendly_Network(const Network::Printed_Output &printed_output, const std::shared_ptr<Concurrency::Worker_Threads> &worker_threads)
+        : Network(printed_output, worker_threads)
       {
       }
     };
 
-    return Instantiation::Create(std::make_shared<Friendly_Network>(printed_output, thread_pool));
+    return Instantiation::Create(std::make_shared<Friendly_Network>(printed_output, worker_threads));
   }
 
   void Network::Destroy() {
-    excise_all(m_thread_pool->get_main_Job_Queue());
-    m_thread_pool->finish_jobs();
+    excise_all(m_worker_threads->get_main_Job_Queue());
+    m_worker_threads->finish_jobs();
   }
 
   void Network::send_disconnect_from_parents(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>)
@@ -207,8 +207,8 @@ namespace Zeni::Rete {
   {
   }
 
-  std::shared_ptr<Concurrency::Thread_Pool> Network::get_Thread_Pool() const {
-    return m_thread_pool;
+  std::shared_ptr<Concurrency::Worker_Threads> Network::get_Worker_Threads() const {
+    return m_worker_threads;
   }
 
   std::shared_ptr<Node_Action> Network::get_rule(const std::string &name) const {
@@ -268,7 +268,7 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
     jobs.reserve(rules.size());
     for (auto rule : rules)
-      jobs.emplace_back(std::make_shared<Raven_Disconnect_Output>(rule.second->get_input(), sft, rule.second, true));
+      jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(rule.second->get_input(), sft, rule.second, true));
 
     job_queue->give_many(std::move(jobs));
   }
@@ -277,19 +277,19 @@ namespace Zeni::Rete {
     return std::make_pair(nullptr, nullptr);
   }
 
-  void Network::receive(const Raven_Status_Empty &) {
+  void Network::receive(const Message_Status_Empty &) {
     abort();
   }
 
-  void Network::receive(const Raven_Status_Nonempty &) {
+  void Network::receive(const Message_Status_Nonempty &) {
     abort();
   }
 
-  void Network::receive(const Raven_Token_Insert &) {
+  void Network::receive(const Message_Token_Insert &) {
     abort();
   }
 
-  void Network::receive(const Raven_Token_Remove &) {
+  void Network::receive(const Message_Token_Remove &) {
     abort();
   }
 
@@ -318,7 +318,7 @@ namespace Zeni::Rete {
     }
 
     if(action)
-      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(action, shared_from_this(), action));
+      job_queue->give_one(std::make_shared<Message_Decrement_Output_Count>(action, shared_from_this(), action));
   }
 
   std::string Network::next_rule_name(const std::string_view prefix) {
@@ -374,7 +374,7 @@ namespace Zeni::Rete {
       locked_node_data.modify_output_tokens().emplace(output_token);
       jobs.reserve(outputs.positive.size());
       for (auto &output : outputs.positive)
-        jobs.emplace_back(std::make_shared<Raven_Token_Insert>(output, sft, nullptr, output_token));
+        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, sft, nullptr, output_token));
     }
 
     job_queue->give_many(std::move(jobs));
@@ -406,7 +406,7 @@ namespace Zeni::Rete {
 
       jobs.reserve(outputs.positive.size());
       for (auto &output : outputs.positive)
-        jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, *found2));
+        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, nullptr, *found2));
 
       locked_node_data.modify_output_tokens().erase(found2);
       wmes.positive.erase(found);
@@ -429,7 +429,7 @@ namespace Zeni::Rete {
       jobs.reserve(locked_node_data.get_output_tokens().size() * outputs.positive.size());
       for (auto &token : locked_node_data.get_output_tokens()) {
         for (auto &output : outputs.positive)
-          jobs.emplace_back(std::make_shared<Raven_Token_Remove>(output, sft, nullptr, token));
+          jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, nullptr, token));
       }
       locked_node_data.modify_output_tokens().clear();
       wmes.positive.clear();
@@ -469,7 +469,7 @@ namespace Zeni::Rete {
     }
 
     if(excised)
-      job_queue->give_one(std::make_shared<Raven_Decrement_Output_Count>(excised, sft, excised));
+      job_queue->give_one(std::make_shared<Message_Decrement_Output_Count>(excised, sft, excised));
   }
 
   bool Network::operator==(const Node &rhs) const {

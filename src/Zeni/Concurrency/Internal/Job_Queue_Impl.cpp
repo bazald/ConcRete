@@ -1,7 +1,7 @@
 #include "Zeni/Concurrency/Internal/Job_Queue_Impl.hpp"
 
 #include "Zeni/Concurrency/IJob.hpp"
-#include "Zeni/Concurrency/Thread_Pool.hpp"
+#include "Zeni/Concurrency/Worker_Threads.hpp"
 
 #ifndef DISABLE_MULTITHREADING
 #include <thread>
@@ -9,18 +9,18 @@
 
 namespace Zeni::Concurrency {
 
-  Job_Queue_Impl::Job_Queue_Impl(Thread_Pool * const thread_pool) noexcept
-    : m_thread_pool(thread_pool)
+  Job_Queue_Impl::Job_Queue_Impl(Worker_Threads * const worker_threads) noexcept
+    : m_worker_threads(worker_threads)
   {
   }
 
-  std::shared_ptr<Job_Queue_Impl> Job_Queue_Impl::Create(Thread_Pool * const thread_pool) noexcept {
+  std::shared_ptr<Job_Queue_Impl> Job_Queue_Impl::Create(Worker_Threads * const worker_threads) noexcept {
     class Friendly_Job_Queue_Impl : public Job_Queue_Impl {
     public:
-      Friendly_Job_Queue_Impl(Thread_Pool * const thread_pool) : Job_Queue_Impl(thread_pool) {}
+      Friendly_Job_Queue_Impl(Worker_Threads * const worker_threads) : Job_Queue_Impl(worker_threads) {}
     };
 
-    return std::make_shared<Friendly_Job_Queue_Impl>(thread_pool);
+    return std::make_shared<Friendly_Job_Queue_Impl>(worker_threads);
   }
 
   std::shared_ptr<IJob> Job_Queue_Impl::try_take_one(const bool is_already_awake) noexcept {
@@ -42,10 +42,10 @@ namespace Zeni::Concurrency {
 
 #ifndef DISABLE_MULTITHREADING
     if (!is_already_awake)
-      m_thread_pool->worker_awakened();
+      m_worker_threads->worker_awakened();
 
     if (m_jobs.empty())
-      m_thread_pool->job_queue_emptied();
+      m_worker_threads->job_queue_emptied();
 #endif
 
     job->set_Job_Queue(shared_from_this());
@@ -65,7 +65,7 @@ namespace Zeni::Concurrency {
 #ifndef DISABLE_MULTITHREADING
     if (nonemptied) {
       m_has_jobs.store(true, std::memory_order_release);
-      m_thread_pool->job_queue_nonemptied();
+      m_worker_threads->job_queue_nonemptied();
     }
 #endif
   }
@@ -85,7 +85,7 @@ namespace Zeni::Concurrency {
 #ifndef DISABLE_MULTITHREADING
     if (nonemptied) {
       m_has_jobs.store(true, std::memory_order_release);
-      m_thread_pool->job_queue_nonemptied();
+      m_worker_threads->job_queue_nonemptied();
     }
 #endif
   }
@@ -105,7 +105,7 @@ namespace Zeni::Concurrency {
 #ifndef DISABLE_MULTITHREADING
     if (nonemptied) {
       m_has_jobs.store(true, std::memory_order_release);
-      m_thread_pool->job_queue_nonemptied();
+      m_worker_threads->job_queue_nonemptied();
     }
 #endif
   }

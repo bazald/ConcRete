@@ -1,7 +1,7 @@
-#ifndef ZENI_RETE_RAVEN_HPP
-#define ZENI_RETE_RAVEN_HPP
+#ifndef ZENI_RETE_MESSAGE_HPP
+#define ZENI_RETE_MESSAGE_HPP
 
-#include "Zeni/Concurrency/Raven.hpp"
+#include "Zeni/Concurrency/Message.hpp"
 #include "Internal/Linkage.hpp"
 
 namespace Zeni::Rete {
@@ -9,12 +9,12 @@ namespace Zeni::Rete {
   class Network;
   class Node;
 
-  class Raven : public Concurrency::Raven {
-    Raven(const Raven &) = delete;
-    Raven & operator=(const Raven &) = delete;
+  class Message : public Concurrency::Message {
+    Message(const Message &) = delete;
+    Message & operator=(const Message &) = delete;
 
   public:
-    ZENI_RETE_LINKAGE Raven(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender);
+    ZENI_RETE_LINKAGE Message(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender);
 
     ZENI_RETE_LINKAGE const std::shared_ptr<Network> & get_Network() const;
 

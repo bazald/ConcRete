@@ -26,29 +26,29 @@
     <ClInclude Include="..\include\Zeni\Concurrency\Internal\Mallocator.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Internal\Memory_Pools_Impl.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Internal\Memory_Pool_Impl.hpp" />
-    <ClInclude Include="..\include\Zeni\Concurrency\Internal\Thread_Pool_Impl.hpp" />
+    <ClInclude Include="..\include\Zeni\Concurrency\Internal\Worker_Threads_Impl.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Job.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Job_Queue.hpp" />
-    <ClInclude Include="..\include\Zeni\Concurrency\Maester.hpp" />
+    <ClInclude Include="..\include\Zeni\Concurrency\Recipient.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pool.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Memory_Pools.hpp" />
     <ClInclude Include="..\include\Zeni\Concurrency\Mutex.hpp" />
-    <ClInclude Include="..\include\Zeni\Concurrency\Raven.hpp" />
-    <ClInclude Include="..\include\Zeni\Concurrency\Thread_Pool.hpp" />
+    <ClInclude Include="..\include\Zeni\Concurrency\Message.hpp" />
+    <ClInclude Include="..\include\Zeni\Concurrency\Worker_Threads.hpp" />
     <ClInclude Include="..\include\Zeni\Utility.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Zeni\Concurrency\Internal\Job_Queue_Impl.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Internal\Memory_Pools_Impl.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Internal\Memory_Pool_Impl.cpp" />
-    <ClCompile Include="..\src\Zeni\Concurrency\Internal\Thread_Pool_Impl.cpp" />
+    <ClCompile Include="..\src\Zeni\Concurrency\Internal\Worker_Threads_Impl.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Job.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Job_Queue.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pool.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Memory_Pools.cpp" />
     <ClCompile Include="..\src\Zeni\Concurrency\Mutex.cpp" />
-    <ClCompile Include="..\src\Zeni\Concurrency\Raven.cpp" />
-    <ClCompile Include="..\src\Zeni\Concurrency\Thread_Pool.cpp" />
+    <ClCompile Include="..\src\Zeni\Concurrency\Message.cpp" />
+    <ClCompile Include="..\src\Zeni\Concurrency\Worker_Threads.cpp" />
     <ClCompile Include="..\src\Zeni\New_and_Delete.cpp" />
     <ClCompile Include="..\src\Zeni\Utility.cpp" />
   </ItemGroup>

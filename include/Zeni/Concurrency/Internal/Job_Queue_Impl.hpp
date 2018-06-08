@@ -16,10 +16,10 @@ namespace Zeni::Concurrency {
     Job_Queue_Impl(const Job_Queue_Impl &) = delete;
     Job_Queue_Impl & operator=(const Job_Queue_Impl &) = delete;
 
-    Job_Queue_Impl(Thread_Pool * const thread_pool) noexcept;
+    Job_Queue_Impl(Worker_Threads * const worker_threads) noexcept;
 
   public:
-    static std::shared_ptr<Job_Queue_Impl> Create(Thread_Pool * const thread_pool) noexcept;
+    static std::shared_ptr<Job_Queue_Impl> Create(Worker_Threads * const worker_threads) noexcept;
 
     /// Take a Job off the queue. Will be null if and only if SHUT_DOWN.
     std::shared_ptr<IJob> try_take_one(const bool is_already_awake) noexcept override;
@@ -38,7 +38,7 @@ namespace Zeni::Concurrency {
     std::atomic_bool m_has_jobs = false;
     std::mutex m_mutex;
 #endif
-    Thread_Pool * const m_thread_pool;
+    Worker_Threads * const m_worker_threads;
     std::queue<std::vector<std::shared_ptr<IJob>>> m_jobs;
   };
 

@@ -1,7 +1,7 @@
-#ifndef ZENI_CONCURRENCY_THREAD_POOL_IMPL_HPP
-#define ZENI_CONCURRENCY_THREAD_POOL_IMPL_HPP
+#ifndef ZENI_CONCURRENCY_WORKER_THREADS_IMPL_HPP
+#define ZENI_CONCURRENCY_WORKER_THREADS_IMPL_HPP
 
-#include "../Thread_Pool.hpp"
+#include "../Worker_Threads.hpp"
 
 #ifndef DISABLE_MULTITHREADING
 #include <atomic>
@@ -11,25 +11,25 @@
 
 namespace Zeni::Concurrency {
 
-  class Thread_Pool_Impl;
-  void worker(Thread_Pool_Impl * const thread_pool) noexcept;
+  class Worker_Threads_Impl;
+  void worker(Worker_Threads_Impl * const worker_threads) noexcept;
 
-  class Thread_Pool_Impl : public Thread_Pool, public std::enable_shared_from_this<Thread_Pool_Impl> {
-    Thread_Pool_Impl(const Thread_Pool_Impl &) = delete;
-    Thread_Pool_Impl & operator=(const Thread_Pool_Impl &) = delete;
+  class Worker_Threads_Impl : public Worker_Threads, public std::enable_shared_from_this<Worker_Threads_Impl> {
+    Worker_Threads_Impl(const Worker_Threads_Impl &) = delete;
+    Worker_Threads_Impl & operator=(const Worker_Threads_Impl &) = delete;
 
     /// Initialize the number of threads to std::thread::hardware_concurrency()
-    Thread_Pool_Impl() noexcept(false);
+    Worker_Threads_Impl() noexcept(false);
     /// Initialize the number of threads to 0 or 1 for single-threaded operation, anything higher for multithreaded
-    Thread_Pool_Impl(const int16_t num_threads) noexcept(false);
+    Worker_Threads_Impl(const int16_t num_threads) noexcept(false);
 
   public:
     /// Initialize the number of threads to std::thread::hardware_concurrency()
-    static std::shared_ptr<Thread_Pool_Impl> Create() noexcept(false);
+    static std::shared_ptr<Worker_Threads_Impl> Create() noexcept(false);
     /// Initialize the number of threads to 0 or 1 for single-threaded operation, anything higher for multithreaded
-    static std::shared_ptr<Thread_Pool_Impl> Create(const int16_t num_threads) noexcept(false);
+    static std::shared_ptr<Worker_Threads_Impl> Create(const int16_t num_threads) noexcept(false);
 
-    ~Thread_Pool_Impl() noexcept;
+    ~Worker_Threads_Impl() noexcept;
 
     /// Get the total number of worker threads across all pools
     static int64_t get_total_workers() noexcept;
@@ -48,7 +48,7 @@ namespace Zeni::Concurrency {
 
     void worker_thread_work() noexcept;
 
-    friend void worker(Thread_Pool_Impl * const thread_pool) noexcept;
+    friend void worker(Worker_Threads_Impl * const worker_threads) noexcept;
     std::vector<std::shared_ptr<std::thread>> m_worker_threads;
     std::vector<std::pair<std::thread::id, std::shared_ptr<Job_Queue>>> m_job_queues;
     std::atomic_int16_t m_awake_workers = 0;
