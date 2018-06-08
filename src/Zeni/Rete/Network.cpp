@@ -4,7 +4,7 @@
 #include "Zeni/Concurrency/Worker_Threads.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Message_Connect_Output.hpp"
-#include "Zeni/Rete/Message_Decrement_Output_Count.hpp"
+#include "Zeni/Rete/Message_Decrement_Child_Count.hpp"
 #include "Zeni/Rete/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Message_Token_Insert.hpp"
 #include "Zeni/Rete/Message_Token_Remove.hpp"
@@ -318,7 +318,7 @@ namespace Zeni::Rete {
     }
 
     if(action)
-      job_queue->give_one(std::make_shared<Message_Decrement_Output_Count>(action, shared_from_this(), action));
+      job_queue->give_one(std::make_shared<Message_Decrement_Child_Count>(action, shared_from_this()));
   }
 
   std::string Network::next_rule_name(const std::string_view prefix) {
@@ -469,7 +469,7 @@ namespace Zeni::Rete {
     }
 
     if(excised)
-      job_queue->give_one(std::make_shared<Message_Decrement_Output_Count>(excised, sft, excised));
+      job_queue->give_one(std::make_shared<Message_Decrement_Child_Count>(excised, sft));
   }
 
   bool Network::operator==(const Node &rhs) const {

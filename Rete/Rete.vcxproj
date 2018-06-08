@@ -164,6 +164,7 @@
     <ClCompile Include="..\src\Zeni\Rete\Internal\Debug_Counters.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Internal\Parser_Impl.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Internal\Variable_Indices_Impl.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Message.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Network.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node_Action.cpp" />
@@ -173,10 +174,9 @@
     <ClCompile Include="..\src\Zeni\Rete\Node_Unary.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Node_Unary_Gate.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Parser.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Message.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Message_Connect_Gate.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Message_Connect_Output.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Message_Decrement_Output_Count.cpp" />
+    <ClCompile Include="..\src\Zeni\Rete\Message_Decrement_Child_Count.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Message_Disconnect_Gate.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Message_Disconnect_Output.cpp" />
     <ClCompile Include="..\src\Zeni\Rete\Message_Status_Empty.cpp" />
@@ -200,6 +200,7 @@
     <ClInclude Include="..\include\Zeni\Rete\Internal\Linkage.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Internal\Parser_Impl.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Internal\Variable_Indices_Impl.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Message.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Network.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Node.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Node_Action.hpp" />
@@ -209,10 +210,9 @@
     <ClInclude Include="..\include\Zeni\Rete\Node_Unary.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Node_Unary_Gate.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Parser.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Message.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Message_Connect_Gate.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Message_Connect_Output.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Message_Decrement_Output_Count.hpp" />
+    <ClInclude Include="..\include\Zeni\Rete\Message_Decrement_Child_Count.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Message_Disconnect_Gate.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Message_Disconnect_Output.hpp" />
     <ClInclude Include="..\include\Zeni\Rete\Message_Status_Empty.hpp" />

@@ -14,9 +14,12 @@ namespace Zeni::Rete {
   public:
     ZENI_RETE_LINKAGE Message_Token(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender, const std::shared_ptr<const Token> token);
 
+    ZENI_RETE_LINKAGE const std::shared_ptr<const Node> & get_sender() const;
+
     ZENI_RETE_LINKAGE std::shared_ptr<const Token> get_Token() const;
 
   private:
+    const std::shared_ptr<const Node> m_sender;
     const std::shared_ptr<const Token> m_token;
   };
 

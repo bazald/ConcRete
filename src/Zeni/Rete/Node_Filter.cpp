@@ -2,7 +2,7 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
-#include "Zeni/Rete/Message_Decrement_Output_Count.hpp"
+#include "Zeni/Rete/Message_Decrement_Child_Count.hpp"
 #include "Zeni/Rete/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Message_Status_Empty.hpp"
 #include "Zeni/Rete/Message_Status_Nonempty.hpp"
@@ -43,8 +43,8 @@ namespace Zeni::Rete {
     const auto connected = std::static_pointer_cast<Node_Filter>(network->connect_output(network, job_queue, created));
 
     if (connected != created) {
-      DEBUG_COUNTER_DECREMENT(g_decrement_outputs_received, 1);
-      job_queue->give_one(std::make_shared<Message_Decrement_Output_Count>(network, network, created));
+      DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 1);
+      job_queue->give_one(std::make_shared<Message_Decrement_Child_Count>(network, network));
     }
 
     return connected;
@@ -101,10 +101,10 @@ namespace Zeni::Rete {
 
       jobs.reserve(outputs.positive.size() + (empty ? gates.positive.size() : 0));
       for (auto &output : outputs.positive)
-        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.get_Network(), sft, token));
+        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, token));
       if (empty) {
         for (auto &output : gates.positive)
-          jobs.emplace_back(std::make_shared<Message_Status_Nonempty>(output, message.get_Network(), sft));
+          jobs.emplace_back(std::make_shared<Message_Status_Nonempty>(output, message.network, sft));
       }
     }
 
@@ -154,10 +154,10 @@ namespace Zeni::Rete {
 
       jobs.reserve(outputs.positive.size() + (empty ? gates.positive.size() : 0));
       for (auto &output : outputs.positive)
-        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.get_Network(), sft, token));
+        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, token));
       if (empty) {
         for (auto &output : gates.positive)
-          jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, message.get_Network(), sft));
+          jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, message.network, sft));
       }
     }
 

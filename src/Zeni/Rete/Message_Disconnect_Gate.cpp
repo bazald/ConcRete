@@ -5,9 +5,10 @@
 
 namespace Zeni::Rete {
 
-  Message_Disconnect_Gate::Message_Disconnect_Gate(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> output, const bool decrement_output_count_)
-    : Message(recipient, network, output),
-    decrement_output_count(decrement_output_count_)
+  Message_Disconnect_Gate::Message_Disconnect_Gate(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> child_, const bool decrement_output_count_)
+    : Message(recipient, network),
+    decrement_output_count(decrement_output_count_),
+    child(child_)
   {
   }
 

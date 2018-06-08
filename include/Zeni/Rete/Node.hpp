@@ -13,7 +13,7 @@ namespace Zeni::Rete {
   class Message_Connect_Gate;
   class Message_Connect_Output;
   class Message_Disconnect_Gate;
-  class Message_Decrement_Output_Count;
+  class Message_Decrement_Child_Count;
   class Message_Disconnect_Output;
   class Message_Status_Empty;
   class Message_Status_Nonempty;
@@ -109,7 +109,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE void receive(const std::shared_ptr<const Concurrency::Message> message) noexcept override;
     ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Gate &message);
     ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Output &message);
-    ZENI_RETE_LINKAGE void receive(const Message_Decrement_Output_Count &message);
+    ZENI_RETE_LINKAGE void receive(const Message_Decrement_Child_Count &message);
     ZENI_RETE_LINKAGE virtual void receive(const Message_Disconnect_Gate &message);
     ZENI_RETE_LINKAGE virtual void receive(const Message_Disconnect_Output &message);
     ZENI_RETE_LINKAGE virtual void receive(const Message_Status_Empty &message) = 0;

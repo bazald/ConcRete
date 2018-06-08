@@ -4,7 +4,7 @@
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Message_Connect_Gate.hpp"
 #include "Zeni/Rete/Message_Connect_Output.hpp"
-#include "Zeni/Rete/Message_Decrement_Output_Count.hpp"
+#include "Zeni/Rete/Message_Decrement_Child_Count.hpp"
 #include "Zeni/Rete/Message_Disconnect_Gate.hpp"
 #include "Zeni/Rete/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Message_Status_Empty.hpp"
@@ -39,8 +39,8 @@ namespace Zeni::Rete {
     const auto connected = std::static_pointer_cast<Node_Unary_Gate>(input->connect_gate(network, job_queue, created));
 
     if (connected != created) {
-      DEBUG_COUNTER_DECREMENT(g_decrement_outputs_received, 1);
-      job_queue->give_one(std::make_shared<Message_Decrement_Output_Count>(input, network, created));
+      DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 1);
+      job_queue->give_one(std::make_shared<Message_Decrement_Child_Count>(input, network));
     }
 
     return connected;
@@ -61,10 +61,10 @@ namespace Zeni::Rete {
       const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
 
       if (!tokens_input.positive.empty()) {
-        const auto inputs = std::const_pointer_cast<Node>(message.get_sender())->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.first, message.get_Network(), message.get_sender()));
+        const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
+        jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.first, message.network, message.child));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.second, message.get_Network(), message.get_sender()));
+          jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.second, message.network, message.child));
       }
     }
 
@@ -86,10 +86,10 @@ namespace Zeni::Rete {
       const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
 
       if (!tokens_input.positive.empty()) {
-        const auto inputs = std::const_pointer_cast<Node>(message.get_sender())->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.first, message.get_Network(), message.get_sender()));
+        const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
+        jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.first, message.network, message.child));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.second, message.get_Network(), message.get_sender()));
+          jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.second, message.network, message.child));
       }
     }
 
@@ -111,10 +111,10 @@ namespace Zeni::Rete {
       const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
 
       if (!tokens_input.positive.empty()) {
-        const auto inputs = std::const_pointer_cast<Node>(message.get_sender())->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.get_Network(), message.get_sender(), false));
+        const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
+        jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.network, message.child, false));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.second, message.get_Network(), message.get_sender(), false));
+          jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.second, message.network, message.child, false));
       }
     }
 
@@ -136,10 +136,10 @@ namespace Zeni::Rete {
       const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
 
       if (!tokens_input.positive.empty()) {
-        const auto inputs = std::const_pointer_cast<Node>(message.get_sender())->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.get_Network(), message.get_sender(), false));
+        const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
+        jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.network, message.child, false));
         if(inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.second, message.get_Network(), message.get_sender(), false));
+          jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.second, message.network, message.child, false));
       }
     }
 
@@ -176,15 +176,15 @@ namespace Zeni::Rete {
       jobs.reserve(num_jobs);
       for (auto &output : outputs.positive) {
         const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.get_Network(), output, false));
+        jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.network, output, false));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.second, message.get_Network(), output, false));
+          jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.second, message.network, output, false));
       }
       for (auto &output : gates.positive) {
         const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.get_Network(), output, false));
+        jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.network, output, false));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.second, message.get_Network(), output, false));
+          jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.second, message.network, output, false));
       }
     }
 
@@ -222,15 +222,15 @@ namespace Zeni::Rete {
       jobs.reserve(num_jobs);
       for (auto &output : outputs.positive) {
         const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.first, message.get_Network(), output));
+        jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.first, message.network, output));
         if(inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.second, message.get_Network(), output));
+          jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.second, message.network, output));
       }
       for (auto &output : gates.positive) {
         const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.first, message.get_Network(), output));
+        jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.first, message.network, output));
         if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.second, message.get_Network(), output));
+          jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.second, message.network, output));
       }
     }
 

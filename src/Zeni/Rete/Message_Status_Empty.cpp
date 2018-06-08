@@ -5,8 +5,9 @@
 
 namespace Zeni::Rete {
 
-  Message_Status_Empty::Message_Status_Empty(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender)
-    : Message(recipient, network, sender)
+  Message_Status_Empty::Message_Status_Empty(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> child_)
+    : Message(recipient, network),
+    child(child_)
   {
   }
 

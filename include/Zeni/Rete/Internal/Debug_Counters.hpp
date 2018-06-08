@@ -21,7 +21,7 @@ namespace Zeni::Rete::Debug_Counters {
   extern ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_try_increment_child_counts;
   extern ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_connect_gates_received;
   extern ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_connect_outputs_received;
-  extern ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_decrement_outputs_received;
+  extern ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_decrement_children_received;
   extern ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_disconnect_gates_received;
   extern ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_disconnect_output_and_decrements_received;
   extern ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_disconnect_output_but_nodecrements_received;

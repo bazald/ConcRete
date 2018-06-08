@@ -10,7 +10,7 @@ namespace Zeni::Rete::Debug_Counters {
   ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_try_increment_child_counts = 0;
   ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_connect_gates_received = 0;
   ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_connect_outputs_received = 0;
-  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_decrement_outputs_received = 0;
+  ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_decrement_children_received = 0;
   ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_disconnect_gates_received = 0;
   ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_disconnect_output_and_decrements_received = 0;
   ZENI_RETE_LINKAGE Zeni::Concurrency::Atomic_int64_t<true> g_disconnect_output_but_nodecrements_received = 0;
@@ -30,7 +30,7 @@ namespace Zeni::Rete::Debug_Counters {
     os << std::endl;
     os << "  g_disconnect_output_and_decrements_received   = " << g_disconnect_output_and_decrements_received.load() << std::endl;
     os << "  g_disconnect_output_but_nodecrements_received = " << g_disconnect_output_but_nodecrements_received.load() << std::endl;
-    os << "  g_decrement_outputs_received                  = " << g_decrement_outputs_received.load() << std::endl;
+    os << "  g_decrement_children_received                 = " << g_decrement_children_received.load() << std::endl;
     os << std::endl;
     os << "  g_tokens_inserted                             = " << g_tokens_inserted.load() << std::endl;
     os << "  g_tokens_removed                              = " << g_tokens_removed.load() << std::endl;
@@ -49,7 +49,7 @@ namespace Zeni::Rete::Debug_Counters {
     g_try_increment_child_counts.store(0);
     g_connect_gates_received.store(0);
     g_connect_outputs_received.store(0);
-    g_decrement_outputs_received.store(0);
+    g_decrement_children_received.store(0);
     g_disconnect_gates_received.store(0);
     g_empties_received.store(0);
     g_nonempties_received.store(0);

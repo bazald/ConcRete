@@ -4,17 +4,9 @@
 
 namespace Zeni::Rete {
 
-  Message::Message(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node> sender)
-    : Concurrency::Message(recipient), m_network(network), m_sender(sender)
+  Message::Message(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network_)
+    : Concurrency::Message(recipient), network(network_)
   {
-  }
-
-  const std::shared_ptr<Network> & Message::get_Network() const {
-    return m_network;
-  }
-
-  const std::shared_ptr<const Node> & Message::get_sender() const {
-    return m_sender;
   }
 
 }
