@@ -1,4 +1,4 @@
-#include "Zeni/Rete/Message.hpp"
+#include "Zeni/Rete/Internal/Message.hpp"
 
 #include "Zeni/Rete/Node.hpp"
 

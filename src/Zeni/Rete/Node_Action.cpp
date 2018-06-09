@@ -1,7 +1,7 @@
 #include "Zeni/Rete/Node_Action.hpp"
 
-#include "Zeni/Rete/Message_Token_Insert.hpp"
-#include "Zeni/Rete/Message_Token_Remove.hpp"
+#include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
+#include "Zeni/Rete/Internal/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Network.hpp"
 
 #include <cassert>

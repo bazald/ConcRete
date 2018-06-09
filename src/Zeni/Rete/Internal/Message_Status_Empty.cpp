@@ -1,4 +1,4 @@
-#include "Zeni/Rete/Message_Status_Empty.hpp"
+#include "Zeni/Rete/Internal/Message_Status_Empty.hpp"
 
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Node.hpp"

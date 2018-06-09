@@ -2,11 +2,11 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
-#include "Zeni/Rete/Message_Decrement_Child_Count.hpp"
-#include "Zeni/Rete/Message_Status_Empty.hpp"
-#include "Zeni/Rete/Message_Status_Nonempty.hpp"
-#include "Zeni/Rete/Message_Token_Insert.hpp"
-#include "Zeni/Rete/Message_Token_Remove.hpp"
+#include "Zeni/Rete/Internal/Message_Decrement_Child_Count.hpp"
+#include "Zeni/Rete/Internal/Message_Status_Empty.hpp"
+#include "Zeni/Rete/Internal/Message_Status_Nonempty.hpp"
+#include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
+#include "Zeni/Rete/Internal/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 

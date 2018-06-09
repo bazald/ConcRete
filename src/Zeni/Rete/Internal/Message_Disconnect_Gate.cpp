@@ -1,4 +1,4 @@
-#include "Zeni/Rete/Message_Disconnect_Gate.hpp"
+#include "Zeni/Rete/Internal/Message_Disconnect_Gate.hpp"
 
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Node.hpp"

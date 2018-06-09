@@ -2,7 +2,8 @@
 #define ZENI_RETE_MESSAGE_HPP
 
 #include "Zeni/Concurrency/Message.hpp"
-#include "Internal/Linkage.hpp"
+
+#include "Linkage.hpp"
 
 namespace Zeni::Rete {
 

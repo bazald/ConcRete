@@ -1,4 +1,4 @@
-#include "Zeni/Rete/Token_Alpha.hpp"
+#include "Zeni/Rete/Internal/Token_Alpha.hpp"
 
 #include <cassert>
 #include <iostream>

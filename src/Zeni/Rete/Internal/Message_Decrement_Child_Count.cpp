@@ -1,4 +1,4 @@
-#include "Zeni/Rete/Message_Decrement_Child_Count.hpp"
+#include "Zeni/Rete/Internal/Message_Decrement_Child_Count.hpp"
 
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Node.hpp"

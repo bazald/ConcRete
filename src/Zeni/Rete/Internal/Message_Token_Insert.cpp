@@ -1,4 +1,4 @@
-#include "Zeni/Rete/Message_Token_Insert.hpp"
+#include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
 
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Node.hpp"

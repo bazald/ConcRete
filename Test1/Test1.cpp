@@ -6,7 +6,6 @@
 #include "Zeni/Concurrency/Worker_Threads.hpp"
 
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
-#include "Zeni/Rete/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"

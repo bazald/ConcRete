@@ -4,14 +4,14 @@
 #include "Zeni/Concurrency/Worker_Threads.hpp"
 #include "Zeni/Rete/Internal/Antiable_Map.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
-#include "Zeni/Rete/Message_Connect_Output.hpp"
-#include "Zeni/Rete/Message_Decrement_Child_Count.hpp"
-#include "Zeni/Rete/Message_Disconnect_Output.hpp"
-#include "Zeni/Rete/Message_Token_Insert.hpp"
-#include "Zeni/Rete/Message_Token_Remove.hpp"
+#include "Zeni/Rete/Internal/Message_Connect_Output.hpp"
+#include "Zeni/Rete/Internal/Message_Decrement_Child_Count.hpp"
+#include "Zeni/Rete/Internal/Message_Disconnect_Output.hpp"
+#include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
+#include "Zeni/Rete/Internal/Message_Token_Remove.hpp"
+#include "Zeni/Rete/Internal/Token_Alpha.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
-#include "Zeni/Rete/Token_Alpha.hpp"
 
 #include <cassert>
 #include <iostream>

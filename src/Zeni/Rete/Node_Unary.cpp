@@ -1,8 +1,8 @@
 #include "Zeni/Rete/Node_Unary.hpp"
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
-#include "Zeni/Rete/Message_Connect_Output.hpp"
-#include "Zeni/Rete/Message_Disconnect_Output.hpp"
+#include "Zeni/Rete/Internal/Message_Connect_Output.hpp"
+#include "Zeni/Rete/Internal/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Network.hpp"
 
 #include <cassert>

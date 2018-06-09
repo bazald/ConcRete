@@ -1,7 +1,7 @@
 #ifndef ZENI_RETE_TOKEN_ALPHA_HPP
 #define ZENI_RETE_TOKEN_ALPHA_HPP
 
-#include "Token.hpp"
+#include "../Token.hpp"
 
 namespace Zeni::Rete {
 
