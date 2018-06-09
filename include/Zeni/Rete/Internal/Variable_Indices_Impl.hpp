@@ -29,6 +29,10 @@ namespace Zeni::Rete {
 
     std::shared_ptr<Variable_Indices> reindex_for_right_parent_node(const Variable_Bindings &bindings, const Node &left, const Node &right) const override;
 
+    size_t get_hash() const override;
+
+    bool operator==(const Variable_Indices &rhs) const override;
+
   private:
     std::unordered_multimap<Token_Index, std::string> index_to_name;
     std::unordered_multimap<std::string, Token_Index> name_to_index;

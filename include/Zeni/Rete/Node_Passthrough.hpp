@@ -11,6 +11,7 @@ namespace Zeni::Rete {
 
   protected:
     Node_Passthrough(const std::shared_ptr<Node> input);
+    Node_Passthrough(const size_t hash, const std::shared_ptr<Node> input);
 
   public:
     ZENI_RETE_LINKAGE ~Node_Passthrough();

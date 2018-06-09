@@ -17,7 +17,7 @@
 namespace Zeni::Rete {
 
   Node_Unary_Gate::Node_Unary_Gate(const std::shared_ptr<Node> input)
-    : Node_Unary(input->get_height(), input->get_size(), 0, input)
+    : Node_Unary(input->get_height(), input->get_size(), 0, hash_combine(std::hash<int>()(3), input->get_hash()), input)
   {
   }
 

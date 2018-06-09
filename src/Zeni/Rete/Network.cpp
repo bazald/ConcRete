@@ -2,6 +2,7 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Worker_Threads.hpp"
+#include "Zeni/Rete/Internal/Antiable_Map.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Message_Connect_Output.hpp"
 #include "Zeni/Rete/Message_Decrement_Child_Count.hpp"
@@ -27,10 +28,7 @@ namespace Zeni::Rete {
     friend class Locked_Network_Data;
 
   public:
-    struct WMEs {
-      std::unordered_multimap<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> positive;
-      std::unordered_multiset<std::shared_ptr<const WME>, hash_deref<WME>, compare_deref_eq> negative;
-    };
+    typedef Antiable_Map<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> WMEs;
 
     Unlocked_Network_Data() {}
 
@@ -151,7 +149,7 @@ namespace Zeni::Rete {
   }
 
   Network::Network(const Network::Printed_Output printed_output)
-    : Node(0, 0, 1),
+    : Node(0, 0, 1, 0),
     m_worker_threads(Concurrency::Worker_Threads::Create()),
     m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
@@ -174,7 +172,7 @@ namespace Zeni::Rete {
   }
 
   Network::Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Worker_Threads> &worker_threads)
-    : Node(0, 0, 1),
+    : Node(0, 0, 1, 0),
     m_worker_threads(worker_threads),
     m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
@@ -350,7 +348,6 @@ namespace Zeni::Rete {
 
   void Network::insert_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme) {
     const auto sft = shared_from_this();
-    const auto output_token = std::make_shared<Token_Alpha>(wme);
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
 #ifdef DEBUG_OUTPUT
@@ -364,13 +361,11 @@ namespace Zeni::Rete {
       const Outputs &outputs = locked_node_data.get_outputs();
       Unlocked_Network_Data::WMEs &wmes = locked_network_data.modify_wmes();
 
-      auto found = wmes.negative.find(wme);
-      if (found != wmes.negative.end()) {
-        wmes.negative.erase(found);
-        return;
-      }
+      const auto [first_insertion, output_token] = wmes.try_emplace(std::make_pair(wme, std::make_shared<Token_Alpha>(wme)));
 
-      wmes.positive.emplace(wme, output_token);
+      if (!first_insertion)
+        return;
+
       locked_node_data.modify_output_tokens().emplace(output_token);
       jobs.reserve(outputs.size());
       for (auto &output : outputs)
@@ -395,21 +390,14 @@ namespace Zeni::Rete {
       const Outputs &outputs = locked_node_data.get_outputs();
       Unlocked_Network_Data::WMEs &wmes = locked_network_data.modify_wmes();
 
-      auto found = wmes.positive.find(wme);
-      if (found == wmes.positive.end()) {
-        wmes.negative.emplace(wme);
-        return;
-      }
+      const auto &[last_instance, output_token] = wmes.try_erase(wme);
 
-      auto found2 = locked_node_data.get_output_tokens().find(found->second);
-      assert(found2 != locked_node_data.get_output_tokens().end());
+      if (!last_instance)
+        return;
 
       jobs.reserve(outputs.size());
       for (auto &output : outputs)
-        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, nullptr, *found2));
-
-      locked_node_data.modify_output_tokens().erase(found2);
-      wmes.positive.erase(found);
+        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, nullptr, output_token));
     }
 
     job_queue->give_many(std::move(jobs));
@@ -432,7 +420,7 @@ namespace Zeni::Rete {
           jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, nullptr, token));
       }
       locked_node_data.modify_output_tokens().clear();
-      wmes.positive.clear();
+      wmes.clear();
     }
 
     job_queue->give_many(std::move(jobs));

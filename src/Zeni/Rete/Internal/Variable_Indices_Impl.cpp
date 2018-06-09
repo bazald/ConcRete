@@ -97,4 +97,14 @@ namespace Zeni::Rete {
     return closure;
   }
 
+  size_t Variable_Indices_Impl::get_hash() const {
+    return hash_container<std::pair<std::string, Token_Index>>()(name_to_index);
+  }
+
+  bool Variable_Indices_Impl::operator==(const Variable_Indices &rhs) const {
+    if (auto variable_indices_impl = dynamic_cast<const Variable_Indices_Impl *>(&rhs))
+      return name_to_index == variable_indices_impl->name_to_index;
+    return false;
+  }
+
 }

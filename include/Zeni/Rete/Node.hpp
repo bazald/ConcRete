@@ -27,7 +27,7 @@ namespace Zeni::Rete {
     Node & operator=(const Node &) = delete;
 
   public:
-    typedef Antiable_Set<std::shared_ptr<Node>> Outputs;
+    typedef Antiable_Set<std::shared_ptr<Node>, hash_deref<Node>, compare_deref_eq> Outputs;
 
     class Unlocked_Node_Data;
     class Locked_Node_Data_Const;
@@ -37,7 +37,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::shared_ptr<const Node> shared_from_this() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Node> shared_from_this();
 
-    ZENI_RETE_LINKAGE Node(const int64_t height, const int64_t size, const int64_t token_size);
+    ZENI_RETE_LINKAGE Node(const int64_t height, const int64_t size, const int64_t token_size, const size_t hash);
 
     ZENI_RETE_LINKAGE virtual void send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) = 0;
 
@@ -100,9 +100,9 @@ namespace Zeni::Rete {
     /// Increments the child count if greater than 0 and returns true, otherwise returns false.
     ZENI_RETE_LINKAGE bool try_increment_child_count();
     /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
-    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output);
+    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child);
     /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
-    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output);
+    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child);
 
     ZENI_RETE_LINKAGE void receive(const std::shared_ptr<const Concurrency::Message> message) noexcept override;
     ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Gate &message);
@@ -115,9 +115,11 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual void receive(const Message_Token_Insert &message) = 0;
     ZENI_RETE_LINKAGE virtual void receive(const Message_Token_Remove &message) = 0;
 
+    ZENI_RETE_LINKAGE virtual size_t get_hash() const;
+
     ZENI_RETE_LINKAGE virtual bool operator==(const Node &rhs) const = 0;
 
-    protected:
+  protected:
     /// Returns true if the first instance of the sender gate has been inserted
     ZENI_RETE_LINKAGE virtual bool receive(const Message_Connect_Gate &message, Locked_Node_Data &locked_node_data);
     /// Returns true if the first instance of the sender output has been inserted
@@ -133,6 +135,7 @@ namespace Zeni::Rete {
     const int64_t m_height;
     const int64_t m_size;
     const int64_t m_token_size;
+    const size_t m_hash;
 
     Concurrency::Atomic_int64_t<false> m_child_count = 1;
 
@@ -142,6 +145,14 @@ namespace Zeni::Rete {
     std::shared_ptr<Custom_Data> custom_data;
   };
 
+}
+
+namespace std {
+  template <> struct hash<Zeni::Rete::Node> {
+    size_t operator()(const Zeni::Rete::Node &node) const {
+      return node.get_hash();
+    }
+  };
 }
 
 #endif

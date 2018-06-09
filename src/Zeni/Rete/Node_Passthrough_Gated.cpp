@@ -13,7 +13,7 @@
 namespace Zeni::Rete {
 
   Node_Passthrough_Gated::Node_Passthrough_Gated(const std::shared_ptr<Node> input, const std::shared_ptr<Node> gate)
-    : Node_Passthrough(input),
+    : Node_Passthrough(hash_combine(hash_combine(std::hash<int>()(4), input->get_hash()), gate->get_hash()), input),
     m_gate(gate)
   {
   }

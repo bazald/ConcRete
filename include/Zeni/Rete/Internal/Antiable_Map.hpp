@@ -1,5 +1,5 @@
-#ifndef ZENI_RETE_ANTIABLE_SET_HPP
-#define ZENI_RETE_ANTIABLE_SET_HPP
+#ifndef ZENI_RETE_ANTIABLE_MAP_HPP
+#define ZENI_RETE_ANTIABLE_MAP_HPP
 
 #include <cinttypes>
 #include <memory>
@@ -8,22 +8,23 @@
 namespace Zeni::Rete {
 
   template <
-    typename Key,                                                   // unordered_set::key_type/value_type
-    typename Hash = std::hash<Key>,                                 // unordered_set::hasher
-    typename Pred = std::equal_to<Key>,                             // unordered_set::key_equal
-    typename Alloc = std::allocator<std::pair<const Key, int64_t>>> // unordered_set::allocator_type>
-  class Antiable_Set {
-    typedef std::unordered_map<Key, int64_t, Hash, Pred, Alloc> Values;
+    typename Key,
+    typename T,
+    typename Hash = std::hash<Key>,                                               // unordered_set::hasher
+    typename Pred = std::equal_to<Key>,                                           // unordered_set::key_equal
+    typename Alloc = std::allocator<std::pair<const Key, std::pair<int64_t, T>>>> // unordered_set::allocator_type>
+  class Antiable_Map {
+    typedef std::unordered_map<Key, std::pair<int64_t, T>, Hash, Pred, Alloc> Values;
 
   public:
-    typedef Key value_type;
+    typedef std::pair<Key, T> value_type;
     typedef const value_type & reference;
 
     class const_iterator {
     public:
       typedef std::forward_iterator_tag iterator_category;
-      typedef Key value_type;
-      typedef const value_type & reference;
+      typedef std::pair<Key, T> value_type;
+      typedef std::pair<Key &, T &> reference;
 
       const_iterator(const typename Values::const_iterator &it, const typename Values::const_iterator &iend) : m_it(it), m_iend(iend) {}
       const_iterator(const typename Values::const_iterator &it, typename Values::const_iterator &&iend) : m_it(it), m_iend(std::move(iend)) {}
@@ -43,7 +44,7 @@ namespace Zeni::Rete {
         return *this;
       }
 
-      reference operator*() const { return m_it->first; }
+      reference operator*() const { return reference(m_it->first, m_it->second.second); }
 
       const_iterator prev() const { return m_it.prev(); }
       const_iterator next() const { return m_it.next(); }
@@ -109,59 +110,67 @@ namespace Zeni::Rete {
     }
 
     /// Returns true if this is the first insertion of 'value', otherwise false
-    bool try_emplace(const value_type &value) {
-      const auto found = m_values.try_emplace(value, 1);
+    std::pair<bool, T> try_emplace(const value_type &value) {
+      const auto found = m_values.try_emplace(value.first, std::make_pair(1, value.second));
 
       if (found.second) {
         ++m_size;
-        return true;
+        return std::make_pair(true, found.first->second.second);
       }
 
-      if (++found.first->second == 0)
-        m_values.erase(found.first);
+      if (++found.first->second.first != 0)
+        return std::make_pair(false, found.first->second.second);
 
-      return false;
+      const auto removed = std::move(found.first->second.second);
+      m_values.erase(found.first);
+
+      return std::make_pair(false, removed);
     }
 
     /// Returns true if this is the first insertion of 'value', otherwise false
-    bool try_emplace(value_type &&value) {
-      const auto found = m_values.try_emplace(std::move(value), 1);
+    std::pair<bool, T> try_emplace(value_type &&value) {
+      const auto found = m_values.try_emplace(value.first, std::make_pair(1, std::move(value.second)));
 
       if (found.second) {
         ++m_size;
-        return true;
+        return std::make_pair(true, found.first->second.second);
       }
 
-      if (++found.first->second == 0)
-        m_values.erase(found.first);
+      if (++found.first->second.first != 0)
+        return std::make_pair(false, found.first->second.second);
 
-      return false;
+      const auto removed = std::move(found.first->second.second);
+      m_values.erase(found.first);
+
+      return std::make_pair(false, removed);
     }
 
     /// Returns true if this was the last instance of 'value', otherwise false
-    bool try_erase(const value_type &value) {
-      const auto found = m_values.try_emplace(value, -1);
+    std::pair<bool, T> try_erase(const Key &key) {
+      const auto found = m_values.try_emplace(key, std::make_pair(-1, T()));
 
-      if (found.second || --found.first->second != 0)
-        return false;
+      if (found.second || --found.first->second.first != 0)
+        return std::make_pair(false, found.first->second.second);
 
+      const auto value = std::move(found.first->second.second);
       m_values.erase(found.first);
       --m_size;
 
-      return true;
+      return std::make_pair(true, value);
     }
 
     /// Returns true if this was the last instance of 'value', otherwise false
-    bool try_erase(value_type &&value) {
-      const auto found = m_values.try_emplace(std::move(value), -1);
+    std::pair<bool, T> try_erase(Key &&key) {
+      const auto found = m_values.try_emplace(std::move(key), std::make_pair(-1, T()));
 
-      if (found.second || --found.first->second != 0)
-        return false;
+      if (found.second || --found.first->second.first != 0)
+        return std::make_pair(false, found.first->second.second);
 
+      const auto value = std::move(found.first->second.second);
       m_values.erase(found.first);
       --m_size;
 
-      return true;
+      return std::make_pair(true, value);
     }
 
   private:

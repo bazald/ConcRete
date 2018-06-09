@@ -25,8 +25,9 @@ namespace Zeni::Rete {
     return std::static_pointer_cast<Node>(Concurrency::Recipient::shared_from_this());
   }
 
-  Node::Node(const int64_t height, const int64_t size, const int64_t token_size)
+  Node::Node(const int64_t height, const int64_t size, const int64_t token_size, const size_t hash)
     : m_height(height), m_size(size), m_token_size(token_size),
+    m_hash(hash),
     m_unlocked_node_data(std::make_shared<Unlocked_Node_Data>())
   {
   }
@@ -110,7 +111,7 @@ namespace Zeni::Rete {
 #endif
   }
 
-  std::shared_ptr<Node> Node::connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output) {
+  std::shared_ptr<Node> Node::connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) {
     const auto sft = shared_from_this();
 
     if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
@@ -118,23 +119,21 @@ namespace Zeni::Rete {
 
       const Outputs &gates = locked_node_data.get_gates();
 
-      /// TODO: Find a way to kill this loop! Optimize!
-      for (auto &existing_output : gates) {
-        if (*existing_output == *output) {
-          if (existing_output->try_increment_child_count()) {
-            DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
-            return existing_output;
-          }
+      const auto found = gates.find(child);
+      if (found != gates.cend()) {
+        if ((*found)->try_increment_child_count()) {
+          DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
+          return *found;
         }
       }
     }
 
-    job_queue->give_one(std::make_shared<Message_Connect_Gate>(sft, network, output));
+    job_queue->give_one(std::make_shared<Message_Connect_Gate>(sft, network, child));
 
-    return output;
+    return child;
   }
 
-  std::shared_ptr<Node> Node::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> output) {
+  std::shared_ptr<Node> Node::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) {
     const auto sft = shared_from_this();
 
     if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
@@ -143,20 +142,18 @@ namespace Zeni::Rete {
 
       const Outputs &outputs = locked_node_data.get_outputs();
 
-      /// TODO: Find a way to kill this loop! Optimize!
-      for (auto &existing_output : outputs) {
-        if (*existing_output == *output) {
-          if (existing_output->try_increment_child_count()) {
-            DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
-            return existing_output;
-          }
+      const auto found = outputs.find(child);
+      if (found != outputs.cend()) {
+        if ((*found)->try_increment_child_count()) {
+          DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
+          return *found;
         }
       }
     }
 
-    job_queue->give_one(std::make_shared<Message_Connect_Output>(sft, network, output));
+    job_queue->give_one(std::make_shared<Message_Connect_Output>(sft, network, child));
 
-    return output;
+    return child;
   }
 
   void Node::receive(const std::shared_ptr<const Concurrency::Message> message) noexcept {
@@ -276,6 +273,10 @@ namespace Zeni::Rete {
     message.get_Job_Queue()->give_many(std::move(jobs));
 
     return erased_last;
+  }
+
+  size_t Node::get_hash() const {
+    return m_hash;
   }
 
 }

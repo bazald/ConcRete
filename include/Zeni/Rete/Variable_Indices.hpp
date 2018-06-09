@@ -35,10 +35,23 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual void insert(const std::string_view name, const Token_Index &index) = 0;
 
     ZENI_RETE_LINKAGE virtual std::shared_ptr<Variable_Indices> reindex_for_right_parent_node(const Variable_Bindings &bindings, const Node &left, const Node &right) const = 0;
+
+    virtual size_t get_hash() const = 0;
+
+    virtual bool operator==(const Variable_Indices &rhs) const = 0;
+
   };
 
 }
 
 std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Variable_Indices &indices);
+
+namespace std {
+  template <> struct hash<Zeni::Rete::Variable_Indices> {
+    size_t operator()(const Zeni::Rete::Variable_Indices &variable_indices) const {
+      return variable_indices.get_hash();
+    }
+  };
+}
 
 #endif
