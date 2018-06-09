@@ -33,7 +33,7 @@ namespace Zeni::Rete {
     int64_t m_size;
   };
 
-  typedef Antiable_Set<std::shared_ptr<const Token>, Zeni::hash_deref<Token>, Zeni::compare_deref_eq> Tokens_Input;
+  typedef Antiable_Set<std::shared_ptr<const Token>/*, Zeni::hash_deref<Token>, Zeni::compare_deref_eq*/> Tokens_Input;
   typedef std::unordered_set<std::shared_ptr<const Token>> Tokens_Output;
 
 }
