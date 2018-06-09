@@ -32,4 +32,14 @@ namespace Zeni::Rete {
     }
   }
 
+  size_t Token_Alpha::get_hash() const {
+    return m_wme->get_hash();
+  }
+
+  bool Token_Alpha::operator==(const Token &rhs) const {
+    if (auto token_alpha = dynamic_cast<const Token_Alpha *>(&rhs))
+      return *m_wme == *token_alpha->m_wme;
+    return false;
+  }
+
 }

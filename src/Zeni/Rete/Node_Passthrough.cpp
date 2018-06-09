@@ -64,17 +64,14 @@ namespace Zeni::Rete {
       const Outputs &gates = locked_node_data.get_gates();
       const Outputs &outputs = locked_node_data.get_outputs();
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
+      Tokens_Output &tokens_output = locked_node_data.modify_output_tokens();
 
-      auto found = tokens_input.negative.find(message.token);
-      if (found != tokens_input.negative.end()) {
-        tokens_input.negative.erase(found);
+      if (!tokens_input.try_emplace(message.token))
         return;
-      }
 
-      const bool first_insertion = locked_node_data.get_output_tokens().empty();
+      const bool first_insertion = tokens_output.empty();
 
-      tokens_input.positive.emplace(message.token);
-      locked_node_data.modify_output_tokens().emplace(message.token);
+      tokens_output.emplace(message.token);
 
       jobs.reserve(outputs.size() + (first_insertion ? gates.size() : 0));
       for (auto &output : outputs)
@@ -99,17 +96,14 @@ namespace Zeni::Rete {
       const Outputs &gates = locked_node_data.get_gates();
       const Outputs &outputs = locked_node_data.get_outputs();
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
+      Tokens_Output &tokens_output = locked_node_data.modify_output_tokens();
 
-      auto found = tokens_input.positive.find(message.token);
-      if (found == tokens_input.positive.end()) {
-        tokens_input.negative.emplace(message.token);
+      if (!tokens_input.try_erase(message.token))
         return;
-      }
 
-      tokens_input.positive.erase(found);
-      locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(message.token));
+      tokens_output.erase(message.token);
 
-      const bool last_removal = locked_node_data.get_output_tokens().empty();
+      const bool last_removal = tokens_output.empty();
 
       jobs.reserve(outputs.size() + (last_removal ? gates.size() : 0));
       for (auto &output : outputs)

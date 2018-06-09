@@ -66,13 +66,8 @@ namespace Zeni::Rete {
 
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
 
-      auto found = tokens_input.negative.find(message.token);
-      if (found != tokens_input.negative.end()) {
-        tokens_input.negative.erase(found);
+      if (!tokens_input.try_emplace(message.token))
         return;
-      }
-
-      tokens_input.positive.emplace(message.token);
     }
 
     m_action(*this, *message.token);
@@ -87,13 +82,8 @@ namespace Zeni::Rete {
 
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
 
-      auto found = tokens_input.positive.find(message.token);
-      if (found == tokens_input.positive.end()) {
-        tokens_input.negative.emplace(message.token);
+      if (!tokens_input.try_erase(message.token))
         return;
-      }
-
-      tokens_input.positive.erase(found);
     }
 
     m_retraction(*this, *message.token);

@@ -100,6 +100,10 @@ namespace Zeni::Rete {
       return const_iterator(it != iend && it->second > 0 ? it : iend, iend);
     }
 
+    bool empty() const {
+      return m_size == 0;
+    }
+
     size_t size() const {
       return m_size;
     }

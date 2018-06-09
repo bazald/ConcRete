@@ -87,22 +87,19 @@ namespace Zeni::Rete {
       const Outputs &gates = locked_node_data.get_gates();
       const Outputs &outputs = locked_node_data.get_outputs();
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
+      Tokens_Output &tokens_output = locked_node_data.modify_output_tokens();
 
-      auto found = tokens_input.negative.find(token);
-      if (found != tokens_input.negative.end()) {
-        tokens_input.negative.erase(found);
+      if (!tokens_input.try_emplace(token))
         return;
-      }
 
-      const bool empty = locked_node_data.get_output_tokens().empty();
+      const bool first_insertion = tokens_output.empty();
 
-      tokens_input.positive.emplace(token);
       locked_node_data.modify_output_tokens().emplace(token);
 
-      jobs.reserve(outputs.size() + (empty ? gates.size() : 0));
+      jobs.reserve(outputs.size() + (first_insertion ? gates.size() : 0));
       for (auto &output : outputs)
         jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, token));
-      if (empty) {
+      if (first_insertion) {
         for (auto &output : gates)
           jobs.emplace_back(std::make_shared<Message_Status_Nonempty>(output, message.network, sft));
       }
@@ -140,22 +137,19 @@ namespace Zeni::Rete {
       const Outputs &gates = locked_node_data.get_gates();
       const Outputs &outputs = locked_node_data.get_outputs();
       Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
+      Tokens_Output &tokens_output = locked_node_data.modify_output_tokens();
 
-      auto found = tokens_input.positive.find(token);
-      if (found == tokens_input.positive.end()) {
-        tokens_input.negative.emplace(token);
+      if (!tokens_input.try_erase(token))
         return;
-      }
 
-      tokens_input.positive.erase(found);
-      locked_node_data.modify_output_tokens().erase(locked_node_data.get_output_tokens().find(token));
+      tokens_output.erase(token);
 
-      const bool empty = locked_node_data.get_output_tokens().empty();
+      const bool last_removal = tokens_output.empty();
 
-      jobs.reserve(outputs.size() + (empty ? gates.size() : 0));
+      jobs.reserve(outputs.size() + (last_removal ? gates.size() : 0));
       for (auto &output : outputs)
         jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, token));
-      if (empty) {
+      if (last_removal) {
         for (auto &output : gates)
           jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, message.network, sft));
       }

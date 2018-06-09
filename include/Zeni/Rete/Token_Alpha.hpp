@@ -15,6 +15,10 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE std::shared_ptr<const Symbol> operator[](const Token_Index &index) const override;
 
+    ZENI_RETE_LINKAGE size_t get_hash() const override;
+
+    ZENI_RETE_LINKAGE bool operator==(const Token &rhs) const override;
+
   private:
     std::shared_ptr<const WME> m_wme;
   };

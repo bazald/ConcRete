@@ -9,7 +9,8 @@ namespace Zeni::Rete {
   Token_Beta::Token_Beta(const std::shared_ptr<const Token> first, const std::shared_ptr<const Token> second)
     : Token(first->size() + second->size()),
     m_first(first),
-    m_second(second)
+    m_second(second),
+    m_hash(hash_combine(std::hash<Token>()(*first), std::hash<Token>()(*second)))
   {
   }
 
@@ -29,6 +30,16 @@ namespace Zeni::Rete {
       return (*m_first)[index];
     else
       return (*m_second)[Token_Index(index.rete_row, index.token_row - first_size, index.column)];
+  }
+
+  size_t Token_Beta::get_hash() const {
+    return m_hash;
+  }
+
+  bool Token_Beta::operator==(const Token &rhs) const {
+    if (auto token_beta = dynamic_cast<const Token_Beta *>(&rhs))
+      return m_first == token_beta->m_first && m_second == token_beta->m_second;
+    return false;
   }
 
 }

@@ -16,8 +16,33 @@
 
 namespace Zeni::Rete {
 
+  Node_Unary_Gate::Unlocked_Node_Unary_Gate_Data::Unlocked_Node_Unary_Gate_Data()
+  {
+  }
+
+  Node_Unary_Gate::Locked_Node_Unary_Gate_Data_Const::Locked_Node_Unary_Gate_Data_Const(const Node_Unary_Gate * node, const Locked_Node_Data_Const &)
+    : m_data(node->m_unlocked_node_unary_gate_data)
+  {
+  }
+
+  int64_t Node_Unary_Gate::Locked_Node_Unary_Gate_Data_Const::get_input_tokens() const {
+    return m_data->m_input_tokens;
+  }
+
+  Node_Unary_Gate::Locked_Node_Unary_Gate_Data::Locked_Node_Unary_Gate_Data(Node_Unary_Gate * node, const Locked_Node_Data &data)
+    : Locked_Node_Unary_Gate_Data_Const(node, data),
+    m_data(node->m_unlocked_node_unary_gate_data)
+  {
+  }
+
+  int64_t & Node_Unary_Gate::Locked_Node_Unary_Gate_Data::modify_input_tokens() {
+    return m_data->m_input_tokens;
+  }
+
   Node_Unary_Gate::Node_Unary_Gate(const std::shared_ptr<Node> input)
-    : Node_Unary(input->get_height(), input->get_size(), 0, hash_combine(std::hash<int>()(3), input->get_hash()), input)
+    : Node(input->get_height(), input->get_size(), 0, hash_combine(std::hash<int>()(3), input->get_hash())),
+    m_unlocked_node_unary_gate_data(std::make_shared<Unlocked_Node_Unary_Gate_Data>()),
+    m_input(input)
   {
   }
 
@@ -56,11 +81,11 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
-      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
 
-      const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
+      const int64_t tokens_input = locked_node_unary_gate_data.get_input_tokens();
 
-      if (!tokens_input.positive.empty()) {
+      if (tokens_input > 0) {
         const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
         jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.first, message.network, message.child));
         if (inputs.second)
@@ -81,11 +106,11 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
-      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
 
-      const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
+      const int64_t tokens_input = locked_node_unary_gate_data.get_input_tokens();
 
-      if (!tokens_input.positive.empty()) {
+      if (tokens_input > 0) {
         const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
         jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.first, message.network, message.child));
         if (inputs.second)
@@ -106,11 +131,11 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
-      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
 
-      const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
+      const int64_t tokens_input = locked_node_unary_gate_data.get_input_tokens();
 
-      if (!tokens_input.positive.empty()) {
+      if (tokens_input > 0) {
         const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
         jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.network, message.child, false));
         if (inputs.second)
@@ -131,11 +156,11 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     {
-      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
 
-      const Tokens_Input &tokens_input = locked_node_unary_data.get_input_tokens();
+      const int64_t tokens_input = locked_node_unary_gate_data.get_input_tokens();
 
-      if (!tokens_input.positive.empty()) {
+      if (tokens_input > 0) {
         const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
         jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.network, message.child, false));
         if(inputs.second)
@@ -152,19 +177,13 @@ namespace Zeni::Rete {
 
     {
       Locked_Node_Data locked_node_data(this);
-      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
 
       const Outputs &gates = locked_node_data.get_gates();
       const Outputs &outputs = locked_node_data.get_outputs();
-      Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
+      int64_t &tokens_input = locked_node_unary_gate_data.modify_input_tokens();
 
-      if (tokens_input.positive.empty()) {
-        tokens_input.negative.emplace(std::shared_ptr<Token>());
-        return;
-      }
-
-      tokens_input.positive.erase(tokens_input.positive.begin());
-      if (!tokens_input.positive.empty())
+      if (--tokens_input != 0)
         return;
 
       size_t num_jobs = 0;
@@ -197,20 +216,13 @@ namespace Zeni::Rete {
 
     {
       Locked_Node_Data locked_node_data(this);
-      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
+      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
 
       const Outputs &gates = locked_node_data.get_gates();
       const Outputs &outputs = locked_node_data.get_outputs();
-      Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
+      int64_t &tokens_input = locked_node_unary_gate_data.modify_input_tokens();
 
-      if (!tokens_input.negative.empty()) {
-        tokens_input.negative.erase(tokens_input.negative.begin());
-        return;
-      }
-
-      const bool first_insertion = tokens_input.positive.empty();
-      tokens_input.positive.emplace(std::shared_ptr<Token>());
-      if (!first_insertion)
+      if (++tokens_input != 1)
         return;
 
       size_t num_jobs = 0;
@@ -247,6 +259,18 @@ namespace Zeni::Rete {
 
   bool Node_Unary_Gate::operator==(const Node &rhs) const {
     return dynamic_cast<const Node_Unary_Gate *>(&rhs);
+  }
+
+  std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> Node_Unary_Gate::get_inputs() {
+    return std::make_pair(m_input, nullptr);
+  }
+
+  std::shared_ptr<const Node> Node_Unary_Gate::get_input() const {
+    return m_input;
+  }
+
+  std::shared_ptr<Node> Node_Unary_Gate::get_input() {
+    return m_input;
   }
 
 }
