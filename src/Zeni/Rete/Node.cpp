@@ -112,8 +112,6 @@ namespace Zeni::Rete {
   }
 
   std::shared_ptr<Node> Node::connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) {
-    const auto sft = shared_from_this();
-
     if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
       Locked_Node_Data locked_node_data(this);
 
@@ -128,14 +126,12 @@ namespace Zeni::Rete {
       }
     }
 
-    job_queue->give_one(std::make_shared<Message_Connect_Gate>(sft, network, child));
+    job_queue->give_one(std::make_shared<Message_Connect_Gate>(shared_from_this(), network, child));
 
     return child;
   }
 
   std::shared_ptr<Node> Node::connect_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) {
-    const auto sft = shared_from_this();
-
     if (network->get_Node_Sharing() == Network::Node_Sharing::Enabled) {
 
       Locked_Node_Data locked_node_data(this);
@@ -151,7 +147,7 @@ namespace Zeni::Rete {
       }
     }
 
-    job_queue->give_one(std::make_shared<Message_Connect_Output>(sft, network, child));
+    job_queue->give_one(std::make_shared<Message_Connect_Output>(shared_from_this(), network, child));
 
     return child;
   }

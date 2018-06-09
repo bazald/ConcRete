@@ -390,7 +390,7 @@ namespace Zeni::Rete {
       const Outputs &outputs = locked_node_data.get_outputs();
       Unlocked_Network_Data::WMEs &wmes = locked_network_data.modify_wmes();
 
-      const auto &[last_instance, output_token] = wmes.try_erase(wme);
+      const auto [last_instance, output_token] = wmes.try_erase(wme);
 
       if (!last_instance)
         return;

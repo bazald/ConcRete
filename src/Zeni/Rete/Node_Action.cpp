@@ -100,14 +100,7 @@ namespace Zeni::Rete {
   }
 
   bool Node_Action::operator==(const Node &rhs) const {
-    //if (auto action = dynamic_cast<const Node_Action *>(&rhs)) {
-    //  return *m_variables == *action->m_variables &&
-    //    m_name == action->m_name &&
-    //    m_action == action->m_action &&
-    //    m_retraction == action->m_retraction;
-    //}
-
-    return false;
+    return this == &rhs;
   }
 
 }
