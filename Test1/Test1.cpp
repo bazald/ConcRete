@@ -68,7 +68,7 @@ private:
 };
 
 static void test_Worker_Threads();
-static void test_Memory_Pool();
+//static void test_Memory_Pool();
 static void test_Rete_Network();
 static void test_Parser();
 
@@ -80,11 +80,11 @@ int main()
     abort();
   }
 
-  test_Memory_Pool();
-  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-    abort();
-  }
+  //test_Memory_Pool();
+  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //  abort();
+  //}
 
   Zeni::Rete::Debug_Counters::print(std::cerr);
   test_Rete_Network();
@@ -158,56 +158,56 @@ void test_Worker_Threads() {
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;
 }
 
-static std::atomic_int64_t g_memory_test_complete = false;
-
-void test_Memory_Pool() {
-  class Pool_Clearer : public Zeni::Concurrency::Job {
-  public:
-    void execute() noexcept override {
-      do {
-        Zeni::Concurrency::Memory_Pools::clear_pools();
-      } while (g_memory_test_complete.load(std::memory_order_acquire) == false);
-    }
-  };
-
-  class List_Runner : public Zeni::Concurrency::Job {
-  public:
-    void execute() noexcept override {
-      std::list<int> numbers;
-      for (int i = 0; i != 1000; ++i)
-        numbers.push_back(i);
-      while (!numbers.empty())
-        numbers.pop_back();
-    }
-  };
-
-  class Thread_Runner : public Zeni::Concurrency::Job {
-  public:
-    void execute() noexcept override {
-      {
-        auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(3);
-
-        std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-        for (int i = 0; i != 100; ++i)
-          jobs.push_back(std::make_shared<List_Runner>());
-        worker_threads->get_main_Job_Queue()->give_many(jobs);
-
-        worker_threads->finish_jobs();
-      }
-
-      g_memory_test_complete.store(true, std::memory_order_release);
-    }
-  };
-
-  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(2);
-
-  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  jobs.push_back(std::make_shared<Pool_Clearer>());
-  jobs.push_back(std::make_shared<Thread_Runner>());
-  worker_threads->get_main_Job_Queue()->give_many(jobs);
-
-  worker_threads->finish_jobs();
-}
+//static std::atomic_int64_t g_memory_test_complete = false;
+//
+//void test_Memory_Pool() {
+//  class Pool_Clearer : public Zeni::Concurrency::Job {
+//  public:
+//    void execute() noexcept override {
+//      do {
+//        Zeni::Concurrency::Memory_Pools::clear_pools();
+//      } while (g_memory_test_complete.load(std::memory_order_acquire) == false);
+//    }
+//  };
+//
+//  class List_Runner : public Zeni::Concurrency::Job {
+//  public:
+//    void execute() noexcept override {
+//      std::list<int> numbers;
+//      for (int i = 0; i != 1000; ++i)
+//        numbers.push_back(i);
+//      while (!numbers.empty())
+//        numbers.pop_back();
+//    }
+//  };
+//
+//  class Thread_Runner : public Zeni::Concurrency::Job {
+//  public:
+//    void execute() noexcept override {
+//      {
+//        auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(3);
+//
+//        std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+//        for (int i = 0; i != 100; ++i)
+//          jobs.push_back(std::make_shared<List_Runner>());
+//        worker_threads->get_main_Job_Queue()->give_many(jobs);
+//
+//        worker_threads->finish_jobs();
+//      }
+//
+//      g_memory_test_complete.store(true, std::memory_order_release);
+//    }
+//  };
+//
+//  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(2);
+//
+//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+//  jobs.push_back(std::make_shared<Pool_Clearer>());
+//  jobs.push_back(std::make_shared<Thread_Runner>());
+//  worker_threads->get_main_Job_Queue()->give_many(jobs);
+//
+//  worker_threads->finish_jobs();
+//}
 
 void test_Rete_Network() {
   const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, Zeni::Concurrency::Worker_Threads::Create());

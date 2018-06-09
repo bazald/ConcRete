@@ -85,11 +85,6 @@ namespace Zeni::Rete {
   }
 
   bool Node::try_increment_child_count() {
-#ifdef DISABLE_MULTITHREADING
-    if (m_child_count == 0)
-      return false;
-    ++m_child_count;
-#else
     int64_t child_count = m_child_count.load();
     for (;;) {
       if (child_count == 0)
@@ -97,18 +92,13 @@ namespace Zeni::Rete {
       if (m_child_count.compare_exchange_weak(child_count, child_count + 1))
         break;
     }
-#endif
     DEBUG_COUNTER_INCREMENT(g_node_increments, 1);
     DEBUG_COUNTER_INCREMENT(g_try_increment_child_counts, 1);
     return true;
   }
 
   int64_t Node::decrement_child_count() {
-#ifdef DISABLE_MULTITHREADING
-    return --m_child_count;
-#else
     return m_child_count.fetch_sub(1) - 1;
-#endif
   }
 
   std::shared_ptr<Node> Node::connect_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) {
@@ -167,8 +157,8 @@ namespace Zeni::Rete {
   }
 
   void Node::receive(const Message_Decrement_Child_Count &message) {
-      if (decrement_child_count() == 0)
-        send_disconnect_from_parents(message.network, message.get_Job_Queue());
+    if (decrement_child_count() == 0)
+      send_disconnect_from_parents(message.network, message.get_Job_Queue());
   }
 
   void Node::receive(const Message_Disconnect_Gate &message) {
@@ -228,13 +218,13 @@ namespace Zeni::Rete {
     std::shared_ptr<Concurrency::IJob> job;
     bool erased_last = false;
 
+    if (message.decrement_output_count && decrement_child_count() == 0)
+      send_disconnect_from_parents(message.network, message.get_Job_Queue());
+
     {
       Outputs &gates = locked_node_data.modify_gates();
 
       erased_last = gates.try_erase(message.child);
-
-      if (message.decrement_output_count && decrement_child_count() == 0)
-        send_disconnect_from_parents(message.network, message.get_Job_Queue());
 
       if (erased_last && !locked_node_data.get_output_tokens().empty())
         job = std::make_shared<Message_Status_Empty>(message.child, message.network, sft);
@@ -251,13 +241,13 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
     bool erased_last = false;
 
+    if (message.decrement_output_count && decrement_child_count() == 0)
+      send_disconnect_from_parents(message.network, message.get_Job_Queue());
+
     {
       Outputs &outputs = locked_node_data.modify_outputs();
 
       erased_last = outputs.try_erase(message.child);
-
-      if (message.decrement_output_count && decrement_child_count() == 0)
-        send_disconnect_from_parents(message.network, message.get_Job_Queue());
 
       if (erased_last) {
         jobs.reserve(locked_node_data.get_output_tokens().size());
