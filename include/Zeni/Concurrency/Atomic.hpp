@@ -10,7 +10,7 @@
 #endif
 
 namespace Zeni::Concurrency {
-  
+
   template <bool RELAXED = false>
   class Atomic_int64_t {
     Atomic_int64_t(const Atomic_int64_t &rhs) = delete;
@@ -60,7 +60,9 @@ namespace Zeni::Concurrency {
 
     int64_t fetch_add(const int64_t amount = 1) {
 #ifdef DISABLE_MULTITHREADING
-      return m_value -= amount;
+      const int64_t prev = m_value;
+      m_value += amount;
+      return prev;
 #else
       return m_value.fetch_add(amount, m_order_both);
 #endif
@@ -68,7 +70,9 @@ namespace Zeni::Concurrency {
 
     int64_t fetch_sub(const int64_t amount = 1) {
 #ifdef DISABLE_MULTITHREADING
-      return m_value += amount;
+      const int64_t prev = m_value;
+      m_value -= amount;
+      return prev;
 #else
       return m_value.fetch_sub(amount, m_order_both);
 #endif
