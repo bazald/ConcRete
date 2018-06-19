@@ -18,6 +18,85 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\Zeni\New_and_Delete.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Custom_Data.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Debug_Counters.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Gate.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Output.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Decrement_Child_Count.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Disconnect_Gate.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Disconnect_Output.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Status_Empty.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Status_Nonempty.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Insert.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Remove.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Parser_Impl.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Token_Alpha.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Token_Beta.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Variable_Indices_Impl.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Network.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Action.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Passthrough.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Passthrough_Gated.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Unary.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Unary_Gate.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Parser.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Symbol.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Token.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Token_Index.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Variable_Binding.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Variable_Indices.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\WME.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Utility.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Custom_Data.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Antiable_Map.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Antiable_Set.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Debug_Counters.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Linkage.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Gate.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Output.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Decrement_Child_Count.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Disconnect_Gate.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Disconnect_Output.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Status_Empty.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Status_Nonempty.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Token_Insert.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Token_Remove.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Parser_Impl.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Token_Alpha.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Token_Beta.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Variable_Indices_Impl.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Network.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Action.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Binary.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Existential.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Existential.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Negation.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Negation.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Passthrough.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Passthrough_Gated.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Predicate.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Unary.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Unary_Gate.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Parser.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Symbol.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Token.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Token_Index.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Variable_Binding.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Variable_Indices.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\WME.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Utility.hpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{9FD760F9-80E4-4962-9559-FD0D461381A1}</ProjectGuid>
@@ -89,7 +168,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;RETE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\PEGTL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\include;$(SolutionDir)\..\..\PEGTL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -106,7 +185,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;RETE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\PEGTL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\include;$(SolutionDir)\..\..\PEGTL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -125,7 +204,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;RETE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\PEGTL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\include;$(SolutionDir)\..\..\PEGTL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -146,7 +225,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;RETE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\include;$(SolutionDir)\PEGTL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..\include;$(SolutionDir)\..\..\PEGTL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -158,78 +237,6 @@
       <AdditionalDependencies>Concurrency.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\src\Zeni\New_and_Delete.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Custom_Data.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Debug_Counters.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Message.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Message_Connect_Gate.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Message_Connect_Output.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Message_Decrement_Child_Count.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Message_Disconnect_Gate.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Message_Disconnect_Output.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Message_Status_Empty.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Message_Status_Nonempty.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Message_Token_Insert.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Message_Token_Remove.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Parser_Impl.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Token_Alpha.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Token_Beta.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Internal\Variable_Indices_Impl.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Network.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Action.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Filter.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Passthrough.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Passthrough_Gated.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Unary.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Node_Unary_Gate.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Parser.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Symbol.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Token.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Token_Index.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Variable_Binding.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\Variable_Indices.cpp" />
-    <ClCompile Include="..\src\Zeni\Rete\WME.cpp" />
-    <ClCompile Include="..\src\Zeni\Utility.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\include\Zeni\Rete\Custom_Data.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Antiable_Map.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Antiable_Set.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Debug_Counters.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Linkage.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Message.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Message_Connect_Gate.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Message_Connect_Output.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Message_Decrement_Child_Count.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Message_Disconnect_Gate.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Message_Disconnect_Output.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Message_Status_Empty.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Message_Status_Nonempty.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Message_Token_Insert.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Message_Token_Remove.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Parser_Impl.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Token_Alpha.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Token_Beta.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Internal\Variable_Indices_Impl.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Network.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Node.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Action.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Filter.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Passthrough.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Passthrough_Gated.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Unary.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Node_Unary_Gate.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Parser.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Symbol.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Token.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Token_Index.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Variable_Binding.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\Variable_Indices.hpp" />
-    <ClInclude Include="..\include\Zeni\Rete\WME.hpp" />
-    <ClInclude Include="..\include\Zeni\Utility.hpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
