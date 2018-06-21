@@ -3,6 +3,8 @@
 #include "Zeni/Concurrency/Message.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
 #include "Zeni/Concurrency/Recipient.hpp"
+#include "Zeni/Concurrency/Stack.hpp"
+#include "Zeni/Concurrency/Queue.hpp"
 #include "Zeni/Concurrency/Worker_Threads.hpp"
 
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
@@ -68,6 +70,8 @@ private:
 };
 
 static void test_Worker_Threads();
+static void test_Stack();
+static void test_Queue();
 //static void test_Memory_Pool();
 static void test_Rete_Network();
 static void test_Parser();
@@ -75,6 +79,26 @@ static void test_Parser();
 int main()
 {
   test_Worker_Threads();
+  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+    abort();
+  }
+
+  for (int i = 0; i != 100; ++i) {
+    test_Stack();
+    std::cout << 'S';
+  }
+  std::cout << std::endl;
+  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+    abort();
+  }
+
+  for (int i = 0; i != 100; ++i) {
+    test_Queue();
+    std::cout << 'Q';
+  }
+  std::cout << std::endl;
   if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
     std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
     abort();
@@ -156,6 +180,108 @@ void test_Worker_Threads() {
   job_queue->give_many(std::move(jobs));
 
   //std::cout << "g_num_recvs == " << g_num_recvs << std::endl;
+}
+
+void test_Stack() {
+  class Pusher : public Zeni::Concurrency::Job {
+  public:
+    Pusher(const std::shared_ptr<Zeni::Concurrency::Stack<int>> &stack) : m_stack(stack) {}
+
+    void execute() noexcept override {
+      for (int i = 0; i != 100; ++i)
+        m_stack->push(i);
+      while (!m_stack->empty());
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Stack<int>> m_stack;
+  };
+
+  class Popper : public Zeni::Concurrency::Job {
+  public:
+    Popper(const std::shared_ptr<Zeni::Concurrency::Stack<int>> &stack) : m_stack(stack) {}
+
+    void execute() noexcept override {
+      for (int i = 0; i != 100; ) {
+        int value;
+        if (m_stack->try_pop(value)) {
+          ++i;
+          //std::cout << value;
+        }
+      }
+      while (!m_stack->empty());
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Stack<int>> m_stack;
+  };
+
+  const auto stack = std::make_shared<Zeni::Concurrency::Stack<int>>();
+
+  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
+  const auto job_queue = worker_threads->get_main_Job_Queue();
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (int i = 0; i != 4; ++i) {
+    jobs.emplace_back(std::make_shared<Pusher>(stack));
+    jobs.emplace_back(std::make_shared<Popper>(stack));
+  }
+  job_queue->give_many(std::move(jobs));
+
+  worker_threads->finish_jobs();
+
+  //std::cout << std::endl;
+}
+
+void test_Queue() {
+  class Pusher : public Zeni::Concurrency::Job {
+  public:
+    Pusher(const std::shared_ptr<Zeni::Concurrency::Queue<int>> &queue) : m_queue(queue) {}
+
+    void execute() noexcept override {
+      for (int i = 0; i != 100; ++i)
+        m_queue->push(i);
+      while (!m_queue->empty());
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Queue<int>> m_queue;
+  };
+
+  class Popper : public Zeni::Concurrency::Job {
+  public:
+    Popper(const std::shared_ptr<Zeni::Concurrency::Queue<int>> &queue) : m_queue(queue) {}
+
+    void execute() noexcept override {
+      for (int i = 0; i != 100; ) {
+        int value;
+        if (m_queue->try_pop(value)) {
+          ++i;
+          //std::cout << value;
+        }
+      }
+      while (!m_queue->empty());
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Queue<int>> m_queue;
+  };
+
+  const auto queue = std::make_shared<Zeni::Concurrency::Queue<int>>();
+
+  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
+  const auto job_queue = worker_threads->get_main_Job_Queue();
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (int i = 0; i != 4; ++i) {
+    jobs.emplace_back(std::make_shared<Pusher>(queue));
+    jobs.emplace_back(std::make_shared<Popper>(queue));
+  }
+  job_queue->give_many(std::move(jobs));
+
+  worker_threads->finish_jobs();
+
+  //std::cout << std::endl;
 }
 
 //static std::atomic_int64_t g_memory_test_complete = false;

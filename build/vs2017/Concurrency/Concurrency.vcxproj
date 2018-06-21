@@ -29,6 +29,8 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Worker_Threads_Impl.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Job.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Job_Queue.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Queue.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Stack.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Memory_Pool.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Memory_Pools.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Message.hpp" />
