@@ -1,4 +1,5 @@
 #include "Zeni/Concurrency/Internal/Memory_Pools_Impl.hpp"
+#include "Zeni/Concurrency/Memory_Pools.hpp"
 
 namespace Zeni::Concurrency {
 

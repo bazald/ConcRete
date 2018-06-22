@@ -86,23 +86,23 @@ int main()
 
   for (int i = 0; i != 100; ++i) {
     test_Stack();
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+      abort();
+    }
     std::cout << 'S';
   }
   std::cout << std::endl;
-  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-    abort();
-  }
 
-  for (int i = 0; i != 100; ++i) {
-    test_Queue();
-    std::cout << 'Q';
-  }
-  std::cout << std::endl;
-  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-    abort();
-  }
+  //for (int i = 0; i != 100; ++i) {
+  //  test_Queue();
+  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //    abort();
+  //  }
+  //  std::cout << 'Q';
+  //}
+  //std::cout << std::endl;
 
   //test_Memory_Pool();
   //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
@@ -188,7 +188,7 @@ void test_Stack() {
     Pusher(const std::shared_ptr<Zeni::Concurrency::Stack<int>> &stack) : m_stack(stack) {}
 
     void execute() noexcept override {
-      for (int i = 0; i != 100; ++i)
+      for (int i = 0; i != 10000; ++i)
         m_stack->push(i);
       while (!m_stack->empty());
     }
@@ -202,7 +202,7 @@ void test_Stack() {
     Popper(const std::shared_ptr<Zeni::Concurrency::Stack<int>> &stack) : m_stack(stack) {}
 
     void execute() noexcept override {
-      for (int i = 0; i != 100; ) {
+      for (int i = 0; i != 10000; ) {
         int value;
         if (m_stack->try_pop(value)) {
           ++i;

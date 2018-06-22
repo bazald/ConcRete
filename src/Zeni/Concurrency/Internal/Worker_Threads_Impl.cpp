@@ -2,6 +2,9 @@
 
 #include "Zeni/Concurrency/IJob.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
+#include "Zeni/Concurrency/Memory_Pool.hpp"
+#include "Zeni/Concurrency/Memory_Pools.hpp"
+#include "Zeni/Concurrency/Reclamation_Stacks.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -104,12 +107,14 @@ namespace Zeni::Concurrency {
   void Worker_Threads_Impl::finish_jobs() noexcept(false) {
     while (std::shared_ptr<IJob> job = m_job_queue->try_take_one(true))
       job->execute();
+
+    Reclamation_Stacks::get_stack()->reclaim();
+    Memory_Pools::get_pool()->clear();
   }
 #else
   void Worker_Threads_Impl::finish_jobs() noexcept(false) {
     for (;;) {
-      int16_t nonempty_job_queues = m_nonempty_job_queues.load(std::memory_order_acquire);
-      if (nonempty_job_queues <= 0) {
+      if (m_nonempty_job_queues.load(std::memory_order_acquire) <= 0) {
         // Termination condition OR simply out of jobs
         int16_t awake_workers = m_awake_workers.load(std::memory_order_acquire);
         if (awake_workers == 0)
@@ -138,6 +143,15 @@ namespace Zeni::Concurrency {
           break;
       }
     }
+
+    for (auto &job_queue : m_job_queues)
+      job_queue.second->set_reclaim();
+    m_reclaims_remaining.store(int16_t(m_worker_threads.size()));
+
+    Reclamation_Stacks::get_stack()->reclaim();
+    Memory_Pools::get_pool()->clear();
+
+    while (m_reclaims_remaining.load(std::memory_order_acquire) != 0);
   }
 
   void Worker_Threads_Impl::worker_awakened() noexcept {
@@ -160,12 +174,14 @@ namespace Zeni::Concurrency {
     }
 
     std::vector<std::shared_ptr<Job_Queue>> job_queues;
+    std::shared_ptr<Job_Queue> my_job_queue;
     {
       auto mine = std::find_if(m_job_queues.cbegin(), m_job_queues.cend(), [](const auto &value) {return value.first == std::this_thread::get_id();});
       assert(mine != m_job_queues.cend());
+      my_job_queue = mine->second;
 
-      // Initialize other_job_queues to the queues after mine, followed by the ones before
-      job_queues.reserve(m_job_queues.size() - 1);
+      // Initialize job_queues to the queues mine and after, followed by the ones before
+      job_queues.reserve(m_job_queues.size());
       for (auto jqt = mine; jqt != m_job_queues.cend(); ++jqt)
         job_queues.emplace_back(jqt->second);
       for (auto jqt = m_job_queues.cbegin(); jqt != mine; ++jqt)
@@ -176,7 +192,15 @@ namespace Zeni::Concurrency {
 
     bool is_awake = false;
     for (;;) {
-      int16_t nonempty_job_queues = m_nonempty_job_queues.load(std::memory_order_acquire);
+      while (m_reclaims_remaining.load(std::memory_order_acquire) != 0) {
+        if (my_job_queue->try_reclaim()) {
+          Reclamation_Stacks::get_stack()->reclaim();
+          Memory_Pools::get_pool()->clear();
+          m_reclaims_remaining.fetch_sub(1, std::memory_order_relaxed);
+        }
+      }
+
+      int16_t nonempty_job_queues = m_nonempty_job_queues.load(std::memory_order_relaxed);
       if (nonempty_job_queues < 0)
         break; // Termination condition
       if (nonempty_job_queues == 0) {

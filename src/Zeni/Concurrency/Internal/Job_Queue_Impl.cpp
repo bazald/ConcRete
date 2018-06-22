@@ -53,6 +53,15 @@ namespace Zeni::Concurrency {
     return job;
   }
 
+  bool Job_Queue_Impl::try_reclaim() noexcept {
+#ifndef DISABLE_MULTITHREADING
+    if (!m_reclaim.load(std::memory_order_acquire))
+      return false;
+    m_reclaim.store(false, std::memory_order_release);
+#endif
+    return true;
+  }
+
   void Job_Queue_Impl::give_one(const std::shared_ptr<IJob> job) noexcept(false) {
 #ifndef DISABLE_MULTITHREADING
     std::lock_guard<std::mutex> mutex_lock(m_mutex);
@@ -107,6 +116,12 @@ namespace Zeni::Concurrency {
       m_has_jobs.store(true, std::memory_order_release);
       m_worker_threads->job_queue_nonemptied();
     }
+#endif
+  }
+
+  void Job_Queue_Impl::set_reclaim() noexcept {
+#ifndef DISABLE_MULTITHREADING
+    m_reclaim.store(true, std::memory_order_release);
 #endif
   }
 
