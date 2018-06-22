@@ -53,6 +53,7 @@ namespace Zeni::Concurrency {
     std::vector<std::pair<std::thread::id, std::shared_ptr<Job_Queue>>> m_job_queues;
     std::atomic_int16_t m_awake_workers = 0;
     std::atomic_int16_t m_nonempty_job_queues = 0;
+    std::atomic_int16_t m_reclaims_remaining = 0;
     std::atomic_bool m_initialized = false;
     std::atomic<std::thread::id> m_failed_thread_id;
 #endif
