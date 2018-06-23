@@ -19,7 +19,7 @@ namespace Zeni::Concurrency {
 #ifndef DISABLE_MULTITHREADING
     static const std::memory_order m_order_both = RELAXED ? std::memory_order_relaxed : std::memory_order_acq_rel;
     static const std::memory_order m_order_load = RELAXED ? std::memory_order_relaxed : std::memory_order_acquire;
-    static const std::memory_order m_order_store = RELAXED ? std::memory_order_relaxed : std::memory_order_relaxed;
+    static const std::memory_order m_order_store = RELAXED ? std::memory_order_relaxed : std::memory_order_release;
 #endif
 
   public:

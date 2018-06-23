@@ -35,8 +35,8 @@ namespace Zeni::Concurrency {
 #ifndef DISABLE_MULTITHREADING
     friend Job_Queue_Impl;
     virtual void worker_awakened() noexcept = 0;
-    virtual void job_queue_emptied() noexcept = 0;
-    virtual void job_queue_nonemptied() noexcept = 0;
+    virtual void jobs_inserted(const int64_t num_jobs) noexcept = 0;
+    virtual void job_removed() noexcept = 0;
 #endif
   };
 

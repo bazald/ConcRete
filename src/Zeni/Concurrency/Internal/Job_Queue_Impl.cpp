@@ -24,28 +24,15 @@ namespace Zeni::Concurrency {
   }
 
   std::shared_ptr<IJob> Job_Queue_Impl::try_take_one(const bool is_already_awake) noexcept {
-#ifndef DISABLE_MULTITHREADING
-    if (!m_has_jobs.load(std::memory_order_acquire))
+    std::shared_ptr<IJob> job;
+    if (!m_jobs.try_pop(job))
       return nullptr;
-
-    std::lock_guard<std::mutex> mutex_lock(m_mutex);
-#endif
-
-    if (m_jobs.empty())
-      return nullptr;
-
-    const std::shared_ptr<IJob> job = m_jobs.front().back();
-    m_jobs.front().pop_back();
-
-    if (m_jobs.front().empty())
-      m_jobs.pop();
 
 #ifndef DISABLE_MULTITHREADING
     if (!is_already_awake)
       m_worker_threads->worker_awakened();
 
-    if (m_jobs.empty())
-      m_worker_threads->job_queue_emptied();
+    m_worker_threads->job_removed();
 #endif
 
     job->set_Job_Queue(shared_from_this());
@@ -64,59 +51,28 @@ namespace Zeni::Concurrency {
 
   void Job_Queue_Impl::give_one(const std::shared_ptr<IJob> job) noexcept(false) {
 #ifndef DISABLE_MULTITHREADING
-    std::lock_guard<std::mutex> mutex_lock(m_mutex);
+    m_worker_threads->jobs_inserted(1);
 #endif
 
-    [[maybe_unused]] const bool nonemptied = m_jobs.empty();
-
-    m_jobs.emplace(1, job);
-
-#ifndef DISABLE_MULTITHREADING
-    if (nonemptied) {
-      m_has_jobs.store(true, std::memory_order_release);
-      m_worker_threads->job_queue_nonemptied();
-    }
-#endif
+    m_jobs.push(job);
   }
 
   void Job_Queue_Impl::give_many(std::vector<std::shared_ptr<IJob>> &&jobs) noexcept(false) {
-    if (jobs.empty())
-      return;
-
 #ifndef DISABLE_MULTITHREADING
-    std::lock_guard<std::mutex> mutex_lock(m_mutex);
+    m_worker_threads->jobs_inserted(int64_t(jobs.size()));
 #endif
 
-    [[maybe_unused]] const bool nonemptied = m_jobs.empty();
-
-    m_jobs.emplace(std::move(jobs));
-
-#ifndef DISABLE_MULTITHREADING
-    if (nonemptied) {
-      m_has_jobs.store(true, std::memory_order_release);
-      m_worker_threads->job_queue_nonemptied();
-    }
-#endif
+    for (auto job : jobs)
+      m_jobs.push(job);
   }
 
   void Job_Queue_Impl::give_many(const std::vector<std::shared_ptr<IJob>> &jobs) noexcept(false) {
-    if (jobs.empty())
-      return;
-
 #ifndef DISABLE_MULTITHREADING
-    std::lock_guard<std::mutex> mutex_lock(m_mutex);
+    m_worker_threads->jobs_inserted(int64_t(jobs.size()));
 #endif
 
-    [[maybe_unused]] const bool nonemptied = m_jobs.empty();
-
-    m_jobs.emplace(jobs);
-
-#ifndef DISABLE_MULTITHREADING
-    if (nonemptied) {
-      m_has_jobs.store(true, std::memory_order_release);
-      m_worker_threads->job_queue_nonemptied();
-    }
-#endif
+    for (auto job : jobs)
+      m_jobs.push(job);
   }
 
   void Job_Queue_Impl::set_reclaim() noexcept {

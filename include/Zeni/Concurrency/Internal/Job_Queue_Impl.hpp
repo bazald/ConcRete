@@ -2,8 +2,7 @@
 #define ZENI_CONCURRENCY_JOB_QUEUE_IMPL_HPP
 
 #include "../Job_Queue.hpp"
-
-#include <queue>
+#include "../Queue.hpp"
 
 #ifndef DISABLE_MULTITHREADING
 #include <atomic>
@@ -41,12 +40,10 @@ namespace Zeni::Concurrency {
 
   private:
 #ifndef DISABLE_MULTITHREADING
-    std::atomic_bool m_has_jobs = false;
     std::atomic_bool m_reclaim = false;
-    std::mutex m_mutex;
 #endif
     Worker_Threads * const m_worker_threads;
-    std::queue<std::vector<std::shared_ptr<IJob>>> m_jobs;
+    Queue<std::shared_ptr<IJob>> m_jobs;
   };
 
 }

@@ -93,7 +93,7 @@ namespace Zeni::Concurrency {
     finish_jobs();
 
 #ifndef DISABLE_MULTITHREADING
-    m_nonempty_job_queues.fetch_sub(1, std::memory_order_relaxed); // If everyone behaves, guaranteed to go negative to initiate termination in worker threads
+    m_num_jobs_in_queues.fetch_sub(1, std::memory_order_relaxed); // If everyone behaves, guaranteed to go negative to initiate termination in worker threads
     for (auto &worker : m_worker_threads)
       worker->join();
 #endif
@@ -114,7 +114,7 @@ namespace Zeni::Concurrency {
 #else
   void Worker_Threads_Impl::finish_jobs() noexcept(false) {
     for (;;) {
-      if (m_nonempty_job_queues.load(std::memory_order_acquire) <= 0) {
+      if (m_num_jobs_in_queues.load(std::memory_order_acquire) <= 0) {
         // Termination condition OR simply out of jobs
         int16_t awake_workers = m_awake_workers.load(std::memory_order_acquire);
         if (awake_workers == 0)
@@ -155,15 +155,15 @@ namespace Zeni::Concurrency {
   }
 
   void Worker_Threads_Impl::worker_awakened() noexcept {
-    m_awake_workers.fetch_add(1, std::memory_order_relaxed);
+    m_awake_workers.fetch_add(1, std::memory_order_release);
   }
 
-  void Worker_Threads_Impl::job_queue_emptied() noexcept {
-    m_nonempty_job_queues.fetch_sub(1, std::memory_order_relaxed);
+  void Worker_Threads_Impl::jobs_inserted(const int64_t num_jobs) noexcept {
+    m_num_jobs_in_queues.fetch_add(num_jobs, std::memory_order_release);
   }
 
-  void Worker_Threads_Impl::job_queue_nonemptied() noexcept {
-    m_nonempty_job_queues.fetch_add(1, std::memory_order_relaxed);
+  void Worker_Threads_Impl::job_removed() noexcept {
+    m_num_jobs_in_queues.fetch_sub(1, std::memory_order_relaxed);
   }
 
   void Worker_Threads_Impl::worker_thread_work() noexcept {
@@ -200,10 +200,10 @@ namespace Zeni::Concurrency {
         }
       }
 
-      int16_t nonempty_job_queues = m_nonempty_job_queues.load(std::memory_order_relaxed);
-      if (nonempty_job_queues < 0)
+      const int64_t num_jobs_in_queues = m_num_jobs_in_queues.load(std::memory_order_relaxed);
+      if (num_jobs_in_queues < 0)
         break; // Termination condition
-      if (nonempty_job_queues == 0) {
+      if (num_jobs_in_queues == 0) {
         // Must be a worker thread, so safe to continue
         if (is_awake) {
           is_awake = false;
