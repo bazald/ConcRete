@@ -33,10 +33,6 @@ namespace Zeni::Concurrency {
     void fill(void * const dest, const uint32_t pattern) noexcept;
 
     std::unordered_map<size_t, void *, std::hash<size_t>, std::equal_to<size_t>, Mallocator<std::pair<const size_t, void *>>> m_freed;
-
-#ifndef DISABLE_MULTITHREADING
-    std::mutex m_mutex;
-#endif
   };
 
 }

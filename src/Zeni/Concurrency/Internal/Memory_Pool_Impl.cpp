@@ -23,10 +23,6 @@ namespace Zeni::Concurrency {
 
   /// free any cached memory blocks; return a count of the number of blocks freed
   size_t Memory_Pool_Impl::clear() noexcept {
-#ifndef DISABLE_MULTITHREADING
-    std::lock_guard lock(m_mutex);
-#endif
-
     size_t count = 0;
 
     for (auto &freed : m_freed) {
@@ -49,26 +45,16 @@ namespace Zeni::Concurrency {
     if (size < sizeof(void *))
       size = sizeof(void *);
 
-#ifndef DISABLE_MULTITHREADING
-    if (m_mutex.try_lock())
-#endif
     {
       auto &freed = m_freed[size];
       if (freed) {
         void * const ptr = freed;
         freed = *reinterpret_cast<void **>(ptr);
-#ifndef DISABLE_MULTITHREADING
-        m_mutex.unlock();
-#endif
 #ifndef NDEBUG
         fill(reinterpret_cast<size_t *>(ptr), 0xFA57F00D);
 #endif
         return reinterpret_cast<size_t *>(ptr);
       }
-
-#ifndef DISABLE_MULTITHREADING
-      m_mutex.unlock();
-#endif
     }
 
     void * ptr = std::malloc(sizeof(size_t) + size);
@@ -86,9 +72,6 @@ namespace Zeni::Concurrency {
 
   /// return a memory block to be cached (and eventually freed)
   void Memory_Pool_Impl::release(void * const ptr) noexcept {
-#ifndef DISABLE_MULTITHREADING
-    if (m_mutex.try_lock())
-#endif
     {
       auto &freed = m_freed[size_of(ptr)];
 
@@ -97,10 +80,6 @@ namespace Zeni::Concurrency {
 #endif
       *reinterpret_cast<void **>(ptr) = freed;
       freed = reinterpret_cast<size_t *>(ptr);
-
-#ifndef DISABLE_MULTITHREADING
-      m_mutex.unlock();
-#endif
 
       return;
     }

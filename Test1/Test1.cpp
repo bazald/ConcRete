@@ -90,19 +90,19 @@ int main()
       std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
       abort();
     }
-    std::cout << 'S';
+    std::cout << 'S' << std::flush;
   }
   std::cout << std::endl;
 
-  //for (int i = 0; i != 100; ++i) {
-  //  test_Queue();
-  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //    abort();
-  //  }
-  //  std::cout << 'Q';
-  //}
-  //std::cout << std::endl;
+  for (int i = 0; i != 100; ++i) {
+    test_Queue();
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+      abort();
+    }
+    std::cout << 'Q' << std::flush;
+  }
+  std::cout << std::endl;
 
   //test_Memory_Pool();
   //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
@@ -239,7 +239,7 @@ void test_Queue() {
     Pusher(const std::shared_ptr<Zeni::Concurrency::Queue<int>> &queue) : m_queue(queue) {}
 
     void execute() noexcept override {
-      for (int i = 0; i != 100; ++i)
+      for (int i = 0; i != 10000; ++i)
         m_queue->push(i);
       while (!m_queue->empty());
     }
@@ -253,7 +253,7 @@ void test_Queue() {
     Popper(const std::shared_ptr<Zeni::Concurrency::Queue<int>> &queue) : m_queue(queue) {}
 
     void execute() noexcept override {
-      for (int i = 0; i != 100; ) {
+      for (int i = 0; i != 10000; ) {
         int value;
         if (m_queue->try_pop(value)) {
           ++i;
@@ -358,9 +358,9 @@ void test_Rete_Network() {
       auto gated_passthrough01 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), job_queue, filter0, unary_gate1);
       auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, gated_passthrough01, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-        std::cout << '(';
+        std::cout << '(' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-        std::cout << ')';
+        std::cout << ')' << std::flush;
       });
 
       //job_queue->give_one(
@@ -391,9 +391,9 @@ void test_Rete_Network() {
       auto gated_passthrough10 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), job_queue, filter1, unary_gate0);
       auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, gated_passthrough10, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-        std::cout << '[';
+        std::cout << '[' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-        std::cout << ']';
+        std::cout << ']' << std::flush;
       });
 
       //job_queue->give_one(

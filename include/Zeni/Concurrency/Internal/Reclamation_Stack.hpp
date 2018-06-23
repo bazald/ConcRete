@@ -15,10 +15,8 @@ namespace Zeni::Concurrency {
   public:
     struct Node {
       Node() = default;
-      Node(Node * const &next_) : next(next_) {}
-      Node(Node * &&next_) : next(std::move(next_)) {}
 
-      Node * next = nullptr;
+      Node * reclamation_next = nullptr;
     };
 
     Reclamation_Stack() = default;
@@ -37,16 +35,15 @@ namespace Zeni::Concurrency {
 
     void push(Node * const node) noexcept {
       //m_size.fetch_add(1, std::memory_order_relaxed);
-      assert(node->next == nullptr);
-      node->next = m_head;
+      node->reclamation_next = m_head;
       m_head = node;
     }
 
     void reclaim() noexcept {
       while (m_head) {
-        Node * const next = m_head->next;
+        Node * const reclamation_next = m_head->reclamation_next;
         delete m_head;
-        m_head = next;
+        m_head = reclamation_next;
       }
     }
 
