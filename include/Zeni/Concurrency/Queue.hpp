@@ -42,65 +42,11 @@ namespace Zeni::Concurrency {
     //}
 
     void push(const TYPE &value) {
-      //m_size.fetch_add(1, std::memory_order_relaxed);
-      m_writers.fetch_add(1, std::memory_order_release);
-      Node * prev = m_tail.load(std::memory_order_relaxed);
-      TYPE * value_ptr = new TYPE(value);
-      Node * tail = new Node;
-      for (;;) {
-        TYPE * empty = nullptr;
-        if (prev->value_ptr.compare_exchange_strong(empty, value_ptr, std::memory_order_release, std::memory_order_relaxed))
-          break;
-        else {
-          Node * next = nullptr;
-          if (prev->next.compare_exchange_strong(next, tail, std::memory_order_release, std::memory_order_acquire)) {
-            m_tail.compare_exchange_strong(prev, tail, std::memory_order_release, std::memory_order_relaxed);
-            tail = new Node;
-          }
-          else
-            m_tail.compare_exchange_strong(prev, next, std::memory_order_release, std::memory_order_relaxed);
-        }
-        prev = m_tail.load(std::memory_order_relaxed);
-      }
-      Node * next = nullptr;
-      if (prev->next.compare_exchange_strong(next, tail, std::memory_order_release, std::memory_order_relaxed))
-        m_tail.compare_exchange_strong(prev, tail, std::memory_order_release, std::memory_order_relaxed);
-      else {
-        delete tail;
-        m_tail.compare_exchange_strong(prev, next, std::memory_order_release, std::memory_order_relaxed);
-      }
-      m_writers.fetch_sub(1, std::memory_order_release);
+      push(new TYPE(value));
     }
 
     void push(TYPE &&value) {
-      //m_size.fetch_add(1, std::memory_order_relaxed);
-      m_writers.fetch_add(1, std::memory_order_release);
-      Node * prev = m_tail.load(std::memory_order_relaxed);
-      TYPE * value_ptr = new TYPE(std::move(value));
-      Node * tail = new Node;
-      for (;;) {
-        TYPE * empty = nullptr;
-        if (prev->value_ptr.compare_exchange_strong(empty, value_ptr, std::memory_order_release, std::memory_order_relaxed))
-          break;
-        else {
-          Node * next = nullptr;
-          if (prev->next.compare_exchange_strong(next, tail, std::memory_order_release, std::memory_order_acquire)) {
-            m_tail.compare_exchange_strong(prev, tail, std::memory_order_release, std::memory_order_relaxed);
-            tail = new Node;
-          }
-          else
-            m_tail.compare_exchange_strong(prev, next, std::memory_order_release, std::memory_order_relaxed);
-        }
-        prev = m_tail.load(std::memory_order_relaxed);
-      }
-      Node * next = nullptr;
-      if (prev->next.compare_exchange_strong(next, tail, std::memory_order_release, std::memory_order_relaxed))
-        m_tail.compare_exchange_strong(prev, tail, std::memory_order_release, std::memory_order_relaxed);
-      else {
-        delete tail;
-        m_tail.compare_exchange_strong(prev, next, std::memory_order_release, std::memory_order_relaxed);
-      }
-      m_writers.fetch_sub(1, std::memory_order_release);
+      push(new TYPE(std::move(value)));
     }
 
     bool try_pop(TYPE &value) {
@@ -130,6 +76,40 @@ namespace Zeni::Concurrency {
     }
 
   private:
+    void push(TYPE * value_ptr) {
+      //m_size.fetch_add(1, std::memory_order_relaxed);
+      m_writers.fetch_add(1, std::memory_order_release);
+      Node * old_tail = m_tail.load(std::memory_order_relaxed);
+      Node * new_tail = new Node;
+      for (;;) {
+        TYPE * empty = nullptr;
+        if (old_tail->value_ptr.compare_exchange_strong(empty, value_ptr, std::memory_order_release, std::memory_order_relaxed)) {
+          if (!push_pointers(old_tail, new_tail))
+            delete new_tail;
+          m_writers.fetch_sub(1, std::memory_order_release);
+          return;
+        }
+        else {
+          if (push_pointers(old_tail, new_tail))
+            new_tail = new Node;
+        }
+        old_tail = m_tail.load(std::memory_order_relaxed);
+      }
+    }
+
+    // Return true if new tail pointer is used, otherwise false
+    bool push_pointers(Node * old_tail, Node * new_tail) {
+      Node * next = nullptr;
+      if (old_tail->next.compare_exchange_strong(next, new_tail, std::memory_order_release, std::memory_order_relaxed)) {
+        m_tail.compare_exchange_strong(old_tail, new_tail, std::memory_order_release, std::memory_order_relaxed);
+        return true;
+      }
+      else {
+        m_tail.compare_exchange_strong(old_tail, next, std::memory_order_release, std::memory_order_relaxed);
+        return false;
+      }
+    }
+
     std::atomic<Node *> m_head = new Node();
     std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
     //std::atomic_int64_t m_size = 0;
