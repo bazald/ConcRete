@@ -187,7 +187,7 @@ namespace Zeni::Concurrency {
       for (auto jqt = m_job_queues.cbegin(); jqt != mine; ++jqt)
         job_queues.emplace_back(jqt->second);
 
-      std::shuffle(job_queues.begin(), job_queues.end(), std::mt19937(std::random_device()()));
+      std::shuffle(std::next(job_queues.begin()), job_queues.end(), std::mt19937(std::random_device()()));
     }
 
     bool is_awake = false;
