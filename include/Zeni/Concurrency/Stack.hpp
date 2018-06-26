@@ -74,7 +74,7 @@ namespace Zeni::Concurrency {
   private:
     std::atomic<Node *> m_head;
     //std::atomic_int64_t m_size = 0;
-    std::atomic<int64_t> m_poppers = 0;
+    std::atomic_int64_t m_poppers = 0;
   };
 
 }

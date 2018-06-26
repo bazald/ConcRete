@@ -1,3 +1,5 @@
+//#include "Zeni/Concurrency/Deque.hpp"
+#include "Zeni/Concurrency/Epoch_List.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Memory_Pools.hpp"
 #include "Zeni/Concurrency/Message.hpp"
@@ -18,6 +20,7 @@
 #include <array>
 #include <iostream>
 #include <list>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -72,6 +75,8 @@ private:
 static void test_Worker_Threads();
 static void test_Stack();
 static void test_Queue();
+static void test_Epoch_List();
+//static void test_Deque();
 //static void test_Memory_Pool();
 static void test_Rete_Network();
 static void test_Parser();
@@ -84,7 +89,7 @@ int main()
     abort();
   }
 
-  for (int i = 0; i != 100; ++i) {
+  for (int i = 0; i != 80; ++i) {
     test_Stack();
     if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
       std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
@@ -94,7 +99,7 @@ int main()
   }
   std::cout << std::endl;
 
-  for (int i = 0; i != 100; ++i) {
+  for (int i = 0; i != 80; ++i) {
     test_Queue();
     if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
       std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
@@ -103,6 +108,26 @@ int main()
     std::cout << 'Q' << std::flush;
   }
   std::cout << std::endl;
+
+  for (int i = 0; i != 80; ++i) {
+    test_Epoch_List();
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+      abort();
+    }
+    std::cout << 'E' << std::flush;
+  }
+  std::cout << std::endl;
+
+  //for (int i = 0; i != 100; ++i) {
+  //  test_Deque();
+  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //    abort();
+  //  }
+  //  std::cout << 'D' << std::flush;
+  //}
+  //std::cout << std::endl;
 
   //test_Memory_Pool();
   //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
@@ -283,6 +308,142 @@ void test_Queue() {
 
   //std::cout << std::endl;
 }
+
+void test_Epoch_List() {
+  class Epocher : public Zeni::Concurrency::Job {
+  public:
+    Epocher(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list) : m_epoch_list(epoch_list), dre(rd()) {}
+
+    void execute() noexcept override {
+      while (m_to_acquire + m_to_release != 0) {
+        const int64_t index = std::uniform_int_distribution<int64_t>(1, std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release)(dre);
+        if (index > m_to_release) {
+          m_epochs.push_back(m_epoch_list->acquire());
+          --m_to_acquire;
+          ++m_to_release;
+        }
+        else {
+          auto selected = m_epochs.begin();
+          //std::advance(selected, index - 1);
+          [[maybe_unused]] const bool success = m_epoch_list->try_release(*selected);
+          if (!success)
+            std::cerr << 'X' << std::flush;
+          m_epochs.erase(selected);
+          --m_to_release;
+        }
+      }
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
+    std::vector<uint64_t> m_epochs;
+    int64_t m_to_acquire = 256;
+    int64_t m_acquire_cap = 8;
+    int64_t m_to_release = 0;
+    std::random_device rd;
+    std::default_random_engine dre;
+  };
+
+  const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
+
+  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
+  const auto job_queue = worker_threads->get_main_Job_Queue();
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (int i = 0; i != 8; ++i)
+    jobs.emplace_back(std::make_shared<Epocher>(epoch_list));
+  job_queue->give_many(std::move(jobs));
+
+  worker_threads->finish_jobs();
+
+  //std::cout << std::endl;
+}
+
+//void test_Deque() {
+//  class Front_Pusher : public Zeni::Concurrency::Job {
+//  public:
+//    Front_Pusher(const std::shared_ptr<Zeni::Concurrency::Deque<int>> &deque) : m_deque(deque) {}
+//
+//    void execute() noexcept override {
+//      for (int i = 0; i != 10000; ++i)
+//        m_deque->push_front(i);
+//      while (!m_deque->empty());
+//    }
+//
+//  private:
+//    std::shared_ptr<Zeni::Concurrency::Deque<int>> m_deque;
+//  };
+//
+//  class Back_Pusher : public Zeni::Concurrency::Job {
+//  public:
+//    Back_Pusher(const std::shared_ptr<Zeni::Concurrency::Deque<int>> &deque) : m_deque(deque) {}
+//
+//    void execute() noexcept override {
+//      for (int i = 0; i != 10000; ++i)
+//        m_deque->push_back(i);
+//      while (!m_deque->empty());
+//    }
+//
+//  private:
+//    std::shared_ptr<Zeni::Concurrency::Deque<int>> m_deque;
+//  };
+//
+//  class Front_Popper : public Zeni::Concurrency::Job {
+//  public:
+//    Front_Popper(const std::shared_ptr<Zeni::Concurrency::Deque<int>> &deque) : m_deque(deque) {}
+//
+//    void execute() noexcept override {
+//      for (int i = 0; i != 10000; ) {
+//        int value;
+//        if (m_deque->try_pop_front(value)) {
+//          ++i;
+//          //std::cout << value;
+//        }
+//      }
+//      while (!m_deque->empty());
+//    }
+//
+//  private:
+//    std::shared_ptr<Zeni::Concurrency::Deque<int>> m_deque;
+//  };
+//
+//  class Back_Popper : public Zeni::Concurrency::Job {
+//  public:
+//    Back_Popper(const std::shared_ptr<Zeni::Concurrency::Deque<int>> &deque) : m_deque(deque) {}
+//
+//    void execute() noexcept override {
+//      for (int i = 0; i != 10000; ) {
+//        int value;
+//        if (m_deque->try_pop_back(value)) {
+//          ++i;
+//          //std::cout << value;
+//        }
+//      }
+//      while (!m_deque->empty());
+//    }
+//
+//  private:
+//    std::shared_ptr<Zeni::Concurrency::Deque<int>> m_deque;
+//  };
+//
+//  const auto deque = std::make_shared<Zeni::Concurrency::Deque<int>>();
+//
+//  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
+//  const auto job_queue = worker_threads->get_main_Job_Queue();
+//
+//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+//  for (int i = 0; i != 2; ++i) {
+//    jobs.emplace_back(std::make_shared<Front_Pusher>(deque));
+//    jobs.emplace_back(std::make_shared<Front_Popper>(deque));
+//    jobs.emplace_back(std::make_shared<Back_Pusher>(deque));
+//    jobs.emplace_back(std::make_shared<Back_Popper>(deque));
+//  }
+//  job_queue->give_many(std::move(jobs));
+//
+//  worker_threads->finish_jobs();
+//
+//  //std::cout << std::endl;
+//}
 
 //static std::atomic_int64_t g_memory_test_complete = false;
 //

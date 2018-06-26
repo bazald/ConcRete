@@ -93,12 +93,11 @@ namespace Zeni::Concurrency {
           if (push_pointers(old_tail, new_tail))
             new_tail = new Node;
         }
-        old_tail = m_tail.load(std::memory_order_relaxed);
       }
     }
 
     // Return true if new tail pointer is used, otherwise false
-    bool push_pointers(Node * old_tail, Node * new_tail) {
+    bool push_pointers(Node * &old_tail, Node * new_tail) {
       Node * next = nullptr;
       if (old_tail->next.compare_exchange_strong(next, new_tail, std::memory_order_release, std::memory_order_relaxed)) {
         m_tail.compare_exchange_strong(old_tail, new_tail, std::memory_order_release, std::memory_order_relaxed);
@@ -113,7 +112,7 @@ namespace Zeni::Concurrency {
     std::atomic<Node *> m_head = new Node();
     std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
     //std::atomic_int64_t m_size = 0;
-    std::atomic<int64_t> m_writers = 0;
+    std::atomic_int64_t m_writers = 0;
   };
 
 }
