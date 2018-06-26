@@ -37,23 +37,23 @@ namespace Zeni::Concurrency {
       return m_head.load(std::memory_order_acquire) == m_tail.load(std::memory_order_acquire);
     }
 
-    int64_t size() const {
-      return m_size.load(std::memory_order_relaxed);
-    }
+    //int64_t size() const {
+    //  return m_size.load(std::memory_order_relaxed);
+    //}
 
-    int64_t usage() const {
-      return m_usage.load(std::memory_order_relaxed);
-    }
+    //int64_t usage() const {
+    //  return m_usage.load(std::memory_order_relaxed);
+    //}
 
     uint64_t acquire() {
-      m_size.fetch_add(1, std::memory_order_relaxed);
+      //m_size.fetch_add(1, std::memory_order_relaxed);
+      //m_usage.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_release);
       Node * old_tail = m_tail.load(std::memory_order_relaxed);
       Node * new_tail = new Node(old_tail->epoch + 1);
       while (!push_pointers(old_tail, new_tail))
         new_tail->epoch = old_tail->epoch + 1;
       m_writers.fetch_sub(1, std::memory_order_release);
-      m_usage.fetch_add(1, std::memory_order_relaxed);
       return old_tail->epoch;
     }
 
@@ -82,7 +82,6 @@ namespace Zeni::Concurrency {
         }
         else if (masked_cur->epoch - head_epoch > epoch - head_epoch || !masked_next) {
           m_writers.fetch_sub(1, std::memory_order_relaxed);
-          std::cerr << "X" << std::flush;
           return false;
         }
 
@@ -90,14 +89,12 @@ namespace Zeni::Concurrency {
           Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) | 0x1);
           if(success = masked_cur->next.compare_exchange_strong(raw_next, marked_next, std::memory_order_release, std::memory_order_relaxed)) {
             raw_next = marked_next;
-            m_size.fetch_sub(1, std::memory_order_relaxed);
+            //m_size.fetch_sub(1, std::memory_order_relaxed);
           }
         }
         break;
       }
       m_writers.fetch_sub(1, std::memory_order_relaxed);
-      if (!success)
-        std::cerr << "X" << std::flush;
       return success;
     }
 
@@ -136,15 +133,15 @@ namespace Zeni::Concurrency {
         delete old_cur;
       else
         Reclamation_Stacks::push(old_cur);
-      m_usage.fetch_sub(1, std::memory_order_relaxed);
+      //m_usage.fetch_sub(1, std::memory_order_relaxed);
 
       return true;
     }
 
     std::atomic<Node *> m_head = new Node();
     std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
-    std::atomic_int64_t m_size = 0;
-    std::atomic_int64_t m_usage = 0;
+    //std::atomic_int64_t m_size = 0;
+    //std::atomic_int64_t m_usage = 0;
     std::atomic_int64_t m_writers = 0;
   };
 

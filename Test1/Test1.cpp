@@ -324,7 +324,7 @@ void test_Epoch_List() {
         }
         else {
           auto selected = m_epochs.begin();
-          //std::advance(selected, index - 1);
+          std::advance(selected, index - 1);
           [[maybe_unused]] const bool success = m_epoch_list->try_release(*selected);
           if (!success)
             std::cerr << 'X' << std::flush;
@@ -338,7 +338,7 @@ void test_Epoch_List() {
     std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
     std::vector<uint64_t> m_epochs;
     int64_t m_to_acquire = 256;
-    int64_t m_acquire_cap = 8;
+    int64_t m_acquire_cap = 16;
     int64_t m_to_release = 0;
     std::random_device rd;
     std::default_random_engine dre;
