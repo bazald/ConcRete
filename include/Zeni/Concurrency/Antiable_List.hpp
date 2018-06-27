@@ -99,7 +99,7 @@ namespace Zeni::Concurrency {
         }
 
         Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) | 0x1);
-        if (success = masked_cur->next.compare_exchange_strong(raw_next, marked_next, std::memory_order_release, std::memory_order_relaxed)) {
+        if ((success = masked_cur->next.compare_exchange_strong(raw_next, marked_next, std::memory_order_release, std::memory_order_relaxed))) {
           //m_size.fetch_sub(1, std::memory_order_relaxed);
           break;
         }
