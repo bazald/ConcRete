@@ -192,7 +192,7 @@ namespace Zeni::Concurrency {
 
     bool is_awake = false;
     for (;;) {
-      while (m_reclaims_remaining.load(std::memory_order_acquire) != 0) {
+      while (m_reclaims_remaining.load(std::memory_order_relaxed) != 0) {
         if (my_job_queue->try_reclaim()) {
           Reclamation_Stacks::get_stack()->reclaim();
           Memory_Pools::get_pool()->clear();

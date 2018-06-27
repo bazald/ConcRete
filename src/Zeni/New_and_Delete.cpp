@@ -12,9 +12,11 @@ void * operator new(size_t size, std::align_val_t) noexcept(false) {
 }
 
 void operator delete(void * ptr) noexcept {
-  return Zeni::Concurrency::Memory_Pools::get_pool()->release(ptr);
+  if (ptr)
+    return Zeni::Concurrency::Memory_Pools::get_pool()->release(ptr);
 }
 
 void operator delete(void * ptr, std::align_val_t) noexcept {
-  return Zeni::Concurrency::Memory_Pools::get_pool()->release(ptr);
+  if (ptr)
+    return Zeni::Concurrency::Memory_Pools::get_pool()->release(ptr);
 }

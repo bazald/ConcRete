@@ -76,7 +76,7 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    void push(TYPE * value_ptr) {
+    void push(TYPE * const value_ptr) {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_release);
       Node * old_tail = m_tail.load(std::memory_order_relaxed);

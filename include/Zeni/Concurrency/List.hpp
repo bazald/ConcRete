@@ -1,5 +1,5 @@
-#ifndef ZENI_CONCURRENCY_EPOCH_LIST_HPP
-#define ZENI_CONCURRENCY_EPOCH_LIST_HPP
+#ifndef ZENI_CONCURRENCY_LIST_HPP
+#define ZENI_CONCURRENCY_LIST_HPP
 
 #include "Reclamation_Stacks.hpp"
 
@@ -7,27 +7,32 @@
 
 namespace Zeni::Concurrency {
 
-  class Epoch_List {
-    Epoch_List(const Epoch_List &) = delete;
-    Epoch_List & operator=(const Epoch_List &) = delete;
+  template <typename TYPE>
+  class List {
+    List(const List &) = delete;
+    List & operator=(const List &) = delete;
 
     struct Node : public Reclamation_Stack::Node {
       Node() = default;
-      Node(const int64_t epoch_) : epoch(epoch_) {}
+      Node(TYPE * const value_ptr_) : value_ptr(value_ptr_) {}
+      Node(Node * const &next_, TYPE * const value_ptr_) : next(next_), value_ptr(value_ptr_) {}
+      Node(Node * &&next_, TYPE * const value_ptr_) : next(std::move(next_)), value_ptr(value_ptr_) {}
 
       std::atomic<Node *> next = nullptr;
-      uint64_t epoch = 0;
+      std::atomic<TYPE *> value_ptr = nullptr;
     };
 
   public:
-    Epoch_List() = default;
+    List() = default;
 
-    ~Epoch_List() noexcept {
+    ~List() noexcept {
       Node * head = m_head.load(std::memory_order_acquire);
       Node * tail = m_tail.load(std::memory_order_acquire);
       while (head != tail) {
         Node * next = reinterpret_cast<Node *>(uintptr_t(head->next.load(std::memory_order_acquire)) & ~uintptr_t(0x1));
+        TYPE * value_ptr = head->value_ptr.load(std::memory_order_acquire);
         delete head;
+        delete value_ptr;
         head = next;
       }
       delete head;
@@ -45,33 +50,36 @@ namespace Zeni::Concurrency {
     //  return m_usage.load(std::memory_order_relaxed);
     //}
 
-    uint64_t acquire() {
-      //m_size.fetch_add(1, std::memory_order_relaxed);
-      //m_usage.fetch_add(1, std::memory_order_relaxed);
-      m_writers.fetch_add(1, std::memory_order_release);
-      Node * old_tail = m_tail.load(std::memory_order_relaxed);
-      Node * new_tail = new Node(old_tail->epoch + 1);
-      while (!push_pointers(old_tail, new_tail))
-        new_tail->epoch = old_tail->epoch + 1;
-      m_writers.fetch_sub(1, std::memory_order_release);
-      return old_tail->epoch;
+    void push_front(const TYPE &value) {
+      push_front(new TYPE(value));
     }
 
-    bool try_release(const uint64_t epoch) {
+    void push_front(TYPE &&value) {
+      push_front(new TYPE(std::move(value)));
+    }
+
+    void push_back(const TYPE &value) {
+      push_back(new TYPE(value));
+    }
+
+    void push_back(TYPE &&value) {
+      push_back(new TYPE(std::move(value)));
+    }
+
+    bool try_erase(const TYPE &value) {
       m_writers.fetch_add(1, std::memory_order_release);
       Node * masked_prev = nullptr;
       Node * raw_cur = m_head.load(std::memory_order_acquire);
       Node * masked_cur = reinterpret_cast<Node *>(uintptr_t(raw_cur) & ~uintptr_t(0x1));
       Node * raw_next = masked_cur->next.load(std::memory_order_relaxed);
       Node * masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
-      int64_t head_epoch = masked_cur->epoch;
       bool success = false;
 
-      while (try_removal(masked_prev, raw_cur, masked_cur, raw_next, masked_next))
-        head_epoch = masked_cur->epoch;
+      while (try_removal(masked_prev, raw_cur, masked_cur, raw_next, masked_next));
 
       for (;;) {
-        if (masked_cur->epoch - head_epoch < epoch - head_epoch) {
+        TYPE * const value_ptr = masked_cur->value_ptr.load(std::memory_order_acquire);
+        if (raw_next != masked_next ||  *value_ptr != value) {
           masked_prev = masked_cur;
           raw_cur = raw_next;
           masked_cur = masked_next;
@@ -80,15 +88,15 @@ namespace Zeni::Concurrency {
           while (try_removal(masked_prev, raw_cur, masked_cur, raw_next, masked_next));
           continue;
         }
-        else if (masked_cur->epoch - head_epoch > epoch - head_epoch || !masked_next)
+        else if (!masked_next)
           break;
 
-        if (raw_next == masked_next) {
-          Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) | 0x1);
-          if (success = masked_cur->next.compare_exchange_strong(raw_next, marked_next, std::memory_order_release, std::memory_order_relaxed)) {
-            //m_size.fetch_sub(1, std::memory_order_relaxed);
-          }
+        Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) | 0x1);
+        if (success = masked_cur->next.compare_exchange_strong(raw_next, marked_next, std::memory_order_release, std::memory_order_relaxed)) {
+          //m_size.fetch_sub(1, std::memory_order_relaxed);
         }
+        else
+          continue;
         break;
       }
       m_writers.fetch_sub(1, std::memory_order_relaxed);
@@ -96,6 +104,38 @@ namespace Zeni::Concurrency {
     }
 
   private:
+    void push_front(TYPE * const value_ptr) {
+      //m_size.fetch_add(1, std::memory_order_relaxed);
+      //m_usage.fetch_add(1, std::memory_order_relaxed);
+      m_writers.fetch_add(1, std::memory_order_release);
+      Node * old_head = m_head.load(std::memory_order_relaxed);
+      Node * new_head = new Node(old_head, value_ptr);
+      while (!m_head.compare_exchange_weak(old_head, new_head, std::memory_order_release, std::memory_order_relaxed))
+        new_head->next.store(old_head, std::memory_order_release);
+      m_writers.fetch_sub(1, std::memory_order_release);
+    }
+
+    void push_back(TYPE * const value_ptr) {
+      //m_size.fetch_add(1, std::memory_order_relaxed);
+      //m_usage.fetch_add(1, std::memory_order_relaxed);
+      m_writers.fetch_add(1, std::memory_order_release);
+      Node * old_tail = m_tail.load(std::memory_order_relaxed);
+      Node * new_tail = new Node;
+      for (;;) {
+        TYPE * empty = nullptr;
+        if (old_tail->value_ptr.compare_exchange_strong(empty, value_ptr, std::memory_order_release, std::memory_order_relaxed)) {
+          if (!push_pointers(old_tail, new_tail))
+            delete new_tail;
+          m_writers.fetch_sub(1, std::memory_order_release);
+          return;
+        }
+        else {
+          if (push_pointers(old_tail, new_tail))
+            new_tail = new Node;
+        }
+      }
+    }
+
     // Return true if new tail pointer is used, otherwise false
     bool push_pointers(Node * &old_tail, Node * const new_tail) {
       Node * next = nullptr;
@@ -120,6 +160,8 @@ namespace Zeni::Concurrency {
         masked_cur = old_cur;
         return false;
       }
+
+      delete masked_cur->value_ptr.load(std::memory_order_relaxed);
 
       raw_cur = raw_next;
       masked_cur = masked_next;
