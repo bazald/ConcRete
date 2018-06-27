@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Antiable_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Atomic.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Epoch_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\IJob.hpp" />

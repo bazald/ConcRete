@@ -1,5 +1,5 @@
-#ifndef ZENI_CONCURRENCY_LIST_HPP
-#define ZENI_CONCURRENCY_LIST_HPP
+#ifndef ZENI_CONCURRENCY_ANTIABLE_LIST_HPP
+#define ZENI_CONCURRENCY_ANTIABLE_LIST_HPP
 
 #include "Reclamation_Stacks.hpp"
 
@@ -8,9 +8,9 @@
 namespace Zeni::Concurrency {
 
   template <typename TYPE>
-  class List {
-    List(const List &) = delete;
-    List & operator=(const List &) = delete;
+  class Antiable_List {
+    Antiable_List(const Antiable_List &) = delete;
+    Antiable_List & operator=(const Antiable_List &) = delete;
 
     struct Inner_Node : public Reclamation_Stack::Node {
       Inner_Node() = default;
@@ -22,18 +22,21 @@ namespace Zeni::Concurrency {
 
     struct Node : public Reclamation_Stack::Node {
       Node() = default;
-      Node(Inner_Node * const value_ptr_) : value_ptr(value_ptr_) {}
-      Node(Node * const &next_, Inner_Node * const value_ptr_) : next(next_), value_ptr(value_ptr_) {}
-      Node(Node * &&next_, Inner_Node * const value_ptr_) : next(std::move(next_)), value_ptr(value_ptr_) {}
+      Node(Inner_Node * const value_ptr_, const int64_t inserted_) : value_ptr(value_ptr_), inserted(inserted_) {}
+      Node(Node * const &next_, Inner_Node * const value_ptr_, const int64_t inserted_) : next(next_), value_ptr(value_ptr_), inserted(inserted_) {}
+      Node(Node * &&next_, Inner_Node * const value_ptr_, const int64_t inserted_) : next(std::move(next_)), value_ptr(value_ptr_), inserted(inserted_) {}
 
       std::atomic<Node *> next = nullptr;
       std::atomic<Inner_Node *> value_ptr = nullptr;
+      std::atomic<int64_t> instance_count = 1;
+      int64_t inserted = 0;
+      std::atomic<int64_t> removed = inserted;
     };
 
   public:
-    List() = default;
+    Antiable_List() = default;
 
-    ~List() noexcept {
+    ~Antiable_List() noexcept {
       Node * head = m_head.load(std::memory_order_acquire);
       Node * tail = m_tail.load(std::memory_order_acquire);
       while (head != tail) {
@@ -46,10 +49,6 @@ namespace Zeni::Concurrency {
       delete head;
     }
 
-    bool empty() const {
-      return m_head.load(std::memory_order_acquire) == m_tail.load(std::memory_order_acquire);
-    }
-
     //int64_t size() const {
     //  return m_size.load(std::memory_order_relaxed);
     //}
@@ -58,23 +57,23 @@ namespace Zeni::Concurrency {
     //  return m_usage.load(std::memory_order_relaxed);
     //}
 
-    void push_front(const TYPE &value) {
-      push_front(new Inner_Node(value));
+    void push_front(const int64_t earliest_epoch, const int64_t current_epoch, const TYPE &value) {
+      push_front(earliest_epoch, current_epoch, new Inner_Node(value));
     }
 
-    void push_front(TYPE &&value) {
-      push_front(new Inner_Node(std::move(value)));
+    void push_front(const int64_t earliest_epoch, const int64_t current_epoch, TYPE &&value) {
+      push_front(earliest_epoch, current_epoch, new Inner_Node(std::move(value)));
     }
 
-    void push_back(const TYPE &value) {
-      push_back(new Inner_Node(value));
+    void push_back(const int64_t earliest_epoch, const int64_t current_epoch, const TYPE &value) {
+      push_back(earliest_epoch, current_epoch, new Inner_Node(value));
     }
 
-    void push_back(TYPE &&value) {
-      push_back(new Inner_Node(std::move(value)));
+    void push_back(const int64_t earliest_epoch, const int64_t current_epoch, TYPE &&value) {
+      push_back(earliest_epoch, current_epoch, new Inner_Node(std::move(value)));
     }
 
-    bool try_erase(const TYPE &value) {
+    bool try_erase(const int64_t earliest_epoch, const int64_t current_epoch, const TYPE &value) {
       m_writers.fetch_add(1, std::memory_order_release);
       Node * masked_prev = nullptr;
       Node * raw_cur = m_head.load(std::memory_order_acquire);
@@ -110,18 +109,18 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    void push_front(Inner_Node * const value_ptr) {
+    void push_front(const int64_t earliest_epoch, const int64_t current_epoch, Inner_Node * const value_ptr) {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       //m_usage.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_release);
       Node * old_head = m_head.load(std::memory_order_relaxed);
-      Node * new_head = new Node(old_head, value_ptr);
+      Node * new_head = new Node(old_head, value_ptr, current_epoch);
       while (!m_head.compare_exchange_weak(old_head, new_head, std::memory_order_release, std::memory_order_relaxed))
         new_head->next.store(old_head, std::memory_order_release);
       m_writers.fetch_sub(1, std::memory_order_release);
     }
 
-    void push_back(Inner_Node * const value_ptr) {
+    void push_back(const int64_t earliest_epoch, const int64_t current_epoch, Inner_Node * const value_ptr) {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       //m_usage.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_release);

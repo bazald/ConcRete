@@ -37,6 +37,12 @@ namespace Zeni::Concurrency {
       return m_head.load(std::memory_order_acquire) == m_tail.load(std::memory_order_acquire);
     }
 
+    std::pair<uint64_t, uint64_t> front_and_acquire() {
+      const uint64_t acquired = acquire();
+      const uint64_t front = m_head.load(std::memory_order_acquire)->epoch;
+      return std::make_pair(front, acquired);
+    }
+
     //int64_t size() const {
     //  return m_size.load(std::memory_order_relaxed);
     //}

@@ -99,6 +99,9 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\List.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Antiable_List.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job.cpp">
