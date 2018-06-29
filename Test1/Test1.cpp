@@ -1,4 +1,5 @@
 #include "Zeni/Concurrency/Container/Antiable_List.hpp"
+#include "Zeni/Concurrency/Container/Ordered_List.hpp"
 #include "Zeni/Concurrency/Container/Stack.hpp"
 #include "Zeni/Concurrency/Container/Queue.hpp"
 #include "Zeni/Concurrency/Container/Unordered_List.hpp"
@@ -78,6 +79,7 @@ static void test_Stack();
 static void test_Queue();
 static void test_Epoch_List();
 static void test_Unordered_List();
+static void test_Ordered_List();
 static void test_Antiable_List();
 //static void test_Deque();
 //static void test_Memory_Pool();
@@ -129,6 +131,16 @@ int main()
       abort();
     }
     std::cout << 'U' << std::flush;
+  }
+  std::cout << std::endl;
+
+  for (int i = 0; i != 80; ++i) {
+    test_Ordered_List();
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+      abort();
+    }
+    std::cout << 'O' << std::flush;
   }
   std::cout << std::endl;
 
@@ -391,7 +403,7 @@ void test_Unordered_List() {
       while (m_to_acquire + m_to_release != 0) {
         const int64_t index = std::uniform_int_distribution<int64_t>(1, std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release)(dre);
         if (index > m_to_release) {
-          if(m_to_release & 1)
+          if (m_to_release & 1)
             m_unordered_list->push_front(m_to_acquire);
           else
             m_unordered_list->push_back(m_to_acquire);
@@ -401,7 +413,7 @@ void test_Unordered_List() {
         }
         else {
           auto selected = m_values.begin();
-          //std::advance(selected, index - 1);
+          std::advance(selected, index - 1);
           [[maybe_unused]] const bool success = m_unordered_list->try_erase(*selected);
           if (!success)
             std::cerr << 'X' << std::flush;
@@ -429,6 +441,66 @@ void test_Unordered_List() {
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
   for (int i = 0; i != 8; ++i)
     jobs.emplace_back(std::make_shared<Lister>(unordered_list));
+  job_queue->give_many(std::move(jobs));
+
+  worker_threads->finish_jobs();
+
+  //std::cout << std::endl;
+}
+
+void test_Ordered_List() {
+  class Lister : public Zeni::Concurrency::Job {
+  public:
+    Lister(const std::shared_ptr<Zeni::Concurrency::Ordered_List<int64_t>> &ordered_list) : m_ordered_list(ordered_list), dre(rd()) {}
+
+    void execute() noexcept override {
+      m_values_to_acquire.reserve(m_to_acquire);
+      for (int i = 0; i != m_to_acquire; ++i)
+        m_values_to_acquire.push_back(i);
+
+      while (m_to_acquire + m_to_release != 0) {
+        const int64_t index = std::uniform_int_distribution<int64_t>(1, std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release)(dre);
+        if (index > m_to_release) {
+          const int64_t index2 = std::uniform_int_distribution<int64_t>(0, m_to_acquire - 1)(dre);
+          auto selected = m_values_to_acquire.begin();
+          std::advance(selected, index2);
+          m_ordered_list->insert(*selected);
+          m_values_to_release.push_back(*selected);
+          m_values_to_acquire.erase(selected);
+          --m_to_acquire;
+          ++m_to_release;
+        }
+        else {
+          auto selected = m_values_to_release.begin();
+          std::advance(selected, index - 1);
+          [[maybe_unused]] const bool success = m_ordered_list->try_erase(*selected);
+          if (!success)
+            std::cerr << 'X' << std::flush;
+          m_values_to_release.erase(selected);
+          --m_to_release;
+        }
+      }
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Ordered_List<int64_t>> m_ordered_list;
+    std::vector<uint64_t> m_values_to_acquire;
+    std::vector<uint64_t> m_values_to_release;
+    int64_t m_to_acquire = 256;
+    int64_t m_acquire_cap = 16;
+    int64_t m_to_release = 0;
+    std::random_device rd;
+    std::default_random_engine dre;
+  };
+
+  const auto ordered_list = std::make_shared<Zeni::Concurrency::Ordered_List<int64_t>>();
+
+  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
+  const auto job_queue = worker_threads->get_main_Job_Queue();
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (int i = 0; i != 8; ++i)
+    jobs.emplace_back(std::make_shared<Lister>(ordered_list));
   job_queue->give_many(std::move(jobs));
 
   worker_threads->finish_jobs();

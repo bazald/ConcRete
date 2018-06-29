@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Atomic.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Antiable_List.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ordered_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Queue.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Stack.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Unordered_List.hpp" />
