@@ -144,9 +144,9 @@ namespace Zeni::Concurrency {
       }
     }
 
+    m_reclaims_remaining.store(int16_t(m_worker_threads.size()));
     for (auto &job_queue : m_job_queues)
       job_queue.second->set_reclaim();
-    m_reclaims_remaining.store(int16_t(m_worker_threads.size()));
 
     Reclamation_Stacks::get_stack()->reclaim();
     Memory_Pools::get_pool()->clear();
@@ -192,12 +192,10 @@ namespace Zeni::Concurrency {
 
     bool is_awake = false;
     for (;;) {
-      while (m_reclaims_remaining.load(std::memory_order_relaxed) != 0) {
-        if (my_job_queue->try_reclaim()) {
-          Reclamation_Stacks::get_stack()->reclaim();
-          Memory_Pools::get_pool()->clear();
-          m_reclaims_remaining.fetch_sub(1, std::memory_order_relaxed);
-        }
+      if (my_job_queue->try_reclaim()) {
+        Reclamation_Stacks::get_stack()->reclaim();
+        Memory_Pools::get_pool()->clear();
+        m_reclaims_remaining.fetch_sub(1, std::memory_order_relaxed);
       }
 
       const int64_t num_jobs_in_queues = m_num_jobs_in_queues.load(std::memory_order_relaxed);

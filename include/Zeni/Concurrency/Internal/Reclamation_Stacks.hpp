@@ -12,7 +12,7 @@ namespace Zeni::Concurrency {
 
   class Reclamation_Stacks {
     Reclamation_Stacks(const Reclamation_Stacks &) = delete;
-    Reclamation_Stacks operator=(const Reclamation_Stacks &) = delete;
+    Reclamation_Stacks & operator=(const Reclamation_Stacks &) = delete;
 
   public:
     ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Reclamation_Stack> get_stack() noexcept(false);
