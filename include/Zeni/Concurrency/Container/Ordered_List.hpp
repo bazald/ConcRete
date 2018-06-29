@@ -35,7 +35,7 @@ namespace Zeni::Concurrency {
       Cursor(Ordered_List * const ordered_list) : raw_cur(ordered_list->m_head.load(std::memory_order_acquire)), raw_next(masked_cur->next.load(std::memory_order_relaxed)) {}
 
       Inner_Node * get_value_ptr() const {
-        return masked_cur->value_ptr.load(std::memory_order_acquire);
+        return masked_cur ? masked_cur->value_ptr.load(std::memory_order_acquire) : nullptr;
       }
 
       // The Node at this Cursor appears to both (1) be marked for removal and to (2) follow a Node that is not marked for removal
@@ -49,7 +49,7 @@ namespace Zeni::Concurrency {
       }
 
       bool is_end() const {
-        return !masked_next;
+        return !masked_cur;
       }
 
       bool increment() {
@@ -58,8 +58,14 @@ namespace Zeni::Concurrency {
         prev = masked_cur;
         raw_cur = raw_next;
         masked_cur = masked_next;
-        raw_next = masked_cur->next.load(std::memory_order_relaxed);
-        masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
+        if (masked_cur) {
+          raw_next = masked_cur->next.load(std::memory_order_relaxed);
+          masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
+        }
+        else {
+          raw_next = nullptr;
+          masked_next = nullptr;
+        }
         return true;
       }
 
@@ -75,19 +81,17 @@ namespace Zeni::Concurrency {
 
     ~Ordered_List() noexcept {
       Node * head = m_head.load(std::memory_order_acquire);
-      Node * tail = m_tail.load(std::memory_order_acquire);
-      while (head != tail) {
+      while (head) {
         Node * next = reinterpret_cast<Node *>(uintptr_t(head->next.load(std::memory_order_acquire)) & ~uintptr_t(0x1));
         Inner_Node * value_ptr = head->value_ptr.load(std::memory_order_acquire);
         delete head;
         delete value_ptr;
         head = next;
       }
-      delete head;
     }
 
     bool empty() const {
-      return m_head.load(std::memory_order_acquire) == m_tail.load(std::memory_order_acquire);
+      return m_head.load(std::memory_order_acquire) != nullptr;
     }
 
     //int64_t size() const {
@@ -237,7 +241,6 @@ namespace Zeni::Concurrency {
     }
 
     std::atomic<Node *> m_head = new Node();
-    std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
     //std::atomic_int64_t m_size = 0;
     //std::atomic_int64_t m_usage = 0;
     std::atomic_int64_t m_writers = 0;
