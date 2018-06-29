@@ -1,5 +1,5 @@
-#ifndef ZENI_CONCURRENCY_UNORDERED_LIST_HPP
-#define ZENI_CONCURRENCY_UNORDERED_LIST_HPP
+#ifndef ZENI_CONCURRENCY_ORDERED_LIST_HPP
+#define ZENI_CONCURRENCY_ORDERED_LIST_HPP
 
 #include "../Internal/Reclamation_Stacks.hpp"
 
@@ -8,9 +8,9 @@
 namespace Zeni::Concurrency {
 
   template <typename TYPE>
-  class Unordered_List {
-    Unordered_List(const Unordered_List &) = delete;
-    Unordered_List & operator=(const Unordered_List &) = delete;
+  class Ordered_List {
+    Ordered_List(const Ordered_List &) = delete;
+    Ordered_List & operator=(const Ordered_List &) = delete;
 
     struct Inner_Node : public Reclamation_Stack::Node {
       Inner_Node() = default;
@@ -32,7 +32,7 @@ namespace Zeni::Concurrency {
 
     struct Cursor {
       Cursor() = default;
-      Cursor(Unordered_List * const unordered_list) : raw_cur(unordered_list->m_head.load(std::memory_order_acquire)), raw_next(masked_cur->next.load(std::memory_order_relaxed)) {}
+      Cursor(Ordered_List * const ordered_list) : raw_cur(ordered_list->m_head.load(std::memory_order_acquire)), raw_next(masked_cur->next.load(std::memory_order_relaxed)) {}
 
       Inner_Node * get_value_ptr() const {
         return masked_cur->value_ptr.load(std::memory_order_acquire);
@@ -71,9 +71,9 @@ namespace Zeni::Concurrency {
     };
 
   public:
-    Unordered_List() = default;
+    Ordered_List() = default;
 
-    ~Unordered_List() noexcept {
+    ~Ordered_List() noexcept {
       Node * head = m_head.load(std::memory_order_acquire);
       Node * tail = m_tail.load(std::memory_order_acquire);
       while (head != tail) {
@@ -98,20 +98,72 @@ namespace Zeni::Concurrency {
     //  return m_usage.load(std::memory_order_relaxed);
     //}
 
-    void push_front(const TYPE &value) {
-      push_front(new Inner_Node(value));
-    }
+    void insert(const TYPE &value) {
+      //m_size.fetch_add(1, std::memory_order_relaxed);
+      //m_usage.fetch_add(1, std::memory_order_relaxed);
+      m_writers.fetch_add(1, std::memory_order_release);
 
-    void push_front(TYPE &&value) {
-      push_front(new Inner_Node(std::move(value)));
-    }
+      Node * const new_value = new Node(new Inner_Node(value));
+      bool retry;
+      do {
+        Cursor last_unmarked;
+        Cursor cursor(this);
+        Node * head = cursor.raw_cur;
+        retry = false;
 
-    void push_back(const TYPE &value) {
-      push_back(new Inner_Node(value));
-    }
+        while (try_removal(cursor));
 
-    void push_back(TYPE &&value) {
-      push_back(new Inner_Node(std::move(value)));
+        for(;;) {
+          if (cursor.is_marked_for_deletion()) {
+            while (try_removal(cursor));
+            continue;
+          }
+
+          Inner_Node * value_ptr = cursor.get_value_ptr();
+          if (!cursor.is_end() && (!value_ptr || value_ptr->value < value)) {
+            last_unmarked = cursor;
+            cursor.increment();
+            continue;
+          }
+
+          if (last_unmarked.masked_cur) {
+            new_value->next.store(last_unmarked.masked_next, std::memory_order_release);
+            if (last_unmarked.masked_cur->next.compare_exchange_strong(last_unmarked.masked_next, new_value, std::memory_order_release, std::memory_order_acquire)) {
+              //m_size.fetch_sub(1, std::memory_order_relaxed);
+              m_writers.fetch_sub(1, std::memory_order_relaxed);
+              return;
+            }
+            else {
+              cursor.prev = last_unmarked.masked_cur;
+              cursor.raw_cur = last_unmarked.masked_next;
+              cursor.masked_cur = reinterpret_cast<Node *>(uintptr_t(cursor.raw_cur) & ~uintptr_t(0x1));
+              if (cursor.raw_cur == cursor.masked_cur) {
+                cursor.raw_next = cursor.masked_cur->next.load(std::memory_order_relaxed);
+                cursor.masked_next = reinterpret_cast<Node *>(uintptr_t(cursor.raw_next) & ~uintptr_t(0x1));
+                continue;
+              }
+              else {
+                retry = true;
+                break;
+              }
+            }
+          }
+          else {
+            new_value->next.store(head, std::memory_order_release);
+            if (m_head.compare_exchange_strong(head, new_value, std::memory_order_release, std::memory_order_relaxed)) {
+              //m_size.fetch_sub(1, std::memory_order_relaxed);
+              m_writers.fetch_sub(1, std::memory_order_relaxed);
+              return;
+            }
+            else {
+              retry = true;
+              break;
+            }
+          }
+        }
+      } while (retry);
+
+      m_writers.fetch_sub(1, std::memory_order_release);
     }
 
     bool try_erase(const TYPE &value) {
@@ -130,10 +182,12 @@ namespace Zeni::Concurrency {
           }
 
           Inner_Node * const value_ptr = cursor.get_value_ptr();
-          if (!value_ptr || value_ptr->value != value) {
+          if (!value_ptr || value_ptr->value < value) {
             cursor.increment();
             continue;
           }
+          else if (value_ptr->value > value)
+            break;
 
           Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(cursor.raw_next) | 0x1);
           if (cursor.masked_cur->next.compare_exchange_strong(cursor.raw_next, marked_next, std::memory_order_release, std::memory_order_relaxed)) {
@@ -150,52 +204,6 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    void push_front(Inner_Node * const value_ptr) {
-      //m_size.fetch_add(1, std::memory_order_relaxed);
-      //m_usage.fetch_add(1, std::memory_order_relaxed);
-      m_writers.fetch_add(1, std::memory_order_release);
-      Node * old_head = m_head.load(std::memory_order_relaxed);
-      Node * new_head = new Node(old_head, value_ptr);
-      while (!m_head.compare_exchange_weak(old_head, new_head, std::memory_order_release, std::memory_order_relaxed))
-        new_head->next.store(old_head, std::memory_order_release);
-      m_writers.fetch_sub(1, std::memory_order_release);
-    }
-
-    void push_back(Inner_Node * const value_ptr) {
-      //m_size.fetch_add(1, std::memory_order_relaxed);
-      //m_usage.fetch_add(1, std::memory_order_relaxed);
-      m_writers.fetch_add(1, std::memory_order_release);
-      Node * old_tail = m_tail.load(std::memory_order_relaxed);
-      Node * new_tail = new Node;
-      for (;;) {
-        Inner_Node * empty = nullptr;
-        if (old_tail->value_ptr.compare_exchange_strong(empty, value_ptr, std::memory_order_release, std::memory_order_relaxed)) {
-          if (!push_pointers(old_tail, new_tail))
-            delete new_tail;
-          m_writers.fetch_sub(1, std::memory_order_release);
-          return;
-        }
-        else {
-          if (push_pointers(old_tail, new_tail))
-            new_tail = new Node;
-        }
-      }
-    }
-
-    // Return true if new tail pointer is used, otherwise false
-    bool push_pointers(Node * &old_tail, Node * const new_tail) {
-      Node * next = nullptr;
-      if (old_tail->next.compare_exchange_weak(next, new_tail, std::memory_order_release, std::memory_order_relaxed)) {
-        Node * old_tail_copy = old_tail;
-        m_tail.compare_exchange_strong(old_tail_copy, new_tail, std::memory_order_release, std::memory_order_relaxed);
-        return true;
-      }
-      else {
-        m_tail.compare_exchange_strong(old_tail, next, std::memory_order_release, std::memory_order_relaxed);
-        return false;
-      }
-    }
-
     // Return true if cur removed, otherwise false
     bool try_removal(Cursor &cursor) {
       if (!cursor.is_marked_for_deletion())
