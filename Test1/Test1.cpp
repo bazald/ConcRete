@@ -402,10 +402,9 @@ void test_List() {
         else {
           auto selected = m_values.begin();
           //std::advance(selected, index - 1);
-          while (!m_list->try_erase(*selected));
-          //[[maybe_unused]] const bool success = m_list->try_erase(*selected);
-          //if (!success)
-          //  std::cerr << 'X' << std::flush;
+          [[maybe_unused]] const bool success = m_list->try_erase(*selected);
+          if (!success)
+            std::cerr << 'X' << std::flush;
           m_values.erase(selected);
           --m_to_release;
         }
@@ -452,10 +451,7 @@ void test_Antiable_List() {
         const int64_t index = std::uniform_int_distribution<int64_t>(1, std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release)(dre);
         if (index > m_to_release) {
           const auto &[earliest_epoch, current_epoch] = m_epoch_list->front_and_acquire();
-          if (m_to_release & 1)
-            m_antiable_list->push_front(earliest_epoch, current_epoch, m_to_acquire);
-          else
-            m_antiable_list->push_back(earliest_epoch, current_epoch, m_to_acquire);
+          m_antiable_list->insert(earliest_epoch, current_epoch, m_to_acquire);
           m_epoch_list->try_release(current_epoch);
           m_values.push_back(m_to_acquire);
           --m_to_acquire;
