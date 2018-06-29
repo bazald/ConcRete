@@ -25,6 +25,9 @@
     <Filter Include="Source Files\Zeni\Internal">
       <UniqueIdentifier>{98f37c7b-e5ac-4fea-8e4b-4bfa7cc7e9da}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Zeni\Container">
+      <UniqueIdentifier>{8d1b85eb-0261-422b-b3ac-0a21334fdea1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Utility.hpp">
@@ -78,29 +81,29 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Job_Queue_Impl.hpp">
       <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Stack.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Queue.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Reclamation_Stack.hpp">
       <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Reclamation_Stacks_Impl.hpp">
       <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Reclamation_Stacks.hpp">
-      <Filter>Header Files\Zeni</Filter>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Reclamation_Stacks.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Epoch_List.hpp">
-      <Filter>Header Files\Zeni</Filter>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Epoch_List.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\List.hpp">
-      <Filter>Header Files\Zeni</Filter>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Queue.hpp">
+      <Filter>Header Files\Zeni\Container</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Antiable_List.hpp">
-      <Filter>Header Files\Zeni</Filter>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Stack.hpp">
+      <Filter>Header Files\Zeni\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Unordered_List.hpp">
+      <Filter>Header Files\Zeni\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Antiable_List.hpp">
+      <Filter>Header Files\Zeni\Container</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -146,8 +149,8 @@
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Reclamation_Stacks_Impl.cpp">
       <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Reclamation_Stacks.cpp">
-      <Filter>Source Files\Zeni</Filter>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Reclamation_Stacks.cpp">
+      <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

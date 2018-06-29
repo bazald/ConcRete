@@ -2,7 +2,7 @@
 #define ZENI_CONCURRENCY_JOB_QUEUE_IMPL_HPP
 
 #include "../Job_Queue.hpp"
-#include "../Queue.hpp"
+#include "../Container/Queue.hpp"
 
 #ifndef DISABLE_MULTITHREADING
 #include <atomic>

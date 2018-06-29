@@ -1,8 +1,8 @@
 #ifndef ZENI_CONCURRENCY_RECLAMATION_STACKS_HPP
 #define ZENI_CONCURRENCY_RECLAMATION_STACKS_HPP
 
-#include "Internal/Linkage.hpp"
-#include "Internal/Reclamation_Stack.hpp"
+#include "Linkage.hpp"
+#include "Reclamation_Stack.hpp"
 
 #include <memory>
 

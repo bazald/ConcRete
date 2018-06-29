@@ -1,5 +1,6 @@
+#include "Zeni/Concurrency/Internal/Reclamation_Stacks.hpp"
+
 #include "Zeni/Concurrency/Internal/Reclamation_Stacks_Impl.hpp"
-#include "Zeni/Concurrency/Reclamation_Stacks.hpp"
 
 namespace Zeni::Concurrency {
 

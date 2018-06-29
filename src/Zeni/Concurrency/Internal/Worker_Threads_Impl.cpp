@@ -1,10 +1,10 @@
 #include "Zeni/Concurrency/Internal/Worker_Threads_Impl.hpp"
 
+#include "Zeni/Concurrency/Internal/Reclamation_Stacks.hpp"
 #include "Zeni/Concurrency/IJob.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Memory_Pool.hpp"
 #include "Zeni/Concurrency/Memory_Pools.hpp"
-#include "Zeni/Concurrency/Reclamation_Stacks.hpp"
 
 #include <algorithm>
 #include <cassert>

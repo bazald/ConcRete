@@ -1,7 +1,7 @@
 #ifndef ZENI_CONCURRENCY_STACK_HPP
 #define ZENI_CONCURRENCY_STACK_HPP
 
-#include "Reclamation_Stacks.hpp"
+#include "../Internal/Reclamation_Stacks.hpp"
 
 namespace Zeni::Concurrency {
 
