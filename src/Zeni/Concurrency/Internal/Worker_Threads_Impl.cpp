@@ -68,7 +68,7 @@ namespace Zeni::Concurrency {
       }
       catch (const std::system_error &) {
         if (new_thread) {
-          m_failed_thread_id.store(new_thread->get_id(), std::memory_order_release);
+          m_failed_thread_id.store(new_thread->get_id(), std::memory_order_relaxed);
           if (!m_worker_threads.empty() && *m_worker_threads.crbegin() == new_thread)
             m_worker_threads.pop_back();
           new_thread->join();
@@ -77,7 +77,7 @@ namespace Zeni::Concurrency {
       }
       catch (...) {
         if (new_thread) {
-          m_failed_thread_id.store(new_thread->get_id(), std::memory_order_release);
+          m_failed_thread_id.store(new_thread->get_id(), std::memory_order_relaxed);
           if (!m_worker_threads.empty() && *m_worker_threads.crbegin() == new_thread)
             m_worker_threads.pop_back();
           new_thread->join();
@@ -85,7 +85,7 @@ namespace Zeni::Concurrency {
         throw;
       }
     }
-    m_initialized.store(true, std::memory_order_release);
+    m_initialized.store(true, std::memory_order_relaxed);
   }
 #endif
 
@@ -114,9 +114,9 @@ namespace Zeni::Concurrency {
 #else
   void Worker_Threads_Impl::finish_jobs() noexcept(false) {
     for (;;) {
-      if (m_num_jobs_in_queues.load(std::memory_order_acquire) <= 0) {
+      if (m_num_jobs_in_queues.load(std::memory_order_relaxed) <= 0) {
         // Termination condition OR simply out of jobs
-        int16_t awake_workers = m_awake_workers.load(std::memory_order_acquire);
+        int16_t awake_workers = m_awake_workers.load(std::memory_order_relaxed);
         if (awake_workers == 0)
           break;
         else {
@@ -151,15 +151,15 @@ namespace Zeni::Concurrency {
     Reclamation_Stacks::get_stack()->reclaim();
     Memory_Pools::get_pool()->clear();
 
-    while (m_reclaims_remaining.load(std::memory_order_acquire) != 0);
+    while (m_reclaims_remaining.load(std::memory_order_relaxed) != 0);
   }
 
   void Worker_Threads_Impl::worker_awakened() noexcept {
-    m_awake_workers.fetch_add(1, std::memory_order_release);
+    m_awake_workers.fetch_add(1, std::memory_order_relaxed);
   }
 
   void Worker_Threads_Impl::jobs_inserted(const int64_t num_jobs) noexcept {
-    m_num_jobs_in_queues.fetch_add(num_jobs, std::memory_order_release);
+    m_num_jobs_in_queues.fetch_add(num_jobs, std::memory_order_relaxed);
   }
 
   void Worker_Threads_Impl::job_removed() noexcept {
@@ -168,8 +168,8 @@ namespace Zeni::Concurrency {
 
   void Worker_Threads_Impl::worker_thread_work() noexcept {
     const auto thread_id = std::this_thread::get_id();
-    while (!m_initialized.load(std::memory_order_acquire)) {
-      if (m_failed_thread_id.load(std::memory_order_acquire) == thread_id)
+    while (!m_initialized.load(std::memory_order_relaxed)) {
+      if (m_failed_thread_id.load(std::memory_order_relaxed) == thread_id)
         return;
     }
 
@@ -268,7 +268,7 @@ namespace Zeni::Concurrency {
 #ifdef DISABLE_MULTITHREADING
     return 0;
 #else
-    return g_total_thread_count.load(std::memory_order_acquire);
+    return g_total_thread_count.load(std::memory_order_relaxed);
 #endif
   }
 

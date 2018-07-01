@@ -42,9 +42,9 @@ namespace Zeni::Concurrency {
 
   bool Job_Queue_Impl::try_reclaim() noexcept {
 #ifndef DISABLE_MULTITHREADING
-    if (!m_reclaim.load(std::memory_order_acquire))
+    if (!m_reclaim.load(std::memory_order_relaxed))
       return false;
-    m_reclaim.store(false, std::memory_order_release);
+    m_reclaim.store(false, std::memory_order_relaxed);
 #endif
     return true;
   }
@@ -77,7 +77,7 @@ namespace Zeni::Concurrency {
 
   void Job_Queue_Impl::set_reclaim() noexcept {
 #ifndef DISABLE_MULTITHREADING
-    m_reclaim.store(true, std::memory_order_release);
+    m_reclaim.store(true, std::memory_order_relaxed);
 #endif
   }
 

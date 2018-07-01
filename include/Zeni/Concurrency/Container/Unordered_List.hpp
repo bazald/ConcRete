@@ -32,7 +32,7 @@ namespace Zeni::Concurrency {
 
     struct Cursor {
       Cursor() = default;
-      Cursor(Unordered_List * const unordered_list) : raw_cur(unordered_list->m_head.load(std::memory_order_acquire)), raw_next(masked_cur->next.load(std::memory_order_relaxed)) {}
+      Cursor(Unordered_List * const unordered_list) : raw_cur(unordered_list->m_head.load(std::memory_order_relaxed)), raw_next(masked_cur->next.load(std::memory_order_relaxed)) {}
 
       Inner_Node * get_value_ptr() const {
         return masked_cur->value_ptr.load(std::memory_order_acquire);
@@ -71,14 +71,17 @@ namespace Zeni::Concurrency {
     };
 
   public:
-    Unordered_List() = default;
+    Unordered_List() {
+      std::atomic_thread_fence(std::memory_order_release);
+    }
 
     ~Unordered_List() noexcept {
-      Node * head = m_head.load(std::memory_order_acquire);
-      Node * tail = m_tail.load(std::memory_order_acquire);
+      std::atomic_thread_fence(std::memory_order_acquire);
+      Node * head = m_head.load(std::memory_order_relaxed);
+      Node * tail = m_tail.load(std::memory_order_relaxed);
       while (head != tail) {
-        Node * next = reinterpret_cast<Node *>(uintptr_t(head->next.load(std::memory_order_acquire)) & ~uintptr_t(0x1));
-        Inner_Node * value_ptr = head->value_ptr.load(std::memory_order_acquire);
+        Node * next = reinterpret_cast<Node *>(uintptr_t(head->next.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
+        Inner_Node * value_ptr = head->value_ptr.load(std::memory_order_relaxed);
         delete head;
         delete value_ptr;
         head = next;
@@ -87,7 +90,7 @@ namespace Zeni::Concurrency {
     }
 
     bool empty() const {
-      return m_head.load(std::memory_order_acquire) == m_tail.load(std::memory_order_acquire);
+      return m_head.load(std::memory_order_relaxed) == m_tail.load(std::memory_order_relaxed);
     }
 
     //int64_t size() const {
@@ -115,7 +118,7 @@ namespace Zeni::Concurrency {
     }
 
     bool try_erase(const TYPE &value) {
-      m_writers.fetch_add(1, std::memory_order_release);
+      m_writers.fetch_add(1, std::memory_order_relaxed);
       bool retry;
       do {
         Cursor cursor(this);
@@ -136,7 +139,7 @@ namespace Zeni::Concurrency {
           }
 
           Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(cursor.raw_next) | 0x1);
-          if (cursor.masked_cur->next.compare_exchange_strong(cursor.raw_next, marked_next, std::memory_order_release, std::memory_order_relaxed)) {
+          if (cursor.masked_cur->next.compare_exchange_strong(cursor.raw_next, marked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
             //m_size.fetch_sub(1, std::memory_order_relaxed);
             m_writers.fetch_sub(1, std::memory_order_relaxed);
             return true;
@@ -151,28 +154,30 @@ namespace Zeni::Concurrency {
 
   private:
     void push_front(Inner_Node * const value_ptr) {
+      std::atomic_thread_fence(std::memory_order_release);
       //m_size.fetch_add(1, std::memory_order_relaxed);
       //m_usage.fetch_add(1, std::memory_order_relaxed);
-      m_writers.fetch_add(1, std::memory_order_release);
+      m_writers.fetch_add(1, std::memory_order_relaxed);
       Node * old_head = m_head.load(std::memory_order_relaxed);
       Node * new_head = new Node(old_head, value_ptr);
-      while (!m_head.compare_exchange_weak(old_head, new_head, std::memory_order_release, std::memory_order_relaxed))
-        new_head->next.store(old_head, std::memory_order_release);
-      m_writers.fetch_sub(1, std::memory_order_release);
+      while (!m_head.compare_exchange_weak(old_head, new_head, std::memory_order_relaxed, std::memory_order_relaxed))
+        new_head->next.store(old_head, std::memory_order_relaxed);
+      m_writers.fetch_sub(1, std::memory_order_relaxed);
     }
 
     void push_back(Inner_Node * const value_ptr) {
+      std::atomic_thread_fence(std::memory_order_release);
       //m_size.fetch_add(1, std::memory_order_relaxed);
       //m_usage.fetch_add(1, std::memory_order_relaxed);
-      m_writers.fetch_add(1, std::memory_order_release);
+      m_writers.fetch_add(1, std::memory_order_relaxed);
       Node * old_tail = m_tail.load(std::memory_order_relaxed);
       Node * new_tail = new Node;
       for (;;) {
         Inner_Node * empty = nullptr;
-        if (old_tail->value_ptr.compare_exchange_strong(empty, value_ptr, std::memory_order_release, std::memory_order_relaxed)) {
+        if (old_tail->value_ptr.compare_exchange_strong(empty, value_ptr, std::memory_order_relaxed, std::memory_order_relaxed)) {
           if (!push_pointers(old_tail, new_tail))
             delete new_tail;
-          m_writers.fetch_sub(1, std::memory_order_release);
+          m_writers.fetch_sub(1, std::memory_order_relaxed);
           return;
         }
         else {
@@ -185,13 +190,13 @@ namespace Zeni::Concurrency {
     // Return true if new tail pointer is used, otherwise false
     bool push_pointers(Node * &old_tail, Node * const new_tail) {
       Node * next = nullptr;
-      if (old_tail->next.compare_exchange_weak(next, new_tail, std::memory_order_release, std::memory_order_relaxed)) {
+      if (old_tail->next.compare_exchange_weak(next, new_tail, std::memory_order_relaxed, std::memory_order_relaxed)) {
         Node * old_tail_copy = old_tail;
-        m_tail.compare_exchange_strong(old_tail_copy, new_tail, std::memory_order_release, std::memory_order_relaxed);
+        m_tail.compare_exchange_strong(old_tail_copy, new_tail, std::memory_order_relaxed, std::memory_order_relaxed);
         return true;
       }
       else {
-        m_tail.compare_exchange_strong(old_tail, next, std::memory_order_release, std::memory_order_relaxed);
+        m_tail.compare_exchange_strong(old_tail, next, std::memory_order_relaxed, std::memory_order_relaxed);
         return false;
       }
     }
@@ -206,7 +211,7 @@ namespace Zeni::Concurrency {
       }
 
       Node * const old_cur = cursor.masked_cur;
-      if (!(cursor.prev ? cursor.prev->next : m_head).compare_exchange_strong(cursor.masked_cur, cursor.masked_next, std::memory_order_release, std::memory_order_relaxed)) {
+      if (!(cursor.prev ? cursor.prev->next : m_head).compare_exchange_strong(cursor.masked_cur, cursor.masked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
         cursor.masked_cur = old_cur;
         cursor.increment();
         return false;
@@ -214,9 +219,9 @@ namespace Zeni::Concurrency {
 
       cursor.increment();
 
-      if (m_writers.load(std::memory_order_acquire) == 1) {
+      if (m_writers.load(std::memory_order_relaxed) == 1) {
         delete old_cur->value_ptr.load(std::memory_order_relaxed);
-        old_cur->value_ptr.store(nullptr, std::memory_order_release);
+        old_cur->value_ptr.store(nullptr, std::memory_order_relaxed);
         delete old_cur;
       }
       else {

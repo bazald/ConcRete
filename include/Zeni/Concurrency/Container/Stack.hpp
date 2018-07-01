@@ -22,10 +22,13 @@ namespace Zeni::Concurrency {
     };
 
   public:
-    Stack() = default;
+    Stack() {
+      std::atomic_thread_fence(std::memory_order_release);
+    }
 
     ~Stack() noexcept {
-      Node * head = m_head.load(std::memory_order_acquire);
+      std::atomic_thread_fence(std::memory_order_acquire);
+      Node * head = m_head.load(std::memory_order_relaxed);
       while (head) {
         Node * next = head->next;
         delete head;
@@ -34,7 +37,7 @@ namespace Zeni::Concurrency {
     }
 
     bool empty() const {
-      return m_head.load(std::memory_order_acquire) == nullptr;
+      return m_head.load(std::memory_order_relaxed) == nullptr;
     }
 
     //int64_t size() const {
@@ -44,26 +47,29 @@ namespace Zeni::Concurrency {
     void push(const TYPE &value) {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       Node * const head = new Node(m_head.load(std::memory_order_relaxed), value);
-      while (!m_head.compare_exchange_weak(head->next, head, std::memory_order_release, std::memory_order_relaxed));
+      std::atomic_thread_fence(std::memory_order_release);
+      while (!m_head.compare_exchange_weak(head->next, head, std::memory_order_relaxed, std::memory_order_relaxed));
     }
 
     void push(TYPE &&value) {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       Node * const head = new Node(m_head.load(std::memory_order_relaxed), std::move(value));
-      while (!m_head.compare_exchange_weak(head->next, head, std::memory_order_release, std::memory_order_relaxed));
+      std::atomic_thread_fence(std::memory_order_release);
+      while (!m_head.compare_exchange_weak(head->next, head, std::memory_order_relaxed, std::memory_order_relaxed));
     }
 
     bool try_pop(TYPE &value) {
-      m_poppers.fetch_add(1, std::memory_order_release);
+      m_poppers.fetch_add(1, std::memory_order_relaxed);
       Node * head = m_head.load(std::memory_order_relaxed);
       do {
         if (!head) {
-          m_poppers.fetch_sub(1, std::memory_order_release);
+          m_poppers.fetch_sub(1, std::memory_order_relaxed);
           return false;
         }
-      } while (!m_head.compare_exchange_weak(head, head->next, std::memory_order_release, std::memory_order_relaxed));
+      } while (!m_head.compare_exchange_weak(head, head->next, std::memory_order_relaxed, std::memory_order_relaxed));
+      std::atomic_thread_fence(std::memory_order_acquire);
       value = std::move(head->value);
-      if (m_poppers.fetch_sub(1, std::memory_order_acq_rel) == 1)
+      if (m_poppers.fetch_sub(1, std::memory_order_relaxed) == 1)
         delete head;
       else
         Reclamation_Stacks::push(head);
