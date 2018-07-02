@@ -7,7 +7,7 @@ RMDIR=rm -rf
 # CPPFLAGS=-g $(shell root-config --cflags)
 # LDFLAGS=-g $(shell root-config --ldflags)
 # LDLIBS=$(shell root-config --libs)
-CPPFLAGS=-std=c++17 -fvisibility=hidden -fvisibility-inlines-hidden -Wall -I../../include -I../../PEGTL/include -Wno-pasabi
+CPPFLAGS=-std=c++17 -fvisibility=hidden -fvisibility-inlines-hidden -Wall -I../../include -I../../PEGTL/include -Wno-psabi
 LDFLAGS=-L. -Wl,-rpath,. -Wl,-rpath-link,.
 LDLIBS=-Wl,--as-needed -latomic -pthread -Wl,--no-as-needed
 
