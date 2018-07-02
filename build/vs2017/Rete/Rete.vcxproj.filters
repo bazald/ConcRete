@@ -123,6 +123,9 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Remove.cpp">
       <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\New_and_Delete.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Utility.hpp">

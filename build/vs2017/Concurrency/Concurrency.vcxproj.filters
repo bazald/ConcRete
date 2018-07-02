@@ -128,5 +128,8 @@
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Reclamation_Stacks.cpp">
       <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\New_and_Delete.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
