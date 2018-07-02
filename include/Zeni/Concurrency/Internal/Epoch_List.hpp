@@ -22,7 +22,7 @@ namespace Zeni::Concurrency {
   public:
     static const uint64_t epoch_increment = 2;
 
-    Epoch_List() {
+    Epoch_List() noexcept {
       std::atomic_thread_fence(std::memory_order_release);
     }
 
@@ -44,8 +44,19 @@ namespace Zeni::Concurrency {
 
     std::pair<uint64_t, uint64_t> front_and_acquire() {
       const uint64_t acquired = acquire();
-      const uint64_t front = m_head.load(std::memory_order_relaxed)->epoch;
-      return std::make_pair(front, acquired);
+
+      m_writers.fetch_add(1, std::memory_order_relaxed);
+      Node * masked_prev = nullptr;
+      Node * raw_cur = m_head.load(std::memory_order_relaxed);
+      Node * masked_cur = reinterpret_cast<Node *>(uintptr_t(raw_cur) & ~uintptr_t(0x1));
+      Node * raw_next = masked_cur->next.load(std::memory_order_acquire);
+      Node * masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
+      int64_t head_epoch = masked_cur->epoch;
+      while (try_removal(masked_prev, raw_cur, masked_cur, raw_next, masked_next))
+        head_epoch = masked_cur->epoch;
+      m_writers.fetch_sub(1, std::memory_order_relaxed);
+
+      return std::make_pair(head_epoch, acquired);
     }
 
     //int64_t size() const {
@@ -123,7 +134,7 @@ namespace Zeni::Concurrency {
 
     // Return true if cur removed, otherwise false
     bool try_removal(Node * const masked_prev, Node * &raw_cur, Node * &masked_cur, Node * &raw_next, Node * &masked_next) {
-      if (raw_cur == masked_cur)
+      if (raw_cur != masked_cur || raw_next == masked_next)
         return false;
 
       Node * old_cur = masked_cur;

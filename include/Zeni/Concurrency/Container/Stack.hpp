@@ -22,7 +22,7 @@ namespace Zeni::Concurrency {
     };
 
   public:
-    Stack() {
+    Stack() noexcept {
       std::atomic_thread_fence(std::memory_order_release);
     }
 

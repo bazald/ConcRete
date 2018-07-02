@@ -17,7 +17,7 @@ namespace Zeni::Concurrency {
 
     class Clearer {
     public:
-      ~Clearer();
+      ~Clearer() noexcept;
     };
 
     Reclamation_Stacks_Impl() noexcept(false);

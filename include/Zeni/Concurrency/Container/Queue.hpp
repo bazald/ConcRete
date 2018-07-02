@@ -11,14 +11,12 @@ namespace Zeni::Concurrency {
     Queue & operator=(const Queue &) = delete;
 
     struct Node : public Reclamation_Stack::Node {
-      Node() = default;
-
       std::atomic<Node *> next = nullptr;
       std::atomic<TYPE *> value_ptr = nullptr;
     };
 
   public:
-    Queue() {
+    Queue() noexcept {
       std::atomic_thread_fence(std::memory_order_release);
     }
 

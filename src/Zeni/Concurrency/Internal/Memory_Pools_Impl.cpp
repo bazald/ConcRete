@@ -4,7 +4,7 @@ namespace Zeni::Concurrency {
 
   static void new_handler() noexcept(false);
 
-  Memory_Pools_Impl::Clearer::~Clearer() {
+  Memory_Pools_Impl::Clearer::~Clearer() noexcept {
     Memory_Pools_Impl::get().clear_pool();
   }
 

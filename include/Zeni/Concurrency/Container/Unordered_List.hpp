@@ -71,7 +71,7 @@ namespace Zeni::Concurrency {
     };
 
   public:
-    Unordered_List() {
+    Unordered_List() noexcept {
       std::atomic_thread_fence(std::memory_order_release);
     }
 

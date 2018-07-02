@@ -248,11 +248,11 @@ namespace Zeni::Concurrency {
   void worker(Worker_Threads_Impl * const worker_threads_impl) noexcept {
     const class Count {
     public:
-      Count() {
+      Count() noexcept {
         g_total_thread_count.fetch_add(1, std::memory_order_relaxed);
       }
 
-      ~Count() {
+      ~Count() noexcept {
         g_total_thread_count.fetch_sub(1, std::memory_order_relaxed);
       }
     } count;

@@ -2,7 +2,7 @@
 
 namespace Zeni::Concurrency {
 
-  Reclamation_Stacks_Impl::Clearer::~Clearer() {
+  Reclamation_Stacks_Impl::Clearer::~Clearer() noexcept {
     Reclamation_Stacks_Impl::get().clear_stack();
   }
 

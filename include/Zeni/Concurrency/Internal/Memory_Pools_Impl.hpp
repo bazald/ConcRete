@@ -17,7 +17,7 @@ namespace Zeni::Concurrency {
 
     class Clearer {
     public:
-      ~Clearer();
+      ~Clearer() noexcept;
     };
 
     Memory_Pools_Impl() noexcept(false);

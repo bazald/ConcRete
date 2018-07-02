@@ -14,7 +14,6 @@ namespace Zeni::Concurrency {
 
   public:
     struct Node {
-      Node() = default;
       virtual ~Node() = default;
 
       Node * reclamation_next = nullptr;
