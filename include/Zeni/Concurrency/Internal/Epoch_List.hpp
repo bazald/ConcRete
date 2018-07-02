@@ -19,9 +19,9 @@ namespace Zeni::Concurrency {
       uint64_t epoch = 0;
     };
 
+  public:
     static const uint64_t epoch_increment = 2;
 
-  public:
     Epoch_List() {
       std::atomic_thread_fence(std::memory_order_release);
     }

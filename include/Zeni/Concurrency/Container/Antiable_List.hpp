@@ -30,8 +30,8 @@ namespace Zeni::Concurrency {
       std::atomic<Node *> next = nullptr;
       std::atomic<Inner_Node *> value_ptr = nullptr;
       std::atomic<int64_t> instance_count = 1;
-      int64_t creation_epoch = 0;
-      std::atomic<int64_t> access_epoch = creation_epoch;
+      std::atomic<int64_t> creation_epoch = 0;
+      std::atomic<int64_t> access_epoch = creation_epoch.load(std::memory_order_relaxed);
     };
 
     struct Cursor {
@@ -46,8 +46,9 @@ namespace Zeni::Concurrency {
       bool is_candidate_for_removal(const int64_t earliest_epoch) const {
         if (raw_cur != masked_cur || raw_next == masked_next)
           return false;
+        const int64_t creation_epoch = masked_cur->creation_epoch.load(std::memory_order_relaxed);
         const int64_t deletion_epoch = masked_cur->access_epoch.load(std::memory_order_relaxed);
-        return deletion_epoch - masked_cur->creation_epoch < earliest_epoch - masked_cur->creation_epoch;
+        return deletion_epoch - creation_epoch < earliest_epoch - creation_epoch;
       }
 
       // The Node at this Cursor appears to both (1) be marked for removal and to (2) follow a Node that is not marked for removal
