@@ -7,7 +7,7 @@ RMDIR=rm -rf
 # CPPFLAGS=-g $(shell root-config --cflags)
 # LDFLAGS=-g $(shell root-config --ldflags)
 # LDLIBS=$(shell root-config --libs)
-CPPFLAGS=-std=c++17 -fvisibility=hidden -fvisibility-inlines-hidden -Wall -I../../include -I../../PEGTL/include -Wno-psabi
+CPPFLAGS=-std=c++17 -fvisibility=hidden -fvisibility-inlines-hidden -I../../include -I../../PEGTL/include -MMD -Wall -Wno-psabi
 LDFLAGS=-L. -Wl,-rpath,. -Wl,-rpath-link,.
 LDLIBS=-Wl,--as-needed -latomic -pthread -Wl,--no-as-needed
 
@@ -26,6 +26,7 @@ BINARIES=libConcurrency.so libRete.so Test1.out
 DIRECTORIES=Concurrency Rete Test1
 OBJS=$(OBJS_CONCURRENCY) $(OBJS_RETE) $(OBJS_TEST1)
 SOURCES=$(call rwildcard, ../../src, *.cpp)
+DEPENDENCIES=$(call rwildcard, ., *.d)
 
 debug: CPPFLAGS+=-ggdb
 debug: LDFLAGS+=-ggdb
@@ -34,7 +35,7 @@ debug: all
 release: CPPFLAGS+=-O3 -DNDEBUG
 release: all
 
-.PHONY: all clean depend directories distclean
+.PHONY: all clean directories
 
 all: directories libConcurrency.so libRete.so Test1.out
 
@@ -43,33 +44,25 @@ directories: $(DIRECTORIES)
 $(DIRECTORIES):
 	$(MKDIR) $(DIRECTORIES)
 
+-include $(DEPENDENCIES)
+
 libConcurrency.so: $(OBJS_CONCURRENCY)
 	$(CXX) $(LDFLAGS) -shared -o $@ $(OBJS_CONCURRENCY) $(LDLIBS) 
 
-Concurrency/%.o: $(SOURCES_CONCURRENCY)
+Concurrency/%.o: $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_CONCURRENCY))  
 	$(CXX) $(CPPFLAGS) -fPIC -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_CONCURRENCY))
 
 libRete.so: libConcurrency.so $(OBJS_RETE)
 	$(CXX) $(LDFLAGS) -shared -o $@ -lConcurrency $(OBJS_RETE) $(LDLIBS) 
 
-Rete/%.o: $(SOURCES_RETE)
+Rete/%.o: $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_RETE))
 	$(CXX) $(CPPFLAGS) -fPIC -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_RETE))
 
 Test1.out: libConcurrency.so libRete.so $(OBJS_TEST1)
 	$(CXX) $(LDFLAGS) -o $@ -lConcurrency -lRete $(OBJS_TEST1) $(LDLIBS) 
 
-Test1/%.o: $(SOURCES_TEST1)
+Test1/%.o: $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_TEST1))
 	$(CXX) $(CPPFLAGS) -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_TEST1))
-
-depend: .depend
-
-.depend: $(SOURCES)
-	$(CXX) $(CPPFLAGS) -MM $^ > ./.depend;
 
 clean:
 	$(RMDIR) Concurrency Rete Test1 $(BINARIES)
-
-distclean: clean
-	$(RM) .depend
-
-include .depend
