@@ -228,7 +228,6 @@ namespace Zeni::Concurrency {
         Reclamation_Stacks::push(old_cur->value_ptr);
         Reclamation_Stacks::push(old_cur);
       }
-      //m_usage.fetch_sub(1, std::memory_order_relaxed);
 
       return true;
     }

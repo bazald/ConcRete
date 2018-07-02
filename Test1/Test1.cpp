@@ -5,7 +5,6 @@
 #include "Zeni/Concurrency/Container/Unordered_List.hpp"
 #include "Zeni/Concurrency/Internal/Epoch_List.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
-#include "Zeni/Concurrency/Memory_Pools.hpp"
 #include "Zeni/Concurrency/Message.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
 #include "Zeni/Concurrency/Recipient.hpp"
@@ -87,51 +86,51 @@ static void test_Parser();
 
 int main()
 {
-  //test_Worker_Threads();
-  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //  abort();
-  //}
+  test_Worker_Threads();
+  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+    abort();
+  }
 
-  //for (int i = 0; i != 80; ++i) {
-  //  test_Stack();
-  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //    abort();
-  //  }
-  //  std::cout << 'S' << std::flush;
-  //}
-  //std::cout << std::endl;
+  for (int i = 0; i != 80; ++i) {
+    test_Stack();
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+      abort();
+    }
+    std::cout << 'S' << std::flush;
+  }
+  std::cout << std::endl;
 
-  //for (int i = 0; i != 80; ++i) {
-  //  test_Queue();
-  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //    abort();
-  //  }
-  //  std::cout << 'Q' << std::flush;
-  //}
-  //std::cout << std::endl;
+  for (int i = 0; i != 80; ++i) {
+    test_Queue();
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+      abort();
+    }
+    std::cout << 'Q' << std::flush;
+  }
+  std::cout << std::endl;
 
-  //for (int i = 0; i != 80; ++i) {
-  //  test_Epoch_List();
-  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //    abort();
-  //  }
-  //  std::cout << 'E' << std::flush;
-  //}
-  //std::cout << std::endl;
+  for (int i = 0; i != 80; ++i) {
+    test_Epoch_List();
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+      abort();
+    }
+    std::cout << 'E' << std::flush;
+  }
+  std::cout << std::endl;
 
-  //for (int i = 0; i != 80; ++i) {
-  //  test_Unordered_List();
-  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //    abort();
-  //  }
-  //  std::cout << 'U' << std::flush;
-  //}
-  //std::cout << std::endl;
+  for (int i = 0; i != 80; ++i) {
+    test_Unordered_List();
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+      abort();
+    }
+    std::cout << 'U' << std::flush;
+  }
+  std::cout << std::endl;
 
   for (int i = 0; i != 80; ++i) {
     test_Ordered_List();
@@ -523,10 +522,7 @@ void test_Antiable_List() {
         else {
           auto selected = m_values.begin();
           std::advance(selected, index - 1);
-          while (!m_antiable_list->try_erase(m_epoch_list, *selected));
-          //[[maybe_unused]] const bool success = m_antiable_list->try_erase(earliest_epoch, current_epoch, *selected);
-          //if (!success)
-            //std::cerr << 'X' << std::flush;
+          m_antiable_list->erase(m_epoch_list, *selected);
           m_values.erase(selected);
           --m_to_release;
         }
@@ -556,6 +552,9 @@ void test_Antiable_List() {
   job_queue->give_many(std::move(jobs));
 
   worker_threads->finish_jobs();
+
+  if (antiable_list->size() != 0 || antiable_list->usage() != 0)
+    std::cerr << 'X';
 
   //std::cout << std::endl;
 }

@@ -180,6 +180,7 @@ namespace Zeni::Concurrency {
 
           Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(cursor.raw_next) | 0x1);
           if (cursor.masked_cur->next.compare_exchange_strong(cursor.raw_next, marked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
+            cursor.raw_next = marked_next;
             try_removal(cursor);
             //m_size.fetch_sub(1, std::memory_order_relaxed);
             m_writers.fetch_sub(1, std::memory_order_relaxed);
@@ -221,7 +222,6 @@ namespace Zeni::Concurrency {
         Reclamation_Stacks::push(old_cur->value_ptr);
         Reclamation_Stacks::push(old_cur);
       }
-      //m_usage.fetch_sub(1, std::memory_order_relaxed);
 
       return true;
     }

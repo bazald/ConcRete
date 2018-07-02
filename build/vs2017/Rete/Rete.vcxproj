@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\Zeni\New_and_Delete.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Custom_Data.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Debug_Counters.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message.cpp" />

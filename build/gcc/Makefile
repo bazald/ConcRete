@@ -7,9 +7,9 @@ RMDIR=rm -rf
 # CPPFLAGS=-g $(shell root-config --cflags)
 # LDFLAGS=-g $(shell root-config --ldflags)
 # LDLIBS=$(shell root-config --libs)
-CPPFLAGS=-std=c++17 -fvisibility=hidden -fvisibility-inlines-hidden -Wall -I../../include -I../../PEGTL/include
+CPPFLAGS=-std=c++17 -fvisibility=hidden -fvisibility-inlines-hidden -Wall -I../../include -I../../PEGTL/include -Wno-pasabi
 LDFLAGS=-L. -Wl,-rpath,. -Wl,-rpath-link,.
-LDLIBS=-pthread
+LDLIBS=-Wl,--as-needed -latomic -pthread -Wl,--no-as-needed
 
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
 

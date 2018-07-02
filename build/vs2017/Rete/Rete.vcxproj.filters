@@ -30,9 +30,6 @@
     <ClCompile Include="..\..\..\src\Zeni\Utility.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\New_and_Delete.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Passthrough.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>

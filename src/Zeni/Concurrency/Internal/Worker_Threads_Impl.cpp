@@ -3,8 +3,6 @@
 #include "Zeni/Concurrency/Internal/Reclamation_Stacks.hpp"
 #include "Zeni/Concurrency/IJob.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
-#include "Zeni/Concurrency/Memory_Pool.hpp"
-#include "Zeni/Concurrency/Memory_Pools.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -149,7 +147,6 @@ namespace Zeni::Concurrency {
       job_queue.second->set_reclaim();
 
     Reclamation_Stacks::get_stack()->reclaim();
-    Memory_Pools::get_pool()->clear();
 
     while (m_reclaims_remaining.load(std::memory_order_relaxed) != 0);
   }
@@ -194,7 +191,6 @@ namespace Zeni::Concurrency {
     for (;;) {
       if (my_job_queue->try_reclaim()) {
         Reclamation_Stacks::get_stack()->reclaim();
-        Memory_Pools::get_pool()->clear();
         m_reclaims_remaining.fetch_sub(1, std::memory_order_relaxed);
       }
 
