@@ -45,7 +45,7 @@ namespace Zeni::Concurrency {
   }
 #else
   Worker_Threads_Impl::Worker_Threads_Impl() noexcept(false)
-    : Worker_Threads_Impl(std::thread::hardware_concurrency() / 2)
+    : Worker_Threads_Impl(std::thread::hardware_concurrency())
   {
   }
 

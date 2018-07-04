@@ -28,8 +28,8 @@ OBJS=$(OBJS_CONCURRENCY) $(OBJS_RETE) $(OBJS_TEST1)
 SOURCES=$(call rwildcard, ../../src, *.cpp)
 DEPENDENCIES=$(call rwildcard, ., *.d)
 
-debug: CPPFLAGS+=-ggdb
-debug: LDFLAGS+=-ggdb
+debug: CPPFLAGS+=-ggdb -Og
+debug: LDFLAGS+=-ggdb -Og
 debug: all
 
 release: CPPFLAGS+=-O3 -DNDEBUG

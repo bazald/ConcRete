@@ -23,8 +23,7 @@ namespace Zeni::Concurrency {
     ~Queue() noexcept {
       std::atomic_thread_fence(std::memory_order_acquire);
       Node * head = m_head.load(std::memory_order_relaxed);
-      Node * tail = m_tail.load(std::memory_order_relaxed);
-      while (head != tail) {
+      while (head) {
         Node * next = head->next.load(std::memory_order_relaxed);
         TYPE * value_ptr = head->value_ptr.load(std::memory_order_relaxed);
         delete head;
@@ -35,11 +34,24 @@ namespace Zeni::Concurrency {
     }
 
     bool empty() const {
-      return m_head.load(std::memory_order_relaxed) == m_tail.load(std::memory_order_relaxed);
+      return m_head.load(std::memory_order_relaxed)->value_ptr.load(std::memory_order_relaxed) == nullptr;
     }
 
     //int64_t size() const {
     //  return m_size.load(std::memory_order_relaxed);
+    //}
+
+    //int64_t size() const {
+    //  int64_t sz = 0;
+    //  Node * head = m_head.load(std::memory_order_relaxed);
+    //  for (;;) {
+    //    Node * const next = head->next.load(std::memory_order_relaxed);
+    //    if (!next || !head->value_ptr.load(std::memory_order_relaxed))
+    //      break;
+    //    ++sz;
+    //    head = next;
+    //  }
+    //  return sz;
     //}
 
     void push(const TYPE &value) {
@@ -53,23 +65,39 @@ namespace Zeni::Concurrency {
     bool try_pop(TYPE &value) {
       m_writers.fetch_add(1, std::memory_order_relaxed);
       Node * head = m_head.load(std::memory_order_relaxed);
-      Node * tail = m_tail.load(std::memory_order_relaxed);
+      Node * new_tail = nullptr;
+      TYPE * value_ptr;
       for (;;) {
-        if (head == tail) {
+        value_ptr = head->value_ptr.load();
+        if (!value_ptr) {
           m_writers.fetch_sub(1, std::memory_order_relaxed);
           return false;
         }
         Node * next = head->next.load(std::memory_order_relaxed);
+        if (!next) {
+          if (!new_tail) {
+            new_tail = new Node;
+            std::atomic_thread_fence(std::memory_order_release);
+          }
+          next = new_tail;
+          if (push_pointers_pop(head, next))
+            new_tail = nullptr;
+          else {
+            delete new_tail;
+            new_tail = nullptr;
+            head = m_head.load(std::memory_order_relaxed);
+            continue;
+          }
+        }
         if (m_head.compare_exchange_strong(head, next, std::memory_order_relaxed, std::memory_order_relaxed))
           break;
-        else
-          tail = m_tail.load(std::memory_order_relaxed);
       }
-      TYPE * value_ptr = head->value_ptr.load(std::memory_order_acquire);
+      delete new_tail;
       if (m_writers.fetch_sub(1, std::memory_order_relaxed) == 1)
         delete head;
       else
         Reclamation_Stacks::push(head);
+      std::atomic_thread_fence(std::memory_order_acquire);
       value = std::move(*value_ptr);
       delete value_ptr;
       //m_size.fetch_sub(1, std::memory_order_relaxed);
@@ -78,28 +106,43 @@ namespace Zeni::Concurrency {
 
   private:
     void push(TYPE * const value_ptr) {
-      std::atomic_thread_fence(std::memory_order_release);
       //m_size.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_relaxed);
-      Node * old_tail = m_tail.load(std::memory_order_relaxed);
       Node * new_tail = new Node;
+      std::atomic_thread_fence(std::memory_order_release);
+      Node * old_tail = m_tail.load(std::memory_order_relaxed);
       for (;;) {
         TYPE * empty = nullptr;
         if (old_tail->value_ptr.compare_exchange_strong(empty, value_ptr, std::memory_order_relaxed, std::memory_order_relaxed)) {
-          if (!push_pointers(old_tail, new_tail))
+          if (!push_pointers_push(old_tail, new_tail))
             delete new_tail;
           m_writers.fetch_sub(1, std::memory_order_relaxed);
           return;
         }
         else {
-          if (push_pointers(old_tail, new_tail))
+          if (push_pointers_push(old_tail, new_tail)) {
             new_tail = new Node;
+            std::atomic_thread_fence(std::memory_order_release);
+          }
         }
       }
     }
 
     // Return true if new tail pointer is used, otherwise false
-    bool push_pointers(Node * &old_tail, Node * new_tail) {
+    bool push_pointers_pop(Node * old_tail, Node * &new_tail) {
+      Node * next = nullptr;
+      if (old_tail->next.compare_exchange_strong(next, new_tail, std::memory_order_relaxed, std::memory_order_relaxed)) {
+        m_tail.compare_exchange_strong(old_tail, new_tail, std::memory_order_relaxed, std::memory_order_relaxed);
+        return true;
+      }
+      else {
+        m_tail.compare_exchange_strong(old_tail, next, std::memory_order_relaxed, std::memory_order_relaxed);
+        return false;
+      }
+    }
+
+    // Return true if new tail pointer is used, otherwise false
+    bool push_pointers_push(Node * &old_tail, Node * new_tail) {
       Node * next = nullptr;
       if (old_tail->next.compare_exchange_strong(next, new_tail, std::memory_order_relaxed, std::memory_order_relaxed)) {
         m_tail.compare_exchange_strong(old_tail, new_tail, std::memory_order_relaxed, std::memory_order_relaxed);
