@@ -23,6 +23,7 @@
 #include <list>
 #include <random>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -274,7 +275,7 @@ void test_Queue() {
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (int i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
     jobs.emplace_back(std::make_shared<Pusher>(queue));
     jobs.emplace_back(std::make_shared<Popper>(queue));
   }
@@ -325,7 +326,7 @@ void test_Stack() {
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (int i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
     jobs.emplace_back(std::make_shared<Pusher>(stack));
     jobs.emplace_back(std::make_shared<Popper>(stack));
   }
@@ -377,7 +378,7 @@ void test_Epoch_List() {
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (int i = 0; i != std::thread::hardware_concurrency(); ++i)
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
     jobs.emplace_back(std::make_shared<Epocher>(epoch_list));
   job_queue->give_many(std::move(jobs));
 
@@ -431,7 +432,7 @@ void test_Unordered_List() {
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (int i = 0; i != std::thread::hardware_concurrency(); ++i)
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
     jobs.emplace_back(std::make_shared<Lister>(unordered_list));
   job_queue->give_many(std::move(jobs));
 
@@ -491,7 +492,7 @@ void test_Ordered_List() {
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (int i = 0; i != std::thread::hardware_concurrency(); ++i)
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
     jobs.emplace_back(std::make_shared<Lister>(ordered_list));
   job_queue->give_many(std::move(jobs));
 
@@ -547,7 +548,7 @@ void test_Antiable_List() {
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (int i = 0; i != std::thread::hardware_concurrency(); ++i)
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
     jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_list));
   job_queue->give_many(std::move(jobs));
 
