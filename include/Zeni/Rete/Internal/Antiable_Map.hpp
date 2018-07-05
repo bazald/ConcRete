@@ -46,8 +46,9 @@ namespace Zeni::Rete {
 
       reference operator*() const { return reference(m_it->first, m_it->second.second); }
 
-      const_iterator prev() const { return m_it.prev(); }
-      const_iterator next() const { return m_it.next(); }
+      const_iterator next() const {
+        return ++const_iterator(*this);
+      }
 
       const_iterator & operator++() {
         do {
