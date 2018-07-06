@@ -3,7 +3,7 @@
 #include "Zeni/Concurrency/IJob.hpp"
 #include "Zeni/Concurrency/Worker_Threads.hpp"
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
 #include <thread>
 #endif
 
@@ -28,7 +28,7 @@ namespace Zeni::Concurrency {
     if (!m_jobs.try_pop(job))
       return nullptr;
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     if (!is_already_awake)
       m_worker_threads->worker_awakened();
 
@@ -41,7 +41,7 @@ namespace Zeni::Concurrency {
   }
 
   bool Job_Queue_Impl::try_reclaim() noexcept {
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     if (!m_reclaim.load(std::memory_order_relaxed))
       return false;
     m_reclaim.store(false, std::memory_order_relaxed);
@@ -50,7 +50,7 @@ namespace Zeni::Concurrency {
   }
 
   void Job_Queue_Impl::give_one(const std::shared_ptr<IJob> job) noexcept(false) {
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     m_worker_threads->jobs_inserted(1);
 #endif
 
@@ -58,7 +58,7 @@ namespace Zeni::Concurrency {
   }
 
   void Job_Queue_Impl::give_many(std::vector<std::shared_ptr<IJob>> &&jobs) noexcept(false) {
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     m_worker_threads->jobs_inserted(int64_t(jobs.size()));
 #endif
 
@@ -67,7 +67,7 @@ namespace Zeni::Concurrency {
   }
 
   void Job_Queue_Impl::give_many(const std::vector<std::shared_ptr<IJob>> &jobs) noexcept(false) {
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     m_worker_threads->jobs_inserted(int64_t(jobs.size()));
 #endif
 
@@ -76,7 +76,7 @@ namespace Zeni::Concurrency {
   }
 
   void Job_Queue_Impl::set_reclaim() noexcept {
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     m_reclaim.store(true, std::memory_order_relaxed);
 #endif
   }

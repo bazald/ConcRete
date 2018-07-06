@@ -2,6 +2,7 @@
 #define ZENI_CONCURRENCY_WORKER_THREADS_HPP
 
 #include "Internal/Linkage.hpp"
+#include "Internal/Concurrency.hpp"
 
 #include "Job_Queue.hpp"
 
@@ -32,7 +33,7 @@ namespace Zeni::Concurrency {
     ZENI_CONCURRENCY_LINKAGE virtual void finish_jobs() noexcept(false) = 0;
 
   private:
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     friend Job_Queue_Impl;
     virtual void worker_awakened() noexcept = 0;
     virtual void jobs_inserted(const int64_t num_jobs) noexcept = 0;

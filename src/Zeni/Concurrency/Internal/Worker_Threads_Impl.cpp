@@ -12,7 +12,7 @@
 
 namespace Zeni::Concurrency {
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
   void worker(Worker_Threads_Impl * const worker_threads) noexcept;
 #endif
 
@@ -33,7 +33,7 @@ namespace Zeni::Concurrency {
     return std::make_shared<Friendly_Worker_Threads_Impl>(num_threads);
   }
 
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
   Worker_Threads_Impl::Worker_Threads_Impl() noexcept(false)
     : m_job_queue(Job_Queue::Create(this))
   {
@@ -90,7 +90,7 @@ namespace Zeni::Concurrency {
   Worker_Threads_Impl::~Worker_Threads_Impl() noexcept {
     finish_jobs();
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     m_num_jobs_in_queues.fetch_sub(1, std::memory_order_relaxed); // If everyone behaves, guaranteed to go negative to initiate termination in worker threads
     for (auto &worker : m_worker_threads)
       worker->join();
@@ -101,13 +101,12 @@ namespace Zeni::Concurrency {
     return m_job_queue;
   }
 
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
   void Worker_Threads_Impl::finish_jobs() noexcept(false) {
     while (std::shared_ptr<IJob> job = m_job_queue->try_take_one(true))
       job->execute();
 
     Reclamation_Stacks::get_stack()->reclaim();
-    Memory_Pools::get_pool()->clear();
   }
 #else
   void Worker_Threads_Impl::finish_jobs() noexcept(false) {
@@ -236,7 +235,7 @@ namespace Zeni::Concurrency {
   }
 #endif
 
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
   static int64_t g_total_thread_count = 0;
 #else
   static std::atomic_int64_t g_total_thread_count = 0;
@@ -261,7 +260,7 @@ namespace Zeni::Concurrency {
 #endif
 
   int64_t Worker_Threads_Impl::get_total_workers() noexcept {
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
     return 0;
 #else
     return g_total_thread_count.load(std::memory_order_relaxed);

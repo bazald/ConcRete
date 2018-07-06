@@ -1,12 +1,12 @@
 #include "Zeni/Concurrency/Mutex.hpp"
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
 #include <mutex>
 #endif
 
 namespace Zeni::Concurrency {
 
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
   Mutex::Lock::Lock(Mutex &) noexcept
 #else
   Mutex::Lock::Lock(Mutex &mutex) noexcept

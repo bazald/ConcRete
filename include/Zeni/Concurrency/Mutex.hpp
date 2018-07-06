@@ -2,8 +2,9 @@
 #define ZENI_CONCURRENCY_MUTEX_HPP
 
 #include "Internal/Linkage.hpp"
+#include "Internal/Concurrency.hpp"
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
 #include <mutex>
 
 namespace std {
@@ -29,7 +30,7 @@ namespace Zeni::Concurrency {
       Lock(Mutex &mutex) noexcept;
 
     private:
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
       std::lock_guard<std::mutex> m_lock;
 #endif
     };
@@ -37,7 +38,7 @@ namespace Zeni::Concurrency {
     Mutex() noexcept = default;
 
   private:
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     std::mutex m_mutex;
 #endif
   };

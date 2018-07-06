@@ -4,9 +4,8 @@
 #include "../Job_Queue.hpp"
 #include "../Container/Queue.hpp"
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
 #include <atomic>
-#include <mutex>
 #endif
 
 namespace Zeni::Concurrency {
@@ -39,7 +38,7 @@ namespace Zeni::Concurrency {
     void set_reclaim() noexcept override;
 
   private:
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     std::atomic_bool m_reclaim = false;
 #endif
     Worker_Threads * const m_worker_threads;

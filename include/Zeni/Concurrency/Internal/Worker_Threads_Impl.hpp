@@ -3,7 +3,7 @@
 
 #include "../Worker_Threads.hpp"
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
 #include <atomic>
 #include <thread>
 #include <vector>
@@ -41,7 +41,7 @@ namespace Zeni::Concurrency {
   private:
     std::shared_ptr<Job_Queue> m_job_queue;
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     void worker_awakened() noexcept override;
     void jobs_inserted(const int64_t num_jobs) noexcept override;
     void job_removed() noexcept override;

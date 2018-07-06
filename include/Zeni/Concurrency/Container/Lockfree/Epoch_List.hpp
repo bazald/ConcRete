@@ -1,9 +1,7 @@
 #ifndef ZENI_CONCURRENCY_EPOCH_LIST_HPP
 #define ZENI_CONCURRENCY_EPOCH_LIST_HPP
 
-#include "Reclamation_Stacks.hpp"
-
-#include <iostream>
+#include "../../Internal/Reclamation_Stacks.hpp"
 
 namespace Zeni::Concurrency {
 
@@ -64,13 +62,11 @@ namespace Zeni::Concurrency {
     ~Epoch_List() noexcept {
       std::atomic_thread_fence(std::memory_order_acquire);
       Node * head = m_head.load(std::memory_order_relaxed);
-      Node * tail = m_tail.load(std::memory_order_relaxed);
-      while (head != tail) {
+      while (head) {
         Node * next = reinterpret_cast<Node *>(uintptr_t(head->next.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
         delete head;
         head = next;
       }
-      delete head;
     }
 
     bool empty() const {
@@ -78,28 +74,28 @@ namespace Zeni::Concurrency {
     }
 
     std::pair<uint64_t, uint64_t> front_and_acquire() {
-      const uint64_t acquired = acquire();
-
+      //m_size.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_relaxed);
+
+      Node * old_tail = m_tail.load(std::memory_order_relaxed);
+      Node * new_tail = new Node(old_tail->epoch + epoch_increment);
+      while (!push_pointers(old_tail, new_tail))
+        new_tail->epoch = old_tail->epoch + epoch_increment;
+
       Cursor cursor(this);
       while (try_removal(cursor));
       const int64_t head_epoch = cursor.masked_cur->epoch;
-      m_writers.fetch_sub(1, std::memory_order_relaxed);
 
-      return std::make_pair(head_epoch, acquired);
+      m_writers.fetch_sub(1, std::memory_order_relaxed);
+      return std::make_pair(head_epoch, old_tail->epoch);
     }
 
     //int64_t size() const {
     //  return m_size.load(std::memory_order_relaxed);
     //}
 
-    //int64_t usage() const {
-    //  return m_usage.load(std::memory_order_relaxed);
-    //}
-
     uint64_t acquire() {
       //m_size.fetch_add(1, std::memory_order_relaxed);
-      //m_usage.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_relaxed);
       Node * old_tail = m_tail.load(std::memory_order_relaxed);
       Node * new_tail = new Node(old_tail->epoch + epoch_increment);
@@ -194,7 +190,6 @@ namespace Zeni::Concurrency {
     std::atomic<Node *> m_head = new Node();
     std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
     //std::atomic_int64_t m_size = 0;
-    //std::atomic_int64_t m_usage = 0;
     std::atomic_int64_t m_writers = 0;
   };
 

@@ -2,10 +2,11 @@
 #define ZENI_CONCURRENCY_ATOMIC_HPP
 
 #include "Internal/Linkage.hpp"
+#include "Internal/Concurrency.hpp"
 
 #include <cstdint>
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
 #include <atomic>
 #endif
 
@@ -16,7 +17,7 @@ namespace Zeni::Concurrency {
     Atomic_int64_t(const Atomic_int64_t &rhs) = delete;
     Atomic_int64_t & operator=(const Atomic_int64_t &rhs) = delete;
 
-#ifndef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     static const std::memory_order m_order_both = RELAXED ? std::memory_order_relaxed : std::memory_order_acq_rel;
     static const std::memory_order m_order_load = RELAXED ? std::memory_order_relaxed : std::memory_order_acquire;
     static const std::memory_order m_order_store = RELAXED ? std::memory_order_relaxed : std::memory_order_release;
@@ -29,7 +30,7 @@ namespace Zeni::Concurrency {
     }
 
     bool compare_exchange_strong(int64_t &expected, const int64_t desired) {
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
       if (m_value == expected) {
         m_value = desired;
         return true;
@@ -44,7 +45,7 @@ namespace Zeni::Concurrency {
     }
 
     bool compare_exchange_weak(int64_t &expected, const int64_t desired) {
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
       if (m_value == expected) {
         m_value = desired;
         return true;
@@ -59,7 +60,7 @@ namespace Zeni::Concurrency {
     }
 
     int64_t fetch_add(const int64_t amount = 1) {
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
       const int64_t prev = m_value;
       m_value += amount;
       return prev;
@@ -69,7 +70,7 @@ namespace Zeni::Concurrency {
     }
 
     int64_t fetch_sub(const int64_t amount = 1) {
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
       const int64_t prev = m_value;
       m_value -= amount;
       return prev;
@@ -79,7 +80,7 @@ namespace Zeni::Concurrency {
     }
 
     int64_t load() const {
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
       return m_value;
 #else
       return m_value.load(m_order_load);
@@ -87,7 +88,7 @@ namespace Zeni::Concurrency {
     }
 
     void store(const int64_t value) {
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
       m_value = value;
 #else
       return m_value.store(value, m_order_store);
@@ -95,7 +96,7 @@ namespace Zeni::Concurrency {
     }
 
   private:
-#ifdef DISABLE_MULTITHREADING
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
     int64_t m_value;
 #else
     std::atomic_int64_t m_value;
