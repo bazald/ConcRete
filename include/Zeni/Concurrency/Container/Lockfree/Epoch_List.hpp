@@ -24,7 +24,7 @@ namespace Zeni::Concurrency {
 
     struct Cursor {
       Cursor() = default;
-      Cursor(Epoch_List * const epoch_list) : raw_cur(epoch_list->m_head.load(std::memory_order_relaxed)), raw_next(masked_cur->next.load(std::memory_order_relaxed)) {}
+      Cursor(Epoch_List * const epoch_list) : raw_cur(epoch_list->m_head.load(std::memory_order_acquire)), raw_next(masked_cur->next.load(std::memory_order_acquire)) {}
 
       // The Node at this Cursor appears to both (1) be marked for removal and to (2) follow a Node that is not marked for removal
       bool is_candidate_for_removal() const {
@@ -113,7 +113,9 @@ namespace Zeni::Concurrency {
 
   private:
     void continue_acquire(const uint64_t front, const Token epoch) {
-      while (*Token::Lock(epoch) == 0) {
+      Token::Lock epoch_value = epoch.load();
+      Node * old_tail = m_tail.load(std::memory_order_acquire);
+      while (*epoch_value == 0 || *epoch_value - front >= old_tail->epoch - front) {
         Token current;
         if (!m_acquires.front(current))
           break;
@@ -122,20 +124,17 @@ namespace Zeni::Concurrency {
         uint64_t next_assignable = m_next_assignable.load(std::memory_order_relaxed);
         if (value == 0 && current_value->compare_exchange_strong(value, next_assignable, std::memory_order_relaxed, std::memory_order_relaxed))
           value = next_assignable;
-        if (value == next_assignable) {
-          if (m_next_assignable.compare_exchange_strong(next_assignable, next_assignable + epoch_increment, std::memory_order_relaxed, std::memory_order_relaxed))
-            next_assignable += epoch_increment;
+        while (value - front >= next_assignable - front) {
+          if (m_next_assignable.compare_exchange_weak(next_assignable, value + epoch_increment, std::memory_order_relaxed, std::memory_order_relaxed))
+            next_assignable = value + epoch_increment;
         }
 
-        Node * old_tail = m_tail.load(std::memory_order_acquire);
         Node * new_tail = nullptr;
-        for (;;) {
-          if (old_tail->epoch - front >= next_assignable - front)
-            break;
+        while (value - front >= old_tail->epoch - front) {
           if (new_tail)
-            new_tail->epoch = next_assignable;
+            new_tail->epoch = value + epoch_increment;
           else
-            new_tail = new Node(next_assignable);
+            new_tail = new Node(value + epoch_increment);
           if (push_pointers(old_tail, new_tail)) {
             new_tail = nullptr;
             break;
@@ -191,13 +190,14 @@ namespace Zeni::Concurrency {
     // Return true if new tail pointer is used, otherwise false
     bool push_pointers(Node * &old_tail, Node * const new_tail) {
       Node * next = nullptr;
-      if (old_tail->next.compare_exchange_weak(next, new_tail, std::memory_order_release, std::memory_order_relaxed)) {
-        Node * old_tail_copy = old_tail;
-        m_tail.compare_exchange_strong(old_tail_copy, new_tail, std::memory_order_relaxed, std::memory_order_relaxed);
+      if (old_tail->next.compare_exchange_weak(next, new_tail, std::memory_order_release, std::memory_order_acquire)) {
+        if (m_tail.compare_exchange_strong(old_tail, new_tail, std::memory_order_release, std::memory_order_acquire))
+          old_tail = new_tail;
         return true;
       }
       else {
-        m_tail.compare_exchange_strong(old_tail, next, std::memory_order_release, std::memory_order_acquire);
+        if (m_tail.compare_exchange_strong(old_tail, next, std::memory_order_release, std::memory_order_acquire))
+          old_tail = next;
         return false;
       }
     }

@@ -412,7 +412,8 @@ void test_Epoch_List() {
 
     void execute() noexcept override {
       while (m_to_acquire + m_to_release != 0) {
-        const int64_t index = std::uniform_int_distribution<int64_t>(1, std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release)(dre);
+        const int64_t maxval = std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release;
+        const int64_t index = std::uniform_int_distribution<int64_t>(1, maxval)(dre);
         if (index > m_to_release) {
           const auto epoch = Zeni::Concurrency::Epoch_List::Token(new std::atomic_uint64_t(0));
           m_epoch_list->front_and_acquire(epoch);
