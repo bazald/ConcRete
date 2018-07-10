@@ -106,15 +106,15 @@ int main()
   //}
   //std::cout << std::endl;
 
-  for (int i = 0; i != 80; ++i) {
-    test_Queue_of_Shared_Ptrs();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'P' << std::flush;
-  }
-  std::cout << std::endl;
+  //for (int i = 0; i != 80; ++i) {
+  //  test_Queue_of_Shared_Ptrs();
+  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //    abort();
+  //  }
+  //  std::cout << 'P' << std::flush;
+  //}
+  //std::cout << std::endl;
 
   //for (int i = 0; i != 80; ++i) {
   //  test_Stack();
@@ -412,14 +412,20 @@ void test_Epoch_List() {
 
     void execute() noexcept override {
       while (m_to_acquire + m_to_release != 0) {
-        const int64_t maxval = std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release;
-        const int64_t index = std::uniform_int_distribution<int64_t>(1, maxval)(dre);
+        const int64_t index = std::uniform_int_distribution<int64_t>(1, std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release)(dre);
         if (index > m_to_release) {
-          const auto epoch = Zeni::Concurrency::Epoch_List::Token(new std::atomic_uint64_t(0));
-          m_epoch_list->front_and_acquire(epoch);
-          m_epochs.push_back(epoch);
-          --m_to_acquire;
-          ++m_to_release;
+          const auto epoch = Zeni::Concurrency::Epoch_List::Create_Token();
+          if (std::uniform_int_distribution<int>(0, 1)(dre)) {
+            m_epoch_list->acquire_release(epoch);
+            --m_to_acquire;
+          }
+          else
+          {
+            m_epoch_list->acquire(epoch);
+            m_epochs.push_back(epoch.load());
+            --m_to_acquire;
+            ++m_to_release;
+          }
         }
         else {
           auto selected = m_epochs.begin();
@@ -435,8 +441,8 @@ void test_Epoch_List() {
 
   private:
     std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
-    std::vector<Zeni::Concurrency::Epoch_List::Token> m_epochs;
-    int64_t m_to_acquire = 256;
+    std::vector<Zeni::Concurrency::Epoch_List::Token_Ptr::Lock> m_epochs;
+    int64_t m_to_acquire = 1024;
     int64_t m_acquire_cap = 16;
     int64_t m_to_release = 0;
     std::random_device rd;

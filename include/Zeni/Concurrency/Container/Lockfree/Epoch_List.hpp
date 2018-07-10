@@ -11,7 +11,37 @@ namespace Zeni::Concurrency {
     Epoch_List & operator=(const Epoch_List &) = delete;
 
   public:
-    typedef Shared_Ptr<std::atomic_uint64_t> Token;
+    class Token {
+      Token(Token &) = delete;
+      Token operator=(Token &) = delete;
+
+      friend class Epoch_List;
+
+    protected:
+      Token() = default;
+
+    public:
+      uint64_t epoch() const {
+        return m_epoch.load(std::memory_order_relaxed);
+      }
+
+      bool instantaneous() const {
+        return m_instantaneous.load(std::memory_order_relaxed);
+      }
+
+    private:
+      std::atomic_uint64_t m_epoch = 0;
+      std::atomic_bool m_instantaneous = false;
+      std::atomic_bool m_pushed = false;
+    };
+
+    typedef Shared_Ptr<Token> Token_Ptr;
+
+    static Token_Ptr Create_Token() {
+      class Friendly_Token : public Token {};
+
+      return Token_Ptr(new Friendly_Token);
+    }
 
   private:
     struct Node : public Reclamation_Stack::Node {
@@ -88,73 +118,114 @@ namespace Zeni::Concurrency {
 
       Cursor cursor(this);
       while (try_removal(cursor));
-      const int64_t front = cursor.masked_cur->epoch;
+      const uint64_t front = cursor.masked_cur->epoch;
 
       m_writers.fetch_sub(1, std::memory_order_relaxed);
       return front;
     }
 
-    uint64_t front_and_acquire(const Token current_epoch) {
+    uint64_t front_and_acquire(const Token_Ptr &current_epoch) {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_relaxed);
 
+      //current_epoch.load()->m_instantaneous.store(false, std::memory_order_relaxed);
+      m_acquires.push(current_epoch);
+      const Token_Ptr::Lock current_local = current_epoch.load();
+      do {
+        continue_acquire(current_local);
+      } while (!current_local->m_pushed.load(std::memory_order_acquire));
+
+      assert(current_epoch.load()->m_pushed.load(std::memory_order_relaxed));
+
       Cursor cursor(this);
       while (try_removal(cursor));
-      const int64_t front = cursor.masked_cur->epoch;
-
-      m_acquires.push(current_epoch);
-      continue_acquire(front, current_epoch);
+      const uint64_t front = cursor.masked_cur->epoch;
 
       m_writers.fetch_sub(1, std::memory_order_relaxed);
       return front;
     }
 
-    bool try_release(const Token epoch) {
+    void acquire(const Token_Ptr &current_epoch) {
+      //m_size.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_relaxed);
 
-      Cursor cursor(this);
-      while (try_removal(cursor));
-      const int64_t front = cursor.masked_cur->epoch;
+      //current_epoch.load()->m_instantaneous.store(false, std::memory_order_relaxed);
+      m_acquires.push(current_epoch);
+      const Token_Ptr::Lock current_local = current_epoch.load();
+      do {
+        continue_acquire(current_local);
+      } while (!current_local->m_pushed.load(std::memory_order_acquire));
 
-      //continue_acquire(front, epoch);
-      const bool success = try_erase(*Token::Lock(epoch));
+      m_writers.fetch_sub(1, std::memory_order_relaxed);
+    }
+
+    void acquire_release(const Token_Ptr &current_epoch) {
+      //m_size.fetch_add(1, std::memory_order_relaxed);
+      m_writers.fetch_add(1, std::memory_order_relaxed);
+
+      const Token_Ptr::Lock current_local = current_epoch.load();
+      current_local->m_instantaneous.store(true, std::memory_order_relaxed);
+      m_acquires.push(current_epoch);
+      do {
+        continue_acquire(current_local);
+      } while (!current_local->m_pushed.load(std::memory_order_acquire));
+
+      assert(current_epoch.load()->m_pushed.load(std::memory_order_relaxed));
+
+      m_writers.fetch_sub(1, std::memory_order_relaxed);
+    }
+
+    bool try_release(const Token_Ptr::Lock &epoch) {
+      m_writers.fetch_add(1, std::memory_order_relaxed);
+
+      //continue_acquire(epoch);
+      const bool success = try_erase(epoch->epoch());
 
       m_writers.fetch_sub(1, std::memory_order_relaxed);
       return success;
     }
 
   private:
-    void continue_acquire(const uint64_t front, const Token epoch) {
-      Token::Lock epoch_value = epoch.load();
-      Node * old_tail = m_tail.load(std::memory_order_acquire);
-      while (*epoch_value == 0 || *epoch_value - front >= old_tail->epoch - front) {
-        Token current;
+    void continue_acquire(const Token_Ptr::Lock &epoch_local) {
+      while (!epoch_local->m_pushed.load(std::memory_order_acquire)) {
+        Token_Ptr current;
         if (!m_acquires.front(current))
           break;
-        Token::Lock current_value(current);
-        uint64_t value = *current_value;
-        uint64_t next_assignable = m_next_assignable.load(std::memory_order_relaxed);
-        if (value == 0 && current_value->compare_exchange_strong(value, next_assignable, std::memory_order_relaxed, std::memory_order_relaxed))
-          value = next_assignable;
-        while (value - front >= next_assignable - front) {
-          if (m_next_assignable.compare_exchange_weak(next_assignable, value + epoch_increment, std::memory_order_relaxed, std::memory_order_relaxed))
-            next_assignable = value + epoch_increment;
+        Token_Ptr::Lock current_local(current);
+        uint64_t value = current_local->epoch();
+        if (value == 0) {
+          uint64_t next_assignable = m_next_assignable.load(std::memory_order_relaxed);
+          if (current_local->m_epoch.compare_exchange_strong(value, next_assignable, std::memory_order_relaxed, std::memory_order_relaxed))
+            value = next_assignable;
         }
 
+        {
+          uint64_t value_copy = value;
+          m_next_assignable.compare_exchange_strong(value_copy, value + epoch_increment, std::memory_order_relaxed, std::memory_order_relaxed);
+        }
+
+        Node * old_tail = m_tail.load(std::memory_order_acquire);
         Node * new_tail = nullptr;
-        while (value - front >= old_tail->epoch - front) {
+        if (old_tail->epoch == value) {
           if (new_tail)
             new_tail->epoch = value + epoch_increment;
-          else
+          else {
             new_tail = new Node(value + epoch_increment);
+            if (epoch_local->instantaneous())
+              new_tail->next.store(reinterpret_cast<Node *>(0x1), std::memory_order_relaxed);
+          }
           if (push_pointers(old_tail, new_tail)) {
             new_tail = nullptr;
             break;
           }
         }
+        else
+          std::cout << std::flush;
         delete new_tail;
 
         m_acquires.try_pop_if_equals(current);
+
+        current_local->m_pushed.store(true, std::memory_order_release);
       }
     }
 
@@ -166,7 +237,6 @@ namespace Zeni::Concurrency {
         retry = false;
 
         while (try_removal(cursor));
-        const int64_t head_epoch = cursor.masked_cur->epoch;
 
         while (!cursor.is_end()) {
           if (cursor.is_marked_for_deletion()) {
@@ -174,12 +244,10 @@ namespace Zeni::Concurrency {
             continue;
           }
 
-          if (cursor.masked_cur->epoch - head_epoch < epoch - head_epoch) {
+          if (cursor.masked_cur->epoch != epoch) {
             cursor.increment();
             continue;
           }
-          else if (cursor.masked_cur->epoch - head_epoch > epoch - head_epoch)
-            break;
 
           Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(cursor.raw_next) | 0x1);
           if (cursor.masked_cur->next.compare_exchange_strong(cursor.masked_next, marked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
@@ -201,15 +269,13 @@ namespace Zeni::Concurrency {
 
     // Return true if new tail pointer is used, otherwise false
     bool push_pointers(Node * &old_tail, Node * const new_tail) {
-      Node * next = nullptr;
-      if (old_tail->next.compare_exchange_weak(next, new_tail, std::memory_order_release, std::memory_order_acquire)) {
-        if (m_tail.compare_exchange_strong(old_tail, new_tail, std::memory_order_release, std::memory_order_acquire))
-          old_tail = new_tail;
+      Node * next = reinterpret_cast<Node *>(uintptr_t(old_tail->next.load(std::memory_order_relaxed)) & 0x1);
+      if (old_tail->next.compare_exchange_strong(next, new_tail, std::memory_order_release, std::memory_order_acquire)) {
+        m_tail.compare_exchange_strong(old_tail, reinterpret_cast<Node *>(uintptr_t(new_tail) & ~uintptr_t(0x1)), std::memory_order_release, std::memory_order_acquire);
         return true;
       }
       else {
-        if (m_tail.compare_exchange_strong(old_tail, next, std::memory_order_release, std::memory_order_acquire))
-          old_tail = next;
+        m_tail.compare_exchange_strong(old_tail, reinterpret_cast<Node *>(uintptr_t(next) & ~uintptr_t(0x1)), std::memory_order_release, std::memory_order_acquire);
         return false;
       }
     }
@@ -243,7 +309,7 @@ namespace Zeni::Concurrency {
     std::atomic<Node *> m_head = new Node(1);
     std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
     std::atomic_uint64_t m_next_assignable = 1;
-    Smart_Queue<Token> m_acquires;
+    Smart_Queue<Token_Ptr> m_acquires;
     //std::atomic_int64_t m_size = 0;
     std::atomic_int64_t m_writers = 0;
   };
