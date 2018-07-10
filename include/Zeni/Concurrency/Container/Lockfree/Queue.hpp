@@ -55,7 +55,7 @@ namespace Zeni::Concurrency {
     bool front(TYPE &value) {
       m_writers.fetch_add(1, std::memory_order_relaxed);
       Node * const head = m_head.load(std::memory_order_relaxed);
-      Shared_Ptr<TYPE>::Lock value_ptr = head->value_ptr.load();
+      typename Shared_Ptr<TYPE>::Lock value_ptr = head->value_ptr.load();
       if (!value_ptr) {
         m_writers.fetch_sub(1, std::memory_order_relaxed);
         return false;
@@ -78,7 +78,7 @@ namespace Zeni::Concurrency {
     bool try_pop(TYPE &value) {
       m_writers.fetch_add(1, std::memory_order_relaxed);
       Node * head = m_head.load(std::memory_order_relaxed);
-      Shared_Ptr<TYPE>::Lock value_ptr;
+      typename Shared_Ptr<TYPE>::Lock value_ptr;
       if (POP_ASSISTS_PUSH) {
         Node * new_tail = nullptr;
         for (;;) {
@@ -133,7 +133,7 @@ namespace Zeni::Concurrency {
     bool try_pop_if_equals(const TYPE &value) {
       m_writers.fetch_add(1, std::memory_order_relaxed);
       Node * head = m_head.load(std::memory_order_relaxed);
-      Shared_Ptr<TYPE>::Lock value_ptr;
+      typename Shared_Ptr<TYPE>::Lock value_ptr;
       if (POP_ASSISTS_PUSH) {
         Node * new_tail = nullptr;
         for (;;) {
