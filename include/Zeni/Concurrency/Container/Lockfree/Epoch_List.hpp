@@ -131,11 +131,7 @@ namespace Zeni::Concurrency {
       //current_epoch.load()->m_instantaneous.store(false, std::memory_order_relaxed);
       m_acquires.push(current_epoch);
       const Token_Ptr::Lock current_local = current_epoch.load();
-      do {
-        continue_acquire(current_local);
-      } while (!current_local->m_pushed.load(std::memory_order_acquire));
-
-      assert(current_epoch.load()->m_pushed.load(std::memory_order_relaxed));
+      continue_acquire(current_local);
 
       Cursor cursor(this);
       while (try_removal(cursor));
@@ -152,9 +148,7 @@ namespace Zeni::Concurrency {
       //current_epoch.load()->m_instantaneous.store(false, std::memory_order_relaxed);
       m_acquires.push(current_epoch);
       const Token_Ptr::Lock current_local = current_epoch.load();
-      do {
-        continue_acquire(current_local);
-      } while (!current_local->m_pushed.load(std::memory_order_acquire));
+      continue_acquire(current_local);
 
       m_writers.fetch_sub(1, std::memory_order_relaxed);
     }
@@ -166,11 +160,7 @@ namespace Zeni::Concurrency {
       const Token_Ptr::Lock current_local = current_epoch.load();
       current_local->m_instantaneous.store(true, std::memory_order_relaxed);
       m_acquires.push(current_epoch);
-      do {
-        continue_acquire(current_local);
-      } while (!current_local->m_pushed.load(std::memory_order_acquire));
-
-      assert(current_epoch.load()->m_pushed.load(std::memory_order_relaxed));
+      continue_acquire(current_local);
 
       m_writers.fetch_sub(1, std::memory_order_relaxed);
     }
@@ -214,18 +204,14 @@ namespace Zeni::Concurrency {
             if (epoch_local->instantaneous())
               new_tail->next.store(reinterpret_cast<Node *>(0x1), std::memory_order_relaxed);
           }
-          if (push_pointers(old_tail, new_tail)) {
+          if (push_pointers(old_tail, new_tail))
             new_tail = nullptr;
-            break;
-          }
         }
-        else
-          std::cout << std::flush;
         delete new_tail;
 
-        m_acquires.try_pop_if_equals(current);
-
         current_local->m_pushed.store(true, std::memory_order_release);
+
+        m_acquires.try_pop_if_equals(current);
       }
     }
 
