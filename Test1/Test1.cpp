@@ -1,5 +1,5 @@
 //#include "Zeni/Concurrency/Container/Antiable_List.hpp"
-//#include "Zeni/Concurrency/Container/Epoch_List.hpp"
+#include "Zeni/Concurrency/Container/Epoch_List.hpp"
 #include "Zeni/Concurrency/Container/Ordered_List.hpp"
 #include "Zeni/Concurrency/Container/Shared_Ptr.hpp"
 #include "Zeni/Concurrency/Container/Stack.hpp"
@@ -79,7 +79,7 @@ static void test_Worker_Threads();
 static void test_Stack();
 static void test_Queue();
 static void test_Queue_of_Shared_Ptrs();
-//static void test_Epoch_List();
+static void test_Epoch_List();
 static void test_Unordered_List();
 static void test_Ordered_List();
 //static void test_Antiable_List();
@@ -89,22 +89,22 @@ static void test_Parser();
 
 int main()
 {
-  test_Worker_Threads();
-  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-    abort();
-  }
+  //test_Worker_Threads();
+  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //  abort();
+  //}
 
 #if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
-  for (int i = 0; i != 80; ++i) {
-    test_Queue();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'Q' << std::flush;
-  }
-  std::cout << std::endl;
+  //for (int i = 0; i != 80; ++i) {
+  //  test_Queue();
+  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //    abort();
+  //  }
+  //  std::cout << 'Q' << std::flush;
+  //}
+  //std::cout << std::endl;
 
   for (int i = 0; i != 80; ++i) {
     test_Queue_of_Shared_Ptrs();
@@ -116,45 +116,45 @@ int main()
   }
   std::cout << std::endl;
 
-  for (int i = 0; i != 80; ++i) {
-    test_Stack();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'S' << std::flush;
-  }
-  std::cout << std::endl;
-
-  for (int i = 0; i != 80; ++i) {
-    test_Ordered_List();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'O' << std::flush;
-  }
-  std::cout << std::endl;
-
-  for (int i = 0; i != 80; ++i) {
-    test_Unordered_List();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'U' << std::flush;
-  }
-  std::cout << std::endl;
-
   //for (int i = 0; i != 80; ++i) {
-  //  test_Epoch_List();
+  //  test_Stack();
   //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
   //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
   //    abort();
   //  }
-  //  std::cout << 'E' << std::flush;
+  //  std::cout << 'S' << std::flush;
   //}
   //std::cout << std::endl;
+
+  //for (int i = 0; i != 80; ++i) {
+  //  test_Ordered_List();
+  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //    abort();
+  //  }
+  //  std::cout << 'O' << std::flush;
+  //}
+  //std::cout << std::endl;
+
+  //for (int i = 0; i != 80; ++i) {
+  //  test_Unordered_List();
+  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //    abort();
+  //  }
+  //  std::cout << 'U' << std::flush;
+  //}
+  //std::cout << std::endl;
+
+  for (int i = 0; i != 80; ++i) {
+    test_Epoch_List();
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+      abort();
+    }
+    std::cout << 'E' << std::flush;
+  }
+  std::cout << std::endl;
 
   //for (int i = 0; i != 80; ++i) {
   //  test_Antiable_List();
@@ -405,57 +405,57 @@ void test_Stack() {
   //std::cout << std::endl;
 }
 
-//void test_Epoch_List() {
-//  class Epocher : public Zeni::Concurrency::Job {
-//  public:
-//    Epocher(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list) : m_epoch_list(epoch_list), dre(rd()) {}
-//
-//    void execute() noexcept override {
-//      while (m_to_acquire + m_to_release != 0) {
-//        const int64_t index = std::uniform_int_distribution<int64_t>(1, std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release)(dre);
-//        if (index > m_to_release) {
-//          const auto epoch = Zeni::Concurrency::Epoch_List::Token(new std::atomic_uint64_t(0));
-//          m_epoch_list->front_and_acquire(epoch);
-//          m_epochs.push_back(epoch);
-//          --m_to_acquire;
-//          ++m_to_release;
-//        }
-//        else {
-//          auto selected = m_epochs.begin();
-//          std::advance(selected, index - 1);
-//          [[maybe_unused]] const bool success = m_epoch_list->try_release(*selected);
-//          if (!success)
-//            std::cerr << 'X' << std::flush;
-//          m_epochs.erase(selected);
-//          --m_to_release;
-//        }
-//      }
-//    }
-//
-//  private:
-//    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
-//    std::vector<Zeni::Concurrency::Epoch_List::Token> m_epochs;
-//    int64_t m_to_acquire = 256;
-//    int64_t m_acquire_cap = 16;
-//    int64_t m_to_release = 0;
-//    std::random_device rd;
-//    std::default_random_engine dre;
-//  };
-//
-//  const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
-//
-//  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
-//  const auto job_queue = worker_threads->get_main_Job_Queue();
-//
-//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-//  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
-//    jobs.emplace_back(std::make_shared<Epocher>(epoch_list));
-//  job_queue->give_many(std::move(jobs));
-//
-//  worker_threads->finish_jobs();
-//
-//  //std::cout << std::endl;
-//}
+void test_Epoch_List() {
+  class Epocher : public Zeni::Concurrency::Job {
+  public:
+    Epocher(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list) : m_epoch_list(epoch_list), dre(rd()) {}
+
+    void execute() noexcept override {
+      while (m_to_acquire + m_to_release != 0) {
+        const int64_t index = std::uniform_int_distribution<int64_t>(1, std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release)(dre);
+        if (index > m_to_release) {
+          const auto epoch = Zeni::Concurrency::Epoch_List::Token(new std::atomic_uint64_t(0));
+          m_epoch_list->front_and_acquire(epoch);
+          m_epochs.push_back(epoch);
+          --m_to_acquire;
+          ++m_to_release;
+        }
+        else {
+          auto selected = m_epochs.begin();
+          std::advance(selected, index - 1);
+          [[maybe_unused]] const bool success = m_epoch_list->try_release(*selected);
+          if (!success)
+            std::cerr << 'X' << std::flush;
+          m_epochs.erase(selected);
+          --m_to_release;
+        }
+      }
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
+    std::vector<Zeni::Concurrency::Epoch_List::Token> m_epochs;
+    int64_t m_to_acquire = 256;
+    int64_t m_acquire_cap = 16;
+    int64_t m_to_release = 0;
+    std::random_device rd;
+    std::default_random_engine dre;
+  };
+
+  const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
+
+  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
+  const auto job_queue = worker_threads->get_main_Job_Queue();
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
+    jobs.emplace_back(std::make_shared<Epocher>(epoch_list));
+  job_queue->give_many(std::move(jobs));
+
+  worker_threads->finish_jobs();
+
+  //std::cout << std::endl;
+}
 
 void test_Unordered_List() {
   class Lister : public Zeni::Concurrency::Job {

@@ -225,13 +225,8 @@ namespace Zeni::Concurrency {
     }
 
     void store(const typename Shared_Ptr<TYPE>::Lock &rhs) {
-      assert(!rhs.m_ptr || bool(*rhs.m_ptr));
-      if (rhs.m_ptr)
-        rhs.m_ptr->increment_refs();
-      Node * old_ptr = m_ptr.load(std::memory_order_relaxed);
-      while (!m_ptr.compare_exchange_weak(old_ptr, rhs.m_ptr, std::memory_order_relaxed, std::memory_order_relaxed));
-      if (old_ptr && bool(*old_ptr))
-        old_ptr->decrement_refs();
+      Shared_Ptr<TYPE>::Lock expected = load();
+      compare_exchange_strong(expected, rhs);
     }
 
     Shared_Ptr & operator=(const typename Shared_Ptr<TYPE>::Lock &rhs) {

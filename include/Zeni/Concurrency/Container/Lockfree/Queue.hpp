@@ -52,6 +52,21 @@ namespace Zeni::Concurrency {
     //  return sz;
     //}
 
+    bool front(TYPE &value) {
+      m_writers.fetch_add(1, std::memory_order_relaxed);
+      Node * const head = m_head.load(std::memory_order_relaxed);
+      Shared_Ptr<TYPE>::Lock value_ptr = head->value_ptr.load();
+      if (!value_ptr) {
+        m_writers.fetch_sub(1, std::memory_order_relaxed);
+        return false;
+      }
+      std::atomic_thread_fence(std::memory_order_acquire);
+      value = *value_ptr;
+      //m_size.fetch_sub(1, std::memory_order_relaxed);
+      m_writers.fetch_sub(1, std::memory_order_relaxed);
+      return true;
+    }
+
     void push(const TYPE &value) {
       push(new TYPE(value));
     }
@@ -63,7 +78,7 @@ namespace Zeni::Concurrency {
     bool try_pop(TYPE &value) {
       m_writers.fetch_add(1, std::memory_order_relaxed);
       Node * head = m_head.load(std::memory_order_relaxed);
-      typename Shared_Ptr<TYPE>::Lock value_ptr;
+      Shared_Ptr<TYPE>::Lock value_ptr;
       if (POP_ASSISTS_PUSH) {
         Node * new_tail = nullptr;
         for (;;) {
@@ -95,7 +110,7 @@ namespace Zeni::Concurrency {
       }
       else {
         for (;;) {
-          Node * next = head->next.load(std::memory_order_relaxed);
+          Node * const next = head->next.load(std::memory_order_relaxed);
           if (!next) {
             m_writers.fetch_sub(1, std::memory_order_relaxed);
             return false;
@@ -110,7 +125,64 @@ namespace Zeni::Concurrency {
       else
         Reclamation_Stacks::push(head);
       std::atomic_thread_fence(std::memory_order_acquire);
-      value = std::move(*value_ptr);
+      value = *value_ptr;
+      //m_size.fetch_sub(1, std::memory_order_relaxed);
+      return true;
+    }
+
+    bool try_pop_if_equals(const TYPE &value) {
+      m_writers.fetch_add(1, std::memory_order_relaxed);
+      Node * head = m_head.load(std::memory_order_relaxed);
+      Shared_Ptr<TYPE>::Lock value_ptr;
+      if (POP_ASSISTS_PUSH) {
+        Node * new_tail = nullptr;
+        for (;;) {
+          value_ptr = head->value_ptr.load();
+          if (!value_ptr || *value_ptr != value) {
+            m_writers.fetch_sub(1, std::memory_order_relaxed);
+            return false;
+          }
+          Node * next = head->next.load(std::memory_order_relaxed);
+          if (!next) {
+            if (!new_tail) {
+              new_tail = new Node;
+              std::atomic_thread_fence(std::memory_order_release);
+            }
+            next = new_tail;
+            if (push_pointers_pop(head, next))
+              new_tail = nullptr;
+            else {
+              delete new_tail;
+              new_tail = nullptr;
+              head = m_head.load(std::memory_order_relaxed);
+              continue;
+            }
+          }
+          if (m_head.compare_exchange_strong(head, next, std::memory_order_relaxed, std::memory_order_relaxed))
+            break;
+        }
+        delete new_tail;
+      }
+      else {
+        for (;;) {
+          value_ptr = head->value_ptr.load();
+          if (!value_ptr || *value_ptr != value) {
+            m_writers.fetch_sub(1, std::memory_order_relaxed);
+            return false;
+          }
+          Node * const next = head->next.load(std::memory_order_relaxed);
+          if (!next) {
+            m_writers.fetch_sub(1, std::memory_order_relaxed);
+            return false;
+          }
+          if (m_head.compare_exchange_strong(head, next, std::memory_order_relaxed, std::memory_order_relaxed))
+            break;
+        }
+      }
+      if (m_writers.fetch_sub(1, std::memory_order_relaxed) == 1)
+        delete head;
+      else
+        Reclamation_Stacks::push(head);
       //m_size.fetch_sub(1, std::memory_order_relaxed);
       return true;
     }

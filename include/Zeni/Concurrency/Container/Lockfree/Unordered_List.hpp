@@ -127,44 +127,6 @@ namespace Zeni::Concurrency {
       push_front(new Inner_Node(std::move(value)));
     }
 
-    bool push_front_if_gtewrt(const TYPE &floor, const TYPE &value) {
-      std::atomic_thread_fence(std::memory_order_release);
-      //m_size.fetch_add(1, std::memory_order_relaxed);
-      //m_usage.fetch_add(1, std::memory_order_relaxed);
-      m_writers.fetch_add(1, std::memory_order_relaxed);
-
-      Node * new_head = nullptr;
-      for (;;) {
-        Cursor cursor(this);
-        while (try_removal(cursor));
-        if (cursor.prev)
-          continue;
-
-        if (!cursor.is_end()) {
-          Inner_Node * const value_ptr = cursor.get_value_ptr();
-          if (!value_ptr)
-            continue;
-
-          if (value_ptr->value - floor >= value - floor) {
-            m_writers.fetch_sub(1, std::memory_order_relaxed);
-            delete new_head;
-            return false;
-          }
-        }
-
-        if (new_head)
-          new_head->next.store(cursor.masked_cur, std::memory_order_relaxed);
-        else
-          new_head = new Node(cursor.masked_cur, new Inner_Node(value));
-
-        if (m_head.compare_exchange_strong(cursor.masked_cur, new_head, std::memory_order_release, std::memory_order_relaxed))
-          break;
-      }
-
-      m_writers.fetch_sub(1, std::memory_order_relaxed);
-      return true;
-    }
-
     void push_back(const TYPE &value) {
       push_back(new Inner_Node(value));
     }
