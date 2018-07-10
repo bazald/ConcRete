@@ -2,6 +2,7 @@
 #define ZENI_CONCURRENCY_QUEUE_HPP
 
 #include "../../Internal/Reclamation_Stacks.hpp"
+#include "Shared_Ptr.hpp"
 
 namespace Zeni::Concurrency {
 
@@ -12,7 +13,7 @@ namespace Zeni::Concurrency {
 
     struct Node : public Reclamation_Stack::Node {
       std::atomic<Node *> next = nullptr;
-      std::atomic<TYPE *> value_ptr = nullptr;
+      Shared_Ptr<TYPE> value_ptr = nullptr;
     };
 
   public:
@@ -25,15 +26,13 @@ namespace Zeni::Concurrency {
       Node * head = m_head.load(std::memory_order_relaxed);
       while (head) {
         Node * const next = head->next.load(std::memory_order_relaxed);
-        TYPE * const value_ptr = head->value_ptr.load(std::memory_order_relaxed);
         delete head;
-        delete value_ptr;
         head = next;
       }
     }
 
     bool empty() const {
-      return m_head.load(std::memory_order_relaxed)->value_ptr.load(std::memory_order_relaxed) == nullptr;
+      return m_head.load(std::memory_order_relaxed) == m_tail.load(std::memory_order_relaxed);
     }
 
     //int64_t size() const {
@@ -64,7 +63,7 @@ namespace Zeni::Concurrency {
     bool try_pop(TYPE &value) {
       m_writers.fetch_add(1, std::memory_order_relaxed);
       Node * head = m_head.load(std::memory_order_relaxed);
-      TYPE * value_ptr;
+      typename Shared_Ptr<TYPE>::Lock value_ptr;
       if (POP_ASSISTS_PUSH) {
         Node * new_tail = nullptr;
         for (;;) {
@@ -112,21 +111,20 @@ namespace Zeni::Concurrency {
         Reclamation_Stacks::push(head);
       std::atomic_thread_fence(std::memory_order_acquire);
       value = std::move(*value_ptr);
-      delete value_ptr;
       //m_size.fetch_sub(1, std::memory_order_relaxed);
       return true;
     }
 
   private:
-    void push(TYPE * const value_ptr) {
+    void push(const typename Shared_Ptr<TYPE>::Lock value_ptr) {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_relaxed);
       Node * new_tail = new Node;
       std::atomic_thread_fence(std::memory_order_release);
       Node * old_tail = m_tail.load(std::memory_order_relaxed);
       for (;;) {
-        TYPE * empty = nullptr;
-        if (old_tail->value_ptr.compare_exchange_strong(empty, value_ptr, std::memory_order_relaxed, std::memory_order_relaxed)) {
+        typename Shared_Ptr<TYPE>::Lock empty = nullptr;
+        if (old_tail->value_ptr.compare_exchange_strong(empty, value_ptr)) {
           if (!push_pointers_push(old_tail, new_tail))
             delete new_tail;
           m_writers.fetch_sub(1, std::memory_order_relaxed);

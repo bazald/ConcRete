@@ -14,11 +14,11 @@ namespace Zeni::Concurrency {
       Node(const int64_t epoch_) : epoch(epoch_) {}
 
       Node * next = nullptr;
-      uint64_t epoch = 0;
+      uint64_t epoch = 2;
     };
 
   public:
-    static const uint64_t epoch_increment = 2;
+    static const uint64_t epoch_increment = 4;
     
     Epoch_List() = default;
 

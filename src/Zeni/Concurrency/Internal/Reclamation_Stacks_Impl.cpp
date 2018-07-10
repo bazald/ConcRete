@@ -22,7 +22,7 @@ namespace Zeni::Concurrency {
 
       {
         Mutex::Lock mutex_lock(m_mutex);
-        m_reclamation_stacks.emplace(m_reclamation_stack);
+        m_reclamation_stacks.insert(m_reclamation_stack);
       }
     }
 

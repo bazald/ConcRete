@@ -102,6 +102,28 @@ namespace Zeni::Concurrency {
     //  return m_usage.load(std::memory_order_relaxed);
     //}
 
+    bool front(TYPE &value) {
+      m_writers.fetch_add(1, std::memory_order_relaxed);
+      Cursor cursor(this);
+      while (try_removal(cursor));
+      while (!cursor.is_end()) {
+        if (cursor.is_marked_for_deletion()) {
+          while (try_removal(cursor));
+          continue;
+        }
+        Inner_Node * const value_ptr = cursor.get_value_ptr();
+        if (!value_ptr) {
+          cursor.increment();
+          continue;
+        }
+        value = value_ptr->value;
+        m_writers.fetch_sub(1, std::memory_order_relaxed);
+        return true;
+      }
+      m_writers.fetch_sub(1, std::memory_order_relaxed);
+      return false;
+    }
+
     void insert(const TYPE &value) {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       //m_usage.fetch_add(1, std::memory_order_relaxed);

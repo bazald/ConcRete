@@ -38,7 +38,7 @@ namespace Zeni::Concurrency {
 
       // The Node at this Cursor appears to both (1) be marked for removal and to (2) follow a Node that is not marked for removal
       bool is_candidate_for_removal() const {
-        return raw_cur == masked_cur && is_marked_for_deletion() && get_value_ptr() == nullptr;
+        return raw_cur == masked_cur && is_marked_for_deletion();
       }
 
       // The Node at this Cursor appears to both (1) be marked for removal and to (2) follow a Node that is not marked for removal
@@ -97,12 +97,72 @@ namespace Zeni::Concurrency {
     //  return m_usage.load(std::memory_order_relaxed);
     //}
 
+    bool front(TYPE &value) {
+      m_writers.fetch_add(1, std::memory_order_relaxed);
+      Cursor cursor(this);
+      while (try_removal(cursor));
+      while (!cursor.is_end()) {
+        if (cursor.is_marked_for_deletion()) {
+          while (try_removal(cursor));
+          continue;
+        }
+        Inner_Node * const value_ptr = cursor.get_value_ptr();
+        if (!value_ptr) {
+          cursor.increment();
+          continue;
+        }
+        value = value_ptr->value;
+        m_writers.fetch_sub(1, std::memory_order_relaxed);
+        return true;
+      }
+      m_writers.fetch_sub(1, std::memory_order_relaxed);
+      return false;
+    }
+
     void push_front(const TYPE &value) {
       push_front(new Inner_Node(value));
     }
 
     void push_front(TYPE &&value) {
       push_front(new Inner_Node(std::move(value)));
+    }
+
+    bool push_front_if_gtewrt(const TYPE &floor, const TYPE &value) {
+      std::atomic_thread_fence(std::memory_order_release);
+      //m_size.fetch_add(1, std::memory_order_relaxed);
+      //m_usage.fetch_add(1, std::memory_order_relaxed);
+      m_writers.fetch_add(1, std::memory_order_relaxed);
+
+      Node * new_head = nullptr;
+      for (;;) {
+        Cursor cursor(this);
+        while (try_removal(cursor));
+        if (cursor.prev)
+          continue;
+
+        if (!cursor.is_end()) {
+          Inner_Node * const value_ptr = cursor.get_value_ptr();
+          if (!value_ptr)
+            continue;
+
+          if (value_ptr->value - floor >= value - floor) {
+            m_writers.fetch_sub(1, std::memory_order_relaxed);
+            delete new_head;
+            return false;
+          }
+        }
+
+        if (new_head)
+          new_head->next.store(cursor.masked_cur, std::memory_order_relaxed);
+        else
+          new_head = new Node(cursor.masked_cur, new Inner_Node(value));
+
+        if (m_head.compare_exchange_strong(cursor.masked_cur, new_head, std::memory_order_release, std::memory_order_relaxed))
+          break;
+      }
+
+      m_writers.fetch_sub(1, std::memory_order_relaxed);
+      return true;
     }
 
     void push_back(const TYPE &value) {
@@ -140,8 +200,11 @@ namespace Zeni::Concurrency {
             m_writers.fetch_sub(1, std::memory_order_relaxed);
             return true;
           }
-          else
+          else {
+            //cursor.masked_next = reinterpret_cast<Node *>(uintptr_t(cursor.raw_next) & ~uintptr_t(0x1));
             retry = true;
+            break;
+          }
         }
       } while (retry);
       m_writers.fetch_sub(1, std::memory_order_relaxed);

@@ -41,9 +41,10 @@ namespace Zeni::Concurrency {
 
     void reclaim() noexcept {
       while (m_head) {
-        Node * const reclamation_next = m_head->reclamation_next;
-        delete m_head;
+        Node * const head = m_head;
+        Node * const reclamation_next = head->reclamation_next;
         m_head = reclamation_next;
+        delete head;
       }
     }
 

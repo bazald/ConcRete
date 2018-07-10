@@ -127,13 +127,11 @@ namespace Zeni::Concurrency {
         while (const std::shared_ptr<IJob> job = (*jqt).second->try_take_one(true))
           job->execute();
 
-        while (jqt != m_job_queues.end()) {
+        while (++jqt != m_job_queues.end()) {
           if (const std::shared_ptr<IJob> job = (*jqt).second->try_take_one(true)) {
             job->execute();
             break;
           }
-          else
-            ++jqt;
         }
 
         if (jqt == m_job_queues.end())
@@ -213,14 +211,12 @@ namespace Zeni::Concurrency {
           job->execute();
         }
 
-        while(jqt != job_queues.end()) {
+        while(++jqt != job_queues.end()) {
           if (const std::shared_ptr<IJob> job = (*jqt)->try_take_one(is_awake)) {
             is_awake = true;
             job->execute();
             break;
           }
-          else
-            ++jqt;
         }
 
         if(jqt == job_queues.end())
