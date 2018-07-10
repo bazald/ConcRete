@@ -1,8 +1,8 @@
 #ifndef ZENI_CONCURRENCY_EPOCH_LIST_HPP
 #define ZENI_CONCURRENCY_EPOCH_LIST_HPP
 
-#include "Queue.hpp"
 #include "Shared_Ptr.hpp"
+#include "Smart_Queue.hpp"
 
 namespace Zeni::Concurrency {
 
@@ -82,6 +82,18 @@ namespace Zeni::Concurrency {
     //  return m_assigned_epochs.size();
     //}
 
+    uint64_t front() {
+      //m_size.fetch_add(1, std::memory_order_relaxed);
+      m_writers.fetch_add(1, std::memory_order_relaxed);
+
+      Cursor cursor(this);
+      while (try_removal(cursor));
+      const int64_t front = cursor.masked_cur->epoch;
+
+      m_writers.fetch_sub(1, std::memory_order_relaxed);
+      return front;
+    }
+
     uint64_t front_and_acquire(const Token current_epoch) {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_relaxed);
@@ -104,7 +116,7 @@ namespace Zeni::Concurrency {
       while (try_removal(cursor));
       const int64_t front = cursor.masked_cur->epoch;
 
-      continue_acquire(front, epoch);
+      //continue_acquire(front, epoch);
       const bool success = try_erase(*Token::Lock(epoch));
 
       m_writers.fetch_sub(1, std::memory_order_relaxed);
@@ -231,7 +243,7 @@ namespace Zeni::Concurrency {
     std::atomic<Node *> m_head = new Node(1);
     std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
     std::atomic_uint64_t m_next_assignable = 1;
-    Queue<Token> m_acquires;
+    Smart_Queue<Token> m_acquires;
     //std::atomic_int64_t m_size = 0;
     std::atomic_int64_t m_writers = 0;
   };

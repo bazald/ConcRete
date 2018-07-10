@@ -82,7 +82,7 @@ static void test_Queue_of_Shared_Ptrs();
 static void test_Epoch_List();
 static void test_Unordered_List();
 static void test_Ordered_List();
-//static void test_Antiable_List();
+static void test_Antiable_List();
 //static void test_Deque();
 static void test_Rete_Network();
 static void test_Parser();
@@ -156,15 +156,15 @@ int main()
   }
   std::cout << std::endl;
 
-  //for (int i = 0; i != 80; ++i) {
-  //  test_Antiable_List();
-  //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //    abort();
-  //  }
-  //  std::cout << 'A' << std::flush;
-  //}
-  //std::cout << std::endl;
+  for (int i = 0; i != 80; ++i) {
+    test_Antiable_List();
+    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+      abort();
+    }
+    std::cout << 'A' << std::flush;
+  }
+  std::cout << std::endl;
 
   //for (int i = 0; i != 100; ++i) {
   //  test_Deque();
@@ -575,100 +575,100 @@ void test_Ordered_List() {
   //std::cout << std::endl;
 }
 
-//void test_Antiable_List() {
-//  class Antiable : public Zeni::Concurrency::Job {
-//  public:
-//    Antiable(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list, const std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> &antiable_list, std::atomic_int64_t &remaining)
-//      : m_epoch_list(epoch_list),
-//      m_antiable_list(antiable_list),
-//      m_remaining(remaining),
-//      dre(rd())
-//    {
-//    }
-//
-//    void execute() noexcept override {
-//      m_values_to_acquire.reserve(m_to_acquire);
-//      m_values_to_release.reserve(m_to_acquire);
-//      for (int i = 0; i != m_to_acquire; ++i) {
-//        m_values_to_acquire.push_back(i);
-//        m_values_to_release.push_back(i);
-//      }
-//      while (!m_values_to_acquire.empty() || !m_values_to_release.empty()) {
-//        const size_t index = std::uniform_int_distribution<size_t>(0, m_values_to_acquire.size() + m_values_to_release.size() - 1)(dre);
-//        if (index < m_values_to_acquire.size()) {
-//          auto selected = m_values_to_acquire.begin();
-//          std::advance(selected, index);
-//          m_antiable_list->insert(m_epoch_list, *selected);
-//          m_values_to_acquire.erase(selected);
-//        }
-//        else {
-//          auto selected = m_values_to_release.begin();
-//          std::advance(selected, index - m_values_to_acquire.size());
-//          m_antiable_list->erase(m_epoch_list, *selected);
-//          m_values_to_release.erase(selected);
-//        }
-//      }
-//      m_remaining.fetch_sub(1, std::memory_order_relaxed);
-//    }
-//
-//  private:
-//    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
-//    std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> m_antiable_list;
-//    std::atomic_int64_t &m_remaining;
-//    std::vector<uint64_t> m_values_to_acquire;
-//    std::vector<uint64_t> m_values_to_release;
-//    int64_t m_to_acquire = 256;
-//    std::random_device rd;
-//    std::default_random_engine dre;
-//  };
-//
-//  class Summer : public Zeni::Concurrency::Job {
-//  public:
-//    Summer(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list, const std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> &antiable_list, std::atomic_int64_t &remaining)
-//      : m_epoch_list(epoch_list),
-//      m_antiable_list(antiable_list),
-//      m_remaining(remaining)
-//    {
-//    }
-//
-//    void execute() noexcept override {
-//      do {
-//        int64_t sum = 0;
-//        const auto current_epoch = Zeni::Concurrency::Epoch_List::Token::Create(m_epoch_list);
-//        m_epoch_list->acquire(current_epoch);
-//        for (auto it = m_antiable_list->cbegin(current_epoch), iend = m_antiable_list->cend(current_epoch); it != iend; ++it)
-//          sum += *it;
-//        m_epoch_list->try_release(current_epoch);
-//        //std::cerr << "Sum = " << sum << std::endl;
-//      } while (m_remaining.load(std::memory_order_relaxed) != 0);
-//    }
-//
-//  private:
-//    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
-//    std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> m_antiable_list;
-//    std::atomic_int64_t &m_remaining;
-//  };
-//
-//  const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
-//  const auto antiable_list = std::make_shared<Zeni::Concurrency::Antiable_List<int64_t>>();
-//  std::atomic_int64_t remaining = std::thread::hardware_concurrency() - 1;
-//
-//  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
-//  const auto job_queue = worker_threads->get_main_Job_Queue();
-//
-//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-//  for (uint64_t i = 0; i != std::thread::hardware_concurrency() - 1; ++i)
-//    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_list, remaining));
-//  jobs.emplace_back(std::make_shared<Summer>(epoch_list, antiable_list, remaining));
-//  job_queue->give_many(std::move(jobs));
-//
-//  worker_threads->finish_jobs();
-//
-//  if (antiable_list->size() != 0 || antiable_list->usage() != 0)
-//    std::cerr << 'X';
-//
-//  //std::cout << std::endl;
-//}
+void test_Antiable_List() {
+  //class Antiable : public Zeni::Concurrency::Job {
+  //public:
+  //  Antiable(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list, const std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> &antiable_list, std::atomic_int64_t &remaining)
+  //    : m_epoch_list(epoch_list),
+  //    m_antiable_list(antiable_list),
+  //    m_remaining(remaining),
+  //    dre(rd())
+  //  {
+  //  }
+
+  //  void execute() noexcept override {
+  //    m_values_to_acquire.reserve(m_to_acquire);
+  //    m_values_to_release.reserve(m_to_acquire);
+  //    for (int i = 0; i != m_to_acquire; ++i) {
+  //      m_values_to_acquire.push_back(i);
+  //      m_values_to_release.push_back(i);
+  //    }
+  //    while (!m_values_to_acquire.empty() || !m_values_to_release.empty()) {
+  //      const size_t index = std::uniform_int_distribution<size_t>(0, m_values_to_acquire.size() + m_values_to_release.size() - 1)(dre);
+  //      if (index < m_values_to_acquire.size()) {
+  //        auto selected = m_values_to_acquire.begin();
+  //        std::advance(selected, index);
+  //        m_antiable_list->insert(m_epoch_list, *selected);
+  //        m_values_to_acquire.erase(selected);
+  //      }
+  //      else {
+  //        auto selected = m_values_to_release.begin();
+  //        std::advance(selected, index - m_values_to_acquire.size());
+  //        m_antiable_list->erase(m_epoch_list, *selected);
+  //        m_values_to_release.erase(selected);
+  //      }
+  //    }
+  //    m_remaining.fetch_sub(1, std::memory_order_relaxed);
+  //  }
+
+  //private:
+  //  std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
+  //  std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> m_antiable_list;
+  //  std::atomic_int64_t &m_remaining;
+  //  std::vector<uint64_t> m_values_to_acquire;
+  //  std::vector<uint64_t> m_values_to_release;
+  //  int64_t m_to_acquire = 256;
+  //  std::random_device rd;
+  //  std::default_random_engine dre;
+  //};
+
+  //class Summer : public Zeni::Concurrency::Job {
+  //public:
+  //  Summer(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list, const std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> &antiable_list, std::atomic_int64_t &remaining)
+  //    : m_epoch_list(epoch_list),
+  //    m_antiable_list(antiable_list),
+  //    m_remaining(remaining)
+  //  {
+  //  }
+
+  //  void execute() noexcept override {
+  //    //do {
+  //    //  int64_t sum = 0;
+  //    //  const auto current_epoch = Zeni::Concurrency::Epoch_List::Token(new std::atomic_uint64_t(0));
+  //    //  m_epoch_list->front_and_acquire(current_epoch);
+  //    //  for (auto it = m_antiable_list->cbegin(current_epoch), iend = m_antiable_list->cend(current_epoch); it != iend; ++it)
+  //    //    sum += *it;
+  //    //  m_epoch_list->try_release(current_epoch);
+  //    //  //std::cerr << "Sum = " << sum << std::endl;
+  //    //} while (m_remaining.load(std::memory_order_relaxed) != 0);
+  //  }
+
+  //private:
+  //  std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
+  //  std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> m_antiable_list;
+  //  std::atomic_int64_t &m_remaining;
+  //};
+
+  //const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
+  //const auto antiable_list = std::make_shared<Zeni::Concurrency::Antiable_List<int64_t>>();
+  //std::atomic_int64_t remaining = std::thread::hardware_concurrency() - 1;
+
+  //auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
+  //const auto job_queue = worker_threads->get_main_Job_Queue();
+
+  //std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  //for (uint64_t i = 0; i != std::thread::hardware_concurrency() - 1; ++i)
+  //  jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_list, remaining));
+  //jobs.emplace_back(std::make_shared<Summer>(epoch_list, antiable_list, remaining));
+  //job_queue->give_many(std::move(jobs));
+
+  //worker_threads->finish_jobs();
+
+  //if (antiable_list->size() != 0 || antiable_list->usage() != 0)
+  //  std::cerr << 'X';
+
+  ////std::cout << std::endl;
+}
 
 //void test_Deque() {
 //  class Front_Pusher : public Zeni::Concurrency::Job {

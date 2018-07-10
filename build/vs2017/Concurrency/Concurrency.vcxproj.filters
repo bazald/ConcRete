@@ -168,6 +168,12 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Shared_Ptr.hpp">
       <Filter>Header Files\Zeni\Container</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Smart_Queue.hpp">
+      <Filter>Header Files\Zeni\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Smart_Queue.hpp">
+      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job.cpp">
