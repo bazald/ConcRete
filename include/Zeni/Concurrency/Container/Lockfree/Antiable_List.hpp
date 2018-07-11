@@ -147,7 +147,7 @@ namespace Zeni::Concurrency {
           }
           const uint64_t creation_epoch = m_node->creation_epoch.load()->epoch();
           const uint64_t deletion_epoch = m_node->deletion_epoch.load()->epoch();
-          if (deletion_epoch ? deletion_epoch - creation_epoch < m_current_epoch - creation_epoch : creation_epoch - m_earliest_epoch > m_current_epoch - m_earliest_epoch) {
+          if (deletion_epoch ? deletion_epoch - creation_epoch < m_current_epoch - creation_epoch : creation_epoch ? creation_epoch - m_earliest_epoch > m_current_epoch - m_earliest_epoch : true) {
             m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
             continue;
           }

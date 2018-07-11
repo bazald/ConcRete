@@ -117,7 +117,7 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    Node * m_head = new Node;
+    Node * m_head = new Node(1);
     Node * m_tail = m_head;
     //int64_t m_size = 0;
   };
