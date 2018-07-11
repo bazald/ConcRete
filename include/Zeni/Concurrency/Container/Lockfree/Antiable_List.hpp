@@ -47,7 +47,7 @@ namespace Zeni::Concurrency {
         if (deletion_epoch == 0)
           return false;
         const uint64_t creation_epoch = masked_cur->creation_epoch.load()->epoch();
-        return deletion_epoch - earliest_epoch < deletion_epoch - creation_epoch;
+        return deletion_epoch - creation_epoch < earliest_epoch - creation_epoch;
       }
 
       bool is_marked_for_deletion() const {
@@ -207,17 +207,27 @@ namespace Zeni::Concurrency {
 
     /// Return true if it decrements the count to 0, otherwise false
     bool erase(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value) {
-      return access(epoch_list, value, Mode::Erase) == 0;
+      return access(epoch_list, value, nullptr, Mode::Erase) == 0;
+    }
+
+    /// Return true if it decrements the count to 0, otherwise false
+    bool erase(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value, Epoch_List::Token_Ptr::Lock &erasure_epoch) {
+      return access(epoch_list, value, &erasure_epoch, Mode::Erase) == 0;
     }
 
     /// Return true if it increments the count to 1, otherwise false
     bool insert(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value) {
-      return access(epoch_list, value, Mode::Insert) == 1;
+      return access(epoch_list, value, nullptr, Mode::Insert) == 1;
+    }
+
+    /// Return true if it increments the count to 1, otherwise false
+    bool insert(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value, Epoch_List::Token_Ptr::Lock &insertion_epoch) {
+      return access(epoch_list, value, &insertion_epoch, Mode::Insert) == 1;
     }
 
   private:
     /// Return true if it increments the count to 1, otherwise false
-    int64_t access(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value, const Mode mode) {
+    int64_t access(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value, Epoch_List::Token_Ptr::Lock * const epoch, const Mode mode) {
       m_writers.fetch_add(1, std::memory_order_relaxed);
       const uint64_t earliest_epoch = epoch_list->front();
 
@@ -252,7 +262,13 @@ namespace Zeni::Concurrency {
                 instance_count += instance_count_increment;
                 if (instance_count == 0) {
                   m_usage.fetch_sub(1, std::memory_order_relaxed);
-                  epoch_list->acquire_release(cursor.masked_cur->deletion_epoch);
+                  if (mode == Mode::Erase && epoch) {
+                    epoch_list->acquire(cursor.masked_cur->deletion_epoch);
+                    *epoch = cursor.masked_cur->deletion_epoch.load();
+                    assert(*epoch);
+                  }
+                  else
+                    epoch_list->acquire_release(cursor.masked_cur->deletion_epoch);
                   try_removal(epoch_list, earliest_epoch, cursor);
                 }
                 m_writers.fetch_sub(1, std::memory_order_relaxed);
@@ -274,7 +290,13 @@ namespace Zeni::Concurrency {
             if (mode == Mode::Insert)
               m_size.fetch_add(1, std::memory_order_relaxed);
             m_usage.fetch_add(1, std::memory_order_relaxed);
-            epoch_list->acquire_release(new_value->creation_epoch);
+            if (mode == Mode::Insert && epoch) {
+              epoch_list->acquire(new_value->creation_epoch);
+              *epoch = new_value->creation_epoch.load();
+              assert(*epoch);
+            }
+            else
+              epoch_list->acquire_release(new_value->creation_epoch);
             m_writers.fetch_sub(1, std::memory_order_relaxed);
             return mode == Mode::Insert ? 1 : -1;
           }
