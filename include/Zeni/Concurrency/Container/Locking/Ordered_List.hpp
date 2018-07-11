@@ -44,6 +44,14 @@ namespace Zeni::Concurrency {
     //  return m_size.load(std::memory_order_relaxed);
     //}
 
+    bool front(TYPE &value) {
+      std::lock_guard<std::mutex> lock(m_mutex);
+      if (!m_head)
+        return false;
+      value = m_head->value;
+      return true;
+    }
+
     void insert(const TYPE &value) {
       std::lock_guard<std::mutex> lock(m_mutex);
       Node * prev = nullptr;

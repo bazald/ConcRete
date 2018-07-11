@@ -1,8 +1,6 @@
 #ifndef ZENI_CONCURRENCY_QUEUE_HPP
 #define ZENI_CONCURRENCY_QUEUE_HPP
 
-#include <mutex>
-
 namespace Zeni::Concurrency {
 
   template <typename TYPE>

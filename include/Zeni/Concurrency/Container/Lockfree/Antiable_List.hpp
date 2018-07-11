@@ -110,7 +110,9 @@ namespace Zeni::Concurrency {
         validate();
       }
 
-      reference operator*() const { return m_node->value_ptr.load(std::memory_order_relaxed)->value; }
+      reference operator*() const {
+        return m_node->value_ptr.load(std::memory_order_relaxed)->value;
+      }
 
       const_iterator next() const {
         return ++const_iterator(*this);
@@ -217,7 +219,7 @@ namespace Zeni::Concurrency {
     /// Return true if it increments the count to 1, otherwise false
     int64_t access(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value, const Mode mode) {
       m_writers.fetch_add(1, std::memory_order_relaxed);
-      uint64_t earliest_epoch = epoch_list->front();
+      const uint64_t earliest_epoch = epoch_list->front();
 
       Node * new_value = nullptr;
       for (;;) {
@@ -283,7 +285,7 @@ namespace Zeni::Concurrency {
     }
 
     // Return true if cur removed, otherwise false
-    bool try_removal(const std::shared_ptr<Epoch_List> epoch_list, uint64_t &earliest_epoch, Cursor &cursor) {
+    bool try_removal(const std::shared_ptr<Epoch_List> epoch_list, const uint64_t earliest_epoch, Cursor &cursor) {
       if (!cursor.is_marked_for_deletion())
         return false;
 

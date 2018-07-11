@@ -34,12 +34,14 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Epoch_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Ordered_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Queue.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Shared_Ptr.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Stack.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Unordered_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Antiable_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Epoch_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Ordered_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Queue.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Shared_Ptr.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Stack.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Unordered_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ordered_List.hpp" />
