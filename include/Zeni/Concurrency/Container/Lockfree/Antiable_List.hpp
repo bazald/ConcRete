@@ -20,15 +20,15 @@ namespace Zeni::Concurrency {
 
     struct Node : public Reclamation_Stack::Node {
       Node() = default;
-      Node(Inner_Node * const value_ptr_, const bool insertion_, const uint64_t creation_epoch_) : value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), creation_epoch(creation_epoch_), insertion(insertion_) {}
-      Node(Node * const &next_, Inner_Node * const value_ptr_, const bool insertion_, const uint64_t creation_epoch_) : next(next_), value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), creation_epoch(creation_epoch_), insertion(insertion_) {}
-      Node(Node * &&next_, Inner_Node * const value_ptr_, const bool insertion_, const uint64_t creation_epoch_) : next(std::move(next_)), value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), creation_epoch(creation_epoch_), insertion(insertion_) {}
+      Node(Inner_Node * const value_ptr_, const bool insertion_) : value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
+      Node(Node * const &next_, Inner_Node * const value_ptr_, const bool insertion_) : next(next_), value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
+      Node(Node * &&next_, Inner_Node * const value_ptr_, const bool insertion_) : next(std::move(next_)), value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
 
       std::atomic<Node *> next = nullptr;
       std::atomic<Inner_Node *> value_ptr = nullptr;
       std::atomic<uint64_t> instance_count = 1;
-      Epoch_List::Token creation_epoch = Zeni::Concurrency::Epoch_List::Token(new std::atomic_uint64_t(0));
-      Epoch_List::Token deletion_epoch = Zeni::Concurrency::Epoch_List::Token(new std::atomic_uint64_t(0));
+      Epoch_List::Token_Ptr creation_epoch = Zeni::Concurrency::Epoch_List::Create_Token();
+      Epoch_List::Token_Ptr deletion_epoch = Zeni::Concurrency::Epoch_List::Create_Token();
       bool insertion = false;
     };
 
@@ -43,10 +43,10 @@ namespace Zeni::Concurrency {
       bool is_candidate_for_removal(const uint64_t earliest_epoch) const {
         if (raw_cur != masked_cur || raw_next == masked_next)
           return false;
-        const uint64_t creation_epoch = masked_cur->creation_epoch.load(std::memory_order_relaxed);
-        const uint64_t deletion_epoch = masked_cur->access_epoch.load(std::memory_order_relaxed);
-        if (!(deletion_epoch & 0x1))
+        const uint64_t deletion_epoch = masked_cur->deletion_epoch.load()->epoch();
+        if (deletion_epoch == 0)
           return false;
+        const uint64_t creation_epoch = masked_cur->creation_epoch.load()->epoch();
         return deletion_epoch - earliest_epoch < deletion_epoch - creation_epoch;
       }
 
@@ -96,13 +96,15 @@ namespace Zeni::Concurrency {
 
       const_iterator() = default;
 
-      const_iterator(const uint64_t current_epoch)
-        : m_current_epoch(current_epoch)
+      const_iterator(const uint64_t earliest_epoch, const uint64_t current_epoch)
+        : m_earliest_epoch(earliest_epoch),
+        m_current_epoch(current_epoch)
       {
       }
 
-      const_iterator(const uint64_t current_epoch, Node * const node)
-        : m_current_epoch(current_epoch),
+      const_iterator(const uint64_t earliest_epoch, const uint64_t current_epoch, Node * const node)
+        : m_earliest_epoch(earliest_epoch),
+        m_current_epoch(current_epoch),
         m_node(node)
       {
         validate();
@@ -141,15 +143,9 @@ namespace Zeni::Concurrency {
             m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
             continue;
           }
-          const uint64_t creation_epoch = m_node->creation_epoch.load(std::memory_order_relaxed);
-          uint64_t access_epoch = m_node->access_epoch.load(std::memory_order_relaxed);
-          bool outside_range;
-          for (;;) {
-            outside_range = access_epoch - creation_epoch < access_epoch - m_current_epoch || ((access_epoch & 0x1) && access_epoch - creation_epoch < m_current_epoch - creation_epoch);
-            //if (m_node->access_epoch.compare_exchange_weak(access_epoch, m_current_epoch, std::memory_order_relaxed, std::memory_order_relaxed))
-              break;
-          }
-          if (outside_range) {
+          const uint64_t creation_epoch = m_node->creation_epoch.load()->epoch();
+          const uint64_t deletion_epoch = m_node->deletion_epoch.load()->epoch();
+          if (deletion_epoch ? deletion_epoch - creation_epoch < m_current_epoch - creation_epoch : creation_epoch - m_earliest_epoch > m_current_epoch - m_earliest_epoch) {
             m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
             continue;
           }
@@ -158,24 +154,25 @@ namespace Zeni::Concurrency {
         }
       }
 
+      uint64_t m_earliest_epoch = 0;
       uint64_t m_current_epoch = 0;
       Node * m_node = nullptr;
     };
 
-    const_iterator cbegin(const uint64_t current_epoch) const {
-      return const_iterator(current_epoch, m_head.load(std::memory_order_relaxed));
+    const_iterator cbegin(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
+      return const_iterator(earliest_epoch, current_epoch, m_head.load(std::memory_order_relaxed));
     }
 
-    const_iterator cend(const uint64_t current_epoch) const {
-      return const_iterator(current_epoch);
+    const_iterator cend(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
+      return const_iterator(earliest_epoch, current_epoch);
     }
 
-    const_iterator begin(const uint64_t current_epoch) const {
-      return cbegin(current_epoch);
+    const_iterator begin(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
+      return cbegin(earliest_epoch, current_epoch);
     }
 
-    const_iterator end(const uint64_t current_epoch) const {
-      return cend(current_epoch);
+    const_iterator end(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
+      return cend(earliest_epoch, current_epoch);
     }
 
     Antiable_List() noexcept {
@@ -218,7 +215,7 @@ namespace Zeni::Concurrency {
 
   private:
     /// Return true if it increments the count to 1, otherwise false
-    bool access(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value, const Mode mode) {
+    int64_t access(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value, const Mode mode) {
       m_writers.fetch_add(1, std::memory_order_relaxed);
       uint64_t earliest_epoch = epoch_list->front();
 
@@ -248,25 +245,25 @@ namespace Zeni::Concurrency {
             const uint64_t instance_count_increment = mode == Mode::Insert ? 1 : -1;
             while (instance_count) {
               if (cursor.masked_cur->instance_count.compare_exchange_strong(instance_count, instance_count + instance_count_increment, std::memory_order_relaxed, std::memory_order_relaxed)) {
-                if (instance_count > 0)
+                if (cursor.masked_cur->insertion)
                   m_size.fetch_add(instance_count_increment, std::memory_order_relaxed);
                 instance_count += instance_count_increment;
-                if (instance_count == 0)
+                if (instance_count == 0) {
                   m_usage.fetch_sub(1, std::memory_order_relaxed);
-                if (instance_count == 0)
+                  epoch_list->acquire_release(cursor.masked_cur->deletion_epoch);
                   try_removal(epoch_list, earliest_epoch, cursor);
-                epoch_list->try_release(current_epoch);
+                }
                 m_writers.fetch_sub(1, std::memory_order_relaxed);
                 if (new_value)
                   delete new_value->value_ptr.load(std::memory_order_relaxed);
                 delete new_value;
-                return mode == Mode::Erase && instance_count == 0;
+                return instance_count;
               }
             }
           }
 
           if (!new_value) {
-            new_value = new Node(new Inner_Node(value), mode == Mode::Insert, current_epoch);
+            new_value = new Node(new Inner_Node(value), mode == Mode::Insert);
             std::atomic_thread_fence(std::memory_order_release);
           }
 
@@ -275,9 +272,9 @@ namespace Zeni::Concurrency {
             if (mode == Mode::Insert)
               m_size.fetch_add(1, std::memory_order_relaxed);
             m_usage.fetch_add(1, std::memory_order_relaxed);
-            epoch_list->try_release(current_epoch);
+            epoch_list->acquire_release(new_value->creation_epoch);
             m_writers.fetch_sub(1, std::memory_order_relaxed);
-            return mode == Mode::Insert;
+            return mode == Mode::Insert ? 1 : -1;
           }
           else
             break;
