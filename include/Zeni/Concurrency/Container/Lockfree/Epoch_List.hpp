@@ -58,7 +58,7 @@ namespace Zeni::Concurrency {
 
       // The Node at this Cursor appears to both (1) be marked for removal and to (2) follow a Node that is not marked for removal
       bool is_candidate_for_removal() const {
-        return raw_cur == masked_cur && is_marked_for_deletion() && uintptr_t(raw_next) != 0x1;
+        return raw_cur == masked_cur && is_marked_for_deletion();
       }
 
       bool is_marked_for_deletion() const {
