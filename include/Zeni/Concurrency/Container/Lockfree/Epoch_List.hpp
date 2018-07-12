@@ -199,12 +199,9 @@ namespace Zeni::Concurrency {
         if (old_tail->epoch == value) {
           if (new_tail)
             new_tail->epoch = value + epoch_increment;
-          else {
+          else
             new_tail = new Node(value + epoch_increment);
-            if (epoch_local->instantaneous())
-              new_tail->next.store(reinterpret_cast<Node *>(0x1), std::memory_order_relaxed);
-          }
-          if (push_pointers(old_tail, new_tail))
+          if (push_pointers(old_tail, epoch_local->instantaneous() ? reinterpret_cast<Node *>(uintptr_t(new_tail) | 0x1) : new_tail))
             new_tail = nullptr;
         }
         delete new_tail;

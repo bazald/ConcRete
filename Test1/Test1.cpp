@@ -664,8 +664,10 @@ void test_Antiable_List() {
 
   worker_threads->finish_jobs();
 
-  if (antiable_list->size() != 0 || antiable_list->usage() != 0 || sum.load(std::memory_order_relaxed) != 0)
+  if (antiable_list->size() != 0 || antiable_list->usage() != 0)
     std::cerr << 'X';
+  if (sum.load(std::memory_order_relaxed) != 0)
+    std::cerr << 'Y';
 
   //std::cout << std::endl;
 }
