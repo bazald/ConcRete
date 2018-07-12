@@ -44,7 +44,7 @@ namespace Zeni::Concurrency {
         if (raw_cur != masked_cur || raw_next == masked_next)
           return false;
         const uint64_t deletion_epoch = masked_cur->deletion_epoch.load()->epoch();
-        return deletion_epoch && deletion_epoch < earliest_epoch;
+        return deletion_epoch && earliest_epoch > deletion_epoch;
       }
 
       bool is_marked_for_deletion() const {

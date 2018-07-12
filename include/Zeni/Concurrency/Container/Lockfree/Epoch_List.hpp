@@ -177,6 +177,7 @@ namespace Zeni::Concurrency {
 
   private:
     void continue_acquire(const Token_Ptr::Lock &epoch_local) {
+      Node * new_tail = nullptr;
       while (!epoch_local->m_pushed.load(std::memory_order_acquire)) {
         Token_Ptr current;
         if (!m_acquires.front(current))
@@ -195,24 +196,20 @@ namespace Zeni::Concurrency {
         }
 
         Node * old_tail = m_tail.load(std::memory_order_acquire);
-        Node * new_tail = nullptr;
         if (old_tail->epoch == value) {
           if (new_tail)
             new_tail->epoch = value + epoch_increment;
-          else {
+          else
             new_tail = new Node(value + epoch_increment);
-            if (epoch_local->instantaneous())
-              new_tail->next.store(reinterpret_cast<Node *>(0x1), std::memory_order_relaxed);
-          }
-          if (push_pointers(old_tail, new_tail))
+          if (push_pointers(old_tail, current_local->instantaneous() ? reinterpret_cast<Node *>(uintptr_t(new_tail) | 0x1) : new_tail))
             new_tail = nullptr;
         }
-        delete new_tail;
 
         current_local->m_pushed.store(true, std::memory_order_release);
 
         m_acquires.try_pop_if_equals(current);
       }
+      delete new_tail;
     }
 
     bool try_erase(const uint64_t epoch) {
@@ -255,7 +252,7 @@ namespace Zeni::Concurrency {
 
     // Return true if new tail pointer is used, otherwise false
     bool push_pointers(Node * &old_tail, Node * const new_tail) {
-      Node * next = reinterpret_cast<Node *>(uintptr_t(old_tail->next.load(std::memory_order_relaxed)) & 0x1);
+      Node * next = nullptr;
       if (old_tail->next.compare_exchange_strong(next, new_tail, std::memory_order_release, std::memory_order_acquire)) {
         m_tail.compare_exchange_strong(old_tail, reinterpret_cast<Node *>(uintptr_t(new_tail) & ~uintptr_t(0x1)), std::memory_order_release, std::memory_order_acquire);
         return true;
