@@ -44,10 +44,7 @@ namespace Zeni::Concurrency {
         if (raw_cur != masked_cur || raw_next == masked_next)
           return false;
         const uint64_t deletion_epoch = masked_cur->deletion_epoch.load()->epoch();
-        if (deletion_epoch == 0)
-          return false;
-        const uint64_t creation_epoch = masked_cur->creation_epoch.load()->epoch();
-        return deletion_epoch - creation_epoch < earliest_epoch - creation_epoch;
+        return deletion_epoch && deletion_epoch < earliest_epoch;
       }
 
       bool is_marked_for_deletion() const {
@@ -136,6 +133,14 @@ namespace Zeni::Concurrency {
         return m_node != rhs.m_node || m_current_epoch != rhs.m_current_epoch;
       }
 
+      uint64_t creation_epoch() const {
+        return m_node->creation_epoch.load()->epoch();
+      }
+
+      uint64_t deletion_epoch() const {
+        return m_node->deletion_epoch.load()->epoch();
+      }
+
     private:
       void validate() {
         for (;;) {
@@ -147,12 +152,15 @@ namespace Zeni::Concurrency {
           }
           const uint64_t creation_epoch = m_node->creation_epoch.load()->epoch();
           const uint64_t deletion_epoch = m_node->deletion_epoch.load()->epoch();
-          if (deletion_epoch ? deletion_epoch - creation_epoch < m_current_epoch - creation_epoch : creation_epoch ? creation_epoch - m_earliest_epoch > m_current_epoch - m_earliest_epoch : true) {
+          assert(!deletion_epoch || creation_epoch);
+          if (creation_epoch && creation_epoch < m_current_epoch && (!deletion_epoch || deletion_epoch > m_current_epoch)) {
+            std::atomic_thread_fence(std::memory_order_acquire);
+            break;
+          }
+          else {
             m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
             continue;
           }
-          std::atomic_thread_fence(std::memory_order_acquire);
-          break;
         }
       }
 
@@ -262,6 +270,7 @@ namespace Zeni::Concurrency {
                 instance_count += instance_count_increment;
                 if (instance_count == 0) {
                   m_usage.fetch_sub(1, std::memory_order_relaxed);
+                  epoch_list->acquire(cursor.masked_cur->creation_epoch);
                   if (mode == Mode::Erase && epoch) {
                     epoch_list->acquire(cursor.masked_cur->deletion_epoch);
                     *epoch = cursor.masked_cur->deletion_epoch.load();
@@ -278,6 +287,7 @@ namespace Zeni::Concurrency {
                 return instance_count;
               }
             }
+            break;
           }
 
           if (!new_value) {
