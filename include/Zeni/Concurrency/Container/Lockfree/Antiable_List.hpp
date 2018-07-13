@@ -20,16 +20,19 @@ namespace Zeni::Concurrency {
 
     struct Node : public Reclamation_Stack::Node {
       Node() = default;
-      Node(Inner_Node * const value_ptr_, const bool insertion_) : value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
-      Node(Node * const &next_, Inner_Node * const value_ptr_, const bool insertion_) : next(next_), value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
-      Node(Node * &&next_, Inner_Node * const value_ptr_, const bool insertion_) : next(std::move(next_)), value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
+      Node(Inner_Node * const value_ptr_, const bool insertion_) : value_ptr(value_ptr_), cat(insertion_) {}
+      Node(Node * const &next_, Inner_Node * const value_ptr_, const bool insertion_) : next(next_), value_ptr(value_ptr_), cat(insertion_) {}
+      Node(Node * &&next_, Inner_Node * const value_ptr_, const bool insertion_) : next(std::move(next_)), value_ptr(value_ptr_), cat(insertion_) {}
 
       ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> next = nullptr;
       ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Inner_Node *> value_ptr = nullptr;
-      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<uint64_t> instance_count = 1;
+      struct ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER CAT {
+        CAT(const bool insertion_) : instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
+        std::atomic<int64_t> instance_count;
+        bool insertion;
+      } cat;
       Epoch_List::Token_Ptr creation_epoch = Zeni::Concurrency::Epoch_List::Create_Token();
       Epoch_List::Token_Ptr deletion_epoch = Zeni::Concurrency::Epoch_List::Create_Token();
-      bool insertion = false;
     };
 
     struct Cursor {
@@ -48,7 +51,7 @@ namespace Zeni::Concurrency {
       }
 
       bool is_marked_for_deletion() const {
-        return masked_cur && masked_cur->instance_count.load(std::memory_order_relaxed) == 0;
+        return masked_cur && masked_cur->cat.instance_count.load(std::memory_order_relaxed) == 0;
       }
 
       bool is_end() const {
@@ -146,7 +149,7 @@ namespace Zeni::Concurrency {
         for (;;) {
           if (!m_node)
             break;
-          if (!m_node->insertion) {
+          if (!m_node->cat.insertion) {
             m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
             continue;
           }
@@ -261,11 +264,11 @@ namespace Zeni::Concurrency {
           }
 
           if (value_ptr && value_ptr->value == value) {
-            uint64_t instance_count = cursor.masked_cur->instance_count.load(std::memory_order_relaxed);
-            const uint64_t instance_count_increment = mode == Mode::Insert ? 1 : -1;
+            int64_t instance_count = cursor.masked_cur->cat.instance_count.load(std::memory_order_relaxed);
+            const int64_t instance_count_increment = mode == Mode::Insert ? 1 : -1;
             while (instance_count) {
-              if (cursor.masked_cur->instance_count.compare_exchange_strong(instance_count, instance_count + instance_count_increment, std::memory_order_relaxed, std::memory_order_relaxed)) {
-                if (cursor.masked_cur->insertion)
+              if (cursor.masked_cur->cat.instance_count.compare_exchange_strong(instance_count, instance_count + instance_count_increment, std::memory_order_relaxed, std::memory_order_relaxed)) {
+                if (cursor.masked_cur->cat.insertion)
                   m_size.fetch_add(instance_count_increment, std::memory_order_relaxed);
                 instance_count += instance_count_increment;
                 if (instance_count == 0) {
@@ -342,6 +345,8 @@ namespace Zeni::Concurrency {
         cursor.increment();
         return false;
       }
+      else if (!cursor.prev)
+        cursor.masked_cur = nullptr; // Ensure that cursor.increment() results in null cursor.prev
 
       cursor.increment();
 

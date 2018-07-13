@@ -237,6 +237,8 @@ namespace Zeni::Concurrency {
         cursor.increment();
         return false;
       }
+      else if (!cursor.prev)
+        cursor.masked_cur = nullptr; // Ensure that cursor.increment() results in null cursor.prev
 
       cursor.increment();
 

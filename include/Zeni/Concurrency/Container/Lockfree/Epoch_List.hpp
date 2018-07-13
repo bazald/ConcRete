@@ -44,11 +44,11 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    struct Node : public Reclamation_Stack::Node {
+    struct ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER Node : public Reclamation_Stack::Node {
       Node() = default;
       Node(const int64_t epoch_) : epoch(epoch_) {}
 
-      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> next = nullptr;
+      std::atomic<Node *> next = nullptr;
       uint64_t epoch = 0;
     };
 
@@ -278,6 +278,8 @@ namespace Zeni::Concurrency {
         cursor.increment();
         return false;
       }
+      else if (!cursor.prev)
+        cursor.masked_cur = nullptr; // Ensure that cursor.increment() results in null cursor.prev
 
       cursor.increment();
 

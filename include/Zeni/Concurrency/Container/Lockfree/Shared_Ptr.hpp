@@ -9,7 +9,7 @@
 namespace Zeni::Concurrency {
 
   template <typename TYPE>
-  class Shared_Ptr {
+  class ZENI_CONCURRENCY_CACHE_ALIGN Shared_Ptr {
     struct Node;
 
   public:
@@ -291,7 +291,7 @@ namespace Zeni::Concurrency {
   private:
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_ptr = nullptr;
 
-    struct Node : Reclamation_Stack::Node {
+    struct ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER Node : Reclamation_Stack::Node {
       Node(const Node &) = delete;
       Node & operator=(const Node &) = delete;
 
@@ -333,7 +333,7 @@ namespace Zeni::Concurrency {
 
     private:
       TYPE * const m_ptr;
-      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_uint64_t m_refs = 1;
+      std::atomic_uint64_t m_refs = 1;
     };
   };
 
