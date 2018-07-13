@@ -234,7 +234,7 @@ namespace Zeni::Concurrency {
 #if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
   static int64_t g_total_thread_count = 0;
 #else
-  static ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t g_total_thread_count = 0;
+  ZENI_CONCURRENCY_CACHE_ALIGN static std::atomic_int64_t g_total_thread_count = 0;
 
   void worker(Worker_Threads_Impl * const worker_threads_impl) noexcept {
     const class Count {
