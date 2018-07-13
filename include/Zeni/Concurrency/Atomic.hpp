@@ -99,7 +99,7 @@ namespace Zeni::Concurrency {
 #if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
     int64_t m_value;
 #else
-    std::atomic_int64_t m_value;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_value;
 #endif
   };
 

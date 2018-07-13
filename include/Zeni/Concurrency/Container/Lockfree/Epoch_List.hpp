@@ -30,9 +30,9 @@ namespace Zeni::Concurrency {
       }
 
     private:
-      std::atomic_uint64_t m_epoch = 0;
-      std::atomic_bool m_instantaneous = false;
-      std::atomic_bool m_pushed = false;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_uint64_t m_epoch = 0;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool m_instantaneous = false;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool m_pushed = false;
     };
 
     typedef Shared_Ptr<Token> Token_Ptr;
@@ -48,7 +48,7 @@ namespace Zeni::Concurrency {
       Node() = default;
       Node(const int64_t epoch_) : epoch(epoch_) {}
 
-      std::atomic<Node *> next = nullptr;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> next = nullptr;
       uint64_t epoch = 0;
     };
 
@@ -289,12 +289,12 @@ namespace Zeni::Concurrency {
       return true;
     }
 
-    std::atomic<Node *> m_head = new Node(1);
-    std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
-    std::atomic_uint64_t m_next_assignable = 1;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_head = new Node(1);
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_uint64_t m_next_assignable = 1;
     Smart_Queue<Token_Ptr> m_acquires;
-    //std::atomic_int64_t m_size = 0;
-    std::atomic_int64_t m_writers = 0;
+    //ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_writers = 0;
   };
   
 }

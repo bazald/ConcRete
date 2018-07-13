@@ -12,7 +12,7 @@ namespace Zeni::Concurrency {
     Smart_Queue & operator=(const Smart_Queue &) = delete;
 
     struct Node : public Reclamation_Stack::Node {
-      std::atomic<Node *> next = nullptr;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> next = nullptr;
       Shared_Ptr<TYPE> value_ptr = nullptr;
     };
 
@@ -237,10 +237,10 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::atomic<Node *> m_head = new Node();
-    std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
-    //std::atomic_int64_t m_size = 0;
-    std::atomic_int64_t m_writers = 0;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_head = new Node();
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
+    //ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_writers = 0;
   };
 
 }

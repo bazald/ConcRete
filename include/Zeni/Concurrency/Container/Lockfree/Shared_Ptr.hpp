@@ -289,7 +289,7 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    std::atomic<Node *> m_ptr = nullptr;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_ptr = nullptr;
 
     struct Node : Reclamation_Stack::Node {
       Node(const Node &) = delete;
@@ -333,7 +333,7 @@ namespace Zeni::Concurrency {
 
     private:
       TYPE * const m_ptr;
-      std::atomic_uint64_t m_refs = 1;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_uint64_t m_refs = 1;
     };
   };
 

@@ -24,9 +24,9 @@ namespace Zeni::Concurrency {
       Node(Node * const &next_, Inner_Node * const value_ptr_, const bool insertion_) : next(next_), value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
       Node(Node * &&next_, Inner_Node * const value_ptr_, const bool insertion_) : next(std::move(next_)), value_ptr(value_ptr_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
 
-      std::atomic<Node *> next = nullptr;
-      std::atomic<Inner_Node *> value_ptr = nullptr;
-      std::atomic<uint64_t> instance_count = 1;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> next = nullptr;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Inner_Node *> value_ptr = nullptr;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<uint64_t> instance_count = 1;
       Epoch_List::Token_Ptr creation_epoch = Zeni::Concurrency::Epoch_List::Create_Token();
       Epoch_List::Token_Ptr deletion_epoch = Zeni::Concurrency::Epoch_List::Create_Token();
       bool insertion = false;
@@ -351,10 +351,10 @@ namespace Zeni::Concurrency {
       return true;
     }
 
-    std::atomic<Node *> m_head = nullptr;
-    std::atomic_int64_t m_size = 0;
-    std::atomic_int64_t m_usage = 0;
-    std::atomic_int64_t m_writers = 0;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_head = nullptr;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_usage = 0;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_writers = 0;
   };
 
 }

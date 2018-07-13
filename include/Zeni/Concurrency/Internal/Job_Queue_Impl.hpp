@@ -39,7 +39,7 @@ namespace Zeni::Concurrency {
 
   private:
 #if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
-    std::atomic_bool m_reclaim = false;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool m_reclaim = false;
 #endif
     Worker_Threads * const m_worker_threads;
     Queue<std::shared_ptr<IJob>> m_jobs;

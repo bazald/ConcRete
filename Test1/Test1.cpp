@@ -47,7 +47,7 @@ private:
   std::string m_message;
 };
 
-//static std::atomic_int64_t g_num_recvs = 0;
+//static ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t g_num_recvs = 0;
 
 class Gossip : public Zeni::Concurrency::Recipient {
 public:
@@ -659,8 +659,8 @@ void test_Antiable_List() {
     std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
     std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> m_antiable_list;
     //std::shared_ptr<Zeni::Concurrency::Queue<std::string>> m_debug_output;
-    std::atomic_int64_t &m_remaining;
-    std::atomic_int64_t &m_sum;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_remaining;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_sum;
     std::vector<uint64_t> m_values_to_acquire;
     std::vector<uint64_t> m_values_to_release;
     int64_t m_to_acquire = 256;
@@ -671,8 +671,8 @@ void test_Antiable_List() {
   const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
   const auto antiable_list = std::make_shared<Zeni::Concurrency::Antiable_List<int64_t>>();
   //const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
-  std::atomic_int64_t remaining = std::thread::hardware_concurrency() - 1;
-  std::atomic_int64_t sum = 0;
+  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t remaining = std::thread::hardware_concurrency() - 1;
+  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
 
   auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
   const auto job_queue = worker_threads->get_main_Job_Queue();
