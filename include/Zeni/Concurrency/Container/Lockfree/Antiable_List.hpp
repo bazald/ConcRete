@@ -282,7 +282,8 @@ namespace Zeni::Concurrency {
                 return instance_count;
               }
             }
-            break;
+            cursor.increment();
+            continue;
           }
 
           if (!new_value) {

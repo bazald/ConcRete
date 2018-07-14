@@ -587,14 +587,14 @@ void test_Antiable_List() {
   class Antiable : public Zeni::Concurrency::Job {
   public:
     Antiable(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list,
-      const std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> &antiable_list,
+      const std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> &antiable_list1,
+      const std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> &antiable_list2,
       //const std::shared_ptr<Zeni::Concurrency::Queue<std::string>> &debug_output,
-      std::atomic_int64_t &remaining,
       std::atomic_int64_t &sum)
       : m_epoch_list(epoch_list),
-      m_antiable_list(antiable_list),
+      m_antiable_list1(antiable_list1),
+      m_antiable_list2(antiable_list2),
       //m_debug_output(debug_output),
-      m_remaining(remaining),
       m_sum(sum),
       dre(rd())
     {
@@ -615,9 +615,9 @@ void test_Antiable_List() {
           Zeni::Concurrency::Epoch_List::Token_Ptr::Lock insertion_epoch;
           //std::ostringstream oss;
           //oss << std::this_thread::get_id() << " +" << *selected;
-          if (m_antiable_list->insert(m_epoch_list, *selected, insertion_epoch)) {
+          if (m_antiable_list1->insert(m_epoch_list, *selected, insertion_epoch)) {
             //oss << " @" << insertion_epoch->epoch() << " *:";
-            for (auto it = m_antiable_list->cbegin(insertion_epoch), iend = m_antiable_list->cend(); it != iend; ++it) {
+            for (auto it = m_antiable_list2->cbegin(insertion_epoch), iend = m_antiable_list2->cend(); it != iend; ++it) {
               m_sum += *selected * *it;
               //oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
             }
@@ -635,9 +635,9 @@ void test_Antiable_List() {
           Zeni::Concurrency::Epoch_List::Token_Ptr::Lock erasure_epoch;
           //std::ostringstream oss;
           //oss << std::this_thread::get_id() << " -" << *selected;
-          if (m_antiable_list->erase(m_epoch_list, *selected, erasure_epoch)) {
+          if (m_antiable_list1->erase(m_epoch_list, *selected, erasure_epoch)) {
             //oss << " @" << erasure_epoch->epoch() << " *:";
-            for (auto it = m_antiable_list->cbegin(erasure_epoch), iend = m_antiable_list->cend(); it != iend; ++it) {
+            for (auto it = m_antiable_list2->cbegin(erasure_epoch), iend = m_antiable_list2->cend(); it != iend; ++it) {
               m_sum -= *selected * *it;
               //oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
             }
@@ -650,39 +650,40 @@ void test_Antiable_List() {
           m_values_to_release.erase(selected);
         }
       }
-      m_remaining.fetch_sub(1, std::memory_order_relaxed);
     }
 
   private:
     std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
-    std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> m_antiable_list;
+    std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> m_antiable_list1;
+    std::shared_ptr<Zeni::Concurrency::Antiable_List<int64_t>> m_antiable_list2;
     //std::shared_ptr<Zeni::Concurrency::Queue<std::string>> m_debug_output;
-    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_remaining;
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_sum;
     std::vector<uint64_t> m_values_to_acquire;
     std::vector<uint64_t> m_values_to_release;
-    int64_t m_to_acquire = 256;
+    int64_t m_to_acquire = 1024;
     std::random_device rd;
     std::default_random_engine dre;
   };
 
   const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
-  const auto antiable_list = std::make_shared<Zeni::Concurrency::Antiable_List<int64_t>>();
+  const auto antiable_list1 = std::make_shared<Zeni::Concurrency::Antiable_List<int64_t>>();
+  const auto antiable_list2 = std::make_shared<Zeni::Concurrency::Antiable_List<int64_t>>();
   //const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
-  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t remaining = std::thread::hardware_concurrency() - 1;
   ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
 
   auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
-    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_list, remaining, sum));
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
+    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_list1, antiable_list2, sum));
+    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_list2, antiable_list1, sum));
+  }
   job_queue->give_many(std::move(jobs));
 
   worker_threads->finish_jobs();
 
-  if (antiable_list->size() != 0 || antiable_list->usage() != 0)
+  if (antiable_list1->size() != 0 || antiable_list1->usage() != 0 || antiable_list2->size() != 0 || antiable_list2->usage() != 0)
     std::cerr << 'X';
   if (sum.load(std::memory_order_relaxed) != 0) {
     std::cerr << 'Y';
