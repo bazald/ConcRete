@@ -96,15 +96,8 @@ namespace Zeni::Concurrency {
 
       const_iterator() = default;
 
-      const_iterator(const uint64_t earliest_epoch, const uint64_t current_epoch)
-        : m_earliest_epoch(earliest_epoch),
-        m_current_epoch(current_epoch)
-      {
-      }
-
-      const_iterator(const uint64_t earliest_epoch, const uint64_t current_epoch, Node * const node)
-        : m_earliest_epoch(earliest_epoch),
-        m_current_epoch(current_epoch),
+      const_iterator(const uint64_t current_epoch, Node * const node)
+        : m_current_epoch(current_epoch),
         m_node(node)
       {
         validate();
@@ -130,10 +123,10 @@ namespace Zeni::Concurrency {
       }
 
       bool operator==(const const_iterator &rhs) const {
-        return m_node == rhs.m_node && m_current_epoch == rhs.m_current_epoch;
+        return m_node == rhs.m_node;
       }
       bool operator!=(const const_iterator &rhs) const {
-        return m_node != rhs.m_node || m_current_epoch != rhs.m_current_epoch;
+        return m_node != rhs.m_node;
       }
 
       uint64_t creation_epoch() const {
@@ -167,25 +160,24 @@ namespace Zeni::Concurrency {
         }
       }
 
-      uint64_t m_earliest_epoch = 0;
       uint64_t m_current_epoch = 0;
       Node * m_node = nullptr;
     };
 
-    const_iterator cbegin(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
-      return const_iterator(earliest_epoch, current_epoch, m_head.load(std::memory_order_relaxed));
+    const_iterator cbegin(const typename Epoch_List::Token_Ptr::Lock &current_epoch) const {
+      return const_iterator(current_epoch->epoch(), m_head.load(std::memory_order_relaxed));
     }
 
-    const_iterator cend(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
-      return const_iterator(earliest_epoch, current_epoch);
+    const_iterator cend() const {
+      return const_iterator();
     }
 
-    const_iterator begin(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
-      return cbegin(earliest_epoch, current_epoch);
+    const_iterator begin(const typename Epoch_List::Token_Ptr::Lock &current_epoch) const {
+      return cbegin(current_epoch->epoch());
     }
 
-    const_iterator end(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
-      return cend(earliest_epoch, current_epoch);
+    const_iterator end() const {
+      return cend();
     }
 
     Antiable_List() noexcept {
@@ -345,10 +337,17 @@ namespace Zeni::Concurrency {
         cursor.increment();
         return false;
       }
-      else if (!cursor.prev)
-        cursor.masked_cur = nullptr; // Ensure that cursor.increment() results in null cursor.prev
 
-      cursor.increment();
+      cursor.raw_cur = cursor.raw_next;
+      cursor.masked_cur = cursor.masked_next;
+      if (cursor.masked_cur) {
+        cursor.raw_next = cursor.masked_cur->next.load(std::memory_order_relaxed);
+        cursor.masked_next = reinterpret_cast<Node *>(uintptr_t(cursor.raw_next) & ~uintptr_t(0x1));
+      }
+      else {
+        cursor.raw_next = nullptr;
+        cursor.masked_next = nullptr;
+      }
 
       Reclamation_Stacks::push(old_cur->value_ptr);
       Reclamation_Stacks::push(old_cur);

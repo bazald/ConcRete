@@ -617,8 +617,7 @@ void test_Antiable_List() {
           //oss << std::this_thread::get_id() << " +" << *selected;
           if (m_antiable_list->insert(m_epoch_list, *selected, insertion_epoch)) {
             //oss << " @" << insertion_epoch->epoch() << " *:";
-            const uint64_t front = m_epoch_list->front();
-            for (auto it = m_antiable_list->cbegin(front, insertion_epoch->epoch()), iend = m_antiable_list->cend(front, insertion_epoch->epoch()); it != iend; ++it) {
+            for (auto it = m_antiable_list->cbegin(insertion_epoch), iend = m_antiable_list->cend(); it != iend; ++it) {
               m_sum += *selected * *it;
               //oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
             }
@@ -638,8 +637,7 @@ void test_Antiable_List() {
           //oss << std::this_thread::get_id() << " -" << *selected;
           if (m_antiable_list->erase(m_epoch_list, *selected, erasure_epoch)) {
             //oss << " @" << erasure_epoch->epoch() << " *:";
-            const uint64_t front = m_epoch_list->front();
-            for (auto it = m_antiable_list->cbegin(front, erasure_epoch->epoch()), iend = m_antiable_list->cend(front, erasure_epoch->epoch()); it != iend; ++it) {
+            for (auto it = m_antiable_list->cbegin(erasure_epoch), iend = m_antiable_list->cend(); it != iend; ++it) {
               m_sum -= *selected * *it;
               //oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
             }

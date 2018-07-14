@@ -237,10 +237,17 @@ namespace Zeni::Concurrency {
         cursor.increment();
         return false;
       }
-      else if (!cursor.prev)
-        cursor.masked_cur = nullptr; // Ensure that cursor.increment() results in null cursor.prev
 
-      cursor.increment();
+      cursor.raw_cur = cursor.raw_next;
+      cursor.masked_cur = cursor.masked_next;
+      if (cursor.masked_cur) {
+        cursor.raw_next = cursor.masked_cur->next.load(std::memory_order_relaxed);
+        cursor.masked_next = reinterpret_cast<Node *>(uintptr_t(cursor.raw_next) & ~uintptr_t(0x1));
+      }
+      else {
+        cursor.raw_next = nullptr;
+        cursor.masked_next = nullptr;
+      }
 
       if (m_writers.load(std::memory_order_relaxed) == 1) {
         delete old_cur->value_ptr.load(std::memory_order_relaxed);

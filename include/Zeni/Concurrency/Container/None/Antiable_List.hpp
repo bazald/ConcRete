@@ -33,12 +33,9 @@ namespace Zeni::Concurrency {
       Cursor() = default;
       Cursor(Antiable_List * const antiable_list) : masked_cur(antiable_list->m_head), masked_next(masked_cur ? masked_cur->next : nullptr) {}
 
-      bool is_candidate_for_removal(const int64_t earliest_epoch) const {
-        const uint64_t deletion_epoch = masked_cur->deletion_epoch;
-        if (deletion_epoch == 0)
-          return false;
-        const uint64_t creation_epoch = masked_cur->creation_epoch;
-        return deletion_epoch - creation_epoch < earliest_epoch - creation_epoch;
+      bool is_candidate_for_removal(const uint64_t earliest_epoch) const {
+        const uint64_t deletion_epoch = masked_cur->deletion_epoch.load()->epoch();
+        return deletion_epoch && earliest_epoch > deletion_epoch;
       }
 
       bool is_marked_for_deletion() const {
@@ -77,15 +74,8 @@ namespace Zeni::Concurrency {
 
       const_iterator() = default;
 
-      const_iterator(const uint64_t earliest_epoch, const uint64_t current_epoch)
-        : m_earliest_epoch(earliest_epoch),
-        m_current_epoch(current_epoch)
-      {
-      }
-
-      const_iterator(const uint64_t earliest_epoch, const uint64_t current_epoch, Node * const node)
-        : m_earliest_epoch(earliest_epoch),
-        m_current_epoch(current_epoch),
+      const_iterator(const uint64_t current_epoch, Node * const node)
+        : m_current_epoch(current_epoch),
         m_node(node)
       {
         validate();
@@ -111,10 +101,18 @@ namespace Zeni::Concurrency {
       }
 
       bool operator==(const const_iterator &rhs) const {
-        return m_node == rhs.m_node && m_current_epoch == rhs.m_current_epoch;
+        return m_node == rhs.m_node;
       }
       bool operator!=(const const_iterator &rhs) const {
-        return m_node != rhs.m_node || m_current_epoch != rhs.m_current_epoch;
+        return m_node != rhs.m_node;
+      }
+
+      uint64_t creation_epoch() const {
+        return m_node->creation_epoch.load()->epoch();
+      }
+
+      uint64_t deletion_epoch() const {
+        return m_node->deletion_epoch.load()->epoch();
       }
 
     private:
@@ -126,42 +124,43 @@ namespace Zeni::Concurrency {
             m_node = m_node->next;
             continue;
           }
-          const uint64_t creation_epoch = m_node->creation_epoch->epoch();
-          const uint64_t deletion_epoch = m_node->deletion_epoch->epoch();
-          if (deletion_epoch ? deletion_epoch - creation_epoch < m_current_epoch - creation_epoch : creation_epoch ? creation_epoch - m_earliest_epoch > m_current_epoch - m_earliest_epoch : true) {
+          const uint64_t creation_epoch = m_node->creation_epoch.load()->epoch();
+          const uint64_t deletion_epoch = m_node->deletion_epoch.load()->epoch();
+          assert(!deletion_epoch || creation_epoch);
+          if (creation_epoch && creation_epoch < m_current_epoch && (!deletion_epoch || deletion_epoch > m_current_epoch))
+            break;
+          else {
             m_node = m_node->next;
             continue;
           }
-          break;
         }
       }
 
-      uint64_t m_earliest_epoch = 0;
       uint64_t m_current_epoch = 0;
       Node * m_node = nullptr;
     };
 
-    const_iterator cbegin(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
-      return const_iterator(earliest_epoch, current_epoch, m_head);
+    const_iterator cbegin(const typename Epoch_List::Token_Ptr::Lock &current_epoch) const {
+      return const_iterator(current_epoch->epoch(), m_head);
     }
 
-    const_iterator cend(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
-      return const_iterator(earliest_epoch, current_epoch);
+    const_iterator cend() const {
+      return const_iterator();
     }
 
-    const_iterator begin(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
-      return cbegin(earliest_epoch, current_epoch);
+    const_iterator begin(const typename Epoch_List::Token_Ptr::Lock &current_epoch) const {
+      return cbegin(current_epoch->epoch());
     }
 
-    const_iterator end(const uint64_t earliest_epoch, const uint64_t current_epoch) const {
-      return cend(earliest_epoch, current_epoch);
+    const_iterator end() const {
+      return cend();
     }
 
     Antiable_List() noexcept = default;
 
     ~Antiable_List() noexcept {
       while (m_head) {
-        Node * const next = m_head;
+        Node * const next = m_head->next;
         delete m_head;
         m_head = next;
       }
@@ -204,44 +203,83 @@ namespace Zeni::Concurrency {
     int64_t access(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value, Epoch_List::Token_Ptr::Lock * const epoch, const Mode mode) {
       const uint64_t earliest_epoch = epoch_list->front();
 
-      Cursor cursor(this);
-      while (cursor.masked_cur && cursor.masked_cur->value < value)
-        cursor.increment();
-      if (cursor.masked_cur && cursor.masked_cur->value == value) {
-        const int64_t instance_count_increment = mode == Mode::Insert ? 1 : -1;
-        if (cursor.masked_cur->insertion)
-          m_size += instance_count_increment;
-        cursor.masked_cur->instance_count += instance_count_increment;
-        if (cursor.masked_cur->instance_count == 0) {
-          --m_usage;
-          if (mode == Mode::Erase && epoch) {
-            epoch_list->acquire(cursor.masked_cur->deletion_epoch);
-            *epoch = cursor.masked_cur->deletion_epoch.load();
+      for (;;) {
+        Cursor cursor(this);
+
+        while (try_removal(epoch_list, earliest_epoch, cursor));
+
+        for (;;) {
+          if (cursor.is_marked_for_deletion()) {
+            while (try_removal(epoch_list, earliest_epoch, cursor));
+            continue;
+          }
+
+          if (!cursor.is_end() && cursor.masked_cur->value < value) {
+            cursor.increment();
+            continue;
+          }
+
+          if (cursor.masked_cur && cursor.masked_cur->value == value) {
+            const int64_t instance_count_increment = mode == Mode::Insert ? 1 : -1;
+            if (cursor.masked_cur->instance_count != 0) {
+              cursor.masked_cur->instance_count += instance_count_increment;
+              if (cursor.masked_cur->insertion)
+                m_size += instance_count_increment;
+              if (cursor.masked_cur->instance_count == 0) {
+                m_usage -= 1;
+                epoch_list->acquire(cursor.masked_cur->creation_epoch);
+                if (mode == Mode::Erase && epoch) {
+                  epoch_list->acquire(cursor.masked_cur->deletion_epoch);
+                  *epoch = cursor.masked_cur->deletion_epoch.load();
+                  assert(*epoch);
+                }
+                else
+                  epoch_list->acquire_release(cursor.masked_cur->deletion_epoch);
+                try_removal(epoch_list, earliest_epoch, cursor);
+                return 0;
+              }
+              else
+                return cursor.masked_cur->instance_count;
+            }
+          }
+
+          Node * const new_value = new Node(cursor.masked_cur, value, mode == Mode::Insert);
+
+          (cursor.prev ? cursor.prev->next : m_head) = new_value;
+          if (mode == Mode::Insert)
+            ++m_size;
+          ++m_usage;
+          if (mode == Mode::Insert && epoch) {
+            epoch_list->acquire(new_value->creation_epoch);
+            *epoch = new_value->creation_epoch.load();
             assert(*epoch);
           }
           else
-            epoch_list->acquire_release(cursor.masked_cur->deletion_epoch);
-          (cursor.prev ? cursor.prev->next : m_head) = cursor.masked_next;
-          delete cursor.masked_cur;
-          return 0;
+            epoch_list->acquire_release(new_value->creation_epoch);
+          return mode == Mode::Insert ? 1 : -1;
         }
-        else
-          return cursor.masked_cur->instance_count;
+      }
+    }
+
+    // Return true if cur removed, otherwise false
+    bool try_removal(const std::shared_ptr<Epoch_List> epoch_list, const uint64_t earliest_epoch, Cursor &cursor) {
+      if (!cursor.is_marked_for_deletion())
+        return false;
+
+      if (!cursor.is_candidate_for_removal(earliest_epoch)) {
+        cursor.increment();
+        return false;
       }
 
-      Node * const new_value = new Node(cursor.prev ? cursor.masked_cur : m_head, value, mode == Mode::Insert);
-      (cursor.prev ? cursor.prev->next : m_head) = new_value;
-      if (mode == Mode::Insert)
-        ++m_size;
-      ++m_usage;
-      if (mode == Mode::Insert && epoch) {
-        epoch_list->acquire(new_value->creation_epoch);
-        *epoch = new_value->creation_epoch.load();
-        assert(*epoch);
-      }
-      else
-        epoch_list->acquire_release(new_value->creation_epoch);
-      return mode == Mode::Insert ? 1 : -1;
+      Node * const old_cur = cursor.masked_cur;
+      (cursor.prev ? cursor.prev->next : m_head) = cursor.masked_next;
+
+      cursor.masked_cur = cursor.masked_next;
+      cursor.masked_next = cursor.masked_cur ? cursor.masked_cur->next : nullptr;
+
+      delete old_cur;
+
+      return true;
     }
 
     Node * m_head = nullptr;
