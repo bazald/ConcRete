@@ -1,3 +1,4 @@
+//#include "Zeni/Concurrency/Container/Antiable_Hashset.hpp"
 #include "Zeni/Concurrency/Container/Antiable_List.hpp"
 #include "Zeni/Concurrency/Container/Epoch_List.hpp"
 #include "Zeni/Concurrency/Container/Ordered_List.hpp"
@@ -89,85 +90,140 @@ static void test_Antiable_List();
 static void test_Rete_Network();
 static void test_Parser();
 
+//struct ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER UInt128 {
+//  UInt128() = default;
+//  UInt128(const uint64_t first_, const uint64_t second_) : second(second_), first(first_) {}
+//
+//  uint64_t second = 0;
+//  uint64_t first = 0;
+//};
+//
+//#ifdef _MSC_VER
+//#include <Windows.h>
+//#undef min
+//#undef max
+//#endif
+//
+//struct ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER Atomic_UInt128 {
+//  Atomic_UInt128() = default;
+//  Atomic_UInt128(const uint64_t first_, const uint64_t second_) : second(second_), first(first_) {}
+//  Atomic_UInt128(const UInt128 value) : second(value.second), first(value.first) {}
+//
+//  inline bool compare_exchange_strong(UInt128 &expected, const UInt128 desired) {
+//#ifdef _MSC_VER
+//    return InterlockedCompareExchange128(reinterpret_cast<volatile LONG64 *>(this),
+//      reinterpret_cast<const LONG64 &>(desired.first),
+//      reinterpret_cast<const LONG64 &>(desired.second),
+//      reinterpret_cast<LONG64 *>(&expected));
+//#else
+//    bool result;
+//    __asm__ __volatile__
+//    (
+//      "lock cmpxchg16b %1\n\t"
+//      "setz %0"
+//      : "=q" (result)
+//      , "+m" (*this)
+//      , "+d" (expected.first)
+//      , "+a" (expected.second)
+//      : "c" (desired.first)
+//      , "b" (desired.second)
+//      : "cc"
+//    );
+//    return result;
+//#endif
+//  }
+//
+//  volatile uint64_t second = 0;
+//  volatile uint64_t first = 0;
+//};
+
 int main()
 {
-  test_Worker_Threads();
-  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-    abort();
-  }
+  //Atomic_UInt128 aa(1, 2);
+  //UInt128 a(1, 2), b(3, 4), c(5, 6);
+  //std::cout << aa.first << aa.second << b.first << b.second;
+  //aa.compare_exchange_strong(b, c);
+  //std::cout << aa.first << aa.second << b.first << b.second;
+  //aa.compare_exchange_strong(b, c);
+  //std::cout << aa.first << aa.second << b.first << b.second;
 
-#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
-  for (int i = 0; i != 80; ++i) {
-    test_Queue();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'Q' << std::flush;
-  }
-  std::cout << std::endl;
-
-  for (int i = 0; i != 80; ++i) {
-    test_Queue_of_Shared_Ptrs();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'P' << std::flush;
-  }
-  std::cout << std::endl;
-
-  for (int i = 0; i != 80; ++i) {
-    test_Stack();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'S' << std::flush;
-  }
-  std::cout << std::endl;
-
-  for (int i = 0; i != 80; ++i) {
-    test_Ordered_List();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'O' << std::flush;
-  }
-  std::cout << std::endl;
-
-  for (int i = 0; i != 80; ++i) {
-    test_Unordered_List();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'U' << std::flush;
-  }
-  std::cout << std::endl;
-
-//for (int i = 0; i != 100; ++i) {
-//  test_Deque();
+//  test_Worker_Threads();
 //  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
 //    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
 //    abort();
 //  }
-//  std::cout << 'D' << std::flush;
-//}
-//std::cout << std::endl;
-#endif
-
-  for (int i = 0; i != 80; ++i) {
-    test_Epoch_List();
-    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-      abort();
-    }
-    std::cout << 'E' << std::flush;
-  }
-  std::cout << std::endl;
+//
+//#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
+//  for (int i = 0; i != 80; ++i) {
+//    test_Queue();
+//    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+//      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+//      abort();
+//    }
+//    std::cout << 'Q' << std::flush;
+//  }
+//  std::cout << std::endl;
+//
+//  for (int i = 0; i != 80; ++i) {
+//    test_Queue_of_Shared_Ptrs();
+//    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+//      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+//      abort();
+//    }
+//    std::cout << 'P' << std::flush;
+//  }
+//  std::cout << std::endl;
+//
+//  for (int i = 0; i != 80; ++i) {
+//    test_Stack();
+//    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+//      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+//      abort();
+//    }
+//    std::cout << 'S' << std::flush;
+//  }
+//  std::cout << std::endl;
+//
+//  for (int i = 0; i != 80; ++i) {
+//    test_Ordered_List();
+//    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+//      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+//      abort();
+//    }
+//    std::cout << 'O' << std::flush;
+//  }
+//  std::cout << std::endl;
+//
+//  for (int i = 0; i != 80; ++i) {
+//    test_Unordered_List();
+//    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+//      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+//      abort();
+//    }
+//    std::cout << 'U' << std::flush;
+//  }
+//  std::cout << std::endl;
+//
+////for (int i = 0; i != 100; ++i) {
+////  test_Deque();
+////  if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+////    std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+////    abort();
+////  }
+////  std::cout << 'D' << std::flush;
+////}
+////std::cout << std::endl;
+//#endif
+//
+//  for (int i = 0; i != 80; ++i) {
+//    test_Epoch_List();
+//    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+//      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+//      abort();
+//    }
+//    std::cout << 'E' << std::flush;
+//  }
+//  std::cout << std::endl;
 
   for (int i = 0; i != 80; ++i) {
     test_Antiable_List();

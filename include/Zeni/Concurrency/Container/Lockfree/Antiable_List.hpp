@@ -10,22 +10,16 @@ namespace Zeni::Concurrency {
     Antiable_List(const Antiable_List &) = delete;
     Antiable_List & operator=(const Antiable_List &) = delete;
 
-    struct Inner_Node : public Reclamation_Stack::Node {
-      Inner_Node() = default;
-      Inner_Node(const TYPE &value_) : value(value_) {}
-      Inner_Node(TYPE &&value_) : value(std::move(value_)) {}
-
-      TYPE value;
-    };
-
     struct Node : public Reclamation_Stack::Node {
       Node() = default;
-      Node(Inner_Node * const value_ptr_, const bool insertion_) : value_ptr(value_ptr_), cat(insertion_) {}
-      Node(Node * const &next_, Inner_Node * const value_ptr_, const bool insertion_) : next(next_), value_ptr(value_ptr_), cat(insertion_) {}
-      Node(Node * &&next_, Inner_Node * const value_ptr_, const bool insertion_) : next(std::move(next_)), value_ptr(value_ptr_), cat(insertion_) {}
+      Node(const TYPE &value_, const bool insertion_) : cat(insertion_), value(value_) {}
+      Node(TYPE &&value_, const bool insertion_) :cat(insertion_), value(std::move(value_)) {}
+      Node(Node * const &next_, const TYPE &value_, const bool insertion_) : next(next_), cat(insertion_), value(value_) {}
+      Node(Node * const &next_, TYPE &&value_, const bool insertion_) : next(next_), cat(insertion_), value(std::move(value_)) {}
+      Node(Node * &&next_, const TYPE &value_, const bool insertion_) : next(std::move(next_)), cat(insertion_), value(value_) {}
+      Node(Node * &&next_, TYPE &&value_, const bool insertion_) : next(std::move(next_)), cat(insertion_), value(std::move(value_)) {}
 
       ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> next = nullptr;
-      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Inner_Node *> value_ptr = nullptr;
       struct ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER CAT {
         CAT(const bool insertion_) : instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
         std::atomic<int64_t> instance_count;
@@ -33,15 +27,12 @@ namespace Zeni::Concurrency {
       } cat;
       Epoch_List::Token_Ptr creation_epoch = Zeni::Concurrency::Epoch_List::Create_Token();
       Epoch_List::Token_Ptr deletion_epoch = Zeni::Concurrency::Epoch_List::Create_Token();
+      TYPE value;
     };
 
     struct Cursor {
       Cursor() = default;
       Cursor(Antiable_List * const antiable_list) : raw_cur(antiable_list->m_head.load(std::memory_order_relaxed)), raw_next(masked_cur ? masked_cur->next.load(std::memory_order_relaxed) : nullptr) {}
-
-      Inner_Node * get_value_ptr() const {
-        return masked_cur ? masked_cur->value_ptr.load(std::memory_order_acquire) : nullptr;
-      }
 
       bool is_candidate_for_removal(const uint64_t earliest_epoch) const {
         if (raw_cur != masked_cur || raw_next == masked_next)
@@ -104,7 +95,7 @@ namespace Zeni::Concurrency {
       }
 
       reference operator*() const {
-        return m_node->value_ptr.load(std::memory_order_relaxed)->value;
+        return m_node->value;
       }
 
       const_iterator next() const {
@@ -168,12 +159,20 @@ namespace Zeni::Concurrency {
       return const_iterator(current_epoch->epoch(), m_head.load(std::memory_order_relaxed));
     }
 
+    const_iterator cbegin(const uint64_t current_epoch) const {
+      return const_iterator(current_epoch, m_head.load(std::memory_order_relaxed));
+    }
+
     const_iterator cend() const {
       return const_iterator();
     }
 
     const_iterator begin(const typename Epoch_List::Token_Ptr::Lock &current_epoch) const {
       return cbegin(current_epoch->epoch());
+    }
+
+    const_iterator begin(const uint64_t current_epoch) const {
+      return cbegin(current_epoch);
     }
 
     const_iterator end() const {
@@ -189,9 +188,7 @@ namespace Zeni::Concurrency {
       Node * head = m_head.load(std::memory_order_relaxed);
       while (head) {
         Node * const next = reinterpret_cast<Node *>(uintptr_t(head->next.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
-        Inner_Node * const value_ptr = head->value_ptr.load(std::memory_order_relaxed);
         delete head;
-        delete value_ptr;
         head = next;
       }
     }
@@ -248,14 +245,13 @@ namespace Zeni::Concurrency {
             continue;
           }
 
-          Inner_Node * value_ptr = cursor.get_value_ptr();
-          if (!cursor.is_end() && (!value_ptr || value_ptr->value < value)) {
+          if (!cursor.is_end() && (!cursor.masked_cur || cursor.masked_cur->value < value)) {
             last_unmarked = cursor;
             cursor.increment();
             continue;
           }
 
-          if (value_ptr && value_ptr->value == value) {
+          if (cursor.masked_cur && cursor.masked_cur->value == value) {
             int64_t instance_count = cursor.masked_cur->cat.instance_count.load(std::memory_order_relaxed);
             const int64_t instance_count_increment = mode == Mode::Insert ? 1 : -1;
             while (instance_count) {
@@ -276,8 +272,6 @@ namespace Zeni::Concurrency {
                   try_removal(epoch_list, earliest_epoch, cursor);
                 }
                 m_writers.fetch_sub(1, std::memory_order_relaxed);
-                if (new_value)
-                  delete new_value->value_ptr.load(std::memory_order_relaxed);
                 delete new_value;
                 return instance_count;
               }
@@ -287,7 +281,7 @@ namespace Zeni::Concurrency {
           }
 
           if (!new_value) {
-            new_value = new Node(new Inner_Node(value), mode == Mode::Insert);
+            new_value = new Node(value, mode == Mode::Insert);
             std::atomic_thread_fence(std::memory_order_release);
           }
 
@@ -350,7 +344,6 @@ namespace Zeni::Concurrency {
         cursor.masked_next = nullptr;
       }
 
-      Reclamation_Stacks::push(old_cur->value_ptr);
       Reclamation_Stacks::push(old_cur);
 
       return true;

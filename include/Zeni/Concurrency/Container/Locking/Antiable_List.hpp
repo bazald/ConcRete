@@ -15,19 +15,19 @@ namespace Zeni::Concurrency {
 
     struct Node {
       Node() = default;
-      Node(const TYPE &value_, const bool insertion_) : value(value_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
-      Node(TYPE &&value_, const bool insertion_) : value(std::move(value_)), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
-      Node(Node * const &next_, const TYPE &value_, const bool insertion_) : next(next_), value(value_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
-      Node(Node * const &next_, TYPE &&value_, const bool insertion_) : next(next_), value(std::move(value_)), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
-      Node(Node * &&next_, const TYPE &value_, const bool insertion_) : next(std::move(next_)), value(value_), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
-      Node(Node * &&next_, TYPE &&value_, const bool insertion_) : next(std::move(next_)), value(std::move(value_)), instance_count(insertion_ ? 1 : -1), insertion(insertion_) {}
+      Node(const TYPE &value_, const bool insertion_) : instance_count(insertion_ ? 1 : -1), insertion(insertion_), value(value_) {}
+      Node(TYPE &&value_, const bool insertion_) : instance_count(insertion_ ? 1 : -1), insertion(insertion_), value(std::move(value_)) {}
+      Node(Node * const &next_, const TYPE &value_, const bool insertion_) : next(next_), instance_count(insertion_ ? 1 : -1), insertion(insertion_), value(value_) {}
+      Node(Node * const &next_, TYPE &&value_, const bool insertion_) : next(next_), instance_count(insertion_ ? 1 : -1), insertion(insertion_), value(std::move(value_)) {}
+      Node(Node * &&next_, const TYPE &value_, const bool insertion_) : next(std::move(next_)), instance_count(insertion_ ? 1 : -1), insertion(insertion_), value(value_) {}
+      Node(Node * &&next_, TYPE &&value_, const bool insertion_) : next(std::move(next_)), instance_count(insertion_ ? 1 : -1), insertion(insertion_), value(std::move(value_)) {}
 
       Node * next = nullptr;
-      TYPE value;
       uint64_t instance_count = 1;
+      bool insertion = false;
       Epoch_List::Token_Ptr creation_epoch = Zeni::Concurrency::Epoch_List::Create_Token();
       Epoch_List::Token_Ptr deletion_epoch = Zeni::Concurrency::Epoch_List::Create_Token();
-      bool insertion = false;
+      TYPE value;
     };
 
     struct Cursor {
