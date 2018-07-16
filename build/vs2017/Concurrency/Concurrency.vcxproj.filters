@@ -180,6 +180,12 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Shared_Ptr.hpp">
       <Filter>Header Files\Zeni\Container\None</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Antiable_Hashset.hpp">
+      <Filter>Header Files\Zeni\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Antiable_Hashset.hpp">
+      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job.cpp">
