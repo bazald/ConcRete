@@ -37,7 +37,7 @@ namespace Zeni::Concurrency {
       bool is_candidate_for_removal(const uint64_t earliest_epoch) const {
         if (raw_cur != masked_cur || raw_next == masked_next)
           return false;
-        const uint64_t deletion_epoch = masked_cur->deletion_epoch.load()->epoch();
+        const uint64_t deletion_epoch = masked_cur->deletion_epoch.load(std::memory_order_relaxed)->epoch();
         return deletion_epoch && earliest_epoch > deletion_epoch;
       }
 
@@ -137,8 +137,8 @@ namespace Zeni::Concurrency {
             m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
             continue;
           }
-          const uint64_t creation_epoch = m_node->creation_epoch.load()->epoch();
-          const uint64_t deletion_epoch = m_node->deletion_epoch.load()->epoch();
+          const uint64_t deletion_epoch = m_node->deletion_epoch.load(std::memory_order_relaxed)->epoch();
+          const uint64_t creation_epoch = m_node->creation_epoch.load(std::memory_order_relaxed)->epoch();
           assert(!deletion_epoch || creation_epoch);
           if (creation_epoch && creation_epoch < m_current_epoch && (!deletion_epoch || deletion_epoch > m_current_epoch)) {
             std::atomic_thread_fence(std::memory_order_acquire);
@@ -263,7 +263,7 @@ namespace Zeni::Concurrency {
                   epoch_list->acquire(cursor.masked_cur->creation_epoch);
                   if (mode == Mode::Erase && epoch) {
                     epoch_list->acquire(cursor.masked_cur->deletion_epoch);
-                    *epoch = cursor.masked_cur->deletion_epoch.load();
+                    *epoch = cursor.masked_cur->deletion_epoch.load(std::memory_order_relaxed);
                     assert(*epoch);
                   }
                   else
@@ -290,7 +290,7 @@ namespace Zeni::Concurrency {
             m_usage.fetch_add(1, std::memory_order_relaxed);
             if (mode == Mode::Insert && epoch) {
               epoch_list->acquire(new_value->creation_epoch);
-              *epoch = new_value->creation_epoch.load();
+              *epoch = new_value->creation_epoch.load(std::memory_order_relaxed);
               assert(*epoch);
             }
             else

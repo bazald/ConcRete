@@ -480,7 +480,7 @@ void test_Epoch_List() {
           else
           {
             m_epoch_list->acquire(epoch);
-            m_epochs.push_back(epoch.load());
+            m_epochs.push_back(epoch.load(std::memory_order_relaxed));
             --m_to_acquire;
             ++m_to_release;
           }
@@ -679,9 +679,7 @@ void test_Antiable_List() {
               m_sum += *selected * *it;
               //oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
             }
-            if (insertion_epoch)
-              m_epoch_list->try_release(insertion_epoch);
-            else
+            if (!m_epoch_list->try_release(insertion_epoch))
               std::cerr << 'x';
           }
           //m_debug_output->push(oss.str());
@@ -699,9 +697,7 @@ void test_Antiable_List() {
               m_sum -= *selected * *it;
               //oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
             }
-            if (erasure_epoch)
-              m_epoch_list->try_release(erasure_epoch);
-            else
+            if (!m_epoch_list->try_release(erasure_epoch))
               std::cerr << 'y';
           }
           //m_debug_output->push(oss.str());
@@ -734,8 +730,8 @@ void test_Antiable_List() {
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
   for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
-    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_list1, antiable_list2, 4096, sum));
-    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_list2, antiable_list1, 64, sum));
+    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_list1, antiable_list2, 4096, /*debug_output,*/ sum));
+    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_list2, antiable_list1, 64, /*debug_output,*/ sum));
   }
   job_queue->give_many(std::move(jobs));
 
@@ -795,9 +791,7 @@ void test_Antiable_Hashset() {
               m_sum += *selected * *it;
               //oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
             }
-            if (insertion_epoch)
-              m_epoch_list->try_release(insertion_epoch);
-            else
+            if (!m_epoch_list->try_release(insertion_epoch))
               std::cerr << 'x';
           }
           //m_debug_output->push(oss.str());
@@ -815,9 +809,7 @@ void test_Antiable_Hashset() {
               m_sum -= *selected * *it;
               //oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
             }
-            if (erasure_epoch)
-              m_epoch_list->try_release(erasure_epoch);
-            else
+            if (!m_epoch_list->try_release(erasure_epoch))
               std::cerr << 'y';
           }
           //m_debug_output->push(oss.str());

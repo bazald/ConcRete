@@ -32,7 +32,6 @@ namespace Zeni::Concurrency {
     private:
       ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_uint64_t m_epoch = 0;
       ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool m_instantaneous = false;
-      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool m_pushed = false;
     };
 
     typedef Shared_Ptr<Token> Token_Ptr;
@@ -50,6 +49,7 @@ namespace Zeni::Concurrency {
 
       std::atomic<Node *> next = nullptr;
       uint64_t epoch = 0;
+      Token_Ptr token_ptr;
     };
 
     struct Cursor {
@@ -128,9 +128,8 @@ namespace Zeni::Concurrency {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_relaxed);
 
-      //current_epoch.load()->m_instantaneous.store(false, std::memory_order_relaxed);
-      m_acquires.push(current_epoch);
-      const Token_Ptr::Lock current_local = current_epoch.load();
+      const Token_Ptr::Lock current_local = current_epoch.load(std::memory_order_relaxed);
+      //current_local->m_instantaneous.store(false, std::memory_order_relaxed);
       continue_acquire(current_local);
 
       Cursor cursor(this);
@@ -145,9 +144,8 @@ namespace Zeni::Concurrency {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_relaxed);
 
-      //current_epoch.load()->m_instantaneous.store(false, std::memory_order_relaxed);
-      m_acquires.push(current_epoch);
-      const Token_Ptr::Lock current_local = current_epoch.load();
+      const Token_Ptr::Lock current_local = current_epoch.load(std::memory_order_relaxed);
+      //current_local->m_instantaneous.store(false, std::memory_order_relaxed);
       continue_acquire(current_local);
 
       m_writers.fetch_sub(1, std::memory_order_relaxed);
@@ -157,9 +155,8 @@ namespace Zeni::Concurrency {
       //m_size.fetch_add(1, std::memory_order_relaxed);
       m_writers.fetch_add(1, std::memory_order_relaxed);
 
-      const Token_Ptr::Lock current_local = current_epoch.load();
+      const Token_Ptr::Lock current_local = current_epoch.load(std::memory_order_relaxed);
       current_local->m_instantaneous.store(true, std::memory_order_relaxed);
-      m_acquires.push(current_epoch);
       continue_acquire(current_local);
 
       m_writers.fetch_sub(1, std::memory_order_relaxed);
@@ -178,36 +175,30 @@ namespace Zeni::Concurrency {
   private:
     void continue_acquire(const Token_Ptr::Lock &epoch_local) {
       Node * new_tail = nullptr;
-      while (!epoch_local->m_pushed.load(std::memory_order_acquire)) {
-        Token_Ptr current;
-        if (!m_acquires.front(current))
-          break;
-        Token_Ptr::Lock current_local(current);
-        uint64_t value = current_local->epoch();
-        if (value == 0) {
-          uint64_t next_assignable = m_next_assignable.load(std::memory_order_relaxed);
-          if (current_local->m_epoch.compare_exchange_strong(value, next_assignable, std::memory_order_relaxed, std::memory_order_relaxed))
-            value = next_assignable;
-        }
-
-        {
-          uint64_t value_copy = value;
-          m_next_assignable.compare_exchange_strong(value_copy, value + epoch_increment, std::memory_order_relaxed, std::memory_order_relaxed);
-        }
-
-        Node * old_tail = m_tail.load(std::memory_order_acquire);
-        if (old_tail->epoch == value) {
-          if (new_tail)
-            new_tail->epoch = value + epoch_increment;
-          else
-            new_tail = new Node(value + epoch_increment);
-          if (push_pointers(old_tail, current_local->instantaneous() ? reinterpret_cast<Node *>(uintptr_t(new_tail) | 0x1) : new_tail))
+      Node * old_tail = m_tail.load(std::memory_order_acquire);
+      while (!epoch_local->epoch()) {
+        if (new_tail)
+          new_tail->epoch = old_tail->epoch + epoch_increment;
+        else
+          new_tail = new Node(old_tail->epoch + epoch_increment);
+        Token_Ptr::Lock epoch_current;
+        if (old_tail->token_ptr.compare_exchange_strong(epoch_current, epoch_local, std::memory_order_release, std::memory_order_acquire)) {
+          uint64_t epoch = 0;
+          if (epoch_local->m_epoch.compare_exchange_strong(epoch, old_tail->epoch, std::memory_order_relaxed, std::memory_order_relaxed))
+            epoch = old_tail->epoch;
+          if (push_pointers(old_tail, (epoch != old_tail->epoch || epoch_local->instantaneous()) ? reinterpret_cast<Node *>(uintptr_t(new_tail) | 0x1) : new_tail))
             new_tail = nullptr;
+          break;
         }
-
-        current_local->m_pushed.store(true, std::memory_order_release);
-
-        m_acquires.try_pop_if_equals(current);
+        else {
+          uint64_t epoch = 0;
+          if (epoch_current->m_epoch.compare_exchange_strong(epoch, old_tail->epoch, std::memory_order_relaxed, std::memory_order_relaxed))
+            epoch = old_tail->epoch;
+          if (push_pointers(old_tail, (epoch != old_tail->epoch || epoch_current->instantaneous()) ? reinterpret_cast<Node *>(uintptr_t(new_tail) | 0x1) : new_tail)) {
+            old_tail = new_tail;
+            new_tail = nullptr;
+          }
+        }
       }
       delete new_tail;
     }
@@ -300,8 +291,6 @@ namespace Zeni::Concurrency {
 
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_head = new Node(1);
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_tail = m_head.load(std::memory_order_relaxed);
-    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_uint64_t m_next_assignable = 1;
-    Smart_Queue<Token_Ptr> m_acquires;
     //ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_writers = 0;
   };

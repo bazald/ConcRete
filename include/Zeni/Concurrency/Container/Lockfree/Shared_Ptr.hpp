@@ -65,7 +65,12 @@ namespace Zeni::Concurrency {
       }
 
       explicit Lock(const Shared_Ptr<TYPE> &rhs) {
-        Node * const rhs_ptr = rhs.m_ptr.load(std::memory_order_relaxed);
+        Node * const rhs_ptr = rhs.m_ptr.load(std::memory_order_seq_cst);
+        m_ptr = rhs_ptr && rhs_ptr->increment_refs() ? rhs_ptr : nullptr;
+      }
+
+      explicit Lock(const Shared_Ptr<TYPE> &rhs, const std::memory_order order) {
+        Node * const rhs_ptr = rhs.m_ptr.load(order);
         m_ptr = rhs_ptr && rhs_ptr->increment_refs() ? rhs_ptr : nullptr;
       }
 
@@ -224,9 +229,17 @@ namespace Zeni::Concurrency {
       return Shared_Ptr<TYPE>::Lock(*this);
     }
 
+    typename Shared_Ptr<TYPE>::Lock load(const std::memory_order order) const {
+      return Shared_Ptr<TYPE>::Lock(*this, order);
+    }
+
     void store(const typename Shared_Ptr<TYPE>::Lock &rhs) {
-      Shared_Ptr<TYPE>::Lock expected = load();
-      compare_exchange_strong(expected, rhs);
+      store(rhs, std::memory_order_seq_cst);
+    }
+
+    void store(const typename Shared_Ptr<TYPE>::Lock &rhs, const std::memory_order order) {
+      Shared_Ptr<TYPE>::Lock expected = load(std::memory_order_relaxed);
+      compare_exchange_strong(expected, rhs, order, std::memory_order_relaxed);
     }
 
     Shared_Ptr & operator=(const typename Shared_Ptr<TYPE>::Lock &rhs) {
@@ -235,17 +248,21 @@ namespace Zeni::Concurrency {
     }
 
     Shared_Ptr & operator=(const Shared_Ptr<TYPE> &rhs) {
-      store(Lock(rhs));
+      store(Lock(rhs, std::memory_order_seq_cst), std::memory_order_seq_cst);
       return *this;
     }
 
     bool compare_exchange_strong(typename Shared_Ptr<TYPE>::Lock &expected, const typename Shared_Ptr<TYPE>::Lock desired) {
+      return compare_exchange_strong(expected, desired, std::memory_order_seq_cst, std::memory_order_seq_cst);
+    }
+
+    bool compare_exchange_strong(typename Shared_Ptr<TYPE>::Lock &expected, const typename Shared_Ptr<TYPE>::Lock desired, const std::memory_order succ, const std::memory_order fail) {
       assert(!expected.m_ptr || bool(*expected.m_ptr));
       assert(!desired.m_ptr || bool(*desired.m_ptr));
       Node * const old_expected = expected.m_ptr;
       if (desired.m_ptr)
         desired.m_ptr->increment_refs();
-      bool success = m_ptr.compare_exchange_strong(expected.m_ptr, desired.m_ptr, std::memory_order_relaxed, std::memory_order_relaxed);
+      bool success = m_ptr.compare_exchange_strong(expected.m_ptr, desired.m_ptr, succ, fail);
       if (!success) {
         if (expected.m_ptr && !expected.m_ptr->increment_refs())
           expected.m_ptr = nullptr;
