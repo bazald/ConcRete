@@ -93,8 +93,9 @@ namespace Zeni::Concurrency {
 
       const_iterator() = default;
 
-      const_iterator(const uint64_t current_epoch, Node * const node)
-        : m_current_epoch(current_epoch),
+      const_iterator(Antiable_Hashset<TYPE> * const antiable_hashset, const uint64_t current_epoch, Node * const node)
+        : m_antiable_hashset(antiable_hashset),
+        m_current_epoch(current_epoch),
         m_node(node)
       {
         validate();
@@ -139,8 +140,12 @@ namespace Zeni::Concurrency {
         for (;;) {
           if (!m_node)
             break;
+
+          Node * raw_next_in_list = m_node->next_in_list.load(std::memory_order_relaxed);
+          while (m_antiable_hashset->try_list_removal(m_node, raw_next_in_list));
+
           if (!m_node->cat.insertion) {
-            m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next_in_list.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
+            m_node = reinterpret_cast<Node *>(uintptr_t(raw_next_in_list) & ~uintptr_t(0x1));
             continue;
           }
           const uint64_t creation_epoch = m_node->creation_epoch.load()->epoch();
@@ -151,18 +156,19 @@ namespace Zeni::Concurrency {
             break;
           }
           else {
-            m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next_in_list.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
+            m_node = reinterpret_cast<Node *>(uintptr_t(raw_next_in_list) & ~uintptr_t(0x1));
             continue;
           }
         }
       }
 
+      Antiable_Hashset * m_antiable_hashset = nullptr;
       uint64_t m_current_epoch = 0;
       Node * m_node = nullptr;
     };
 
     const_iterator cbegin(const typename Epoch_List::Token_Ptr::Lock &current_epoch) const {
-      return const_iterator(current_epoch->epoch(), m_head.load(std::memory_order_relaxed));
+      return const_iterator(const_cast<Antiable_Hashset<TYPE> *>(this), current_epoch->epoch(), m_head.load(std::memory_order_relaxed));
     }
 
     const_iterator cbegin(const uint64_t current_epoch) const {
@@ -259,6 +265,9 @@ namespace Zeni::Concurrency {
           }
 
           if (cursor.masked_cur && cursor.masked_cur->value == value) {
+            Node * raw_next_in_list = cursor.masked_cur->next_in_list.load(std::memory_order_relaxed);
+            while (try_list_removal(cursor.masked_cur, raw_next_in_list));
+
             int64_t instance_count = cursor.masked_cur->cat.instance_count.load(std::memory_order_relaxed);
             const int64_t instance_count_increment = mode == Mode::Insert ? 1 : -1;
             while (instance_count) {
@@ -298,6 +307,7 @@ namespace Zeni::Concurrency {
             m_usage.fetch_add(1, std::memory_order_relaxed);
 
             do {
+              while (try_list_removal(nullptr, head));
               new_value->next_in_list = head;
             } while (!m_head.compare_exchange_strong(head, new_value, std::memory_order_relaxed, std::memory_order_relaxed));
 
@@ -354,57 +364,30 @@ namespace Zeni::Concurrency {
         cursor.masked_next = nullptr;
       }
 
-      for (;;) {
-        Node * prev = nullptr;
-        Node * raw_cur = m_head.load(std::memory_order_relaxed);
-        Node * masked_cur = reinterpret_cast<Node *>(uintptr_t(raw_cur) & ~uintptr_t(0x1));
-        Node * raw_next = masked_cur ? masked_cur->next_in_list.load(std::memory_order_relaxed) : nullptr;
-        Node * masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
-        while (masked_cur != old_cur) {
-          if (!masked_cur)
-            return true;
-
-          if (raw_next != masked_next && raw_cur == masked_cur) {
-            if ((prev ? prev->next_in_list : m_head).compare_exchange_strong(masked_cur, masked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
-              Reclamation_Stacks::push(masked_cur);
-              raw_cur = raw_next;
-              masked_cur = masked_next;
-              raw_next = masked_cur ? masked_cur->next_in_list.load(std::memory_order_relaxed) : nullptr;
-              masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
-              continue;
-            }
-            else
-              masked_cur = reinterpret_cast<Node *>(uintptr_t(raw_cur) & ~uintptr_t(0x1));
-          }
-
-          prev = masked_cur;
-          raw_cur = raw_next;
-          masked_cur = masked_next;
-          raw_next = masked_cur ? masked_cur->next_in_list.load(std::memory_order_relaxed) : nullptr;
-          masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
-        }
-
-        if (raw_next == masked_next) {
-          for (;;) {
-            Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) | 0x1);
-            if (masked_cur->next_in_list.compare_exchange_strong(raw_next, marked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
-              raw_next = marked_next;
-              break;
-            }
-            else
-              masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
-          }
-        }
-
-        if (raw_cur == masked_cur) {
-          if ((prev ? prev->next_in_list : m_head).compare_exchange_strong(masked_cur, masked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
-            Reclamation_Stacks::push(masked_cur);
-            break;
-          }
-        }
-      }
+      Node * raw_next_in_list = old_cur->next_in_list.load(std::memory_order_relaxed);
+      while (!old_cur->next_in_list.compare_exchange_weak(raw_next_in_list, reinterpret_cast<Node *>(uintptr_t(raw_next_in_list) | 0x1), std::memory_order_relaxed, std::memory_order_relaxed));
 
       return true;
+    }
+
+    // Return true if cur removed, otherwise false
+    bool try_list_removal(Node * const prev, Node * &raw_cur) {
+      Node * masked_cur = reinterpret_cast<Node *>(uintptr_t(raw_cur) & ~uintptr_t(0x1));
+      if (raw_cur != masked_cur)
+        return false;
+
+      Node * raw_next = masked_cur ? masked_cur->next_in_list.load(std::memory_order_relaxed) : nullptr;
+      Node * masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
+      if (raw_next == masked_next)
+        return false;
+
+      if ((prev ? prev->next_in_list : m_head).compare_exchange_strong(raw_cur, masked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
+        Reclamation_Stacks::push(masked_cur);
+        raw_cur = masked_next;
+        return true;
+      }
+      else
+        return false;
     }
 
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_head = nullptr;
