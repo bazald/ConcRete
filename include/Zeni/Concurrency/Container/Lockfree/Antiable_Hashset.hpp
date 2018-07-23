@@ -3,21 +3,21 @@
 
 #include "Epoch_List.hpp"
 
+#include "../../Internal/Reclamation_Stacks.hpp"
+
 namespace Zeni::Concurrency {
 
   template <typename TYPE, typename HASH = std::hash<TYPE>>
   class Antiable_Hashset {
+  public:
     Antiable_Hashset(const Antiable_Hashset &) = delete;
     Antiable_Hashset & operator=(const Antiable_Hashset &) = delete;
 
     struct Node : public Reclamation_Stack::Node {
       Node() = default;
       Node(const TYPE &value_, const bool insertion_) : cat(insertion_), value(value_) {}
-      Node(TYPE &&value_, const bool insertion_) : cat(insertion_), value(std::move(value_)) {}
       Node(Node * const &next_in_bucket_, const TYPE &value_, const bool insertion_) : next_in_bucket(next_in_bucket_), cat(insertion_), value(value_) {}
-      Node(Node * const &next_in_bucket_, TYPE &&value_, const bool insertion_) : next_in_bucket(next_in_bucket_), cat(insertion_), value(std::move(value_)) {}
       Node(Node * &&next_in_bucket_, const TYPE &value_, const bool insertion_) : next_in_bucket(std::move(next_in_bucket_)), cat(insertion_), value(value_) {}
-      Node(Node * &&next_in_bucket_, TYPE &&value_, const bool insertion_) : next_in_bucket(std::move(next_in_bucket_)), cat(insertion_), value(std::move(value_)) {}
 
       ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> next_in_list = nullptr;
       ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> next_in_bucket = nullptr;
@@ -37,17 +37,17 @@ namespace Zeni::Concurrency {
 
     struct Cursor {
       Cursor() = default;
-      Cursor(Bucket &bucket) : bucket_head(&bucket.bucket_head), raw_cur(bucket_head->load(std::memory_order_relaxed)), raw_next(masked_cur ? masked_cur->next_in_bucket.load(std::memory_order_relaxed) : nullptr) {}
+      Cursor(Bucket &bucket) : bucket_head(&bucket.bucket_head), raw_cur(bucket_head->load()), raw_next(masked_cur ? masked_cur->next_in_bucket.load() : nullptr) {}
 
       bool is_candidate_for_removal(const uint64_t earliest_epoch) const {
         if (raw_cur != masked_cur || raw_next == masked_next)
           return false;
-        const uint64_t deletion_epoch = masked_cur->deletion_epoch.load(std::memory_order_relaxed)->epoch();
+        const uint64_t deletion_epoch = masked_cur->deletion_epoch.load()->epoch();
         return deletion_epoch && earliest_epoch > deletion_epoch;
       }
 
       bool is_marked_for_deletion() const {
-        return masked_cur && masked_cur->cat.instance_count.load(std::memory_order_relaxed) == 0;
+        return masked_cur && masked_cur->cat.instance_count.load() == 0;
       }
 
       bool is_end() const {
@@ -61,7 +61,7 @@ namespace Zeni::Concurrency {
         raw_cur = raw_next;
         masked_cur = masked_next;
         if (masked_cur) {
-          raw_next = masked_cur->next_in_bucket.load(std::memory_order_relaxed);
+          raw_next = masked_cur->next_in_bucket.load();
           masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
         }
         else {
@@ -93,9 +93,8 @@ namespace Zeni::Concurrency {
 
       const_iterator() = default;
 
-      const_iterator(Antiable_Hashset<TYPE> * const antiable_hashset, const uint64_t current_epoch, Node * const node)
-        : m_antiable_hashset(antiable_hashset),
-        m_current_epoch(current_epoch),
+      const_iterator(const uint64_t current_epoch, Node * const node)
+        : m_current_epoch(current_epoch),
         m_node(node)
       {
         validate();
@@ -110,7 +109,7 @@ namespace Zeni::Concurrency {
       }
 
       const_iterator & operator++() {
-        m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next_in_list.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
+        m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next_in_list.load()) & ~uintptr_t(0x1));
         validate();
         return *this;
       }
@@ -135,44 +134,41 @@ namespace Zeni::Concurrency {
         return m_node->deletion_epoch.load()->epoch();
       }
 
-    private:
+    //private:
       void validate() {
         for (;;) {
           if (!m_node)
             break;
-
-          Node * raw_next_in_list = m_node->next_in_list.load(std::memory_order_relaxed);
-          while (m_antiable_hashset->try_list_removal(m_node, raw_next_in_list));
-
           if (!m_node->cat.insertion) {
-            m_node = reinterpret_cast<Node *>(uintptr_t(raw_next_in_list) & ~uintptr_t(0x1));
+            m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next_in_list.load()) & ~uintptr_t(0x1));
             continue;
           }
-          const uint64_t deletion_epoch = m_node->deletion_epoch.load(std::memory_order_relaxed)->epoch();
-          const uint64_t creation_epoch = m_node->creation_epoch.load(std::memory_order_relaxed)->epoch();
+          const uint64_t deletion_epoch = m_node->deletion_epoch.load()->epoch();
+          const uint64_t creation_epoch = m_node->creation_epoch.load()->epoch();
           assert(!deletion_epoch || creation_epoch);
           if (creation_epoch && creation_epoch < m_current_epoch && (!deletion_epoch || deletion_epoch > m_current_epoch)) {
             std::atomic_thread_fence(std::memory_order_acquire);
             break;
           }
           else {
-            m_node = reinterpret_cast<Node *>(uintptr_t(raw_next_in_list) & ~uintptr_t(0x1));
+            m_node = reinterpret_cast<Node *>(uintptr_t(m_node->next_in_list.load()) & ~uintptr_t(0x1));
             continue;
           }
         }
       }
 
-      Antiable_Hashset * m_antiable_hashset = nullptr;
       uint64_t m_current_epoch = 0;
       Node * m_node = nullptr;
     };
 
     const_iterator cbegin(const typename Epoch_List::Token_Ptr::Lock &current_epoch) const {
-      return const_iterator(const_cast<Antiable_Hashset<TYPE> *>(this), current_epoch->epoch(), m_head.load(std::memory_order_relaxed));
+      std::atomic_thread_fence(std::memory_order_acquire);
+      return const_iterator(current_epoch->epoch(), m_head.load());
     }
 
     const_iterator cbegin(const uint64_t current_epoch) const {
-      return const_iterator(current_epoch, m_head.load(std::memory_order_relaxed));
+      std::atomic_thread_fence(std::memory_order_acquire);
+      return const_iterator(current_epoch, m_head.load());
     }
 
     const_iterator cend() const {
@@ -197,9 +193,9 @@ namespace Zeni::Concurrency {
 
     ~Antiable_Hashset() noexcept {
       std::atomic_thread_fence(std::memory_order_acquire);
-      Node * head = m_head.load(std::memory_order_relaxed);
+      Node * head = m_head.load();
       while (head) {
-        Node * const next = reinterpret_cast<Node *>(uintptr_t(head->next_in_list.load(std::memory_order_relaxed)) & ~uintptr_t(0x1));
+        Node * const next = reinterpret_cast<Node *>(uintptr_t(head->next_in_list.load()) & ~uintptr_t(0x1));
         delete head;
         head = next;
       }
@@ -207,15 +203,15 @@ namespace Zeni::Concurrency {
     }
 
     bool empty() const {
-      return m_head.load(std::memory_order_relaxed) == nullptr;
+      return m_head.load() == nullptr;
     }
 
     int64_t size() const {
-      return m_size.load(std::memory_order_relaxed);
+      return m_size.load();
     }
 
     int64_t usage() const {
-      return m_usage.load(std::memory_order_relaxed);
+      return m_usage.load();
     }
 
     /// Return true if it decrements the count to 0, otherwise false
@@ -238,13 +234,13 @@ namespace Zeni::Concurrency {
       return access(epoch_list, value, &insertion_epoch, Mode::Insert) == 1;
     }
 
-  private:
+  //private:
     /// Return true if it increments the count to 1, otherwise false
     int64_t access(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value, Epoch_List::Token_Ptr::Lock * const epoch, const Mode mode) {
       const uint64_t earliest_epoch = epoch_list->front();
 
       Node * new_value = nullptr;
-      Bucket &bucket = m_buckets1.load(std::memory_order_relaxed)[HASH()(value) % m_num_buckets1.load(std::memory_order_relaxed)];
+      Bucket &bucket = m_buckets1.load()[HASH()(value) % m_num_buckets1.load()];
       for (;;) {
         Cursor last_unmarked;
         Cursor cursor(bucket);
@@ -265,34 +261,31 @@ namespace Zeni::Concurrency {
           }
 
           if (cursor.masked_cur && cursor.masked_cur->value == value) {
-            Node * raw_next_in_list = cursor.masked_cur->next_in_list.load(std::memory_order_relaxed);
-            while (try_list_removal(cursor.masked_cur, raw_next_in_list));
-
-            int64_t instance_count = cursor.masked_cur->cat.instance_count.load(std::memory_order_relaxed);
+            int64_t instance_count = cursor.masked_cur->cat.instance_count.load();
             const int64_t instance_count_increment = mode == Mode::Insert ? 1 : -1;
+            epoch_list->acquire(cursor.masked_cur->creation_epoch);
             while (instance_count) {
-              if (cursor.masked_cur->cat.instance_count.compare_exchange_strong(instance_count, instance_count + instance_count_increment, std::memory_order_relaxed, std::memory_order_relaxed)) {
+              if (cursor.masked_cur->cat.instance_count.compare_exchange_strong(instance_count, instance_count + instance_count_increment)) {
                 if (cursor.masked_cur->cat.insertion)
-                  m_size.fetch_add(instance_count_increment, std::memory_order_relaxed);
+                  m_size.fetch_add(instance_count_increment);
                 instance_count += instance_count_increment;
                 if (instance_count == 0) {
-                  m_usage.fetch_sub(1, std::memory_order_relaxed);
-                  epoch_list->acquire(cursor.masked_cur->creation_epoch);
+                  m_usage.fetch_sub(1);
+                  epoch_list->acquire(cursor.masked_cur->deletion_epoch);
                   if (mode == Mode::Erase && epoch) {
-                    epoch_list->acquire(cursor.masked_cur->deletion_epoch);
-                    *epoch = cursor.masked_cur->deletion_epoch.load(std::memory_order_relaxed);
+                    *epoch = cursor.masked_cur->deletion_epoch.load();
                     assert(*epoch);
                   }
                   else
-                    epoch_list->acquire_release(cursor.masked_cur->deletion_epoch);
+                    epoch_list->try_release(cursor.masked_cur->deletion_epoch.load());
                   try_removal(epoch_list, earliest_epoch, cursor);
                 }
                 delete new_value;
                 return instance_count;
               }
             }
-            cursor.increment();
-            continue;
+            epoch_list->acquire(cursor.masked_cur->deletion_epoch);
+            break;
           }
 
           if (!new_value) {
@@ -300,24 +293,23 @@ namespace Zeni::Concurrency {
             std::atomic_thread_fence(std::memory_order_release);
           }
 
-          new_value->next_in_bucket.store(last_unmarked.masked_cur ? last_unmarked.masked_next : head, std::memory_order_relaxed);
-          if ((last_unmarked.masked_cur ? last_unmarked.masked_cur->next_in_bucket : *cursor.bucket_head).compare_exchange_strong(last_unmarked.masked_cur ? last_unmarked.masked_next : head, new_value, std::memory_order_relaxed, std::memory_order_relaxed)) {
+          new_value->next_in_bucket.store(last_unmarked.masked_cur ? last_unmarked.masked_next : head);
+          if ((last_unmarked.masked_cur ? last_unmarked.masked_cur->next_in_bucket : *cursor.bucket_head).compare_exchange_strong(last_unmarked.masked_cur ? last_unmarked.masked_next : head, new_value)) {
             if (mode == Mode::Insert)
-              m_size.fetch_add(1, std::memory_order_relaxed);
-            m_usage.fetch_add(1, std::memory_order_relaxed);
+              m_size.fetch_add(1);
+            m_usage.fetch_add(1);
 
             do {
-              while (try_list_removal(nullptr, head));
               new_value->next_in_list = head;
-            } while (!m_head.compare_exchange_strong(head, new_value, std::memory_order_relaxed, std::memory_order_relaxed));
+            } while (!m_head.compare_exchange_strong(head, new_value));
 
+            epoch_list->acquire(new_value->creation_epoch);
             if (mode == Mode::Insert && epoch) {
-              epoch_list->acquire(new_value->creation_epoch);
-              *epoch = new_value->creation_epoch.load(std::memory_order_relaxed);
+              *epoch = new_value->creation_epoch.load();
               assert(*epoch);
             }
             else
-              epoch_list->acquire_release(new_value->creation_epoch);
+              epoch_list->try_release(new_value->creation_epoch.load());
             return mode == Mode::Insert ? 1 : -1;
           }
           else
@@ -333,7 +325,7 @@ namespace Zeni::Concurrency {
 
       while (!(uintptr_t(cursor.raw_next) & 0x1)) {
         Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(cursor.raw_next) | 0x1);
-        if (cursor.masked_cur->next_in_bucket.compare_exchange_strong(cursor.raw_next, marked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
+        if (cursor.masked_cur->next_in_bucket.compare_exchange_strong(cursor.raw_next, marked_next)) {
           cursor.masked_next = cursor.raw_next;
           cursor.raw_next = marked_next;
         }
@@ -347,7 +339,7 @@ namespace Zeni::Concurrency {
       }
 
       Node * const old_cur = cursor.masked_cur;
-      if (!(cursor.prev ? cursor.prev->next_in_bucket : *cursor.bucket_head).compare_exchange_strong(cursor.masked_cur, cursor.masked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
+      if (!(cursor.prev ? cursor.prev->next_in_bucket : *cursor.bucket_head).compare_exchange_strong(cursor.masked_cur, cursor.masked_next)) {
         cursor.masked_cur = old_cur;
         cursor.increment();
         return false;
@@ -356,7 +348,7 @@ namespace Zeni::Concurrency {
       cursor.raw_cur = cursor.raw_next;
       cursor.masked_cur = cursor.masked_next;
       if (cursor.masked_cur) {
-        cursor.raw_next = cursor.masked_cur->next_in_bucket.load(std::memory_order_relaxed);
+        cursor.raw_next = cursor.masked_cur->next_in_bucket.load();
         cursor.masked_next = reinterpret_cast<Node *>(uintptr_t(cursor.raw_next) & ~uintptr_t(0x1));
       }
       else {
@@ -364,35 +356,62 @@ namespace Zeni::Concurrency {
         cursor.masked_next = nullptr;
       }
 
-      Node * raw_next_in_list = old_cur->next_in_list.load(std::memory_order_relaxed);
-      while (!old_cur->next_in_list.compare_exchange_weak(raw_next_in_list, reinterpret_cast<Node *>(uintptr_t(raw_next_in_list) | 0x1), std::memory_order_relaxed, std::memory_order_relaxed));
+      for (;;) {
+        Node * prev = nullptr;
+        Node * raw_cur = m_head.load();
+        Node * masked_cur = reinterpret_cast<Node *>(uintptr_t(raw_cur) & ~uintptr_t(0x1));
+        Node * raw_next = masked_cur ? masked_cur->next_in_list.load() : nullptr;
+        Node * masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
+        while (masked_cur != old_cur) {
+          if (!masked_cur)
+            return true;
+
+          if (raw_next != masked_next && raw_cur == masked_cur) {
+            if ((prev ? prev->next_in_list : m_head).compare_exchange_strong(masked_cur, masked_next)) {
+              Reclamation_Stacks::push(masked_cur);
+              raw_cur = raw_next;
+              masked_cur = masked_next;
+              raw_next = masked_cur ? masked_cur->next_in_list.load() : nullptr;
+              masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
+              continue;
+            }
+            else
+              masked_cur = reinterpret_cast<Node *>(uintptr_t(raw_cur) & ~uintptr_t(0x1));
+          }
+
+          prev = masked_cur;
+          raw_cur = raw_next;
+          masked_cur = masked_next;
+          raw_next = masked_cur ? masked_cur->next_in_list.load() : nullptr;
+          masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
+        }
+
+        if (raw_next == masked_next) {
+          for (;;) {
+            Node * const marked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) | 0x1);
+            if (masked_cur->next_in_list.compare_exchange_strong(raw_next, marked_next)) {
+              raw_next = marked_next;
+              break;
+            }
+            else
+              masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
+          }
+        }
+
+        if (raw_cur == masked_cur) {
+          if ((prev ? prev->next_in_list : m_head).compare_exchange_strong(masked_cur, masked_next)) {
+            Reclamation_Stacks::push(masked_cur);
+            break;
+          }
+        }
+      }
 
       return true;
     }
 
-    // Return true if cur removed, otherwise false
-    bool try_list_removal(Node * const prev, Node * &raw_cur) {
-      Node * masked_cur = reinterpret_cast<Node *>(uintptr_t(raw_cur) & ~uintptr_t(0x1));
-      if (raw_cur != masked_cur)
-        return false;
-
-      Node * raw_next = masked_cur ? masked_cur->next_in_list.load(std::memory_order_relaxed) : nullptr;
-      Node * masked_next = reinterpret_cast<Node *>(uintptr_t(raw_next) & ~uintptr_t(0x1));
-      if (raw_next == masked_next)
-        return false;
-
-      if ((prev ? prev->next_in_list : m_head).compare_exchange_strong(raw_cur, masked_next, std::memory_order_relaxed, std::memory_order_relaxed)) {
-        Reclamation_Stacks::push(masked_cur);
-        raw_cur = masked_next;
-        return true;
-      }
-      else
-        return false;
-    }
-
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_head = nullptr;
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_uint64_t m_num_buckets1 = 64;
-    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_uint64_t m_num_buckets2 = 2 * m_num_buckets1.load(std::memory_order_relaxed);
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_uint64_t m_num_buckets2 = 2 * m_num_buckets1.load();
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Bucket *> m_buckets1 = new Bucket[m_num_buckets1];
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Bucket *> m_buckets2 = nullptr;
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
