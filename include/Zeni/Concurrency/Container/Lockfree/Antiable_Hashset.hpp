@@ -176,7 +176,7 @@ namespace Zeni::Concurrency {
     }
 
     const_iterator begin(const typename Epoch_List::Token_Ptr::Lock &current_epoch) const {
-      return cbegin(current_epoch->epoch());
+      return cbegin(current_epoch);
     }
 
     const_iterator begin(const uint64_t current_epoch) const {
@@ -310,6 +310,7 @@ namespace Zeni::Concurrency {
             }
             else
               epoch_list->try_release(new_value->creation_epoch.load());
+
             return mode == Mode::Insert ? 1 : -1;
           }
           else

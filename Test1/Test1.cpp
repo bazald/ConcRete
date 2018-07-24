@@ -911,7 +911,7 @@ void test_Antiable_Hashset(const std::shared_ptr<Zeni::Concurrency::Worker_Threa
             int64_t sum1 = 0;
             const auto it1 = m_antiable_hashset2->cbegin(insertion_epoch);
             if (it0 != it1) {
-              std::cerr << "Different heads" << std::endl;
+              std::cerr << "\nDifferent heads" << std::endl;
               auto cur = head;
               while (cur && cur != it1.m_node)
                 cur = reinterpret_cast<Zeni::Concurrency::Antiable_Hashset<int64_t>::Node *>(uintptr_t(cur->next_in_list.load()) & ~uintptr_t(0x1));
@@ -963,7 +963,7 @@ void test_Antiable_Hashset(const std::shared_ptr<Zeni::Concurrency::Worker_Threa
             int64_t sum1 = 0;
             const auto it1 = m_antiable_hashset2->cbegin(erasure_epoch);
             if (it0 != it1) {
-              std::cerr << "Different heads" << std::endl;
+              std::cerr << "\nDifferent heads" << std::endl;
               auto cur = head;
               while (cur && cur != it1.m_node)
                 cur = reinterpret_cast<Zeni::Concurrency::Antiable_Hashset<int64_t>::Node *>(uintptr_t(cur->next_in_list.load()) & ~uintptr_t(0x1));
@@ -1033,7 +1033,7 @@ void test_Antiable_Hashset(const std::shared_ptr<Zeni::Concurrency::Worker_Threa
   worker_threads->finish_jobs();
 
   if (antiable_hashset1->size() != 0 || antiable_hashset1->usage() != 0 || antiable_hashset2->size() != 0 || antiable_hashset2->usage() != 0)
-    std::cerr << 'X';
+    std::cerr << "X: " << antiable_hashset1->size() << ' ' << antiable_hashset1->usage() << ' ' << antiable_hashset2->size() << ' ' << antiable_hashset2->usage() << std::endl;
   if (sum.load(std::memory_order_relaxed) != 0) {
 #ifdef DEBUG_HARD
     std::cerr << std::endl;

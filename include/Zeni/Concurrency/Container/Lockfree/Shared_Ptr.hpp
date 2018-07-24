@@ -300,9 +300,10 @@ namespace Zeni::Concurrency {
 
     void reset() {
       Node * old_ptr = m_ptr.load(std::memory_order_relaxed);
-      while (!m_ptr.compare_exchange_weak(old_ptr, nullptr, std::memory_order_relaxed, std::memory_order_relaxed));
-      if (old_ptr && bool(*old_ptr))
-        old_ptr->decrement_refs();
+      if (m_ptr.compare_exchange_strong(old_ptr, nullptr, std::memory_order_relaxed, std::memory_order_relaxed)) {
+        if (old_ptr && bool(*old_ptr))
+          old_ptr->decrement_refs();
+      }
     }
 
   private:
