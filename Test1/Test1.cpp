@@ -1,6 +1,7 @@
-#include "Zeni/Concurrency/Container/Antiable_Hashset.hpp"
+//#include "Zeni/Concurrency/Container/Antiable_Hashset.hpp"
 #include "Zeni/Concurrency/Container/Antiable_List.hpp"
 #include "Zeni/Concurrency/Container/Epoch_List.hpp"
+#include "Zeni/Concurrency/Container/Intrusive_Shared_Ptr.hpp"
 #include "Zeni/Concurrency/Container/Ordered_List.hpp"
 #include "Zeni/Concurrency/Container/Shared_Ptr.hpp"
 #include "Zeni/Concurrency/Container/Stack.hpp"
@@ -82,12 +83,13 @@ static void test_Worker_Threads(const std::shared_ptr<Zeni::Concurrency::Worker_
 static void test_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Queue(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Queue_of_Shared_Ptrs(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+static void test_Queue_of_Intrusive_Shared_Ptrs(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Epoch_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Unordered_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Ordered_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
-static void test_Epochs_in_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+//static void test_Epochs_in_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
-static void test_Antiable_Hashset(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+//static void test_Antiable_Hashset(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 
@@ -167,17 +169,27 @@ int main()
 //    std::cout << 'Q' << std::flush;
 //  }
 //  std::cout << std::endl;
-//
-//  for (int i = 0; i != 80; ++i) {
-//    test_Queue_of_Shared_Ptrs(worker_threads, job_queue);
-//    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-//      std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-//      abort();
-//    }
-//    std::cout << 'P' << std::flush;
-//  }
-//  std::cout << std::endl;
-//
+
+  //for (int i = 0; i != 80000; ++i) {
+  //  test_Queue_of_Shared_Ptrs(worker_threads, job_queue);
+  //  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //  //  abort();
+  //  //}
+  //  std::cout << 'P' << std::flush;
+  //}
+  //std::cout << std::endl;
+
+  for (int i = 0; i != 80; ++i) {
+    test_Queue_of_Intrusive_Shared_Ptrs(worker_threads, job_queue);
+    //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+    //  abort();
+    //}
+    std::cout << 'I' << std::flush;
+  }
+  std::cout << std::endl;
+
 //  for (int i = 0; i != 80; ++i) {
 //    test_Stack(worker_threads, job_queue);
 //    if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
@@ -239,15 +251,15 @@ int main()
   //}
   //std::cout << std::endl;
 
-  for (int i = 0; i != 80000; ++i) {
-    test_Antiable_Hashset(worker_threads, job_queue);
-    //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-    //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-    //  abort();
-    //}
-    std::cout << 'H' << std::flush;
-  }
-  std::cout << std::endl;
+  //for (int i = 0; i != 80000; ++i) {
+  //  test_Antiable_Hashset(worker_threads, job_queue);
+  //  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //  //  abort();
+  //  //}
+  //  std::cout << 'H' << std::flush;
+  //}
+  //std::cout << std::endl;
 
   Zeni::Rete::Debug_Counters::print(std::cerr);
   test_Rete_Network(worker_threads, job_queue);
@@ -404,6 +416,64 @@ void test_Queue_of_Shared_Ptrs(const std::shared_ptr<Zeni::Concurrency::Worker_T
   };
 
   const auto queue = std::make_shared<Zeni::Concurrency::Queue<Zeni::Concurrency::Shared_Ptr<int>>>();
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
+    jobs.emplace_back(std::make_shared<Pusher>(queue));
+    jobs.emplace_back(std::make_shared<Popper>(queue));
+  }
+  job_queue->give_many(std::move(jobs));
+
+  worker_threads->finish_jobs();
+
+  //std::cout << std::endl;
+}
+
+void test_Queue_of_Intrusive_Shared_Ptrs(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+  struct Intruded_Int : public Zeni::Concurrency::Enable_Intrusive_Sharing<Intruded_Int> {
+    Intruded_Int() = default;
+    Intruded_Int(const int value_) : value(value_) {}
+
+    int value = 0;
+  };
+
+  class Pusher : public Zeni::Concurrency::Job {
+  public:
+    Pusher(const std::shared_ptr<Zeni::Concurrency::Queue<Zeni::Concurrency::Intrusive_Shared_Ptr<Intruded_Int>>> &queue) : m_queue(queue) {}
+
+    void execute() noexcept override {
+      for (int i = 0; i != 10000; ++i) {
+        Zeni::Concurrency::Shared_Ptr<int> i_ptr(new int(i));
+        m_queue->push(Zeni::Concurrency::Intrusive_Shared_Ptr<Intruded_Int>(new Intruded_Int(i)));
+        i_ptr.reset();
+      }
+      while (!m_queue->empty());
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Queue<Zeni::Concurrency::Intrusive_Shared_Ptr<Intruded_Int>>> m_queue;
+  };
+
+  class Popper : public Zeni::Concurrency::Job {
+  public:
+    Popper(const std::shared_ptr<Zeni::Concurrency::Queue<Zeni::Concurrency::Intrusive_Shared_Ptr<Intruded_Int>>> &queue) : m_queue(queue) {}
+
+    void execute() noexcept override {
+      Zeni::Concurrency::Intrusive_Shared_Ptr<Intruded_Int> i_ptr;
+      for (int i = 0; i != 10000; ) {
+        if (m_queue->try_pop(i_ptr)) {
+          ++i;
+          //std::cout << value;
+        }
+      }
+      while (!m_queue->empty());
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Queue<Zeni::Concurrency::Intrusive_Shared_Ptr<Intruded_Int>>> m_queue;
+  };
+
+  const auto queue = std::make_shared<Zeni::Concurrency::Queue<Zeni::Concurrency::Intrusive_Shared_Ptr<Intruded_Int>>>();
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
   for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
@@ -632,73 +702,71 @@ void test_Ordered_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
   //std::cout << std::endl;
 }
 
-#define DEBUG_HARD
-
-void test_Epochs_in_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
-  class Antiable : public Zeni::Concurrency::Job {
-  public:
-    Antiable(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list,
-      const std::shared_ptr<Zeni::Concurrency::Stack<Zeni::Concurrency::Epoch_List::Token_Ptr>> &token_stack,
-      const uint64_t to_acquire,
-      std::atomic_bool &failed)
-      : m_epoch_list(epoch_list),
-      m_token_stack(token_stack),
-      m_to_acquire(to_acquire),
-      m_failed(failed),
-      dre(rd())
-    {
-    }
-
-    void execute() noexcept override {
-      while (m_to_acquire != 0) {
-        Zeni::Concurrency::Epoch_List::Token_Ptr::Lock insertion_epoch;
-        auto token = Zeni::Concurrency::Epoch_List::Create_Token();
-        m_token_stack->push(token);
-        m_epoch_list->acquire(token);
-        Zeni::Concurrency::Stack<Zeni::Concurrency::Epoch_List::Token_Ptr>::Node * head = m_token_stack->m_head;
-        std::multiset<uint64_t> epochs_captured;
-        for (auto node = head; node; node = node->next) {
-          const uint64_t epoch = node->value.load()->epoch();
-          if (epoch == 0)
-            continue;
-          epochs_captured.insert(epoch);
-        }
-        auto it = epochs_captured.cbegin();
-        for (uint64_t i = 1, iend = token.load()->epoch() + Zeni::Concurrency::Epoch_List::epoch_increment; i != iend; ++it,  i += Zeni::Concurrency::Epoch_List::epoch_increment) {
-          if (it == epochs_captured.cend() || *it != i)
-            abort();
-        }
-        --m_to_acquire;
-      }
-    }
-
-  private:
-    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
-    std::shared_ptr<Zeni::Concurrency::Stack<Zeni::Concurrency::Epoch_List::Token_Ptr>> m_token_stack;
-    uint64_t m_to_acquire;
-    std::atomic_bool &m_failed;
-    std::random_device rd;
-    std::default_random_engine dre;
-  };
-
-  const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
-  const auto token_stack = std::make_shared<Zeni::Concurrency::Stack<Zeni::Concurrency::Epoch_List::Token_Ptr>>();
-  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool failed = false;
-
-  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
-    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, token_stack, 8, failed));
-  job_queue->give_many(std::move(jobs));
-
-  worker_threads->finish_jobs();
-
-  if (failed.load()) {
-    std::cerr << 'Y';
-    abort();
-  }
-
-  //std::cout << std::endl;
-}
+//void test_Epochs_in_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+//  class Antiable : public Zeni::Concurrency::Job {
+//  public:
+//    Antiable(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list,
+//      const std::shared_ptr<Zeni::Concurrency::Stack<Zeni::Concurrency::Epoch_List::Token_Ptr>> &token_stack,
+//      const uint64_t to_acquire,
+//      std::atomic_bool &failed)
+//      : m_epoch_list(epoch_list),
+//      m_token_stack(token_stack),
+//      m_to_acquire(to_acquire),
+//      m_failed(failed),
+//      dre(rd())
+//    {
+//    }
+//
+//    void execute() noexcept override {
+//      while (m_to_acquire != 0) {
+//        Zeni::Concurrency::Epoch_List::Token_Ptr::Lock insertion_epoch;
+//        auto token = Zeni::Concurrency::Epoch_List::Create_Token();
+//        m_token_stack->push(token);
+//        m_epoch_list->acquire(token);
+//        Zeni::Concurrency::Stack<Zeni::Concurrency::Epoch_List::Token_Ptr>::Node * head = m_token_stack->m_head;
+//        std::multiset<uint64_t> epochs_captured;
+//        for (auto node = head; node; node = node->next) {
+//          const uint64_t epoch = node->value.load()->epoch();
+//          if (epoch == 0)
+//            continue;
+//          epochs_captured.insert(epoch);
+//        }
+//        auto it = epochs_captured.cbegin();
+//        for (uint64_t i = 1, iend = token.load()->epoch() + Zeni::Concurrency::Epoch_List::epoch_increment; i != iend; ++it,  i += Zeni::Concurrency::Epoch_List::epoch_increment) {
+//          if (it == epochs_captured.cend() || *it != i)
+//            abort();
+//        }
+//        --m_to_acquire;
+//      }
+//    }
+//
+//  private:
+//    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
+//    std::shared_ptr<Zeni::Concurrency::Stack<Zeni::Concurrency::Epoch_List::Token_Ptr>> m_token_stack;
+//    uint64_t m_to_acquire;
+//    std::atomic_bool &m_failed;
+//    std::random_device rd;
+//    std::default_random_engine dre;
+//  };
+//
+//  const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
+//  const auto token_stack = std::make_shared<Zeni::Concurrency::Stack<Zeni::Concurrency::Epoch_List::Token_Ptr>>();
+//  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool failed = false;
+//
+//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+//  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
+//    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, token_stack, 8, failed));
+//  job_queue->give_many(std::move(jobs));
+//
+//  worker_threads->finish_jobs();
+//
+//  if (failed.load()) {
+//    std::cerr << 'Y';
+//    abort();
+//  }
+//
+//  //std::cout << std::endl;
+//}
 
 #define DEBUG_HARD
 
@@ -851,204 +919,204 @@ void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads>
   //std::cout << std::endl;
 }
 
-#define DEBUG_HARD
-
-void test_Antiable_Hashset(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
-  class Antiable : public Zeni::Concurrency::Job {
-  public:
-    Antiable(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list,
-      const std::shared_ptr<Zeni::Concurrency::Antiable_Hashset<int64_t>> &antiable_hashset1,
-      const std::shared_ptr<Zeni::Concurrency::Antiable_Hashset<int64_t>> &antiable_hashset2,
-      const uint64_t to_acquire,
-#ifdef DEBUG_HARD
-      const std::shared_ptr<Zeni::Concurrency::Queue<std::string>> &debug_output,
-#endif
-      std::atomic_int64_t &sum)
-      : m_epoch_list(epoch_list),
-      m_antiable_hashset1(antiable_hashset1),
-      m_antiable_hashset2(antiable_hashset2),
-      m_to_acquire(to_acquire),
-#ifdef DEBUG_HARD
-      m_debug_output(debug_output),
-#endif
-      m_sum(sum),
-      dre(rd())
-    {
-    }
-
-    void execute() noexcept override {
-      m_values_to_acquire.reserve(m_to_acquire);
-      m_values_to_release.reserve(m_to_acquire);
-      for (uint64_t i = 1; i != m_to_acquire + 1; ++i) {
-        m_values_to_acquire.push_back(int64_t(i));
-        m_values_to_release.push_back(int64_t(i));
-      }
-      while (!m_values_to_acquire.empty() || !m_values_to_release.empty()) {
-        const size_t index = std::uniform_int_distribution<size_t>(0, m_values_to_acquire.size() + m_values_to_release.size() - 1)(dre);
-        if (index < m_values_to_acquire.size()) {
-          auto selected = m_values_to_acquire.begin();
-          std::advance(selected, index);
-          Zeni::Concurrency::Epoch_List::Token_Ptr::Lock insertion_epoch;
-#ifdef DEBUG_HARD
-          std::ostringstream oss, oss2;
-          oss << std::this_thread::get_id() << " +" << *selected;
-#endif
-          if (m_antiable_hashset1->insert(m_epoch_list, *selected, insertion_epoch)) {
-#ifdef DEBUG_HARD
-            oss << " @" << insertion_epoch->epoch() << " *:";
-            oss2 << " @" << insertion_epoch->epoch() << " *:";
-#endif
-            int64_t sum0 = 0;
-            Zeni::Concurrency::Antiable_Hashset<int64_t>::Node * head = m_antiable_hashset2->m_head;
-            const auto it0 = m_antiable_hashset2->cbegin(insertion_epoch);
-            for (auto it = it0, iend = m_antiable_hashset2->cend(); it != iend; ++it) {
-              sum0 += *selected * *it;
-#ifdef DEBUG_HARD
-              oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
-#endif
-            }
-#ifdef DEBUG_HARD
-            int64_t sum1 = 0;
-            const auto it1 = m_antiable_hashset2->cbegin(insertion_epoch);
-            if (it0 != it1) {
-              std::cerr << "\nDifferent heads" << std::endl;
-              auto cur = head;
-              while (cur && cur != it1.m_node)
-                cur = reinterpret_cast<Zeni::Concurrency::Antiable_Hashset<int64_t>::Node *>(uintptr_t(cur->next_in_list.load()) & ~uintptr_t(0x1));
-              std::cerr << (cur ? "Missing head found!" : "Missing head NOT found :-(") << std::endl;
-            }
-            for (auto it = it1, iend = m_antiable_hashset2->cend(); it != iend; ++it) {
-              sum1 += *selected * *it;
-              oss2 << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
-            }
-            if (sum0 != sum1) {
-              m_debug_output->push(oss.str() + " :: " + oss2.str());
-              break;
-            }
-#endif
-            m_sum.fetch_add(sum0, std::memory_order_relaxed);
-            if (insertion_epoch)
-              m_epoch_list->try_release(insertion_epoch);
-            else
-              std::cerr << 'x';
-          }
-#ifdef DEBUG_HARD
-          m_debug_output->push(oss.str());
-#endif
-          m_values_to_acquire.erase(selected);
-        }
-        else {
-          auto selected = m_values_to_release.begin();
-          std::advance(selected, index - m_values_to_acquire.size());
-          Zeni::Concurrency::Epoch_List::Token_Ptr::Lock erasure_epoch;
-#ifdef DEBUG_HARD
-          std::ostringstream oss, oss2;
-          oss << std::this_thread::get_id() << " -" << *selected;
-#endif
-          if (m_antiable_hashset1->erase(m_epoch_list, *selected, erasure_epoch)) {
-#ifdef DEBUG_HARD
-            oss << " @" << erasure_epoch->epoch() << " *:";
-            oss2 << " @" << erasure_epoch->epoch() << " *:";
-#endif
-            int64_t sum0 = 0;
-            const auto it0 = m_antiable_hashset2->cbegin(erasure_epoch);
-            Zeni::Concurrency::Antiable_Hashset<int64_t>::Node * head = m_antiable_hashset2->m_head;
-            for (auto it = it0, iend = m_antiable_hashset2->cend(); it != iend; ++it) {
-              sum0 += *selected * *it;
-#ifdef DEBUG_HARD
-              oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
-#endif
-            }
-#ifdef DEBUG_HARD
-            int64_t sum1 = 0;
-            const auto it1 = m_antiable_hashset2->cbegin(erasure_epoch);
-            if (it0 != it1) {
-              std::cerr << "\nDifferent heads" << std::endl;
-              auto cur = head;
-              while (cur && cur != it1.m_node)
-                cur = reinterpret_cast<Zeni::Concurrency::Antiable_Hashset<int64_t>::Node *>(uintptr_t(cur->next_in_list.load()) & ~uintptr_t(0x1));
-              std::cerr << (cur ? "Missing head found!" : "Missing head NOT found :-(") << std::endl;
-            }
-            for (auto it = it1, iend = m_antiable_hashset2->cend(); it != iend; ++it) {
-              sum1 += *selected * *it;
-              oss2 << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
-            }
-            if (sum0 != sum1) {
-              m_debug_output->push(oss.str() + " :: " + oss2.str());
-              break;
-            }
-#endif
-            m_sum.fetch_sub(sum0, std::memory_order_relaxed);
-            if (erasure_epoch)
-              m_epoch_list->try_release(erasure_epoch);
-            else
-              std::cerr << 'y';
-          }
-#ifdef DEBUG_HARD
-          m_debug_output->push(oss.str());
-#endif
-          m_values_to_release.erase(selected);
-        }
-      }
-    }
-
-  private:
-    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
-    std::shared_ptr<Zeni::Concurrency::Antiable_Hashset<int64_t>> m_antiable_hashset1;
-    std::shared_ptr<Zeni::Concurrency::Antiable_Hashset<int64_t>> m_antiable_hashset2;
-    uint64_t m_to_acquire;
-#ifdef DEBUG_HARD
-    std::shared_ptr<Zeni::Concurrency::Queue<std::string>> m_debug_output;
-#endif
-    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_sum;
-    std::vector<uint64_t> m_values_to_acquire;
-    std::vector<uint64_t> m_values_to_release;
-    std::random_device rd;
-    std::default_random_engine dre;
-  };
-
-  const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
-  const auto antiable_hashset1 = std::make_shared<Zeni::Concurrency::Antiable_Hashset<int64_t>>();
-  const auto antiable_hashset2 = std::make_shared<Zeni::Concurrency::Antiable_Hashset<int64_t>>();
-#ifdef DEBUG_HARD
-  const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
-#endif
-  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
-
-  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
-    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_hashset1, antiable_hashset1, 4,
-#ifdef DEBUG_HARD
-      debug_output,
-#endif
-      sum));
-    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_hashset1, antiable_hashset1, 4,
-#ifdef DEBUG_HARD
-      debug_output,
-#endif
-      sum));
-  }
-  job_queue->give_many(std::move(jobs));
-
-  worker_threads->finish_jobs();
-
-  if (antiable_hashset1->size() != 0 || antiable_hashset1->usage() != 0 || antiable_hashset2->size() != 0 || antiable_hashset2->usage() != 0)
-    std::cerr << "X: " << antiable_hashset1->size() << ' ' << antiable_hashset1->usage() << ' ' << antiable_hashset2->size() << ' ' << antiable_hashset2->usage() << std::endl;
-  if (sum.load(std::memory_order_relaxed) != 0) {
-#ifdef DEBUG_HARD
-    std::cerr << std::endl;
-    std::string line;
-    while (debug_output->try_pop(line))
-      std::cerr << line << std::endl;
-    std::cerr << sum << std::endl;
-#else
-    std::cerr << 'Y';
-#endif
-    abort();
-  }
-
-  //std::cout << std::endl;
-}
+//#define DEBUG_HARD
+//
+//void test_Antiable_Hashset(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+//  class Antiable : public Zeni::Concurrency::Job {
+//  public:
+//    Antiable(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list,
+//      const std::shared_ptr<Zeni::Concurrency::Antiable_Hashset<int64_t>> &antiable_hashset1,
+//      const std::shared_ptr<Zeni::Concurrency::Antiable_Hashset<int64_t>> &antiable_hashset2,
+//      const uint64_t to_acquire,
+//#ifdef DEBUG_HARD
+//      const std::shared_ptr<Zeni::Concurrency::Queue<std::string>> &debug_output,
+//#endif
+//      std::atomic_int64_t &sum)
+//      : m_epoch_list(epoch_list),
+//      m_antiable_hashset1(antiable_hashset1),
+//      m_antiable_hashset2(antiable_hashset2),
+//      m_to_acquire(to_acquire),
+//#ifdef DEBUG_HARD
+//      m_debug_output(debug_output),
+//#endif
+//      m_sum(sum),
+//      dre(rd())
+//    {
+//    }
+//
+//    void execute() noexcept override {
+//      m_values_to_acquire.reserve(m_to_acquire);
+//      m_values_to_release.reserve(m_to_acquire);
+//      for (uint64_t i = 1; i != m_to_acquire + 1; ++i) {
+//        m_values_to_acquire.push_back(int64_t(i));
+//        m_values_to_release.push_back(int64_t(i));
+//      }
+//      while (!m_values_to_acquire.empty() || !m_values_to_release.empty()) {
+//        const size_t index = std::uniform_int_distribution<size_t>(0, m_values_to_acquire.size() + m_values_to_release.size() - 1)(dre);
+//        if (index < m_values_to_acquire.size()) {
+//          auto selected = m_values_to_acquire.begin();
+//          std::advance(selected, index);
+//          Zeni::Concurrency::Epoch_List::Token_Ptr::Lock insertion_epoch;
+//#ifdef DEBUG_HARD
+//          std::ostringstream oss, oss2;
+//          oss << std::this_thread::get_id() << " +" << *selected;
+//#endif
+//          if (m_antiable_hashset1->insert(m_epoch_list, *selected, insertion_epoch)) {
+//#ifdef DEBUG_HARD
+//            oss << " @" << insertion_epoch->epoch() << " *:";
+//            oss2 << " @" << insertion_epoch->epoch() << " *:";
+//#endif
+//            int64_t sum0 = 0;
+//            Zeni::Concurrency::Antiable_Hashset<int64_t>::Node * head = m_antiable_hashset2->m_head;
+//            const auto it0 = m_antiable_hashset2->cbegin(insertion_epoch);
+//            for (auto it = it0, iend = m_antiable_hashset2->cend(); it != iend; ++it) {
+//              sum0 += *selected * *it;
+//#ifdef DEBUG_HARD
+//              oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
+//#endif
+//            }
+//#ifdef DEBUG_HARD
+//            int64_t sum1 = 0;
+//            const auto it1 = m_antiable_hashset2->cbegin(insertion_epoch);
+//            if (it0 != it1) {
+//              std::cerr << "\nDifferent heads" << std::endl;
+//              auto cur = head;
+//              while (cur && cur != it1.m_node)
+//                cur = reinterpret_cast<Zeni::Concurrency::Antiable_Hashset<int64_t>::Node *>(uintptr_t(cur->next_in_list.load()) & ~uintptr_t(0x1));
+//              std::cerr << (cur ? "Missing head found!" : "Missing head NOT found :-(") << std::endl;
+//            }
+//            for (auto it = it1, iend = m_antiable_hashset2->cend(); it != iend; ++it) {
+//              sum1 += *selected * *it;
+//              oss2 << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
+//            }
+//            if (sum0 != sum1) {
+//              m_debug_output->push(oss.str() + " :: " + oss2.str());
+//              break;
+//            }
+//#endif
+//            m_sum.fetch_add(sum0, std::memory_order_relaxed);
+//            if (insertion_epoch)
+//              m_epoch_list->try_release(insertion_epoch);
+//            else
+//              std::cerr << 'x';
+//          }
+//#ifdef DEBUG_HARD
+//          m_debug_output->push(oss.str());
+//#endif
+//          m_values_to_acquire.erase(selected);
+//        }
+//        else {
+//          auto selected = m_values_to_release.begin();
+//          std::advance(selected, index - m_values_to_acquire.size());
+//          Zeni::Concurrency::Epoch_List::Token_Ptr::Lock erasure_epoch;
+//#ifdef DEBUG_HARD
+//          std::ostringstream oss, oss2;
+//          oss << std::this_thread::get_id() << " -" << *selected;
+//#endif
+//          if (m_antiable_hashset1->erase(m_epoch_list, *selected, erasure_epoch)) {
+//#ifdef DEBUG_HARD
+//            oss << " @" << erasure_epoch->epoch() << " *:";
+//            oss2 << " @" << erasure_epoch->epoch() << " *:";
+//#endif
+//            int64_t sum0 = 0;
+//            const auto it0 = m_antiable_hashset2->cbegin(erasure_epoch);
+//            Zeni::Concurrency::Antiable_Hashset<int64_t>::Node * head = m_antiable_hashset2->m_head;
+//            for (auto it = it0, iend = m_antiable_hashset2->cend(); it != iend; ++it) {
+//              sum0 += *selected * *it;
+//#ifdef DEBUG_HARD
+//              oss << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
+//#endif
+//            }
+//#ifdef DEBUG_HARD
+//            int64_t sum1 = 0;
+//            const auto it1 = m_antiable_hashset2->cbegin(erasure_epoch);
+//            if (it0 != it1) {
+//              std::cerr << "\nDifferent heads" << std::endl;
+//              auto cur = head;
+//              while (cur && cur != it1.m_node)
+//                cur = reinterpret_cast<Zeni::Concurrency::Antiable_Hashset<int64_t>::Node *>(uintptr_t(cur->next_in_list.load()) & ~uintptr_t(0x1));
+//              std::cerr << (cur ? "Missing head found!" : "Missing head NOT found :-(") << std::endl;
+//            }
+//            for (auto it = it1, iend = m_antiable_hashset2->cend(); it != iend; ++it) {
+//              sum1 += *selected * *it;
+//              oss2 << ' ' << *it << "@[" << it.creation_epoch() << ',' << it.deletion_epoch() << ')';
+//            }
+//            if (sum0 != sum1) {
+//              m_debug_output->push(oss.str() + " :: " + oss2.str());
+//              break;
+//            }
+//#endif
+//            m_sum.fetch_sub(sum0, std::memory_order_relaxed);
+//            if (erasure_epoch)
+//              m_epoch_list->try_release(erasure_epoch);
+//            else
+//              std::cerr << 'y';
+//          }
+//#ifdef DEBUG_HARD
+//          m_debug_output->push(oss.str());
+//#endif
+//          m_values_to_release.erase(selected);
+//        }
+//      }
+//    }
+//
+//  private:
+//    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
+//    std::shared_ptr<Zeni::Concurrency::Antiable_Hashset<int64_t>> m_antiable_hashset1;
+//    std::shared_ptr<Zeni::Concurrency::Antiable_Hashset<int64_t>> m_antiable_hashset2;
+//    uint64_t m_to_acquire;
+//#ifdef DEBUG_HARD
+//    std::shared_ptr<Zeni::Concurrency::Queue<std::string>> m_debug_output;
+//#endif
+//    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_sum;
+//    std::vector<uint64_t> m_values_to_acquire;
+//    std::vector<uint64_t> m_values_to_release;
+//    std::random_device rd;
+//    std::default_random_engine dre;
+//  };
+//
+//  const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
+//  const auto antiable_hashset1 = std::make_shared<Zeni::Concurrency::Antiable_Hashset<int64_t>>();
+//  const auto antiable_hashset2 = std::make_shared<Zeni::Concurrency::Antiable_Hashset<int64_t>>();
+//#ifdef DEBUG_HARD
+//  const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
+//#endif
+//  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
+//
+//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+//  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
+//    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_hashset1, antiable_hashset1, 4,
+//#ifdef DEBUG_HARD
+//      debug_output,
+//#endif
+//      sum));
+//    jobs.emplace_back(std::make_shared<Antiable>(epoch_list, antiable_hashset1, antiable_hashset1, 4,
+//#ifdef DEBUG_HARD
+//      debug_output,
+//#endif
+//      sum));
+//  }
+//  job_queue->give_many(std::move(jobs));
+//
+//  worker_threads->finish_jobs();
+//
+//  if (antiable_hashset1->size() != 0 || antiable_hashset1->usage() != 0 || antiable_hashset2->size() != 0 || antiable_hashset2->usage() != 0)
+//    std::cerr << "X: " << antiable_hashset1->size() << ' ' << antiable_hashset1->usage() << ' ' << antiable_hashset2->size() << ' ' << antiable_hashset2->usage() << std::endl;
+//  if (sum.load(std::memory_order_relaxed) != 0) {
+//#ifdef DEBUG_HARD
+//    std::cerr << std::endl;
+//    std::string line;
+//    while (debug_output->try_pop(line))
+//      std::cerr << line << std::endl;
+//    std::cerr << sum << std::endl;
+//#else
+//    std::cerr << 'Y';
+//#endif
+//    abort();
+//  }
+//
+//  //std::cout << std::endl;
+//}
 
 void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
   const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, worker_threads);

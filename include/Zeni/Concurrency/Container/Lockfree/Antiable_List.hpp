@@ -12,7 +12,7 @@ namespace Zeni::Concurrency {
     Antiable_List(const Antiable_List &) = delete;
     Antiable_List & operator=(const Antiable_List &) = delete;
 
-  public:
+  private:
     struct Node : public Reclamation_Stack::Node {
       Node() = default;
       Node(const TYPE &value_, const bool insertion_) : cat(insertion_), value(value_) {}
@@ -228,7 +228,7 @@ namespace Zeni::Concurrency {
       return access(epoch_list, value, &insertion_epoch, Mode::Insert) == 1;
     }
 
-  //private:
+  private:
     /// Return true if it increments the count to 1, otherwise false
     int64_t access(const std::shared_ptr<Epoch_List> epoch_list, const TYPE &value, Epoch_List::Token_Ptr::Lock * const epoch, const Mode mode) {
       const uint64_t earliest_epoch = epoch_list->front();

@@ -1,5 +1,5 @@
-#ifndef ZENI_CONCURRENCY_SHARED_PTR_HPP
-#define ZENI_CONCURRENCY_SHARED_PTR_HPP
+#ifndef ZENI_CONCURRENCY_INTRUSIVE_SHARED_PTR_HPP
+#define ZENI_CONCURRENCY_INTRUSIVE_SHARED_PTR_HPP
 
 #include "../../Internal/Reclamation_Stacks.hpp"
 
@@ -9,12 +9,50 @@
 namespace Zeni::Concurrency {
 
   template <typename TYPE>
-  class ZENI_CONCURRENCY_CACHE_ALIGN Shared_Ptr {
-    struct Node;
+  class Intrusive_Shared_Ptr;
 
+  template <typename TYPE>
+  class ZENI_CONCURRENCY_CACHE_ALIGN Enable_Intrusive_Sharing : Reclamation_Stack::Node {
+    Enable_Intrusive_Sharing(const Enable_Intrusive_Sharing &) = delete;
+    Enable_Intrusive_Sharing & operator=(const Enable_Intrusive_Sharing &) = delete;
+
+    friend class Intrusive_Shared_Ptr<TYPE>;
+
+  protected:
+    Enable_Intrusive_Sharing() = default;
+
+  private:
+    void decrement_refs() {
+      const uint64_t prev = m_refs.fetch_sub(1, std::memory_order_relaxed);
+      if (prev > 1)
+        return;
+      assert(prev == 1);
+      std::atomic_thread_fence(std::memory_order_acquire);
+      Reclamation_Stacks::push(this);
+    }
+
+    bool increment_refs() {
+      uint64_t refs = m_refs.load(std::memory_order_relaxed);
+      while (refs) {
+        assert(refs != uint64_t(-1));
+        if (m_refs.compare_exchange_weak(refs, refs + 1, std::memory_order_relaxed, std::memory_order_relaxed))
+          return true;
+      }
+      return false;
+    }
+
+    explicit operator bool() const {
+      return m_refs.load(std::memory_order_relaxed) != 0;
+    }
+
+    std::atomic_uint64_t m_refs = 1;
+  };
+
+  template <typename TYPE>
+  class ZENI_CONCURRENCY_CACHE_ALIGN Intrusive_Shared_Ptr {
   public:
     class Lock {
-      friend class Shared_Ptr<TYPE>;
+      friend class Intrusive_Shared_Ptr<TYPE>;
 
     public:
       Lock() = default;
@@ -64,18 +102,18 @@ namespace Zeni::Concurrency {
         return *this;
       }
 
-      explicit Lock(const Shared_Ptr<TYPE> &rhs) {
-        Node * const rhs_ptr = rhs.m_ptr.load(std::memory_order_seq_cst);
+      explicit Lock(const Intrusive_Shared_Ptr<TYPE> &rhs) {
+        TYPE * const rhs_ptr = rhs.m_ptr.load(std::memory_order_seq_cst);
         m_ptr = rhs_ptr && rhs_ptr->increment_refs() ? rhs_ptr : nullptr;
       }
 
-      explicit Lock(const Shared_Ptr<TYPE> &rhs, const std::memory_order order) {
-        Node * const rhs_ptr = rhs.m_ptr.load(order);
+      explicit Lock(const Intrusive_Shared_Ptr<TYPE> &rhs, const std::memory_order order) {
+        TYPE * const rhs_ptr = rhs.m_ptr.load(order);
         m_ptr = rhs_ptr && rhs_ptr->increment_refs() ? rhs_ptr : nullptr;
       }
 
       Lock(TYPE * const ptr)
-        : m_ptr(ptr ? new Node(ptr) : nullptr)
+        : m_ptr(ptr)
       {
       }
 
@@ -198,68 +236,68 @@ namespace Zeni::Concurrency {
 #ifndef NDEBUG
       const std::thread::id m_thread = std::this_thread::get_id();
 #endif
-      Node * m_ptr = nullptr;
+      TYPE * m_ptr = nullptr;
     };
 
-    Shared_Ptr() = default;
+    Intrusive_Shared_Ptr() = default;
 
-    ~Shared_Ptr() {
-      Node * const ptr = m_ptr.load(std::memory_order_relaxed);
+    ~Intrusive_Shared_Ptr() {
+      TYPE * const ptr = m_ptr.load(std::memory_order_relaxed);
       if (ptr && bool(*ptr))
         ptr->decrement_refs();
     }
 
-    Shared_Ptr(TYPE * const ptr)
-      : m_ptr(ptr ? new Node(ptr) : nullptr)
+    Intrusive_Shared_Ptr(TYPE * const ptr)
+      : m_ptr(ptr)
     {
     }
 
-    Shared_Ptr(const typename Shared_Ptr<TYPE>::Lock &rhs)
+    Intrusive_Shared_Ptr(const typename Shared_Ptr<TYPE>::Lock &rhs)
       : m_ptr(rhs.m_ptr && rhs.m_ptr->increment_refs() ? rhs.m_ptr : nullptr)
     {
     }
 
-    Shared_Ptr(const Shared_Ptr<TYPE> &rhs) {
-      Node * const rhs_ptr = rhs.m_ptr.load(std::memory_order_relaxed);
+    Intrusive_Shared_Ptr(const Intrusive_Shared_Ptr<TYPE> &rhs) {
+      TYPE * const rhs_ptr = rhs.m_ptr.load(std::memory_order_relaxed);
       if (rhs_ptr && rhs_ptr->increment_refs())
         m_ptr.store(rhs_ptr);
     }
 
-    typename Shared_Ptr<TYPE>::Lock load() const {
-      return Shared_Ptr<TYPE>::Lock(*this);
+    typename Intrusive_Shared_Ptr<TYPE>::Lock load() const {
+      return Intrusive_Shared_Ptr<TYPE>::Lock(*this);
     }
 
-    typename Shared_Ptr<TYPE>::Lock load(const std::memory_order order) const {
-      return Shared_Ptr<TYPE>::Lock(*this, order);
+    typename Intrusive_Shared_Ptr<TYPE>::Lock load(const std::memory_order order) const {
+      return Intrusive_Shared_Ptr<TYPE>::Lock(*this, order);
     }
 
-    void store(const typename Shared_Ptr<TYPE>::Lock &rhs) {
+    void store(const typename Intrusive_Shared_Ptr<TYPE>::Lock &rhs) {
       store(rhs, std::memory_order_seq_cst);
     }
 
-    void store(const typename Shared_Ptr<TYPE>::Lock &rhs, const std::memory_order order) {
-      Shared_Ptr<TYPE>::Lock expected = load(std::memory_order_relaxed);
+    void store(const typename Intrusive_Shared_Ptr<TYPE>::Lock &rhs, const std::memory_order order) {
+      Intrusive_Shared_Ptr<TYPE>::Lock expected = load(std::memory_order_relaxed);
       compare_exchange_strong(expected, rhs, order, std::memory_order_relaxed);
     }
 
-    Shared_Ptr & operator=(const typename Shared_Ptr<TYPE>::Lock &rhs) {
+    Intrusive_Shared_Ptr & operator=(const typename Intrusive_Shared_Ptr<TYPE>::Lock &rhs) {
       store(rhs);
       return *this;
     }
 
-    Shared_Ptr & operator=(const Shared_Ptr<TYPE> &rhs) {
+    Intrusive_Shared_Ptr & operator=(const Intrusive_Shared_Ptr<TYPE> &rhs) {
       store(Lock(rhs, std::memory_order_seq_cst), std::memory_order_seq_cst);
       return *this;
     }
 
-    bool compare_exchange_strong(typename Shared_Ptr<TYPE>::Lock &expected, const typename Shared_Ptr<TYPE>::Lock desired) {
+    bool compare_exchange_strong(typename Intrusive_Shared_Ptr<TYPE>::Lock &expected, const typename Intrusive_Shared_Ptr<TYPE>::Lock desired) {
       return compare_exchange_strong(expected, desired, std::memory_order_seq_cst, std::memory_order_seq_cst);
     }
 
-    bool compare_exchange_strong(typename Shared_Ptr<TYPE>::Lock &expected, const typename Shared_Ptr<TYPE>::Lock desired, const std::memory_order succ, const std::memory_order fail) {
+    bool compare_exchange_strong(typename Intrusive_Shared_Ptr<TYPE>::Lock &expected, const typename Intrusive_Shared_Ptr<TYPE>::Lock desired, const std::memory_order succ, const std::memory_order fail) {
       assert(!expected.m_ptr || bool(*expected.m_ptr));
       assert(!desired.m_ptr || bool(*desired.m_ptr));
-      Node * const old_expected = expected.m_ptr;
+      TYPE * const old_expected = expected.m_ptr;
       if (desired.m_ptr)
         desired.m_ptr->increment_refs();
       bool success = m_ptr.compare_exchange_strong(expected.m_ptr, desired.m_ptr, succ, fail);
@@ -274,32 +312,32 @@ namespace Zeni::Concurrency {
       return success;
     }
 
-    bool operator==(const Shared_Ptr<TYPE> &rhs) const {
+    bool operator==(const Intrusive_Shared_Ptr<TYPE> &rhs) const {
       return Lock(*this) == Lock(rhs);
     }
 
-    bool operator!=(const Shared_Ptr<TYPE> &rhs) const {
+    bool operator!=(const Intrusive_Shared_Ptr<TYPE> &rhs) const {
       return Lock(*this) != Lock(rhs);
     }
 
-    bool operator<(const Shared_Ptr<TYPE> &rhs) const {
+    bool operator<(const Intrusive_Shared_Ptr<TYPE> &rhs) const {
       return Lock(*this) < Lock(rhs);
     }
 
-    bool operator>(const Shared_Ptr<TYPE> &rhs) const {
+    bool operator>(const Intrusive_Shared_Ptr<TYPE> &rhs) const {
       return Lock(*this) > Lock(rhs);
     }
 
-    bool operator<=(const Shared_Ptr<TYPE> &rhs) const {
+    bool operator<=(const Intrusive_Shared_Ptr<TYPE> &rhs) const {
       return Lock(*this) <= Lock(rhs);
     }
 
-    bool operator>=(const Shared_Ptr<TYPE> &rhs) const {
+    bool operator>=(const Intrusive_Shared_Ptr<TYPE> &rhs) const {
       return Lock(*this) >= Lock(rhs);
     }
 
     void reset() {
-      Node * old_ptr = m_ptr.load(std::memory_order_relaxed);
+      TYPE * old_ptr = m_ptr.load(std::memory_order_relaxed);
       if (m_ptr.compare_exchange_strong(old_ptr, nullptr, std::memory_order_relaxed, std::memory_order_relaxed)) {
         if (old_ptr && bool(*old_ptr))
           old_ptr->decrement_refs();
@@ -307,58 +345,13 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_ptr = nullptr;
-
-    class ZENI_CONCURRENCY_CACHE_ALIGN Node : Reclamation_Stack::Node {
-      Node(const Node &) = delete;
-      Node & operator=(const Node &) = delete;
-
-    public:
-      Node(TYPE * const ptr_)
-        : m_ptr(ptr_)
-      {
-        assert(m_ptr);
-        std::atomic_thread_fence(std::memory_order_release);
-      }
-
-      void decrement_refs() {
-        const uint64_t prev = m_refs.fetch_sub(1, std::memory_order_relaxed);
-        if (prev > 1)
-          return;
-        assert(prev == 1);
-        std::atomic_thread_fence(std::memory_order_acquire);
-        delete m_ptr;
-        Reclamation_Stacks::push(this);
-      }
-
-      bool increment_refs() {
-        uint64_t refs = m_refs.load(std::memory_order_relaxed);
-        while (refs) {
-          assert(refs != uint64_t(-1));
-          if (m_refs.compare_exchange_weak(refs, refs + 1, std::memory_order_relaxed, std::memory_order_relaxed))
-            return true;
-        }
-        return false;
-      }
-
-      explicit operator bool() const {
-        return m_refs.load(std::memory_order_relaxed) != 0;
-      }
-
-      TYPE * const get() const {
-        return m_ptr;
-      }
-
-    private:
-      TYPE * const m_ptr;
-      std::atomic_uint64_t m_refs = 1;
-    };
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<TYPE *> m_ptr = nullptr;
   };
 
 }
 
 template <typename TYPE>
-std::ostream & operator<<(std::ostream &os, const typename Zeni::Concurrency::Shared_Ptr<TYPE>::Lock &ptr) {
+std::ostream & operator<<(std::ostream &os, const typename Zeni::Concurrency::Intrusive_Shared_Ptr<TYPE>::Lock &ptr) {
   return os << ptr.get();
 }
 

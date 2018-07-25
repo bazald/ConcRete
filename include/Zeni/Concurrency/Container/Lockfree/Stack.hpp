@@ -10,7 +10,7 @@ namespace Zeni::Concurrency {
     Stack(const Stack &) = delete;
     Stack & operator=(const Stack &) = delete;
 
-  public:
+  private:
     struct Node : public Reclamation_Stack::Node {
       Node() = default;
       Node(Node * const &next_, const TYPE &value_) : next(next_), value(value_) {}
@@ -78,7 +78,7 @@ namespace Zeni::Concurrency {
       return true;
     }
 
-  //private:
+  private:
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Node *> m_head = nullptr;
     //ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_poppers = 0;
