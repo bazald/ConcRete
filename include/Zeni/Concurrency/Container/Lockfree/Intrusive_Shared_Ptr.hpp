@@ -11,12 +11,15 @@ namespace Zeni::Concurrency {
   template <typename TYPE>
   class Intrusive_Shared_Ptr;
 
-  template <typename TYPE>
+  template <typename TYPE, typename RELATED = TYPE>
   class ZENI_CONCURRENCY_CACHE_ALIGN Enable_Intrusive_Sharing : Reclamation_Stack::Node {
     Enable_Intrusive_Sharing(const Enable_Intrusive_Sharing &) = delete;
     Enable_Intrusive_Sharing & operator=(const Enable_Intrusive_Sharing &) = delete;
 
-    friend class Intrusive_Shared_Ptr<TYPE>;
+    friend class Intrusive_Shared_Ptr<RELATED>;
+
+  public:
+    typedef TYPE Intruded_Type;
 
   protected:
     Enable_Intrusive_Sharing() = default;
@@ -59,10 +62,10 @@ namespace Zeni::Concurrency {
 
       ~Lock() {
         assert(std::this_thread::get_id() == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
+        assert(!m_ptr || bool(*reinterpret_cast<Enable_Intrusive_Sharing<typename TYPE::Intruded_Type, TYPE> *>(m_ptr)));
         if (m_ptr) {
           std::atomic_thread_fence(std::memory_order_release);
-          m_ptr->decrement_refs();
+          reinterpret_cast<Enable_Intrusive_Sharing<typename TYPE::Intruded_Type, TYPE> *>(m_ptr)->decrement_refs();
         }
       }
 
@@ -243,8 +246,8 @@ namespace Zeni::Concurrency {
 
     ~Intrusive_Shared_Ptr() {
       TYPE * const ptr = m_ptr.load(std::memory_order_relaxed);
-      if (ptr && bool(*ptr))
-        ptr->decrement_refs();
+      if (ptr && bool(*reinterpret_cast<Enable_Intrusive_Sharing<typename TYPE::Intruded_Type, TYPE> *>(ptr)))
+        reinterpret_cast<Enable_Intrusive_Sharing<typename TYPE::Intruded_Type, TYPE> *>(ptr)->decrement_refs();
     }
 
     Intrusive_Shared_Ptr(TYPE * const ptr)
@@ -347,6 +350,40 @@ namespace Zeni::Concurrency {
   private:
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<TYPE *> m_ptr = nullptr;
   };
+
+  template <typename TYPE1, typename TYPE2>
+  const typename Intrusive_Shared_Ptr<TYPE1>::Lock & dynamic_pointer_cast(const typename Intrusive_Shared_Ptr<TYPE2>::Lock &rhs) {
+    dynamic_cast<TYPE1 *>(rhs.m_ptr);
+    return reinterpret_cast<const typename Intrusive_Shared_Ptr<TYPE1>::Lock &>(rhs);
+  }
+
+  template <typename TYPE1, typename TYPE2>
+  typename Intrusive_Shared_Ptr<TYPE1>::Lock & dynamic_pointer_cast(typename Intrusive_Shared_Ptr<TYPE2>::Lock &rhs) {
+    dynamic_cast<TYPE1 *>(rhs.m_ptr);
+    return reinterpret_cast<const typename Intrusive_Shared_Ptr<TYPE1>::Lock &>(rhs);
+  }
+
+  template <typename TYPE1, typename TYPE2>
+  const typename Intrusive_Shared_Ptr<TYPE1>::Lock & static_pointer_cast(const typename Intrusive_Shared_Ptr<TYPE2>::Lock &rhs) {
+    static_cast<TYPE1 *>(rhs.m_ptr);
+    return reinterpret_cast<const typename Intrusive_Shared_Ptr<TYPE1>::Lock &>(rhs);
+  }
+
+  template <typename TYPE1, typename TYPE2>
+  typename Intrusive_Shared_Ptr<TYPE1>::Lock & static_pointer_cast(typename Intrusive_Shared_Ptr<TYPE2>::Lock &rhs) {
+    static_cast<TYPE1 *>(rhs.m_ptr);
+    return reinterpret_cast<const typename Intrusive_Shared_Ptr<TYPE1>::Lock &>(rhs);
+  }
+
+  template <typename TYPE1, typename TYPE2>
+  const typename Intrusive_Shared_Ptr<TYPE1>::Lock & reinterpret_pointer_cast(const typename Intrusive_Shared_Ptr<TYPE2>::Lock &rhs) {
+    return reinterpret_cast<const typename Intrusive_Shared_Ptr<TYPE1>::Lock &>(rhs);
+  }
+
+  template <typename TYPE1, typename TYPE2>
+  typename Intrusive_Shared_Ptr<TYPE1>::Lock & reinterpret_pointer_cast(typename Intrusive_Shared_Ptr<TYPE2>::Lock &rhs) {
+    return reinterpret_cast<const typename Intrusive_Shared_Ptr<TYPE1>::Lock &>(rhs);
+  }
 
 }
 

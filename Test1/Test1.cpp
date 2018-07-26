@@ -1,5 +1,6 @@
 //#include "Zeni/Concurrency/Container/Antiable_Hashset.hpp"
 #include "Zeni/Concurrency/Container/Antiable_List.hpp"
+#include "Zeni/Concurrency/Container/Ctrie.hpp"
 #include "Zeni/Concurrency/Container/Epoch_List.hpp"
 #include "Zeni/Concurrency/Container/Intrusive_Shared_Ptr.hpp"
 #include "Zeni/Concurrency/Container/Ordered_List.hpp"
@@ -90,6 +91,7 @@ static void test_Ordered_List(const std::shared_ptr<Zeni::Concurrency::Worker_Th
 //static void test_Epochs_in_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 //static void test_Antiable_Hashset(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+static void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 
@@ -180,15 +182,15 @@ int main()
   //}
   //std::cout << std::endl;
 
-  for (int i = 0; i != 80; ++i) {
-    test_Queue_of_Intrusive_Shared_Ptrs(worker_threads, job_queue);
-    //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-    //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-    //  abort();
-    //}
-    std::cout << 'I' << std::flush;
-  }
-  std::cout << std::endl;
+  //for (int i = 0; i != 80; ++i) {
+  //  test_Queue_of_Intrusive_Shared_Ptrs(worker_threads, job_queue);
+  //  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //  //  abort();
+  //  //}
+  //  std::cout << 'I' << std::flush;
+  //}
+  //std::cout << std::endl;
 
 //  for (int i = 0; i != 80; ++i) {
 //    test_Stack(worker_threads, job_queue);
@@ -260,6 +262,16 @@ int main()
   //  std::cout << 'H' << std::flush;
   //}
   //std::cout << std::endl;
+
+  for (int i = 0; i != 80000; ++i) {
+    test_Ctrie(worker_threads, job_queue);
+    //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+    //  abort();
+    //}
+    std::cout << 'C' << std::flush;
+  }
+  std::cout << std::endl;
 
   Zeni::Rete::Debug_Counters::print(std::cerr);
   test_Rete_Network(worker_threads, job_queue);
@@ -1117,6 +1129,12 @@ void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads>
 //
 //  //std::cout << std::endl;
 //}
+
+void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+  Zeni::Concurrency::Ctrie<uint64_t, std::string> ctrie;
+
+  worker_threads->finish_jobs();
+}
 
 void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
   const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, worker_threads);

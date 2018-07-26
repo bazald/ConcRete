@@ -198,6 +198,12 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Intrusive_Shared_Ptr.hpp">
       <Filter>Header Files\Zeni\Container\None</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ctrie.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Ctrie.hpp">
+      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job.cpp">
