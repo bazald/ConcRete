@@ -309,21 +309,31 @@ namespace Zeni::Concurrency {
             else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
               if (snode->key == key)
                 found = snode;
+              return false;
             }
             else
               abort();
           }
           return false;
         }
-        else if (const auto tnode = dynamic_cast<const TNode *>(inode->main))
-          ;
-        else if (const auto lnode = dynamic_cast<const LNode *>(inode->main))
-          ;
+        else if (const auto tnode = dynamic_cast<const TNode *>(inode->main)) {
+          // clean(parent, lev - W) // Only pseudocode for now, irrelevant until removal implemented
+          return true;
+        }
+        else if (auto lnode = dynamic_cast<const LNode *>(inode->main)) {
+          do {
+            if (lnode->snode->key == key) {
+              found = lnode->snode;
+              return false;
+            }
+            else
+              lnode = lnode->next;
+          } while (lnode);
+          return false;
+        }
         else
           abort();
-        break;
       }
-      return false;
     }
 
     std::atomic<const INode *> m_root = new INode(CNode::Create(0x0, {}), 0);
