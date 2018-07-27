@@ -8,7 +8,7 @@ namespace Zeni::Concurrency {
     return Reclamation_Stacks_Impl::get().get_stack();
   }
 
-  void Reclamation_Stacks::push(Reclamation_Stack::Node * const node) noexcept {
+  void Reclamation_Stacks::push(const Reclamation_Stack::Node * const node) noexcept {
     Reclamation_Stacks_Impl::get().get_stack()->push(node);
   }
 

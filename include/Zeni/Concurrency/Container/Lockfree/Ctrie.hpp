@@ -50,9 +50,9 @@ namespace Zeni::Concurrency {
       }
 
     public:
-      static ICtrie_Node * Create(const HASH_VALUE_TYPE bmp) {
+      static ICtrie_Node * Create(const HASH_VALUE_TYPE bmp, const std::array<const Branch *, hamming<HASH_VALUE_TYPE>()> &branches) {
         static Factory factory;
-        return factory.create(bmp);
+        return factory.create(bmp, branches);
       }
 
       HASH_VALUE_TYPE get_bmp() const { return m_bmp; }
@@ -69,12 +69,12 @@ namespace Zeni::Concurrency {
       public:
         inline Factory();
 
-        ICtrie_Node<HASH_VALUE_TYPE> * create(const HASH_VALUE_TYPE bmp) {
-          return m_generator[bmp](bmp);
+        ICtrie_Node<HASH_VALUE_TYPE> * create(const HASH_VALUE_TYPE bmp, const std::array<const Branch *, hamming<HASH_VALUE_TYPE>()> &branches) {
+          return m_generator[bmp](bmp, branches);
         }
 
       private:
-        std::array<std::function<ICtrie_Node<HASH_VALUE_TYPE> *(const HASH_VALUE_TYPE bmp)>, sum(hamming<HASH_VALUE_TYPE>(), HASH_VALUE_TYPE(1))> m_generator;
+        std::array<std::function<ICtrie_Node<HASH_VALUE_TYPE> *(const HASH_VALUE_TYPE, const std::array<const Branch *, hamming<HASH_VALUE_TYPE>()> &)>, sum(hamming<HASH_VALUE_TYPE>(), HASH_VALUE_TYPE(1))> m_generator;
       };
     };
 
@@ -87,34 +87,40 @@ namespace Zeni::Concurrency {
     public:
       static const size_t hamming_value = HAMMING_VALUE;
 
-      Ctrie_Node(const HASH_VALUE_TYPE bmp)
-        : ICtrie_Node<HASH_VALUE_TYPE>(bmp)
+      Ctrie_Node(const HASH_VALUE_TYPE bmp, const std::array<const Branch *, hamming<HASH_VALUE_TYPE>()> &branches_)
+        : ICtrie_Node<HASH_VALUE_TYPE>(bmp),
+        branches(reinterpret_cast<const std::array<const Branch *, hamming_value> &>(branches_)) //< Should always be smaller, safe to copy subset
       {
+      }
+
+      ~Ctrie_Node() {
+        for (auto branch : branches)
+          branch->decrement_refs();
       }
 
       size_t get_hamming_value() const override {
         return hamming_value;
       };
 
-      Intrusive_Shared_Ptr<Branch> branches[hamming_value];
+      const std::array<const Branch *, hamming_value> branches;
     };
 
     template <typename HASH_VALUE_TYPE, size_t IN = hamming<HASH_VALUE_TYPE>()>
     struct Ctrie_Node_Generator {
-      static void Create(std::array<std::function<ICtrie_Node<HASH_VALUE_TYPE> *(const HASH_VALUE_TYPE bmp)>, sum(hamming<HASH_VALUE_TYPE>(), HASH_VALUE_TYPE(1))> &generator) {
+      static void Create(std::array<std::function<ICtrie_Node<HASH_VALUE_TYPE> *(const HASH_VALUE_TYPE, const std::array<const Branch *, hamming<HASH_VALUE_TYPE>()> &)>, sum(hamming<HASH_VALUE_TYPE>(), HASH_VALUE_TYPE(1))> &generator) {
         Ctrie_Node_Generator<HASH_VALUE_TYPE, IN - 1>::Create(generator);
 
-        generator[IN] = [](const HASH_VALUE_TYPE bmp)->ICtrie_Node<HASH_VALUE_TYPE> * {
-          return new Ctrie_Node<HASH_VALUE_TYPE, IN>(bmp);
+        generator[IN] = [](const HASH_VALUE_TYPE bmp, const std::array<const Branch *, hamming<HASH_VALUE_TYPE>()> &branches)->ICtrie_Node<HASH_VALUE_TYPE> * {
+          return new Ctrie_Node<HASH_VALUE_TYPE, IN>(bmp, branches);
         };
       }
     };
 
     template <typename HASH_VALUE_TYPE>
     struct Ctrie_Node_Generator<HASH_VALUE_TYPE, 0> {
-      static void Create(std::array<std::function<ICtrie_Node<HASH_VALUE_TYPE> *(const HASH_VALUE_TYPE bmp)>, sum(hamming<HASH_VALUE_TYPE>(), HASH_VALUE_TYPE(1))> &generator) {
-        generator[0] = [](const HASH_VALUE_TYPE bmp)->ICtrie_Node<HASH_VALUE_TYPE> * {
-          return new Ctrie_Node<HASH_VALUE_TYPE, 0>(bmp);
+      static void Create(std::array<std::function<ICtrie_Node<HASH_VALUE_TYPE> *(const HASH_VALUE_TYPE, const std::array<const Branch *, hamming<HASH_VALUE_TYPE>()> &)>, sum(hamming<HASH_VALUE_TYPE>(), HASH_VALUE_TYPE(1))> &generator) {
+        generator[0] = [](const HASH_VALUE_TYPE bmp, const std::array<const Branch *, hamming<HASH_VALUE_TYPE>()> &branches)->ICtrie_Node<HASH_VALUE_TYPE> * {
+          return new Ctrie_Node<HASH_VALUE_TYPE, 0>(bmp, branches);
         };
       }
     };
@@ -152,7 +158,11 @@ namespace Zeni::Concurrency {
       template <typename SINGLETON_NODE>
       Tomb_Node(SINGLETON_NODE &&snode_) : snode(std::forward<SINGLETON_NODE>(snode_)) {}
 
-      Intrusive_Shared_Ptr<Singleton_Node<KEY, TYPE>> snode;
+      ~Tomb_Node() {
+        snode->decrement_refs();
+      }
+
+      Singleton_Node<KEY, TYPE> * const snode;
     };
 
     template <typename KEY, typename TYPE>
@@ -162,13 +172,16 @@ namespace Zeni::Concurrency {
       List_Node & operator=(const List_Node &) = delete;
 
     public:
-      List_Node() = default;
-
       template <typename SINGLETON_NODE, typename LIST_NODE>
       List_Node(SINGLETON_NODE &&snode_, LIST_NODE &&next_) : snode(std::forward<SINGLETON_NODE>(snode_)), next(std::forward<LIST_NODE>(next_)) {}
 
-      Intrusive_Shared_Ptr<Singleton_Node<KEY, TYPE>> snode;
-      Intrusive_Shared_Ptr<List_Node> next;
+      ~List_Node() {
+        snode->decrement_refs();
+        next->decrement_refs();
+      }
+
+      Singleton_Node<KEY, TYPE> * const snode;
+      List_Node * const next;
     };
 
     template <typename GENERATION = std::uint64_t>
@@ -178,13 +191,15 @@ namespace Zeni::Concurrency {
       Indirection_Node & operator=(const Indirection_Node &) = delete;
 
     public:
-      Indirection_Node() : gen(GENERATION()) {}
-
       template <typename MAIN_NODE>
       Indirection_Node(MAIN_NODE &&main_, GENERATION &&gen_) : main(std::forward<MAIN_NODE>(main_)), gen(std::forward<GENERATION>(gen_)) {}
 
-      Intrusive_Shared_Ptr<MainNode> main;
-      GENERATION gen;
+      ~Indirection_Node() {
+        main->decrement_refs();
+      }
+
+      MainNode * const main;
+      const GENERATION gen;
     };
   }
 
@@ -194,29 +209,59 @@ namespace Zeni::Concurrency {
     Ctrie & operator=(const Ctrie &) = delete;
 
   public:
+    typedef KEY Key;
+    typedef TYPE Type;
+    typedef HASH Hash;
+    typedef GENERATION Generation;
+
+    typedef decltype(Hash()(Type())) Hash_Type;
+
+    typedef Ctrie_Internal::MainNode MainNode;
+    typedef Ctrie_Internal::Branch Branch;
+    typedef Ctrie_Internal::ICtrie_Node<Hash_Type> CNode;
+    typedef Ctrie_Internal::Singleton_Node<Key, Type> SNode;
+    typedef Ctrie_Internal::Tomb_Node<Key, Type> TNode;
+    typedef Ctrie_Internal::List_Node<Key, Type> LNode;
+    typedef Ctrie_Internal::Indirection_Node<Generation> INode;
+
     Ctrie() = default;
 
-    Intrusive_Shared_Ptr<Ctrie_Internal::Singleton_Node<KEY, TYPE>> lookup(const KEY &key) {
-      Intrusive_Shared_Ptr<Ctrie_Internal::Singleton_Node<KEY, TYPE>> found;
+    ~Ctrie() {
+      m_root.load(std::memory_order_acquire)->decrement_refs();
+    }
+
+    Intrusive_Shared_Ptr<const SNode> lookup(const Key &key) {
+      const SNode * found = nullptr;
       for(;;) {
-        Intrusive_Shared_Ptr<Ctrie_Internal::Indirection_Node<>> root = m_root;
+        INode * root = m_root;
         if (!ilookup(found, root, key, 0, nullptr))
           break;
       }
+      if (found)
+        found->increment_refs();
       return found;
     }
 
   private:
-    bool ilookup(Intrusive_Shared_Ptr<Ctrie_Internal::Singleton_Node<KEY, TYPE>> &found,
-      const Intrusive_Shared_Ptr<Ctrie_Internal::Indirection_Node<>> &inode,
-      const KEY &key,
-      const size_t level,
-      const Intrusive_Shared_Ptr<Ctrie_Internal::Indirection_Node<>> &parent)
+    bool ilookup(const SNode * &found,
+      const INode * inode,
+      const Key &key,
+      size_t level,
+      const INode * parent)
     {
+      for (;;) {
+        if (const auto cnode = dynamic_cast<const CNode *>(inode->main))
+          ;
+        else if (const auto tnode = dynamic_cast<const TNode *>(inode->main))
+          ;
+        else if (const auto lnode = dynamic_cast<const LNode *>(inode->main))
+          ;
+        break;
+      }
       return false;
     }
 
-    Intrusive_Shared_Ptr<Ctrie_Internal::Indirection_Node<>> m_root = new Ctrie_Internal::Indirection_Node<>(static_cast<Ctrie_Internal::MainNode *>(Ctrie_Internal::ICtrie_Node<uintptr_t>::Create(0x0)), 0);
+    std::atomic<const INode *> m_root = new INode(CNode::Create(0x0, {}), 0);
   };
 
 }

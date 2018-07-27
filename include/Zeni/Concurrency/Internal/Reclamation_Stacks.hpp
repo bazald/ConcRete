@@ -17,7 +17,7 @@ namespace Zeni::Concurrency {
   public:
     ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Reclamation_Stack> get_stack() noexcept(false);
 
-    ZENI_CONCURRENCY_LINKAGE static void push(Reclamation_Stack::Node * const node) noexcept;
+    ZENI_CONCURRENCY_LINKAGE static void push(const Reclamation_Stack::Node * const node) noexcept;
 
     ZENI_CONCURRENCY_LINKAGE static void reclaim() noexcept;
   };

@@ -11,21 +11,16 @@ namespace Zeni::Concurrency {
   template <typename TYPE>
   class Intrusive_Shared_Ptr;
 
-  template <typename TYPE, typename RELATED = TYPE>
+  template <typename TYPE>
   class ZENI_CONCURRENCY_CACHE_ALIGN Enable_Intrusive_Sharing : Reclamation_Stack::Node {
     Enable_Intrusive_Sharing(const Enable_Intrusive_Sharing &) = delete;
     Enable_Intrusive_Sharing & operator=(const Enable_Intrusive_Sharing &) = delete;
-
-    friend class Intrusive_Shared_Ptr<RELATED>;
-
-  public:
-    typedef TYPE Intruded_Type;
-
+    
   protected:
     Enable_Intrusive_Sharing() = default;
 
-  private:
-    void decrement_refs() {
+  public:
+    void decrement_refs() const {
       const uint64_t prev = m_refs.fetch_sub(1, std::memory_order_relaxed);
       if (prev > 1)
         return;
@@ -34,7 +29,7 @@ namespace Zeni::Concurrency {
       Reclamation_Stacks::push(this);
     }
 
-    bool increment_refs() {
+    bool increment_refs() const {
       uint64_t refs = m_refs.load(std::memory_order_relaxed);
       while (refs) {
         assert(refs != uint64_t(-1));
@@ -48,7 +43,7 @@ namespace Zeni::Concurrency {
       return m_refs.load(std::memory_order_relaxed) != 0;
     }
 
-    std::atomic_uint64_t m_refs = 1;
+    mutable std::atomic_uint64_t m_refs = 1;
   };
 
   template <typename TYPE>
@@ -62,10 +57,10 @@ namespace Zeni::Concurrency {
 
       ~Lock() {
         assert(std::this_thread::get_id() == m_thread);
-        assert(!m_ptr || bool(*reinterpret_cast<Enable_Intrusive_Sharing<typename TYPE::Intruded_Type, TYPE> *>(m_ptr)));
+        assert(!m_ptr || bool(*m_ptr));
         if (m_ptr) {
           std::atomic_thread_fence(std::memory_order_release);
-          reinterpret_cast<Enable_Intrusive_Sharing<typename TYPE::Intruded_Type, TYPE> *>(m_ptr)->decrement_refs();
+          m_ptr->decrement_refs();
         }
       }
 
@@ -246,8 +241,8 @@ namespace Zeni::Concurrency {
 
     ~Intrusive_Shared_Ptr() {
       TYPE * const ptr = m_ptr.load(std::memory_order_relaxed);
-      if (ptr && bool(*reinterpret_cast<Enable_Intrusive_Sharing<typename TYPE::Intruded_Type, TYPE> *>(ptr)))
-        reinterpret_cast<Enable_Intrusive_Sharing<typename TYPE::Intruded_Type, TYPE> *>(ptr)->decrement_refs();
+      if (ptr && bool(*ptr))
+        ptr->decrement_refs();
     }
 
     Intrusive_Shared_Ptr(TYPE * const ptr)
