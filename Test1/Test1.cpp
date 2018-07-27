@@ -1133,6 +1133,8 @@ void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads>
 void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
   Zeni::Concurrency::Ctrie<uint64_t, std::string> ctrie;
 
+  ctrie.lookup(42);
+
   worker_threads->finish_jobs();
 }
 
