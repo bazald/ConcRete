@@ -1131,10 +1131,32 @@ void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads>
 //}
 
 void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
-  Zeni::Concurrency::Ctrie<uint64_t, std::string> ctrie;
 
-  ctrie.insert(42, "Hello, world!");
-  ctrie.lookup(42);
+  class Ctrier : public Zeni::Concurrency::Job {
+  public:
+    Ctrier(const std::shared_ptr<Zeni::Concurrency::Ctrie<uint64_t, const char *>> &ctrie) : m_ctrie(ctrie), dre(rd()) {}
+
+    void execute() noexcept override {
+      while (m_to_insert) {
+        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+        m_ctrie->insert(value, nullptr);
+        --m_to_insert;
+      }
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Ctrie<uint64_t, const char *>> m_ctrie;
+    int64_t m_to_insert = 1024;
+    std::random_device rd;
+    std::default_random_engine dre;
+  };
+
+  const auto ctrie = std::make_shared<Zeni::Concurrency::Ctrie<uint64_t, const char *>>();
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
+    jobs.emplace_back(std::make_shared<Ctrier>(ctrie));
+  job_queue->give_many(std::move(jobs));
 
   worker_threads->finish_jobs();
 }
