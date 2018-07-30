@@ -4,6 +4,7 @@
 #include "Intrusive_Shared_Ptr.hpp"
 
 #include <array>
+#include <cstring>
 #include <functional>
 
 namespace Zeni::Concurrency {
@@ -48,6 +49,23 @@ namespace Zeni::Concurrency {
 
     public:
       Branch() = default;
+    };
+
+    template <typename GENERATION = std::uint64_t>
+    struct Indirection_Node : public Branch {
+    private:
+      Indirection_Node(const Indirection_Node &) = delete;
+      Indirection_Node & operator=(const Indirection_Node &) = delete;
+
+    public:
+      Indirection_Node(const MainNode * main_, GENERATION &&gen_ = 0) : main(main_), gen(std::forward<GENERATION>(gen_)) {}
+
+      ~Indirection_Node() {
+        main.load(std::memory_order_relaxed)->decrement_refs();
+      }
+
+      std::atomic<const MainNode *> main;
+      const GENERATION gen;
     };
 
     template <typename HASH_VALUE_TYPE>
@@ -162,30 +180,34 @@ namespace Zeni::Concurrency {
         return m_branches[i];
       }
 
-      const ICtrie_Node * inserted(const size_t pos, const HASH_VALUE_TYPE flag, Branch * const new_branch) const override {
+      const ICtrie_Node<HASH_VALUE_TYPE> * inserted(const size_t pos, const HASH_VALUE_TYPE flag, Branch * const new_branch) const override {
         assert(!(get_bmp() & flag));
         std::array<Branch *, hamming<HASH_VALUE_TYPE>()> new_branches;
-        memcpy(new_branches.data(), m_branches.data(), pos * sizeof (Branch *));
-        memcpy(new_branches.data() + (pos + 1), m_branches.data() + pos, (hamming_value - pos) * sizeof(Branch *));
-        new_branches[pos] = new_branch;
-        for (size_t i = 0; i != hamming_value + 1; ++i) {
-          if (i != pos)
-            new_branches[i]->increment_refs();
+        if (hamming_value) {
+          std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(Branch *));
+          std::memcpy(new_branches.data() + (pos + 1), m_branches.data() + pos, (hamming_value - pos) * sizeof(Branch *));
+          for (size_t i = 0; i != hamming_value + 1; ++i) {
+            if (i != pos)
+              new_branches[i]->increment_refs();
+          }
         }
-        return Create(get_bmp() | flag, hamming_value + 1, new_branches);
+        new_branches[pos] = new_branch;
+        return ICtrie_Node<HASH_VALUE_TYPE>::Create(this->get_bmp() | flag, hamming_value + 1, new_branches);
       }
 
-      const ICtrie_Node * updated(const size_t pos, const HASH_VALUE_TYPE flag, Branch * const new_branch) const override {
+      const ICtrie_Node<HASH_VALUE_TYPE> * updated(const size_t pos, const HASH_VALUE_TYPE flag, Branch * const new_branch) const override {
         assert(get_bmp() & flag);
         std::array<Branch *, hamming<HASH_VALUE_TYPE>()> new_branches;
-        memcpy(new_branches.data(), m_branches.data(), pos * sizeof(Branch *));
-        memcpy(new_branches.data() + (pos + 1), m_branches.data() + (pos + 1), (hamming_value - pos - 1) * sizeof(Branch *));
-        new_branches[pos] = new_branch;
-        for (size_t i = 0; i != hamming_value; ++i) {
-          if (i != pos)
-            new_branches[i]->increment_refs();
+        if (hamming_value) {
+          std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(Branch *));
+          std::memcpy(new_branches.data() + (pos + 1), m_branches.data() + (pos + 1), (hamming_value - pos - 1) * sizeof(Branch *));
+          for (size_t i = 0; i != hamming_value; ++i) {
+            if (i != pos)
+              new_branches[i]->increment_refs();
+          }
         }
-        return Create(get_bmp(), hamming_value, new_branches);
+        new_branches[pos] = new_branch;
+        return ICtrie_Node<HASH_VALUE_TYPE>::Create(this->get_bmp(), hamming_value, new_branches);
       }
 
     private:
@@ -280,23 +302,6 @@ namespace Zeni::Concurrency {
       const Singleton_Node<KEY, TYPE> * const snode;
       const List_Node * const next = nullptr;
     };
-
-    template <typename GENERATION = std::uint64_t>
-    struct Indirection_Node : public Branch {
-    private:
-      Indirection_Node(const Indirection_Node &) = delete;
-      Indirection_Node & operator=(const Indirection_Node &) = delete;
-
-    public:
-      Indirection_Node(const MainNode * main_, GENERATION &&gen_ = 0) : main(main_), gen(std::forward<GENERATION>(gen_)) {}
-
-      ~Indirection_Node() {
-        main.load(std::memory_order_relaxed)->decrement_refs();
-      }
-
-      std::atomic<const MainNode *> main;
-      const GENERATION gen;
-    };
   }
 
   template <typename KEY, typename TYPE, typename HASH = std::hash<KEY>, typename GENERATION = std::uint64_t>
@@ -306,6 +311,7 @@ namespace Zeni::Concurrency {
 
     enum class Lookup_Status { FOUND, NOTFOUND, RESTART };
     enum class Insert_Status { OK, RESTART };
+    enum class Remove_Status { FOUND, NOTFOUND, RESTART };
 
   public:
     typedef KEY Key;
@@ -330,10 +336,11 @@ namespace Zeni::Concurrency {
     }
 
     Intrusive_Shared_Ptr<const SNode> lookup(const Key &key) {
+      const Hash_Value hash_value = Hash()(key);
       const SNode * found = nullptr;
       for(;;) {
         const INode * root = m_root.load(std::memory_order_acquire);
-        if (ilookup(found, root, key, Hash()(key), 0, nullptr) != Lookup_Status::RESTART)
+        if (ilookup(found, root, key, hash_value, 0, nullptr) != Lookup_Status::RESTART)
           break;
       }
       if (found)
@@ -342,11 +349,25 @@ namespace Zeni::Concurrency {
     }
 
     void insert(const Key &key, const Type &value) {
+      const Hash_Value hash_value = Hash()(key);
       for (;;) {
         INode * root = m_root.load(std::memory_order_acquire);
-        if (iinsert(root, key, Hash()(key), value, 0, nullptr) != Insert_Status::RESTART)
+        if (iinsert(root, key, hash_value, value, 0, nullptr) != Insert_Status::RESTART)
           break;
       }
+    }
+
+    Intrusive_Shared_Ptr<const SNode> remove(const Key &key) {
+      const Hash_Value hash_value = Hash()(key);
+      const SNode * found = nullptr;
+      for (;;) {
+        const INode * root = m_root.load(std::memory_order_acquire);
+        if (iremove(found, root, key, hash_value, 0, nullptr) != Remove_Status::RESTART)
+          break;
+      }
+      if (found)
+        found->increment_refs();
+      return found;
     }
 
   private:
@@ -460,8 +481,59 @@ namespace Zeni::Concurrency {
       }
     }
 
-    template <typename TYPE, typename DESIRED>
-    static bool CAS(std::atomic<TYPE *> &atomic_value, TYPE * &expected, const DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
+    Remove_Status iremove(const SNode * &found,
+      const INode * inode,
+      const Key &key,
+      const Hash_Value &hash_value,
+      size_t level,
+      const INode * parent) const
+    {
+      for (;;) {
+        const auto inode_main = inode->main.load(std::memory_order_relaxed);
+        if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
+          const auto[flag, pos] = cnode->flagpos(hash_value, level);
+          const Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          if (!branch)
+            return Lookup_Status::NOTFOUND;
+          if (const auto inode_next = dynamic_cast<const INode *>(branch)) {
+            parent = inode;
+            inode = inode_next;
+            level += CNode::W;
+            continue;
+          }
+          else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
+            if (snode->key == key) {
+              found = snode;
+              return Lookup_Status::FOUND;
+            }
+            else
+              return Lookup_Status::NOTFOUND;
+          }
+          else
+            abort();
+        }
+        else if (const auto tnode = dynamic_cast<const TNode *>(inode_main)) {
+          // clean(parent, lev - W) // Only pseudocode for now, irrelevant until removal implemented
+          return Lookup_Status::RESTART;
+        }
+        else if (auto lnode = dynamic_cast<const LNode *>(inode_main)) {
+          do {
+            if (lnode->snode->key == key) {
+              found = lnode->snode;
+              return Lookup_Status::FOUND;
+            }
+            else
+              lnode = lnode->next;
+          } while (lnode);
+          return Lookup_Status::NOTFOUND;
+        }
+        else
+          abort();
+      }
+    }
+
+    template <typename VALUE_TYPE, typename DESIRED>
+    static bool CAS(std::atomic<VALUE_TYPE *> &atomic_value, VALUE_TYPE * &expected, const DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
       if (atomic_value.compare_exchange_strong(expected, desired, success, failure)) {
         expected->decrement_refs();
         return true;
