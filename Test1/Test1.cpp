@@ -1142,11 +1142,23 @@ void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker
         m_ctrie->insert(value, nullptr);
         --m_to_insert;
       }
+      while (m_to_lookup) {
+        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+        m_ctrie->lookup(value);
+        --m_to_lookup;
+      }
+      while (m_to_remove) {
+        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+        m_ctrie->remove(value);
+        --m_to_remove;
+      }
     }
 
   private:
     std::shared_ptr<Zeni::Concurrency::Ctrie<uint64_t, const char *>> m_ctrie;
     int64_t m_to_insert = 1024;
+    int64_t m_to_lookup = 1024;
+    int64_t m_to_remove = 1024;
     std::random_device rd;
     std::default_random_engine dre;
   };

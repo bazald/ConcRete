@@ -124,6 +124,8 @@ namespace Zeni::Concurrency {
 
       virtual const ICtrie_Node * updated(const size_t pos, const HASH_VALUE_TYPE flag, Branch * const new_branch) const = 0;
 
+      virtual const ICtrie_Node * removed(const size_t pos, const HASH_VALUE_TYPE flag) const = 0;
+
     private:
       static const HASH_VALUE_TYPE unhamming_filter = unhamming(W);
       HASH_VALUE_TYPE m_bmp;
@@ -186,10 +188,8 @@ namespace Zeni::Concurrency {
         if (hamming_value) {
           std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(Branch *));
           std::memcpy(new_branches.data() + (pos + 1), m_branches.data() + pos, (hamming_value - pos) * sizeof(Branch *));
-          for (size_t i = 0; i != hamming_value + 1; ++i) {
-            if (i != pos)
-              new_branches[i]->increment_refs();
-          }
+          for (size_t i = 0; i != hamming_value; ++i)
+            m_branches[i]->increment_refs();
         }
         new_branches[pos] = new_branch;
         return ICtrie_Node<HASH_VALUE_TYPE>::Create(this->get_bmp() | flag, hamming_value + 1, new_branches);
@@ -201,13 +201,25 @@ namespace Zeni::Concurrency {
         if (hamming_value) {
           std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(Branch *));
           std::memcpy(new_branches.data() + (pos + 1), m_branches.data() + (pos + 1), (hamming_value - pos - 1) * sizeof(Branch *));
-          for (size_t i = 0; i != hamming_value; ++i) {
-            if (i != pos)
-              new_branches[i]->increment_refs();
-          }
+          for (size_t i = 0; i != pos; ++i)
+            new_branches[i]->increment_refs();
+          for (size_t i = pos + 1; i != hamming_value; ++i)
+            new_branches[i]->increment_refs();
         }
         new_branches[pos] = new_branch;
         return ICtrie_Node<HASH_VALUE_TYPE>::Create(this->get_bmp(), hamming_value, new_branches);
+      }
+
+      const ICtrie_Node<HASH_VALUE_TYPE> * removed(const size_t pos, const HASH_VALUE_TYPE flag) const override {
+        assert(get_bmp() & flag);
+        std::array<Branch *, hamming<HASH_VALUE_TYPE>()> new_branches;
+        if (hamming_value) {
+          std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(Branch *));
+          std::memcpy(new_branches.data() + pos, m_branches.data() + (pos + 1), (hamming_value - pos - 1) * sizeof(Branch *));
+          for (size_t i = 0; i != hamming_value - 1; ++i)
+            new_branches[i]->increment_refs();
+        }
+        return ICtrie_Node<HASH_VALUE_TYPE>::Create(this->get_bmp() & ~flag, hamming_value - 1, new_branches);
       }
 
     private:
@@ -264,13 +276,13 @@ namespace Zeni::Concurrency {
     public:
       Tomb_Node() = default;
 
-      Tomb_Node(const Singleton_Node<KEY, TYPE> * const snode_) : snode(snode_) {}
+      Tomb_Node(const Branch * const branch_) : branch(branch_) {}
 
       ~Tomb_Node() {
-        snode->decrement_refs();
+        branch->decrement_refs();
       }
 
-      const Singleton_Node<KEY, TYPE> * const snode;
+      const Branch * const branch;
     };
 
     template <typename KEY, typename TYPE>
@@ -297,6 +309,20 @@ namespace Zeni::Concurrency {
           }
         }
         return new List_Node(snode, new_head);
+      }
+
+      std::pair<List_Node *, const Singleton_Node<KEY, TYPE> *> removed(const KEY &key) const {
+        List_Node * new_head = nullptr;
+        const Singleton_Node<KEY, TYPE> * new_found = nullptr;
+        for (auto old_head = this; old_head; old_head = old_head->next) {
+          if (old_head->snode->key == key)
+            new_found = old_head->snode;
+          else {
+            old_head->snode->increment_refs();
+            new_head = new List_Node(old_head->snode, new_head);
+          }
+        }
+        return std::make_pair(new_head, new_found);
       }
 
       const Singleton_Node<KEY, TYPE> * const snode;
@@ -361,7 +387,7 @@ namespace Zeni::Concurrency {
       const Hash_Value hash_value = Hash()(key);
       const SNode * found = nullptr;
       for (;;) {
-        const INode * root = m_root.load(std::memory_order_acquire);
+        INode * root = m_root.load(std::memory_order_acquire);
         if (iremove(found, root, key, hash_value, 0, nullptr) != Remove_Status::RESTART)
           break;
       }
@@ -392,18 +418,18 @@ namespace Zeni::Concurrency {
             continue;
           }
           else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
-            if (snode->key == key) {
+            if (snode->key != key)
+              return Lookup_Status::NOTFOUND;
+            else {
               found = snode;
               return Lookup_Status::FOUND;
             }
-            else
-              return Lookup_Status::NOTFOUND;
           }
           else
             abort();
         }
         else if (const auto tnode = dynamic_cast<const TNode *>(inode_main)) {
-          // clean(parent, lev - W) // Only pseudocode for now, irrelevant until removal implemented
+          clean(parent, level - CNode::W);
           return Lookup_Status::RESTART;
         }
         else if (auto lnode = dynamic_cast<const LNode *>(inode_main)) {
@@ -471,7 +497,7 @@ namespace Zeni::Concurrency {
           }
         }
         else if (const auto tnode = dynamic_cast<const TNode *>(inode_main)) {
-          // clean(parent, lev - W) // Only pseudocode for now, irrelevant until removal implemented
+          clean(parent, level - CNode::W);
           return Insert_Status::RESTART;
         }
         else if (auto lnode = dynamic_cast<const LNode *>(inode_main)) {
@@ -482,50 +508,72 @@ namespace Zeni::Concurrency {
     }
 
     Remove_Status iremove(const SNode * &found,
-      const INode * inode,
+      INode * inode,
       const Key &key,
       const Hash_Value &hash_value,
       size_t level,
       const INode * parent) const
     {
       for (;;) {
-        const auto inode_main = inode->main.load(std::memory_order_relaxed);
+        auto inode_main = inode->main.load(std::memory_order_relaxed);
         if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
-          const Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (!branch)
-            return Lookup_Status::NOTFOUND;
-          if (const auto inode_next = dynamic_cast<const INode *>(branch)) {
+            return Remove_Status::NOTFOUND;
+          if (const auto inode_next = dynamic_cast<INode *>(branch)) {
             parent = inode;
             inode = inode_next;
             level += CNode::W;
             continue;
           }
           else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
-            if (snode->key == key) {
-              found = snode;
-              return Lookup_Status::FOUND;
+            if (snode->key != key)
+              return Remove_Status::NOTFOUND;
+            else {
+              const CNode * new_cnode = cnode->removed(pos, flag);
+              const MainNode * new_mainnode = new_cnode;
+              if (new_cnode->get_hamming_value() == 1) {
+                Branch * new_branch = new_cnode->at(0);
+                new_branch->increment_refs();
+                new_mainnode = new TNode(new_branch);
+                delete new_cnode;
+              }
+              if (CAS(inode->main, inode_main, new_mainnode, std::memory_order_release, std::memory_order_relaxed)) {
+                found = snode;
+                if (const auto tnode = dynamic_cast<const TNode *>(new_mainnode))
+                  clean_parent(parent, inode, hash_value, level - CNode::W);
+                return Remove_Status::FOUND;
+              }
+              else
+                return Remove_Status::RESTART;
             }
-            else
-              return Lookup_Status::NOTFOUND;
           }
           else
             abort();
         }
         else if (const auto tnode = dynamic_cast<const TNode *>(inode_main)) {
-          // clean(parent, lev - W) // Only pseudocode for now, irrelevant until removal implemented
-          return Lookup_Status::RESTART;
+          clean(parent, level - CNode::W);
+          return Remove_Status::RESTART;
         }
         else if (auto lnode = dynamic_cast<const LNode *>(inode_main)) {
-          do {
-            if (lnode->snode->key == key) {
-              found = lnode->snode;
-              return Lookup_Status::FOUND;
-            }
-            else
-              lnode = lnode->next;
-          } while (lnode);
-          return Lookup_Status::NOTFOUND;
+          const auto [new_lnode, new_found] = lnode->removed(key);
+          if (!new_found) {
+            new_lnode->decrement_refs();
+            return Remove_Status::NOTFOUND;
+          }
+          MainNode * new_mainnode = new_lnode;
+          if (!new_lnode->next) {
+            new_lnode->snode->increment_refs();
+            new_mainnode = new TNode(new_lnode->snode);
+            delete new_lnode;
+          }
+          if (CAS(inode->main, inode_main, new_mainnode, std::memory_order_release, std::memory_order_relaxed)) {
+            found = new_found;
+            return Remove_Status::FOUND;
+          }
+          else
+            return Remove_Status::RESTART;
         }
         else
           abort();
