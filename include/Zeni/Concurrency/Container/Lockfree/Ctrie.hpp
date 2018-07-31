@@ -49,6 +49,21 @@ namespace Zeni::Concurrency {
 
     public:
       Branch() = default;
+
+      virtual Branch * resurrect() = 0;
+    };
+
+    struct Tomb_Node : public MainNode {
+    private:
+      Tomb_Node(const Tomb_Node &) = delete;
+      Tomb_Node  &operator=(const Tomb_Node &) = delete;
+
+    public:
+      Tomb_Node() = default;
+
+      Tomb_Node(Branch * const branch_) : branch(branch_) {}
+
+      Branch * const branch;
     };
 
     template <typename GENERATION = std::uint64_t>
@@ -61,7 +76,18 @@ namespace Zeni::Concurrency {
       Indirection_Node(const MainNode * main_, GENERATION &&gen_ = 0) : main(main_), gen(std::forward<GENERATION>(gen_)) {}
 
       ~Indirection_Node() {
-        main.load(std::memory_order_relaxed)->decrement_refs();
+        main.load(std::memory_order_acquire)->decrement_refs();
+      }
+
+      Branch * resurrect() override {
+        if (const auto tomb_node = dynamic_cast<const Tomb_Node *>(main.load(std::memory_order_acquire))) {
+          tomb_node->branch->increment_refs();
+          return tomb_node->branch;
+        }
+        else {
+          increment_refs();
+          return this;
+        }
       }
 
       std::atomic<const MainNode *> main;
@@ -125,6 +151,24 @@ namespace Zeni::Concurrency {
       virtual const ICtrie_Node * updated(const size_t pos, const HASH_VALUE_TYPE flag, Branch * const new_branch) const = 0;
 
       virtual const ICtrie_Node * removed(const size_t pos, const HASH_VALUE_TYPE flag) const = 0;
+
+      const MainNode * to_compressed(const size_t level) const {
+        std::array<Branch *, hamming_max> branches;
+        for (size_t i = 0; i != get_hamming_value(); ++i)
+          branches[i] = at(i)->resurrect();
+        return Create(m_bmp, get_hamming_value(), branches)->to_contracted(level);
+      }
+
+      const MainNode * to_contracted(const size_t level) const {
+        if (level && get_hamming_value() == 1) {
+          Branch * const branch = at(0);
+          branch->increment_refs();
+          delete this;
+          return new Tomb_Node(branch);
+        }
+        else
+          return this;
+      }
 
     private:
       static const HASH_VALUE_TYPE unhamming_filter = unhamming(W);
@@ -263,26 +307,13 @@ namespace Zeni::Concurrency {
       template <typename KEY_TYPE, typename TYPE_TYPE>
       Singleton_Node(KEY_TYPE &&key_, TYPE_TYPE &&value_) : key(std::forward<KEY_TYPE>(key_)), value(std::forward<TYPE_TYPE>(value_)) {}
 
-      const KEY key;
-      const TYPE value;
-    };
-
-    template <typename KEY, typename TYPE>
-    struct Tomb_Node : public MainNode {
-    private:
-      Tomb_Node(const Tomb_Node &) = delete;
-      Tomb_Node  &operator=(const Tomb_Node &) = delete;
-
-    public:
-      Tomb_Node() = default;
-
-      Tomb_Node(const Branch * const branch_) : branch(branch_) {}
-
-      ~Tomb_Node() {
-        branch->decrement_refs();
+      Branch * resurrect() override {
+        increment_refs();
+        return this;
       }
 
-      const Branch * const branch;
+      const KEY key;
+      const TYPE value;
     };
 
     template <typename KEY, typename TYPE>
@@ -292,7 +323,7 @@ namespace Zeni::Concurrency {
       List_Node & operator=(const List_Node &) = delete;
 
     public:
-      List_Node(const Singleton_Node<KEY, TYPE> * const snode_, const List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
+      List_Node(Singleton_Node<KEY, TYPE> * const snode_, const List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
 
       ~List_Node() {
         snode->decrement_refs();
@@ -300,7 +331,7 @@ namespace Zeni::Concurrency {
           next->decrement_refs();
       }
 
-      const List_Node * inserted(const Singleton_Node<KEY, TYPE> * const snode) const {
+      const List_Node * inserted(Singleton_Node<KEY, TYPE> * const snode) const {
         const List_Node * new_head = nullptr;
         for (auto old_head = this; old_head; old_head = old_head->next) {
           if (old_head->snode->key != snode->key) {
@@ -325,7 +356,7 @@ namespace Zeni::Concurrency {
         return std::make_pair(new_head, new_found);
       }
 
-      const Singleton_Node<KEY, TYPE> * const snode;
+      Singleton_Node<KEY, TYPE> * const snode;
       const List_Node * const next = nullptr;
     };
   }
@@ -351,7 +382,7 @@ namespace Zeni::Concurrency {
     typedef Ctrie_Internal::Branch Branch;
     typedef Ctrie_Internal::ICtrie_Node<Hash_Value> CNode;
     typedef Ctrie_Internal::Singleton_Node<Key, Type> SNode;
-    typedef Ctrie_Internal::Tomb_Node<Key, Type> TNode;
+    typedef Ctrie_Internal::Tomb_Node TNode;
     typedef Ctrie_Internal::List_Node<Key, Type> LNode;
     typedef Ctrie_Internal::Indirection_Node<Generation> INode;
 
@@ -364,8 +395,8 @@ namespace Zeni::Concurrency {
     Intrusive_Shared_Ptr<const SNode> lookup(const Key &key) {
       const Hash_Value hash_value = Hash()(key);
       const SNode * found = nullptr;
-      for(;;) {
-        const INode * root = m_root.load(std::memory_order_acquire);
+      for (;;) {
+        INode * root = m_root.load(std::memory_order_acquire);
         if (ilookup(found, root, key, hash_value, 0, nullptr) != Lookup_Status::RESTART)
           break;
       }
@@ -398,20 +429,20 @@ namespace Zeni::Concurrency {
 
   private:
     Lookup_Status ilookup(const SNode * &found,
-      const INode * inode,
+      INode * inode,
       const Key &key,
       const Hash_Value &hash_value,
       size_t level,
-      const INode * parent) const
+      INode * parent) const
     {
       for (;;) {
-        const auto inode_main = inode->main.load(std::memory_order_relaxed);
+        const auto inode_main = inode->main.load(std::memory_order_acquire);
         if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
-          const Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          Branch * const branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (!branch)
             return Lookup_Status::NOTFOUND;
-          if (const auto inode_next = dynamic_cast<const INode *>(branch)) {
+          if (const auto inode_next = dynamic_cast<INode *>(branch)) {
             parent = inode;
             inode = inode_next;
             level += CNode::W;
@@ -454,10 +485,10 @@ namespace Zeni::Concurrency {
       const Hash_Value &hash_value,
       const Type &value,
       size_t level,
-      const INode * parent)
+      INode * parent)
     {
       for (;;) {
-        auto inode_main = inode->main.load(std::memory_order_relaxed);
+        auto inode_main = inode->main.load(std::memory_order_acquire);
         if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
@@ -512,10 +543,10 @@ namespace Zeni::Concurrency {
       const Key &key,
       const Hash_Value &hash_value,
       size_t level,
-      const INode * parent) const
+      INode * parent)
     {
       for (;;) {
-        auto inode_main = inode->main.load(std::memory_order_relaxed);
+        auto inode_main = inode->main.load(std::memory_order_acquire);
         if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
@@ -532,13 +563,7 @@ namespace Zeni::Concurrency {
               return Remove_Status::NOTFOUND;
             else {
               const CNode * new_cnode = cnode->removed(pos, flag);
-              const MainNode * new_mainnode = new_cnode;
-              if (new_cnode->get_hamming_value() == 1) {
-                Branch * new_branch = new_cnode->at(0);
-                new_branch->increment_refs();
-                new_mainnode = new TNode(new_branch);
-                delete new_cnode;
-              }
+              const MainNode * new_mainnode = new_cnode->to_contracted(level);
               if (CAS(inode->main, inode_main, new_mainnode, std::memory_order_release, std::memory_order_relaxed)) {
                 found = snode;
                 if (const auto tnode = dynamic_cast<const TNode *>(new_mainnode))
@@ -557,7 +582,7 @@ namespace Zeni::Concurrency {
           return Remove_Status::RESTART;
         }
         else if (auto lnode = dynamic_cast<const LNode *>(inode_main)) {
-          const auto [new_lnode, new_found] = lnode->removed(key);
+          const auto[new_lnode, new_found] = lnode->removed(key);
           if (!new_found) {
             new_lnode->decrement_refs();
             return Remove_Status::NOTFOUND;
@@ -578,6 +603,30 @@ namespace Zeni::Concurrency {
         else
           abort();
       }
+    }
+
+    void clean(INode * const inode, const size_t level) const {
+      const MainNode * inode_main = inode->main.load(std::memory_order_acquire);
+      if (auto cnode = dynamic_cast<const CNode *>(inode_main))
+        CAS(inode->main, inode_main, cnode->to_compressed(level), std::memory_order_release, std::memory_order_relaxed);
+    }
+
+    void clean_parent(const INode * const parent, INode * const inode, const Hash_Value &hash_value, const size_t level) {
+      do {
+        const MainNode * const parent_main = parent->main.load(std::memory_order_acquire);
+        if (const CNode * const cnode = dynamic_cast<const CNode *>(parent_main)) {
+          const auto[flag, pos] = cnode->flagpos(hash_value, level);
+          const Branch * const branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          if (branch == inode) {
+            const MainNode * inode_main = inode->main.load(std::memory_order_acquire);
+            if (const TNode * const tnode = dynamic_cast<const TNode *>(inode_main)) {
+              const auto new_cnode = cnode->updated(pos, flag, inode->resurrect());
+              if (!CAS(inode->main, inode_main, new_cnode, std::memory_order_release, std::memory_order_relaxed))
+                continue;
+            }
+          }
+        }
+      } while (false);
     }
 
     template <typename VALUE_TYPE, typename DESIRED>
