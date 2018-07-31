@@ -20,13 +20,14 @@ namespace Zeni::Concurrency {
     Enable_Intrusive_Sharing() = default;
 
   public:
-    void decrement_refs() const {
+    bool decrement_refs() const {
       const uint64_t prev = m_refs.fetch_sub(1, std::memory_order_relaxed);
       if (prev > 1)
-        return;
+        return false;
       assert(prev == 1);
       std::atomic_thread_fence(std::memory_order_acquire);
       Reclamation_Stacks::push(this);
+      return true;
     }
 
     bool increment_refs() const {

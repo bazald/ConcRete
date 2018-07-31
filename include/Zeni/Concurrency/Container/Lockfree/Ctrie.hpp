@@ -63,6 +63,10 @@ namespace Zeni::Concurrency {
 
       Tomb_Node(Branch * const branch_) : branch(branch_) {}
 
+      ~Tomb_Node() {
+        branch->decrement_refs();
+      }
+
       Branch * const branch;
     };
 
@@ -323,16 +327,19 @@ namespace Zeni::Concurrency {
       List_Node & operator=(const List_Node &) = delete;
 
     public:
-      List_Node(Singleton_Node<KEY, TYPE> * const snode_, const List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
+      List_Node(Singleton_Node<KEY, TYPE> * const snode_, List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
 
       ~List_Node() {
         snode->decrement_refs();
-        if (next)
-          next->decrement_refs();
+        while (next && next->decrement_refs()) {
+          List_Node * next_next = next->next;
+          next->next = nullptr;
+          next = next_next;
+        }
       }
 
       const List_Node * inserted(Singleton_Node<KEY, TYPE> * const snode) const {
-        const List_Node * new_head = nullptr;
+        List_Node * new_head = nullptr;
         for (auto old_head = this; old_head; old_head = old_head->next) {
           if (old_head->snode->key != snode->key) {
             old_head->snode->increment_refs();
@@ -345,19 +352,26 @@ namespace Zeni::Concurrency {
       std::pair<List_Node *, const Singleton_Node<KEY, TYPE> *> removed(const KEY &key) const {
         List_Node * new_head = nullptr;
         const Singleton_Node<KEY, TYPE> * new_found = nullptr;
-        for (auto old_head = this; old_head; old_head = old_head->next) {
-          if (old_head->snode->key == key)
+        auto old_head = this;
+        for (; old_head; old_head = old_head->next) {
+          if (old_head->snode->key == key) {
             new_found = old_head->snode;
+            break;
+          }
           else {
             old_head->snode->increment_refs();
             new_head = new List_Node(old_head->snode, new_head);
           }
         }
+        for (; old_head; old_head = old_head->next) {
+          old_head->snode->increment_refs();
+          new_head = new List_Node(old_head->snode, new_head);
+        }
         return std::make_pair(new_head, new_found);
       }
 
       Singleton_Node<KEY, TYPE> * const snode;
-      const List_Node * const next = nullptr;
+      List_Node * next = nullptr;
     };
   }
 
@@ -611,17 +625,17 @@ namespace Zeni::Concurrency {
         CAS(inode->main, inode_main, cnode->to_compressed(level), std::memory_order_release, std::memory_order_relaxed);
     }
 
-    void clean_parent(const INode * const parent, INode * const inode, const Hash_Value &hash_value, const size_t level) {
+    void clean_parent(INode * const parent, INode * const inode, const Hash_Value &hash_value, const size_t level) {
       do {
-        const MainNode * const parent_main = parent->main.load(std::memory_order_acquire);
+        const MainNode * parent_main = parent->main.load(std::memory_order_acquire);
         if (const CNode * const cnode = dynamic_cast<const CNode *>(parent_main)) {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           const Branch * const branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (branch == inode) {
-            const MainNode * inode_main = inode->main.load(std::memory_order_acquire);
+            const MainNode * const inode_main = inode->main.load(std::memory_order_acquire);
             if (const TNode * const tnode = dynamic_cast<const TNode *>(inode_main)) {
-              const auto new_cnode = cnode->updated(pos, flag, inode->resurrect());
-              if (!CAS(inode->main, inode_main, new_cnode, std::memory_order_release, std::memory_order_relaxed))
+              const auto new_cnode = cnode->updated(pos, flag, inode->resurrect())->to_contracted(level);
+              if (!CAS(parent->main, parent_main, new_cnode, std::memory_order_release, std::memory_order_relaxed))
                 continue;
             }
           }
