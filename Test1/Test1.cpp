@@ -2,6 +2,7 @@
 #include "Zeni/Concurrency/Container/Antiable_List.hpp"
 #include "Zeni/Concurrency/Container/Ctrie.hpp"
 #include "Zeni/Concurrency/Container/Epoch_List.hpp"
+#include "Zeni/Concurrency/Container/Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Intrusive_Shared_Ptr.hpp"
 #include "Zeni/Concurrency/Container/Ordered_List.hpp"
 #include "Zeni/Concurrency/Container/Shared_Ptr.hpp"
@@ -92,6 +93,7 @@ static void test_Ordered_List(const std::shared_ptr<Zeni::Concurrency::Worker_Th
 static void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 //static void test_Antiable_Hashset(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+static void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 
@@ -259,17 +261,27 @@ int main()
   //  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
   //  //  abort();
   //  //}
-  //  std::cout << 'H' << std::flush;
+  //  std::cout << 'h' << std::flush;
+  //}
+  //std::cout << std::endl;
+
+  //for (int i = 0; i != 80000; ++i) {
+  //  test_Ctrie(worker_threads, job_queue);
+  //  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //  //  abort();
+  //  //}
+  //  std::cout << 'C' << std::flush;
   //}
   //std::cout << std::endl;
 
   for (int i = 0; i != 80000; ++i) {
-    test_Ctrie(worker_threads, job_queue);
+    test_Hash_Trie(worker_threads, job_queue);
     //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
     //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
     //  abort();
     //}
-    std::cout << 'C' << std::flush;
+    std::cout << 'H' << std::flush;
   }
   std::cout << std::endl;
 
@@ -1168,6 +1180,49 @@ void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
   for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
     jobs.emplace_back(std::make_shared<Ctrier>(ctrie));
+  job_queue->give_many(std::move(jobs));
+
+  worker_threads->finish_jobs();
+}
+
+void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+
+  class Hash_Trier : public Zeni::Concurrency::Job {
+  public:
+    Hash_Trier(const std::shared_ptr<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>> &hash_trie) : m_hash_trie(hash_trie), dre(rd()) {}
+
+    void execute() noexcept override {
+      while (m_to_insert) {
+        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+        m_hash_trie->insert(value, nullptr);
+        --m_to_insert;
+      }
+      while (m_to_lookup) {
+        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+        m_hash_trie->lookup(value);
+        --m_to_lookup;
+      }
+      while (m_to_remove) {
+        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+        m_hash_trie->remove(value);
+        --m_to_remove;
+      }
+    }
+
+  private:
+    std::shared_ptr<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>> m_hash_trie;
+    int64_t m_to_insert = 1024;
+    int64_t m_to_lookup = 1024;
+    int64_t m_to_remove = 1024;
+    std::random_device rd;
+    std::default_random_engine dre;
+  };
+
+  const auto hash_trie = std::make_shared<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>>();
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
+    jobs.emplace_back(std::make_shared<Hash_Trier>(hash_trie));
   job_queue->give_many(std::move(jobs));
 
   worker_threads->finish_jobs();

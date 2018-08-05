@@ -10,6 +10,7 @@
 namespace Zeni::Concurrency {
 
   namespace Ctrie_Internal {
+
     template <typename INT_TYPE>
     constexpr static INT_TYPE hamming(const INT_TYPE value = std::numeric_limits<INT_TYPE>::max()) {
       return (value & 0x1) + ((value >> 1) ? hamming(value >> 1) : 0);
@@ -33,13 +34,22 @@ namespace Zeni::Concurrency {
       return value > 0x1 ? 1 + log2(value >> 1) : 0;
     }
 
-    struct MainNode : public Enable_Intrusive_Sharing<MainNode> {
+    class Generation : public Enable_Intrusive_Sharing<Generation> {};
+
+    struct Main_Node : public Enable_Intrusive_Sharing<Main_Node> {
     private:
-      MainNode(const MainNode &) = delete;
-      MainNode & operator=(const MainNode &) = delete;
+      Main_Node(const Main_Node &) = delete;
+      Main_Node & operator=(const Main_Node &) = delete;
 
     public:
-      MainNode() = default;
+      Main_Node() = default;
+
+      ~Main_Node() {
+        if (prev)
+          prev->decrement_refs();
+      }
+
+      const Main_Node * prev = nullptr;
     };
 
     struct Branch : public Enable_Intrusive_Sharing<Branch> {
@@ -53,7 +63,7 @@ namespace Zeni::Concurrency {
       virtual Branch * resurrect() = 0;
     };
 
-    struct Tomb_Node : public MainNode {
+    struct Tomb_Node : public Main_Node {
     private:
       Tomb_Node(const Tomb_Node &) = delete;
       Tomb_Node  &operator=(const Tomb_Node &) = delete;
@@ -70,17 +80,21 @@ namespace Zeni::Concurrency {
       Branch * const branch;
     };
 
-    template <typename GENERATION = std::uint64_t>
     struct Indirection_Node : public Branch {
     private:
       Indirection_Node(const Indirection_Node &) = delete;
       Indirection_Node & operator=(const Indirection_Node &) = delete;
 
     public:
-      Indirection_Node(const MainNode * main_, GENERATION &&gen_ = 0) : main(main_), gen(std::forward<GENERATION>(gen_)) {}
+      Indirection_Node(const Main_Node * main_, const Generation * const gen_)
+        : main(main_),
+        gen(gen_)
+      {
+      }
 
       ~Indirection_Node() {
         main.load(std::memory_order_acquire)->decrement_refs();
+        gen.load(std::memory_order_relaxed)->decrement_refs();
       }
 
       Branch * resurrect() override {
@@ -94,12 +108,12 @@ namespace Zeni::Concurrency {
         }
       }
 
-      std::atomic<const MainNode *> main;
-      const GENERATION gen;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<const Main_Node *> main;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<const Generation *> gen;
     };
 
     template <typename HASH_VALUE_TYPE>
-    struct ICtrie_Node : public MainNode {
+    struct ICtrie_Node : public Main_Node {
     private:
       ICtrie_Node(const ICtrie_Node &) = delete;
       ICtrie_Node & operator=(const ICtrie_Node &) = delete;
@@ -127,7 +141,7 @@ namespace Zeni::Concurrency {
         const auto second_flag = flag(second_hash, level);
         if (first_flag == second_flag) {
           std::array<Branch *, hamming_max> branches;
-          branches[0] = new Indirection_Node(Create(first, first_hash, second, second_hash, level + W));
+          branches[0] = new Indirection_Node(Create(first, first_hash, second, second_hash, level + W), new Generation);
           return Create(first_flag, 1, branches);
         }
         else {
@@ -156,14 +170,14 @@ namespace Zeni::Concurrency {
 
       virtual const ICtrie_Node * removed(const size_t pos, const HASH_VALUE_TYPE flag) const = 0;
 
-      const MainNode * to_compressed(const size_t level) const {
+      const Main_Node * to_compressed(const size_t level) const {
         std::array<Branch *, hamming_max> branches;
         for (size_t i = 0; i != get_hamming_value(); ++i)
           branches[i] = at(i)->resurrect();
         return Create(m_bmp, get_hamming_value(), branches)->to_contracted(level);
       }
 
-      const MainNode * to_contracted(const size_t level) const {
+      const Main_Node * to_contracted(const size_t level) const {
         if (level && get_hamming_value() == 1) {
           Branch * const branch = at(0);
           branch->increment_refs();
@@ -321,7 +335,7 @@ namespace Zeni::Concurrency {
     };
 
     template <typename KEY, typename TYPE>
-    struct List_Node : public MainNode {
+    struct List_Node : public Main_Node {
     private:
       List_Node(const List_Node &) = delete;
       List_Node & operator=(const List_Node &) = delete;
@@ -340,11 +354,20 @@ namespace Zeni::Concurrency {
 
       const List_Node * inserted(Singleton_Node<KEY, TYPE> * const snode) const {
         List_Node * new_head = nullptr;
-        for (auto old_head = this; old_head; old_head = old_head->next) {
-          if (old_head->snode->key != snode->key) {
+        auto old_head = this;
+        for (; old_head; old_head = old_head->next) {
+          if (old_head->snode->key == snode->key) {
+            old_head = old_head->next;
+            break;
+          }
+          else {
             old_head->snode->increment_refs();
             new_head = new List_Node(old_head->snode, new_head);
           }
+        }
+        for (; old_head; old_head = old_head->next) {
+          old_head->snode->increment_refs();
+          new_head = new List_Node(old_head->snode, new_head);
         }
         return new List_Node(snode, new_head);
       }
@@ -356,6 +379,7 @@ namespace Zeni::Concurrency {
         for (; old_head; old_head = old_head->next) {
           if (old_head->snode->key == key) {
             new_found = old_head->snode;
+            old_head = old_head->next;
             break;
           }
           else {
@@ -375,7 +399,7 @@ namespace Zeni::Concurrency {
     };
   }
 
-  template <typename KEY, typename TYPE, typename HASH = std::hash<KEY>, typename GENERATION = std::uint64_t>
+  template <typename KEY, typename TYPE, typename HASH = std::hash<KEY>, typename GENERATION = Ctrie_Internal::Generation>
   class Ctrie {
     Ctrie(const Ctrie &) = delete;
     Ctrie & operator=(const Ctrie &) = delete;
@@ -392,13 +416,13 @@ namespace Zeni::Concurrency {
 
     typedef decltype(Hash()(Key())) Hash_Value;
 
-    typedef Ctrie_Internal::MainNode MainNode;
+    typedef Ctrie_Internal::Main_Node MNode;
     typedef Ctrie_Internal::Branch Branch;
     typedef Ctrie_Internal::ICtrie_Node<Hash_Value> CNode;
     typedef Ctrie_Internal::Singleton_Node<Key, Type> SNode;
     typedef Ctrie_Internal::Tomb_Node TNode;
     typedef Ctrie_Internal::List_Node<Key, Type> LNode;
-    typedef Ctrie_Internal::Indirection_Node<Generation> INode;
+    typedef Ctrie_Internal::Indirection_Node INode;
 
     Ctrie() = default;
 
@@ -523,12 +547,12 @@ namespace Zeni::Concurrency {
                 const Hash_Value snode_hash = Hash()(snode->key);
                 if (snode_hash != hash_value) {
                   snode->increment_refs();
-                  const auto new_cnode = cnode->updated(pos, flag, new INode(CNode::Create(snode, snode_hash, new_snode, hash_value, level + CNode::W)));
+                  const auto new_cnode = cnode->updated(pos, flag, new INode(CNode::Create(snode, snode_hash, new_snode, hash_value, level + CNode::W), new Generation));
                   return CAS(inode->main, inode_main, new_cnode, std::memory_order_release, std::memory_order_relaxed) ? Insert_Status::OK : Insert_Status::RESTART;
                 }
                 else {
                   snode->increment_refs();
-                  const auto new_cnode = cnode->updated(pos, flag, new INode(new LNode(new_snode, new LNode(snode))));
+                  const auto new_cnode = cnode->updated(pos, flag, new INode(new LNode(new_snode, new LNode(snode)), new Generation));
                   return CAS(inode->main, inode_main, new_cnode, std::memory_order_release, std::memory_order_relaxed) ? Insert_Status::OK : Insert_Status::RESTART;
                 }
               }
@@ -546,8 +570,16 @@ namespace Zeni::Concurrency {
           return Insert_Status::RESTART;
         }
         else if (auto lnode = dynamic_cast<const LNode *>(inode_main)) {
-          const auto new_cnode = lnode->inserted(new SNode(key, value));
-          return CAS(inode->main, inode_main, new_cnode, std::memory_order_release, std::memory_order_relaxed) ? Insert_Status::OK : Insert_Status::RESTART;
+          const Hash_Value lnode_hash = Hash()(lnode->snode->key);
+          if (lnode_hash != hash_value) {
+            lnode->increment_refs();
+            const auto new_cnode = CNode::Create(new SNode(key, value), hash_value, new INode(lnode, new Generation), lnode_hash, level);
+            return CAS(inode->main, inode_main, new_cnode, std::memory_order_release, std::memory_order_relaxed) ? Insert_Status::OK : Insert_Status::RESTART;
+          }
+          else {
+            const auto new_lnode = lnode->inserted(new SNode(key, value));
+            return CAS(inode->main, inode_main, new_lnode, std::memory_order_release, std::memory_order_relaxed) ? Insert_Status::OK : Insert_Status::RESTART;
+          }
         }
       }
     }
@@ -577,7 +609,7 @@ namespace Zeni::Concurrency {
               return Remove_Status::NOTFOUND;
             else {
               const CNode * new_cnode = cnode->removed(pos, flag);
-              const MainNode * new_mainnode = new_cnode->to_contracted(level);
+              const MNode * new_mainnode = new_cnode->to_contracted(level);
               if (CAS(inode->main, inode_main, new_mainnode, std::memory_order_release, std::memory_order_relaxed)) {
                 found = snode;
                 if (const auto tnode = dynamic_cast<const TNode *>(new_mainnode))
@@ -601,7 +633,7 @@ namespace Zeni::Concurrency {
             new_lnode->decrement_refs();
             return Remove_Status::NOTFOUND;
           }
-          MainNode * new_mainnode = new_lnode;
+          MNode * new_mainnode = new_lnode;
           if (!new_lnode->next) {
             new_lnode->snode->increment_refs();
             new_mainnode = new TNode(new_lnode->snode);
@@ -620,19 +652,19 @@ namespace Zeni::Concurrency {
     }
 
     void clean(INode * const inode, const size_t level) const {
-      const MainNode * inode_main = inode->main.load(std::memory_order_acquire);
+      const MNode * inode_main = inode->main.load(std::memory_order_acquire);
       if (auto cnode = dynamic_cast<const CNode *>(inode_main))
         CAS(inode->main, inode_main, cnode->to_compressed(level), std::memory_order_release, std::memory_order_relaxed);
     }
 
     void clean_parent(INode * const parent, INode * const inode, const Hash_Value &hash_value, const size_t level) {
       do {
-        const MainNode * parent_main = parent->main.load(std::memory_order_acquire);
+        const MNode * parent_main = parent->main.load(std::memory_order_acquire);
         if (const CNode * const cnode = dynamic_cast<const CNode *>(parent_main)) {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           const Branch * const branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (branch == inode) {
-            const MainNode * const inode_main = inode->main.load(std::memory_order_acquire);
+            const MNode * const inode_main = inode->main.load(std::memory_order_acquire);
             if (const TNode * const tnode = dynamic_cast<const TNode *>(inode_main)) {
               const auto new_cnode = cnode->updated(pos, flag, inode->resurrect())->to_contracted(level);
               if (!CAS(parent->main, parent_main, new_cnode, std::memory_order_release, std::memory_order_relaxed))
@@ -655,7 +687,7 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::atomic<INode *> m_root = new INode(CNode::Create(0x0, 0, {}), 0);
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<INode *> m_root = new INode(CNode::Create(0x0, 0, {}), new Generation);
   };
 
 }
