@@ -124,24 +124,6 @@ namespace Zeni::Concurrency {
 
       virtual const ICtrie_Node * removed(const size_t pos, const HASH_VALUE_TYPE flag) const = 0;
 
-      const Main_Node * to_compressed(const size_t level) const {
-        std::array<const Main_Node *, hamming_max> branches;
-        for (size_t i = 0; i != get_hamming_value(); ++i)
-          branches[i] = at(i)->resurrect();
-        return Create(m_bmp, get_hamming_value(), branches)->to_contracted(level);
-      }
-
-      const Main_Node * to_contracted(const size_t level) const {
-        if (level && get_hamming_value() == 1) {
-          const Main_Node * const branch = at(0);
-          branch->increment_refs();
-          delete this;
-          return new Tomb_Node(branch);
-        }
-        else
-          return this;
-      }
-
     private:
       static const HASH_VALUE_TYPE unhamming_filter = unhamming(W);
       HASH_VALUE_TYPE m_bmp;
@@ -334,7 +316,6 @@ namespace Zeni::Concurrency {
 
   template <typename KEY, typename TYPE, typename HASH = std::hash<KEY>>
   class Hash_Trie {
-    Hash_Trie(const Hash_Trie &) = delete;
     Hash_Trie & operator=(const Hash_Trie &) = delete;
 
   public:
@@ -349,7 +330,20 @@ namespace Zeni::Concurrency {
     typedef Hash_Trie_Internal::ICtrie_Node<Hash_Value> CNode;
     typedef Hash_Trie_Internal::List_Node<Key, Type> LNode;
 
+    typedef const Hash_Trie<KEY, TYPE, HASH> Snapshot;
+
     Hash_Trie() = default;
+
+    Hash_Trie(const Hash_Trie &rhs)
+      : m_root(rhs.isnapshot())
+    {
+    }
+
+    Hash_Trie(Hash_Trie &&rhs)
+      : m_root(rhs.m_root.load(std::memory_order_relaxed))
+    {
+      rhs.m_root.store(nullptr, std::memory_order_relaxed);
+    }
 
     ~Hash_Trie() {
       const MNode * const mnode = m_root.load(std::memory_order_acquire);
@@ -357,16 +351,43 @@ namespace Zeni::Concurrency {
         mnode->decrement_refs();
     }
 
-    std::pair<Intrusive_Shared_Ptr<const MNode>, Intrusive_Shared_Ptr<const SNode>> lookup(const Key &key) {
+    Intrusive_Shared_Ptr<const SNode> lookup(const Key &key) const {
+      if (const MNode * const root = isnapshot()) {
+        const Hash_Value hash_value = Hash()(key);
+        const SNode * const found = ilookup(root, key, hash_value, 0);
+        if (found)
+          found->increment_refs();
+        root->decrement_refs();
+        return found;
+      }
+      else
+        return nullptr;
+    }
+
+    std::pair<Intrusive_Shared_Ptr<const SNode>, Snapshot> lookup_snapshot(const Key &key) const {
       const Hash_Value hash_value = Hash()(key);
       const MNode * const root = isnapshot();
       const SNode * const found = ilookup(root, key, hash_value, 0);
       if (found)
         found->increment_refs();
-      return std::make_pair(root, found);
+      return std::make_pair(found, Snapshot(root));
     }
 
-    Intrusive_Shared_Ptr<const MNode> insert(const Key &key, const Type &value) {
+    void insert(const Key &key, const Type &value) {
+      const Hash_Value hash_value = Hash()(key);
+      const MNode * root = isnapshot();
+      for (;;) {
+        const MNode * const new_root = iinsert(root, key, hash_value, value, 0);
+        if (root)
+          root->decrement_refs();
+        if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
+          return;
+        else
+          enforce_snapshot(root);
+      }
+    }
+
+    Snapshot insert_snapshot(const Key &key, const Type &value) {
       const Hash_Value hash_value = Hash()(key);
       const MNode * root = isnapshot();
       for (;;) {
@@ -375,7 +396,7 @@ namespace Zeni::Concurrency {
         if (root)
           root->decrement_refs();
         if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
-          return new_root;
+          return Snapshot(new_root);
         else {
           new_root->decrement_refs();
           enforce_snapshot(root);
@@ -383,19 +404,42 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::pair<Intrusive_Shared_Ptr<const MNode>, Intrusive_Shared_Ptr<const SNode>> remove(const Key &key) {
+    Intrusive_Shared_Ptr<const SNode> remove(const Key &key) {
+      const Hash_Value hash_value = Hash()(key);
+      const MNode * root = isnapshot();
+      for (;;) {
+        const auto[new_root, found] = iremove(root, key, hash_value, 0);
+        if (!found) {
+          if (root)
+            root->decrement_refs();
+          return nullptr;
+        }
+        found->increment_refs();
+        if (root)
+          root->decrement_refs();
+        if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
+          return found;
+        else {
+          found->decrement_refs();
+          enforce_snapshot(root);
+        }
+      }
+    }
+
+    std::pair<Intrusive_Shared_Ptr<const SNode>, Snapshot> remove_snapshot(const Key &key) {
       const Hash_Value hash_value = Hash()(key);
       const MNode * root = isnapshot();
       for (;;) {
         const auto[new_root, found] = iremove(root, key, hash_value, 0);
         if (!found)
-          return std::make_pair(root, nullptr);
-        new_root->increment_refs();
+          return std::make_pair(nullptr, Snapshot(root));
+        if (new_root)
+          new_root->increment_refs();
         found->increment_refs();
         if (root)
           root->decrement_refs();
         if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
-          return std::make_pair(new_root, found);
+          return std::make_pair(found, Snapshot(new_root));
         else {
           new_root->decrement_refs();
           found->decrement_refs();
@@ -404,11 +448,16 @@ namespace Zeni::Concurrency {
       }
     }
 
-    Intrusive_Shared_Ptr<const MNode> shapshot() const {
+    Snapshot shapshot() const {
       return isnapshot();
     }
 
   private:
+    Hash_Trie(const MNode * const mnode)
+      : m_root(mnode)
+    {
+    }
+
     const MNode * isnapshot() const {
       const MNode * root = m_root.load(std::memory_order_acquire);
       enforce_snapshot(root);
@@ -512,11 +561,9 @@ namespace Zeni::Concurrency {
 #ifndef NDEBUG
           case 0:
             abort();
-            break;
 #endif
           case 1:
             return std::make_pair(nullptr, found);
-            break;
           case 2:
           {
             const MNode * const other_node = cnode->at(pos == 1 ? 0 : 1);
@@ -525,7 +572,6 @@ namespace Zeni::Concurrency {
             else {
               other_node->increment_refs();
               return std::make_pair(other_node, found);
-              break;
             }
           }
           default:
@@ -555,14 +601,8 @@ namespace Zeni::Concurrency {
             return std::make_pair(new_lnode, found);
         }
       }
-      else if (auto snode = dynamic_cast<const SNode *>(mnode)) {
-        if (snode->key != key)
-          return std::make_pair(nullptr, nullptr);
-        else {
-          snode->increment_refs();
-          return std::make_pair(nullptr, snode);
-        }
-      }
+      else if (auto snode = dynamic_cast<const SNode *>(mnode))
+        return std::make_pair(nullptr, snode->key == key ? snode : nullptr);
       else
         return std::make_pair(nullptr, nullptr);
     }

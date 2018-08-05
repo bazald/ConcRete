@@ -135,7 +135,7 @@ namespace Zeni::Concurrency {
       TYPE * get() const {
         assert(std::this_thread::get_id() == m_thread);
         assert(!m_ptr || bool(*m_ptr));
-        return m_ptr ? m_ptr->get() : nullptr;
+        return m_ptr;
       }
 
       TYPE & operator*() const {
