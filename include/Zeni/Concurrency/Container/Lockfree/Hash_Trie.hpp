@@ -378,7 +378,7 @@ namespace Zeni::Concurrency {
       }
 
       reference operator*() const {
-        return *dynamic_cast<const SNode *>(m_level_stack.top().mnode);
+        return *static_cast<const SNode *>(m_level_stack.top().mnode);
       }
 
       const_iterator next() const {
