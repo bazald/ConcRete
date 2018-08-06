@@ -251,7 +251,7 @@ namespace Zeni::Concurrency {
     {
     }
 
-    Intrusive_Shared_Ptr(const typename Shared_Ptr<TYPE>::Lock &rhs)
+    Intrusive_Shared_Ptr(const typename Intrusive_Shared_Ptr<TYPE>::Lock &rhs)
       : m_ptr(rhs.m_ptr && rhs.m_ptr->increment_refs() ? rhs.m_ptr : nullptr)
     {
     }

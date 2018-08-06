@@ -5,10 +5,11 @@
 #endif
 
 //#include "Zeni/Concurrency/Container/Antiable_Hashset.hpp"
+#include "Zeni/Concurrency/Container/Antiable_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Antiable_List.hpp"
-#include "Zeni/Concurrency/Container/Ctrie.hpp"
-#include "Zeni/Concurrency/Container/Epoch_List.hpp"
-#include "Zeni/Concurrency/Container/Hash_Trie.hpp"
+//#include "Zeni/Concurrency/Container/Ctrie.hpp"
+//#include "Zeni/Concurrency/Container/Epoch_List.hpp"
+//#include "Zeni/Concurrency/Container/Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Intrusive_Shared_Ptr.hpp"
 #include "Zeni/Concurrency/Container/Ordered_List.hpp"
 #include "Zeni/Concurrency/Container/Shared_Ptr.hpp"
@@ -92,14 +93,15 @@ static void test_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 static void test_Queue(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Queue_of_Shared_Ptrs(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Queue_of_Intrusive_Shared_Ptrs(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
-static void test_Epoch_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+//static void test_Epoch_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Unordered_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Ordered_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 //static void test_Epochs_in_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 //static void test_Antiable_Hashset(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
-static void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
-static void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+//static void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+//static void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+static void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 
@@ -287,7 +289,7 @@ int main()
   //std::cout << std::endl;
 
   for (int i = 0; i != 80000; ++i) {
-    test_Hash_Trie(worker_threads, job_queue);
+    test_Antiable_Hash_Trie(worker_threads, job_queue);
     //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
     //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
     //  abort();
@@ -570,61 +572,61 @@ void test_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker
   //std::cout << std::endl;
 }
 
-void test_Epoch_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
-  class Epocher : public Zeni::Concurrency::Job {
-  public:
-    Epocher(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list) : m_epoch_list(epoch_list), dre(rd()) {}
-
-    void execute() noexcept override {
-      while (m_to_acquire + m_to_release != 0) {
-        const int64_t index = std::uniform_int_distribution<int64_t>(1, std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release)(dre);
-        if (index > m_to_release) {
-          const auto epoch = Zeni::Concurrency::Epoch_List::Create_Token();
-          if (std::uniform_int_distribution<int>(0, 1)(dre)) {
-            m_epoch_list->acquire_release(epoch);
-            --m_to_acquire;
-          }
-          else
-          {
-            m_epoch_list->acquire(epoch);
-            m_epochs.push_back(epoch.load());
-            --m_to_acquire;
-            ++m_to_release;
-          }
-        }
-        else {
-          auto selected = m_epochs.begin();
-          std::advance(selected, index - 1);
-          [[maybe_unused]] const bool success = m_epoch_list->try_release(*selected);
-          if (!success)
-            std::cerr << 'X' << std::flush;
-          m_epochs.erase(selected);
-          --m_to_release;
-        }
-      }
-    }
-
-  private:
-    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
-    std::vector<Zeni::Concurrency::Epoch_List::Token_Ptr::Lock> m_epochs;
-    int64_t m_to_acquire = 1024;
-    int64_t m_acquire_cap = 1;
-    int64_t m_to_release = 0;
-    std::random_device rd;
-    std::default_random_engine dre;
-  };
-
-  const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
-
-  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
-    jobs.emplace_back(std::make_shared<Epocher>(epoch_list));
-  job_queue->give_many(std::move(jobs));
-
-  worker_threads->finish_jobs();
-
-  //std::cout << std::endl;
-}
+//void test_Epoch_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+//  class Epocher : public Zeni::Concurrency::Job {
+//  public:
+//    Epocher(const std::shared_ptr<Zeni::Concurrency::Epoch_List> &epoch_list) : m_epoch_list(epoch_list), dre(rd()) {}
+//
+//    void execute() noexcept override {
+//      while (m_to_acquire + m_to_release != 0) {
+//        const int64_t index = std::uniform_int_distribution<int64_t>(1, std::min(m_to_acquire, m_acquire_cap - m_to_release) + m_to_release)(dre);
+//        if (index > m_to_release) {
+//          const auto epoch = Zeni::Concurrency::Epoch_List::Create_Token();
+//          if (std::uniform_int_distribution<int>(0, 1)(dre)) {
+//            m_epoch_list->acquire_release(epoch);
+//            --m_to_acquire;
+//          }
+//          else
+//          {
+//            m_epoch_list->acquire(epoch);
+//            m_epochs.push_back(epoch.load());
+//            --m_to_acquire;
+//            ++m_to_release;
+//          }
+//        }
+//        else {
+//          auto selected = m_epochs.begin();
+//          std::advance(selected, index - 1);
+//          [[maybe_unused]] const bool success = m_epoch_list->try_release(*selected);
+//          if (!success)
+//            std::cerr << 'X' << std::flush;
+//          m_epochs.erase(selected);
+//          --m_to_release;
+//        }
+//      }
+//    }
+//
+//  private:
+//    std::shared_ptr<Zeni::Concurrency::Epoch_List> m_epoch_list;
+//    std::vector<Zeni::Concurrency::Epoch_List::Token_Ptr::Lock> m_epochs;
+//    int64_t m_to_acquire = 1024;
+//    int64_t m_acquire_cap = 1;
+//    int64_t m_to_release = 0;
+//    std::random_device rd;
+//    std::default_random_engine dre;
+//  };
+//
+//  const auto epoch_list = std::make_shared<Zeni::Concurrency::Epoch_List>();
+//
+//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+//  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
+//    jobs.emplace_back(std::make_shared<Epocher>(epoch_list));
+//  job_queue->give_many(std::move(jobs));
+//
+//  worker_threads->finish_jobs();
+//
+//  //std::cout << std::endl;
+//}
 
 void test_Unordered_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
   class Lister : public Zeni::Concurrency::Job {
@@ -1153,92 +1155,180 @@ void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads>
 //  //std::cout << std::endl;
 //}
 
-void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+//void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+//
+//  class Ctrier : public Zeni::Concurrency::Job {
+//  public:
+//    Ctrier(const std::shared_ptr<Zeni::Concurrency::Ctrie<uint64_t, const char *>> &ctrie) : m_ctrie(ctrie), dre(rd()) {}
+//
+//    void execute() noexcept override {
+//      while (m_to_insert) {
+//        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+//        m_ctrie->insert(value, nullptr);
+//        --m_to_insert;
+//      }
+//      while (m_to_lookup) {
+//        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+//        m_ctrie->lookup(value);
+//        --m_to_lookup;
+//      }
+//      while (m_to_remove) {
+//        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+//        m_ctrie->remove(value);
+//        --m_to_remove;
+//      }
+//    }
+//
+//  private:
+//    std::shared_ptr<Zeni::Concurrency::Ctrie<uint64_t, const char *>> m_ctrie;
+//    int64_t m_to_insert = 1024;
+//    int64_t m_to_lookup = 1024;
+//    int64_t m_to_remove = 1024;
+//    std::random_device rd;
+//    std::default_random_engine dre;
+//  };
+//
+//  const auto ctrie = std::make_shared<Zeni::Concurrency::Ctrie<uint64_t, const char *>>();
+//
+//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+//  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
+//    jobs.emplace_back(std::make_shared<Ctrier>(ctrie));
+//  job_queue->give_many(std::move(jobs));
+//
+//  worker_threads->finish_jobs();
+//}
 
-  class Ctrier : public Zeni::Concurrency::Job {
+//void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+//
+//  class Hash_Trier : public Zeni::Concurrency::Job {
+//  public:
+//    Hash_Trier(const std::shared_ptr<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>> &hash_trie) : m_hash_trie(hash_trie), dre(rd()) {}
+//
+//    void execute() noexcept override {
+//      while (m_to_insert) {
+//        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+//        m_hash_trie->insert_snapshot(value, nullptr);
+//        --m_to_insert;
+//      }
+//      while (m_to_lookup) {
+//        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+//        const auto[found, snapshot] = m_hash_trie->lookup_snapshot(value);
+//        for (const auto &key_value : snapshot) {
+//        }
+//        --m_to_lookup;
+//      }
+//      while (m_to_remove) {
+//        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
+//        m_hash_trie->remove_snapshot(value);
+//        --m_to_remove;
+//      }
+//    }
+//
+//  private:
+//    std::shared_ptr<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>> m_hash_trie;
+//    int64_t m_to_insert = 1024;
+//    int64_t m_to_lookup = 1024;
+//    int64_t m_to_remove = 1024;
+//    std::random_device rd;
+//    std::default_random_engine dre;
+//  };
+//
+//  const auto hash_trie = std::make_shared<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>>();
+//
+//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+//  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
+//    jobs.emplace_back(std::make_shared<Hash_Trier>(hash_trie));
+//  job_queue->give_many(std::move(jobs));
+//
+//  worker_threads->finish_jobs();
+//}
+
+void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+  class Antiable : public Zeni::Concurrency::Job {
   public:
-    Ctrier(const std::shared_ptr<Zeni::Concurrency::Ctrie<uint64_t, const char *>> &ctrie) : m_ctrie(ctrie), dre(rd()) {}
-
-    void execute() noexcept override {
-      while (m_to_insert) {
-        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
-        m_ctrie->insert(value, nullptr);
-        --m_to_insert;
-      }
-      while (m_to_lookup) {
-        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
-        m_ctrie->lookup(value);
-        --m_to_lookup;
-      }
-      while (m_to_remove) {
-        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
-        m_ctrie->remove(value);
-        --m_to_remove;
-      }
+    Antiable(const std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> &antiable_hash_trie1,
+      const std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> &antiable_hash_trie2,
+      const uint64_t to_acquire,
+      std::atomic_int64_t &sum)
+      : m_antiable_hash_trie1(antiable_hash_trie1),
+      m_antiable_hash_trie2(antiable_hash_trie2),
+      m_to_acquire(to_acquire),
+      m_sum(sum),
+      dre(rd())
+    {
     }
 
-  private:
-    std::shared_ptr<Zeni::Concurrency::Ctrie<uint64_t, const char *>> m_ctrie;
-    int64_t m_to_insert = 1024;
-    int64_t m_to_lookup = 1024;
-    int64_t m_to_remove = 1024;
-    std::random_device rd;
-    std::default_random_engine dre;
-  };
-
-  const auto ctrie = std::make_shared<Zeni::Concurrency::Ctrie<uint64_t, const char *>>();
-
-  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
-    jobs.emplace_back(std::make_shared<Ctrier>(ctrie));
-  job_queue->give_many(std::move(jobs));
-
-  worker_threads->finish_jobs();
-}
-
-void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
-
-  class Hash_Trier : public Zeni::Concurrency::Job {
-  public:
-    Hash_Trier(const std::shared_ptr<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>> &hash_trie) : m_hash_trie(hash_trie), dre(rd()) {}
-
     void execute() noexcept override {
-      while (m_to_insert) {
-        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
-        m_hash_trie->insert_snapshot(value, nullptr);
-        --m_to_insert;
+      m_values_to_acquire.reserve(m_to_acquire);
+      m_values_to_release.reserve(m_to_acquire);
+      for (uint64_t i = 1; i != m_to_acquire + 1; ++i) {
+        m_values_to_acquire.push_back(int64_t(i));
+        m_values_to_release.push_back(int64_t(i));
       }
-      while (m_to_lookup) {
-        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
-        const auto[found, snapshot] = m_hash_trie->lookup_snapshot(value);
-        for (const auto &key_value : snapshot) {
+      while (!m_values_to_acquire.empty() || !m_values_to_release.empty()) {
+        const size_t index = std::uniform_int_distribution<size_t>(0, m_values_to_acquire.size() + m_values_to_release.size() - 1)(dre);
+        if (index < m_values_to_acquire.size()) {
+          auto selected = m_values_to_acquire.begin();
+          std::advance(selected, index);
+          const auto[first, snapshot] = m_antiable_hash_trie1->insert(*selected);
+          if (first) {
+            int64_t sum = 0;
+            for (const auto &value : snapshot) {
+              if (value.insertion)
+                sum += *selected * value.key;
+            }
+            sum -= *selected * *selected;
+            m_sum.fetch_add(sum, std::memory_order_relaxed);
+          }
+          m_values_to_acquire.erase(selected);
         }
-        --m_to_lookup;
-      }
-      while (m_to_remove) {
-        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
-        m_hash_trie->remove_snapshot(value);
-        --m_to_remove;
+        else {
+          auto selected = m_values_to_release.begin();
+          std::advance(selected, index - m_values_to_acquire.size());
+          const auto[last, snapshot] = m_antiable_hash_trie1->erase(*selected);
+          if (last) {
+            int64_t sum = 0;
+            for (const auto &value : snapshot) {
+              if (value.insertion)
+                sum += *selected * value.key;
+            }
+            m_sum.fetch_sub(sum, std::memory_order_relaxed);
+          }
+          m_values_to_release.erase(selected);
+        }
       }
     }
 
   private:
-    std::shared_ptr<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>> m_hash_trie;
-    int64_t m_to_insert = 1024;
-    int64_t m_to_lookup = 1024;
-    int64_t m_to_remove = 1024;
+    std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> m_antiable_hash_trie1;
+    std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> m_antiable_hash_trie2;
+    uint64_t m_to_acquire;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_sum;
+    std::vector<uint64_t> m_values_to_acquire;
+    std::vector<uint64_t> m_values_to_release;
     std::random_device rd;
     std::default_random_engine dre;
   };
 
-  const auto hash_trie = std::make_shared<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>>();
+  const auto antiable_hash_trie1 = std::make_shared<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>>();
+  const auto antiable_hash_trie2 = std::make_shared<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>>();
+  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
-    jobs.emplace_back(std::make_shared<Hash_Trier>(hash_trie));
+  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
+    jobs.emplace_back(std::make_shared<Antiable>(antiable_hash_trie1, antiable_hash_trie1, 4, sum));
+    jobs.emplace_back(std::make_shared<Antiable>(antiable_hash_trie1, antiable_hash_trie1, 4, sum));
+  }
   job_queue->give_many(std::move(jobs));
 
   worker_threads->finish_jobs();
+
+  if (sum.load(std::memory_order_relaxed) != 0) {
+    std::cerr << 'Y';
+    abort();
+  }
+
+  //std::cout << std::endl;
 }
 
 void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
