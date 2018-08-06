@@ -6,6 +6,7 @@
 #include <array>
 #include <cstring>
 #include <functional>
+#include <stack>
 
 namespace Zeni::Concurrency {
 
@@ -331,6 +332,119 @@ namespace Zeni::Concurrency {
     typedef Hash_Trie_Internal::List_Node<Key, Type> LNode;
 
     typedef const Hash_Trie<KEY, TYPE, HASH> Snapshot;
+
+    class const_iterator {
+      struct Level {
+        const MNode * mnode = nullptr;
+        size_t pos = -1;
+
+        bool operator==(const Level &rhs) const {
+          return mnode == rhs.mnode && pos == rhs.pos;
+        }
+        bool operator!=(const Level &rhs) const {
+          return mnode != rhs.mnode || pos != rhs.pos;
+        }
+      };
+
+    public:
+      typedef std::forward_iterator_tag iterator_category;
+      typedef const SNode value_type;
+      typedef const SNode & reference;
+
+      const_iterator() = default;
+
+      const_iterator(const MNode * root)
+        : m_root(root)
+      {
+        for (;;) {
+          if (const auto cnode = dynamic_cast<const CNode *>(root)) {
+            if (cnode->get_hamming_value() != 1)
+              m_level_stack.push({ cnode, size_t(1) });
+            root = cnode->at(0);
+          }
+          else if (const auto lnode = dynamic_cast<const LNode *>(root)) {
+            if (lnode->next)
+              m_level_stack.push({ lnode->next, size_t(-1) });
+            m_level_stack.push({ lnode->snode, size_t(-1) });
+            break;
+          }
+          else if (const auto snode = dynamic_cast<const SNode *>(root)) {
+            m_level_stack.push({ snode, size_t(-1) });
+            break;
+          }
+          else
+            break;
+        }
+      }
+
+      reference operator*() const {
+        return *dynamic_cast<const SNode *>(m_level_stack.top().mnode);
+      }
+
+      const_iterator next() const {
+        return ++const_iterator(*this);
+      }
+
+      const_iterator & operator++() {
+        if (m_level_stack.empty())
+          return *this;
+        m_level_stack.pop();
+        while(!m_level_stack.empty()) {
+          const auto top = m_level_stack.top();
+          m_level_stack.pop();
+          if (const auto cnode = dynamic_cast<const CNode *>(top.mnode)) {
+            if (top.pos + 1 != cnode->get_hamming_value())
+              m_level_stack.push({ cnode, top.pos + 1 });
+            m_level_stack.push({ cnode->at(top.pos), size_t(0) });
+            continue;
+          }
+          else if (const auto lnode = dynamic_cast<const LNode *>(top.mnode)) {
+            if (lnode->next)
+              m_level_stack.push({ lnode->next, size_t(-1) });
+            m_level_stack.push({ lnode->snode, size_t(-1) });
+            break;
+          }
+          else if (const auto snode = dynamic_cast<const SNode *>(top.mnode))
+            break;
+          else
+            abort();
+        }
+        return *this;
+      }
+
+      const_iterator operator++(int) {
+        const_iterator rv(*this);
+        ++*this;
+        return rv;
+      }
+
+      bool operator==(const const_iterator &rhs) const {
+        return m_level_stack == rhs.m_level_stack;
+      }
+      bool operator!=(const const_iterator &rhs) const {
+        return m_level_stack != rhs.m_level_stack;
+      }
+
+    private:
+      Intrusive_Shared_Ptr<const MNode> m_root;
+      std::stack<Level> m_level_stack;
+    };
+
+    const_iterator cbegin() const {
+      return const_iterator(isnapshot());
+    }
+
+    const_iterator cend() const {
+      return const_iterator();
+    }
+
+    const_iterator begin() const {
+      return cbegin();
+    }
+
+    const_iterator end() const {
+      return cend();
+    }
 
     Hash_Trie() = default;
 

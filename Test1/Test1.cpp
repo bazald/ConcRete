@@ -1,8 +1,8 @@
-//#ifdef _MSC_VER
-//#define _CRTDBG_MAP_ALLOC  
-//#include <stdlib.h>  
-//#include <crtdbg.h>
-//#endif
+#ifdef _MSC_VER
+#define _CRTDBG_MAP_ALLOC  
+#include <stdlib.h>  
+#include <crtdbg.h>
+#endif
 
 //#include "Zeni/Concurrency/Container/Antiable_Hashset.hpp"
 #include "Zeni/Concurrency/Container/Antiable_List.hpp"
@@ -152,10 +152,10 @@ static void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads>
 
 int main()
 {
-//#ifdef _MSC_VER
-//  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-//  //_CrtSetBreakAlloc(277);
-//#endif
+#ifdef _MSC_VER
+  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+  //_CrtSetBreakAlloc(42);
+#endif
 
   auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
   const auto job_queue = worker_threads->get_main_Job_Queue();
@@ -1210,7 +1210,9 @@ void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &wo
       }
       while (m_to_lookup) {
         const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
-        m_hash_trie->lookup_snapshot(value);
+        const auto[found, snapshot] = m_hash_trie->lookup_snapshot(value);
+        for (const auto &key_value : snapshot) {
+        }
         --m_to_lookup;
       }
       while (m_to_remove) {
