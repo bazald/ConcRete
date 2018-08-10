@@ -288,7 +288,7 @@ int main()
   //}
   //std::cout << std::endl;
 
-  for (int i = 0; i != 100; ++i) {
+  for (int i = 0; i != 80000; ++i) {
     test_Antiable_Hash_Trie(worker_threads, job_queue);
     //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
     //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
@@ -1243,13 +1243,20 @@ void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads>
 //  worker_threads->finish_jobs();
 //}
 
-//#define DEBUG_HARD
+#define DEBUG_HARD
+
+struct Null_Hash {
+  template <typename TYPE>
+  size_t operator()(TYPE &&) const {
+    return 0;
+  }
+};
 
 void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
   class Antiable : public Zeni::Concurrency::Job {
   public:
-    Antiable(const std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> &antiable_hash_trie1,
-      const std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> &antiable_hash_trie2,
+    Antiable(const std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>> &antiable_hash_trie1,
+      const std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>> &antiable_hash_trie2,
       const uint64_t to_acquire,
 #ifdef DEBUG_HARD
       const std::shared_ptr<Zeni::Concurrency::Queue<std::string>> &debug_output,
@@ -1267,6 +1274,9 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
     }
 
     void execute() noexcept override {
+//#ifdef DEBUG_HARD
+//      std::vector<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>::Snapshot> snapshots;
+//#endif
       m_values_to_acquire.reserve(m_to_acquire);
       m_values_to_release.reserve(m_to_acquire);
       for (uint64_t i = 1; i != m_to_acquire + 1; ++i) {
@@ -1283,6 +1293,7 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
           oss << std::this_thread::get_id() << " +" << *selected << ':';
 #endif
           const auto[first, snapshot] = m_antiable_hash_trie1->insert(*selected);
+          //snapshots.push_back(snapshot);
           if (first) {
             int64_t sum = 0;
             for (const auto &value : snapshot) {
@@ -1308,6 +1319,7 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
           oss << std::this_thread::get_id() << " -" << *selected << ':';
 #endif
           const auto[last, snapshot] = m_antiable_hash_trie1->erase(*selected);
+          //snapshots.push_back(snapshot);
           if (last) {
             int64_t sum = 0;
             for (const auto &value : snapshot) {
@@ -1324,11 +1336,24 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
           m_values_to_release.erase(selected);
         }
       }
+
+      if (m_sum.load(std::memory_order_relaxed) != 0) {
+#ifdef DEBUG_HARD
+        std::cerr << std::endl;
+        std::string line;
+        while (m_debug_output->try_pop(line))
+          std::cerr << line << std::endl;
+        std::cerr << m_sum << std::endl;
+#else
+        std::cerr << 'Y';
+#endif
+        abort();
+      }
     }
 
   private:
-    std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> m_antiable_hash_trie1;
-    std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> m_antiable_hash_trie2;
+    std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>> m_antiable_hash_trie1;
+    std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>> m_antiable_hash_trie2;
     uint64_t m_to_acquire;
 #ifdef DEBUG_HARD
     std::shared_ptr<Zeni::Concurrency::Queue<std::string>> m_debug_output;
@@ -1340,25 +1365,25 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
     std::default_random_engine dre;
   };
 
-  const auto antiable_hash_trie1 = std::make_shared<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>>();
-  const auto antiable_hash_trie2 = std::make_shared<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>>();
+  const auto antiable_hash_trie1 = std::make_shared<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>>();
+  const auto antiable_hash_trie2 = std::make_shared<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>>();
 #ifdef DEBUG_HARD
   const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
 #endif
   ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
+  for (uint64_t i = 0; i != 1; ++i) { // i != std::thread::hardware_concurrency() / 2; ++i) {
     jobs.emplace_back(std::make_shared<Antiable>(antiable_hash_trie1, antiable_hash_trie1, 256,
 #ifdef DEBUG_HARD
       debug_output,
 #endif
       sum));
-    jobs.emplace_back(std::make_shared<Antiable>(antiable_hash_trie1, antiable_hash_trie1, 256,
-#ifdef DEBUG_HARD
-      debug_output,
-#endif
-      sum));
+//    jobs.emplace_back(std::make_shared<Antiable>(antiable_hash_trie1, antiable_hash_trie1, 256,
+//#ifdef DEBUG_HARD
+//      debug_output,
+//#endif
+//      sum));
   }
   job_queue->give_many(std::move(jobs));
 

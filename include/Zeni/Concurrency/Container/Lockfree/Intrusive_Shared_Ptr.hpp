@@ -25,6 +25,8 @@ namespace Zeni::Concurrency {
       if (prev > 1)
         return prev;
       assert(prev == 1);
+      if (prev != 1)
+        abort();
       std::atomic_thread_fence(std::memory_order_acquire);
       Reclamation_Stacks::push(this);
       return prev;

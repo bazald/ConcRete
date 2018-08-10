@@ -42,13 +42,6 @@ namespace Zeni::Concurrency {
 
     public:
       Main_Node() = default;
-
-      ~Main_Node() {
-        if (prev)
-          prev->decrement_refs();
-      }
-
-      const Main_Node * prev = nullptr;
     };
 
     template <typename KEY, typename TYPE>

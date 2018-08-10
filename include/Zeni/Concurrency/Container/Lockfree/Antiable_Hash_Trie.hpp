@@ -42,13 +42,6 @@ namespace Zeni::Concurrency {
 
     public:
       Main_Node() = default;
-
-      ~Main_Node() {
-        if (prev)
-          prev->decrement_refs();
-      }
-
-      const Main_Node * prev = nullptr;
     };
 
     template <typename KEY>
@@ -271,10 +264,10 @@ namespace Zeni::Concurrency {
         snode->decrement_refs();
         while (next) {
           const int64_t refs = next->decrement_refs();
-          List_Node * next_next = next->next;
-          next->next = nullptr;
           if (refs > 1)
             break;
+          List_Node * next_next = next->next;
+          next->next = nullptr;
           next = next_next;
         }
       }
@@ -283,7 +276,7 @@ namespace Zeni::Concurrency {
         List_Node * new_head = nullptr;
         List_Node * new_tail = nullptr;
         List_Node * old_head = const_cast<List_Node *>(this);
-        if (old_head->snode->key == snode->key) {
+        if (snode->key == key) {
           const auto new_snode = old_head->snode->updated_count(insertion);
           if (old_head->next)
             old_head->next->increment_refs();
@@ -295,7 +288,7 @@ namespace Zeni::Concurrency {
           old_head = old_head->next;
         }
         for (; old_head; old_head = old_head->next) {
-          if (old_head->snode->key == snode->key) {
+          if (old_head->snode->key == key) {
             const auto new_snode = old_head->snode->updated_count(insertion);
             if (old_head->next) {
               old_head->next->increment_refs();
@@ -308,9 +301,9 @@ namespace Zeni::Concurrency {
             new_head = new List_Node(old_head->snode, new_head);
           }
         }
-        new_head->decrement_refs();
-        old_head->increment_refs();
-        return std::make_pair(insertion, new List_Node(new Singleton_Node<KEY>(key, insertion), old_head));
+        increment_refs();
+        delete new_head;
+        return std::make_pair(insertion, new List_Node(new Singleton_Node<KEY>(key, insertion), const_cast<List_Node *>(this)));
       }
 
     public:
@@ -334,7 +327,7 @@ namespace Zeni::Concurrency {
     typedef Antiable_Hash_Trie_Internal::ICtrie_Node<Hash_Value> CNode;
     typedef Antiable_Hash_Trie_Internal::List_Node<Key> LNode;
 
-    typedef const Antiable_Hash_Trie<KEY, HASH> Snapshot;
+    typedef Antiable_Hash_Trie<KEY, HASH> Snapshot;
 
     class const_iterator {
       struct Level {
