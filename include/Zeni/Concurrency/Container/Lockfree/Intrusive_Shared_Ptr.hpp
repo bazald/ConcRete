@@ -20,24 +20,24 @@ namespace Zeni::Concurrency {
     Enable_Intrusive_Sharing() = default;
 
   public:
-    bool decrement_refs() const {
+    int64_t decrement_refs() const {
       const uint64_t prev = m_refs.fetch_sub(1, std::memory_order_relaxed);
       if (prev > 1)
-        return false;
+        return prev;
       assert(prev == 1);
       std::atomic_thread_fence(std::memory_order_acquire);
       Reclamation_Stacks::push(this);
-      return true;
+      return prev;
     }
 
-    bool increment_refs() const {
+    int64_t increment_refs() const {
       uint64_t refs = m_refs.load(std::memory_order_relaxed);
       while (refs) {
         assert(refs != uint64_t(-1));
         if (m_refs.compare_exchange_weak(refs, refs + 1, std::memory_order_relaxed, std::memory_order_relaxed))
-          return true;
+          break;
       }
-      return false;
+      return refs;
     }
 
     explicit operator bool() const {

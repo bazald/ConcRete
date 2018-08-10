@@ -288,7 +288,7 @@ int main()
   //}
   //std::cout << std::endl;
 
-  for (int i = 0; i != 80000; ++i) {
+  for (int i = 0; i != 100; ++i) {
     test_Antiable_Hash_Trie(worker_threads, job_queue);
     //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
     //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
@@ -1243,16 +1243,24 @@ void test_Antiable_List(const std::shared_ptr<Zeni::Concurrency::Worker_Threads>
 //  worker_threads->finish_jobs();
 //}
 
+//#define DEBUG_HARD
+
 void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
   class Antiable : public Zeni::Concurrency::Job {
   public:
     Antiable(const std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> &antiable_hash_trie1,
       const std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> &antiable_hash_trie2,
       const uint64_t to_acquire,
+#ifdef DEBUG_HARD
+      const std::shared_ptr<Zeni::Concurrency::Queue<std::string>> &debug_output,
+#endif
       std::atomic_int64_t &sum)
       : m_antiable_hash_trie1(antiable_hash_trie1),
       m_antiable_hash_trie2(antiable_hash_trie2),
       m_to_acquire(to_acquire),
+#ifdef DEBUG_HARD
+      m_debug_output(debug_output),
+#endif
       m_sum(sum),
       dre(rd())
     {
@@ -1270,30 +1278,49 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
         if (index < m_values_to_acquire.size()) {
           auto selected = m_values_to_acquire.begin();
           std::advance(selected, index);
+#ifdef DEBUG_HARD
+          std::ostringstream oss, oss2;
+          oss << std::this_thread::get_id() << " +" << *selected << ':';
+#endif
           const auto[first, snapshot] = m_antiable_hash_trie1->insert(*selected);
           if (first) {
             int64_t sum = 0;
             for (const auto &value : snapshot) {
-              if (value.insertion)
-                sum += *selected * value.key;
+              if (value.key == *selected)
+                continue;
+              sum += *selected * value.key;
+#ifdef DEBUG_HARD
+              oss << ' ' << value.key;
+#endif
             }
-            sum -= *selected * *selected;
             m_sum.fetch_add(sum, std::memory_order_relaxed);
           }
+#ifdef DEBUG_HARD
+          m_debug_output->push(oss.str());
+#endif
           m_values_to_acquire.erase(selected);
         }
         else {
           auto selected = m_values_to_release.begin();
           std::advance(selected, index - m_values_to_acquire.size());
+#ifdef DEBUG_HARD
+          std::ostringstream oss, oss2;
+          oss << std::this_thread::get_id() << " -" << *selected << ':';
+#endif
           const auto[last, snapshot] = m_antiable_hash_trie1->erase(*selected);
           if (last) {
             int64_t sum = 0;
             for (const auto &value : snapshot) {
-              if (value.insertion)
-                sum += *selected * value.key;
+              sum += *selected * value.key;
+#ifdef DEBUG_HARD
+              oss << ' ' << value.key;
+#endif
             }
             m_sum.fetch_sub(sum, std::memory_order_relaxed);
           }
+#ifdef DEBUG_HARD
+          m_debug_output->push(oss.str());
+#endif
           m_values_to_release.erase(selected);
         }
       }
@@ -1303,6 +1330,9 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
     std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> m_antiable_hash_trie1;
     std::shared_ptr<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>> m_antiable_hash_trie2;
     uint64_t m_to_acquire;
+#ifdef DEBUG_HARD
+    std::shared_ptr<Zeni::Concurrency::Queue<std::string>> m_debug_output;
+#endif
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_sum;
     std::vector<uint64_t> m_values_to_acquire;
     std::vector<uint64_t> m_values_to_release;
@@ -1312,19 +1342,38 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
 
   const auto antiable_hash_trie1 = std::make_shared<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>>();
   const auto antiable_hash_trie2 = std::make_shared<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>>();
+#ifdef DEBUG_HARD
+  const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
+#endif
   ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
   for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
-    jobs.emplace_back(std::make_shared<Antiable>(antiable_hash_trie1, antiable_hash_trie1, 4, sum));
-    jobs.emplace_back(std::make_shared<Antiable>(antiable_hash_trie1, antiable_hash_trie1, 4, sum));
+    jobs.emplace_back(std::make_shared<Antiable>(antiable_hash_trie1, antiable_hash_trie1, 256,
+#ifdef DEBUG_HARD
+      debug_output,
+#endif
+      sum));
+    jobs.emplace_back(std::make_shared<Antiable>(antiable_hash_trie1, antiable_hash_trie1, 256,
+#ifdef DEBUG_HARD
+      debug_output,
+#endif
+      sum));
   }
   job_queue->give_many(std::move(jobs));
 
   worker_threads->finish_jobs();
 
   if (sum.load(std::memory_order_relaxed) != 0) {
+#ifdef DEBUG_HARD
+    std::cerr << std::endl;
+    std::string line;
+    while (debug_output->try_pop(line))
+      std::cerr << line << std::endl;
+    std::cerr << sum << std::endl;
+#else
     std::cerr << 'Y';
+#endif
     abort();
   }
 

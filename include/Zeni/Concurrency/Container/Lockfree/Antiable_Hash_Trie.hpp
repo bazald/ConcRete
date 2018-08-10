@@ -57,13 +57,22 @@ namespace Zeni::Concurrency {
       Singleton_Node(const Singleton_Node &) = delete;
       Singleton_Node & operator=(const Singleton_Node &) = delete;
 
+      template <typename KEY_TYPE>
+      Singleton_Node(KEY_TYPE &&key_, const bool insertion_, const int64_t count_) : key(std::forward<KEY_TYPE>(key_)), inserted(insertion_), count(count_) {}
+
     public:
       template <typename KEY_TYPE>
-      Singleton_Node(KEY_TYPE &&key_, const bool insertion_) : key(std::forward<KEY_TYPE>(key_)), insertion(insertion_), count(insertion_ ? 1 : -1) {}
+      Singleton_Node(KEY_TYPE &&key_, const bool insertion_) : key(std::forward<KEY_TYPE>(key_)), inserted(insertion_), count(insertion_ ? 1 : -1) {}
+
+      const Singleton_Node * updated_count(const bool insertion) const {
+        assert(count);
+        const int64_t new_count = count + (insertion ? 1 : -1);
+        return new_count != 0 ? new Singleton_Node(key, inserted, new_count) : nullptr;
+      }
 
       const KEY key;
-      const bool insertion;
-      mutable std::atomic<int64_t> count;
+      const bool inserted;
+      const int64_t count;
     };
 
     template <typename HASH_VALUE_TYPE>
@@ -238,8 +247,8 @@ namespace Zeni::Concurrency {
     template <typename HASH_VALUE_TYPE>
     struct Ctrie_Node_Generator<HASH_VALUE_TYPE, 0> {
       static void Create(std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE> *(const HASH_VALUE_TYPE, const std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> &)>, sum(hamming<HASH_VALUE_TYPE>(), HASH_VALUE_TYPE(1))> &generator) {
-        generator[0] = [](const HASH_VALUE_TYPE bmp, const std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> &branches)->ICtrie_Node<HASH_VALUE_TYPE> * {
-          return new Ctrie_Node<HASH_VALUE_TYPE, 0>(bmp, branches);
+        generator[0] = [](const HASH_VALUE_TYPE /*bmp*/, const std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> &/*branches*/)->ICtrie_Node<HASH_VALUE_TYPE> * {
+          return nullptr; // new Ctrie_Node<HASH_VALUE_TYPE, 0>(bmp, branches);
         };
       }
     };
@@ -260,55 +269,51 @@ namespace Zeni::Concurrency {
 
       ~List_Node() {
         snode->decrement_refs();
-        while (next && next->decrement_refs()) {
+        while (next) {
+          const int64_t refs = next->decrement_refs();
           List_Node * next_next = next->next;
           next->next = nullptr;
+          if (refs > 1)
+            break;
           next = next_next;
         }
       }
 
-      const List_Node * inserted(const Singleton_Node<KEY> * const snode) const {
+      std::pair<bool, List_Node *> updated(const KEY &key, const bool insertion) const {
         List_Node * new_head = nullptr;
-        auto old_head = this;
+        List_Node * new_tail = nullptr;
+        List_Node * old_head = const_cast<List_Node *>(this);
+        if (old_head->snode->key == snode->key) {
+          const auto new_snode = old_head->snode->updated_count(insertion);
+          if (old_head->next)
+            old_head->next->increment_refs();
+          return new_snode ? std::make_pair(false, new List_Node(new_snode, old_head->next)) : std::make_pair(!insertion, old_head->next);
+        }
+        else {
+          new_head = new List_Node(old_head->snode, nullptr);
+          new_tail = new_head;
+          old_head = old_head->next;
+        }
         for (; old_head; old_head = old_head->next) {
           if (old_head->snode->key == snode->key) {
-            old_head = old_head->next;
-            break;
+            const auto new_snode = old_head->snode->updated_count(insertion);
+            if (old_head->next) {
+              old_head->next->increment_refs();
+              new_tail->next = old_head->next;
+            }
+            return new_snode ? std::make_pair(false, new List_Node(new_snode, new_head)) : std::make_pair(!insertion, new_head);
           }
           else {
             old_head->snode->increment_refs();
             new_head = new List_Node(old_head->snode, new_head);
           }
         }
-        for (; old_head; old_head = old_head->next) {
-          old_head->snode->increment_refs();
-          new_head = new List_Node(old_head->snode, new_head);
-        }
-        return new List_Node(snode, new_head);
+        new_head->decrement_refs();
+        old_head->increment_refs();
+        return std::make_pair(insertion, new List_Node(new Singleton_Node<KEY>(key, insertion), old_head));
       }
 
-      std::pair<const List_Node *, const Singleton_Node<KEY> *> erased(const KEY &key) const {
-        List_Node * new_head = nullptr;
-        const Singleton_Node<KEY> * new_found = nullptr;
-        auto old_head = this;
-        for (; old_head; old_head = old_head->next) {
-          if (old_head->snode->key == key) {
-            new_found = old_head->snode;
-            old_head = old_head->next;
-            break;
-          }
-          else {
-            old_head->snode->increment_refs();
-            new_head = new List_Node(old_head->snode, new_head);
-          }
-        }
-        for (; old_head; old_head = old_head->next) {
-          old_head->snode->increment_refs();
-          new_head = new List_Node(old_head->snode, new_head);
-        }
-        return std::make_pair(new_head, new_found);
-      }
-
+    public:
       const Singleton_Node<KEY> * const snode;
       List_Node * next = nullptr;
     };
@@ -317,8 +322,6 @@ namespace Zeni::Concurrency {
   template <typename KEY, typename HASH = std::hash<KEY>>
   class Antiable_Hash_Trie {
     Antiable_Hash_Trie & operator=(const Antiable_Hash_Trie &) = delete;
-
-    enum class Status { FIRST_OR_LAST, ORDINARY, CLEANUP };
 
   public:
     typedef KEY Key;
@@ -358,6 +361,7 @@ namespace Zeni::Concurrency {
       {
         for (;;) {
           if (const auto cnode = dynamic_cast<const CNode *>(root)) {
+            assert(cnode->get_hamming_value() != 0);
             if (cnode->get_hamming_value() != 1)
               m_level_stack.push({ cnode, size_t(1) });
             root = cnode->at(0);
@@ -366,10 +370,14 @@ namespace Zeni::Concurrency {
             if (lnode->next)
               m_level_stack.push({ lnode->next, size_t(-1) });
             m_level_stack.push({ lnode->snode, size_t(-1) });
+            if (!lnode->snode->inserted)
+              ++*this;
             break;
           }
           else if (const auto snode = dynamic_cast<const SNode *>(root)) {
             m_level_stack.push({ snode, size_t(-1) });
+            if (!snode->inserted)
+              ++*this;
             break;
           }
           else
@@ -386,8 +394,6 @@ namespace Zeni::Concurrency {
       }
 
       const_iterator & operator++() {
-        if (m_level_stack.empty())
-          return *this;
         m_level_stack.pop();
         while(!m_level_stack.empty()) {
           const auto top = m_level_stack.top();
@@ -395,17 +401,27 @@ namespace Zeni::Concurrency {
           if (const auto cnode = dynamic_cast<const CNode *>(top.mnode)) {
             if (top.pos + 1 != cnode->get_hamming_value())
               m_level_stack.push({ cnode, top.pos + 1 });
-            m_level_stack.push({ cnode->at(top.pos), size_t(0) });
-            continue;
+            const auto mnode_next = cnode->at(top.pos);
+            if (const auto snode_next = dynamic_cast<const SNode *>(mnode_next)) {
+              if (snode_next->inserted) {
+                m_level_stack.push({ snode_next, size_t(0) });
+                break;
+              }
+            }
+            else
+              m_level_stack.push({ mnode_next, size_t(0) });
           }
           else if (const auto lnode = dynamic_cast<const LNode *>(top.mnode)) {
             if (lnode->next)
               m_level_stack.push({ lnode->next, size_t(-1) });
-            m_level_stack.push({ lnode->snode, size_t(-1) });
-            break;
+            if (lnode->snode->inserted) {
+              m_level_stack.push({ lnode->snode, size_t(-1) });
+              break;
+            }
           }
-          else if (const auto snode = dynamic_cast<const SNode *>(top.mnode))
-            break;
+          else if (const auto snode = dynamic_cast<const SNode *>(top.mnode)) {
+            abort();
+          }
           else
             abort();
         }
@@ -494,29 +510,17 @@ namespace Zeni::Concurrency {
       const Hash_Value hash_value = Hash()(key);
       const MNode * root = isnapshot();
       for (;;) {
-        const auto[status, new_root] = iinsert(root, key, hash_value, insertion, 0);
-        if (status == Status::ORDINARY) {
-          assert(!new_root);
-          return std::make_pair(false, Snapshot(root));
-        }
+        const auto[first_or_last, new_root] = iinsert(root, key, hash_value, insertion, 0);
+        if (new_root)
+          new_root->increment_refs();
+        if (root)
+          root->decrement_refs();
+        if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
+          return std::make_pair(first_or_last, Snapshot(new_root));
         else {
           if (new_root)
-            new_root->increment_refs();
-          if (root)
-            root->decrement_refs();
-          if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire)) {
-            if (status == Status::FIRST_OR_LAST)
-              return std::make_pair(status == Status::FIRST_OR_LAST, Snapshot(new_root));
-            else { // (status == Status::CLEANUP)
-              root = new_root;
-              continue;
-            }
-          }
-          else {
-            if (new_root)
-              new_root->decrement_refs();
-            enforce_snapshot(root);
-          }
+            new_root->decrement_refs();
+          enforce_snapshot(root);
         }
       }
     }
@@ -569,7 +573,7 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::pair<Status, const MNode *> iinsert(
+    std::pair<bool, const MNode *> iinsert(
       const MNode * const mnode,
       const Key &key,
       const Hash_Value &hash_value,
@@ -580,37 +584,62 @@ namespace Zeni::Concurrency {
         const auto[flag, pos] = cnode->flagpos(hash_value, level);
         const MNode * const next = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
         if (!next)
-          return std::make_pair(Status::FIRST_OR_LAST, cnode->inserted(pos, flag, new SNode(key, insertion)));
-        const auto[status, new_next] = iinsert(next, key, hash_value, insertion, level + CNode::W);
-        return std::make_pair(status, status != Status::ORDINARY ? cnode->updated(pos, flag, new_next) : nullptr);
+          return std::make_pair(insertion ? true : false, cnode->inserted(pos, flag, new SNode(key, insertion)));
+        const auto[first_or_last, new_next] = iinsert(next, key, hash_value, insertion, level + CNode::W);
+        if (!new_next) {
+          const auto new_cnode = cnode->erased(pos, flag);
+          if (!new_cnode)
+            return std::make_pair(first_or_last, nullptr);
+          else if (new_cnode->get_hamming_value() != 1)
+            return std::make_pair(first_or_last, new_cnode);
+          else {
+            const auto new_mnode = new_cnode->at(0);
+            if (dynamic_cast<const CNode *>(new_mnode))
+              return std::make_pair(first_or_last, new_cnode);
+            else {
+              new_mnode->increment_refs();
+              delete new_cnode;
+              return std::make_pair(first_or_last, new_mnode);
+            }
+          }
+        }
+        else
+          return std::make_pair(first_or_last, cnode->updated(pos, flag, new_next));
       }
       else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
         const Hash_Value lnode_hash = Hash()(lnode->snode->key);
         if (lnode_hash != hash_value) {
           lnode->increment_refs();
-          return std::make_pair(Status::FIRST_OR_LAST, CNode::Create(new SNode(key, insertion), hash_value, lnode, lnode_hash, level));
+          return std::make_pair(insertion ? true : false, CNode::Create(new SNode(key, insertion), hash_value, lnode, lnode_hash, level));
         }
         else {
-          //
-          ...
+          const auto [first_or_last, new_lnode] = lnode->updated(key, insertion);
+          if (!new_lnode->next) {
+            const auto new_snode = new_lnode->snode;
+            new_snode->increment_refs();
+            new_lnode->decrement_refs();
+            return std::make_pair(first_or_last, new_snode);
+          }
+          return std::make_pair(first_or_last, new_lnode);
         }
       }
       else if (auto snode = dynamic_cast<const SNode *>(mnode)) {
         const Hash_Value snode_hash = Hash()(snode->key);
         if (snode_hash != hash_value) {
           snode->increment_refs();
-          return std::make_pair(Status::FIRST_OR_LAST, CNode::Create(new SNode(key, insertion), hash_value, snode, snode_hash, level));
+          return std::make_pair(insertion ? true : false, CNode::Create(new SNode(key, insertion), hash_value, snode, snode_hash, level));
         }
         else if (snode->key != key) {
           snode->increment_refs();
-          return std::make_pair(Status::FIRST_OR_LAST, new LNode(new SNode(key, insertion), new LNode(snode)));
+          return std::make_pair(insertion ? true : false, new LNode(new SNode(key, insertion), new LNode(snode)));
         }
         else {
-          ...
+          const auto new_snode = snode->updated_count(insertion);
+          return std::make_pair(!insertion && !new_snode, new_snode);
         }
       }
       else
-        return std::make_pair(Status::FIRST_OR_LAST, new SNode(key, insertion));
+        return std::make_pair(insertion ? true : false, new SNode(key, insertion));
     }
 
     template <typename VALUE_TYPE, typename DESIRED>
