@@ -556,7 +556,7 @@ namespace Zeni::Concurrency {
       }
     }
 
-    Snapshot shapshot() const {
+    Snapshot snapshot() const {
       return isnapshot();
     }
 

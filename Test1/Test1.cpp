@@ -1352,12 +1352,18 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
     std::default_random_engine dre;
   };
 
+  const auto antiable_hash_tries = std::make_shared<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>, Zeni::Concurrency::Antiable_Hash_Trie<int64_t>>>();
   const auto antiable_hash_trie1 = std::make_shared<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>>();
   const auto antiable_hash_trie2 = std::make_shared<Zeni::Concurrency::Antiable_Hash_Trie<int64_t>>();
 #ifdef DEBUG_HARD
   const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
 #endif
   ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
+
+  antiable_hash_tries->insert<0>(42);
+  antiable_hash_tries->erase<1>(111);
+  antiable_hash_tries->erase<0>(42);
+  antiable_hash_tries->insert<1>(111);
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
   for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
