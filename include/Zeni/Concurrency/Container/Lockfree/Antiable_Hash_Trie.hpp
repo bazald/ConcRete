@@ -68,24 +68,24 @@ namespace Zeni::Concurrency {
       const int64_t count;
     };
 
-    template <typename HASH_VALUE_TYPE>
+    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE>
     struct ICtrie_Node : public Main_Node {
     private:
       ICtrie_Node(const ICtrie_Node &) = delete;
       ICtrie_Node & operator=(const ICtrie_Node &) = delete;
 
-      static const HASH_VALUE_TYPE hamming_max = hamming<HASH_VALUE_TYPE>();
+      static const FLAG_TYPE hamming_max = hamming<FLAG_TYPE>();
 
     protected:
-      ICtrie_Node(const HASH_VALUE_TYPE bmp)
+      ICtrie_Node(const FLAG_TYPE bmp)
         : m_bmp(bmp)
       {
       }
 
     public:
-      static const HASH_VALUE_TYPE W = log2(hamming_max);
+      static const FLAG_TYPE W = log2(hamming_max);
 
-      static const ICtrie_Node * Create(const HASH_VALUE_TYPE bmp, const size_t hamming_value, const std::array<const Main_Node *, hamming_max> &branches) {
+      static const ICtrie_Node * Create(const FLAG_TYPE bmp, const size_t hamming_value, const std::array<const Main_Node *, hamming_max> &branches) {
         static Factory factory;
         return factory.create(bmp, hamming_value, branches);
       }
@@ -108,27 +108,27 @@ namespace Zeni::Concurrency {
         }
       }
 
-      HASH_VALUE_TYPE get_bmp() const { return m_bmp; }
+      FLAG_TYPE get_bmp() const { return m_bmp; }
 
       virtual size_t get_hamming_value() const = 0;
 
-      std::pair<HASH_VALUE_TYPE, size_t> flagpos(const HASH_VALUE_TYPE hash_value, const size_t level) const {
-        const HASH_VALUE_TYPE desired_bit = flag(hash_value, level);
+      std::pair<FLAG_TYPE, size_t> flagpos(const HASH_VALUE_TYPE hash_value, const size_t level) const {
+        const FLAG_TYPE desired_bit = flag(hash_value, level);
         const size_t array_index = hamming(m_bmp & (desired_bit - 1));
         return std::make_pair(desired_bit, array_index);
       }
 
       virtual const Main_Node * at(const size_t i) const = 0;
 
-      virtual const ICtrie_Node * inserted(const size_t pos, const HASH_VALUE_TYPE flag, const Main_Node * const new_branch) const = 0;
+      virtual const ICtrie_Node * inserted(const size_t pos, const FLAG_TYPE flag, const Main_Node * const new_branch) const = 0;
 
-      virtual const ICtrie_Node * updated(const size_t pos, const HASH_VALUE_TYPE flag, const Main_Node * const new_branch) const = 0;
+      virtual const ICtrie_Node * updated(const size_t pos, const FLAG_TYPE flag, const Main_Node * const new_branch) const = 0;
 
-      virtual const ICtrie_Node * erased(const size_t pos, const HASH_VALUE_TYPE flag) const = 0;
+      virtual const ICtrie_Node * erased(const size_t pos, const FLAG_TYPE flag) const = 0;
 
     private:
-      static const HASH_VALUE_TYPE unhamming_filter = unhamming(W);
-      HASH_VALUE_TYPE m_bmp;
+      static const HASH_VALUE_TYPE unhamming_filter = HASH_VALUE_TYPE(unhamming(W));
+      FLAG_TYPE m_bmp;
 
       class Factory {
         Factory(const Factory &) = delete;
@@ -137,24 +137,24 @@ namespace Zeni::Concurrency {
       public:
         inline Factory();
 
-        const ICtrie_Node<HASH_VALUE_TYPE> * create(const HASH_VALUE_TYPE bmp, const size_t hamming_value, const std::array<const Main_Node *, hamming_max> &branches) {
+        const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * create(const FLAG_TYPE bmp, const size_t hamming_value, const std::array<const Main_Node *, hamming_max> &branches) {
           return m_generator[hamming_value](bmp, branches);
         }
 
       private:
-        std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE> *(const HASH_VALUE_TYPE, const std::array<const Main_Node *, hamming_max> &)>, sum(hamming_max, HASH_VALUE_TYPE(1))> m_generator;
+        std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> *(const FLAG_TYPE, const std::array<const Main_Node *, hamming_max> &)>, sum(hamming_max, FLAG_TYPE(1))> m_generator;
       };
 
-      static HASH_VALUE_TYPE flag(const HASH_VALUE_TYPE hash_value, const size_t level) {
+      static FLAG_TYPE flag(const HASH_VALUE_TYPE hash_value, const size_t level) {
         const HASH_VALUE_TYPE shifted_hash = hash_value >> level;
         const HASH_VALUE_TYPE desired_bit_index = shifted_hash & unhamming_filter;
-        const HASH_VALUE_TYPE desired_bit = HASH_VALUE_TYPE(1u) << desired_bit_index;
+        const FLAG_TYPE desired_bit = FLAG_TYPE(1u) << desired_bit_index;
         return desired_bit;
       }
     };
 
-    template <typename HASH_VALUE_TYPE, size_t HAMMING_VALUE>
-    struct Ctrie_Node : public ICtrie_Node<HASH_VALUE_TYPE> {
+    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE, size_t HAMMING_VALUE>
+    struct Ctrie_Node : public ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> {
     private:
       Ctrie_Node(const Ctrie_Node &) = delete;
       Ctrie_Node & operator=(const Ctrie_Node &) = delete;
@@ -162,8 +162,8 @@ namespace Zeni::Concurrency {
     public:
       static const size_t hamming_value = HAMMING_VALUE;
 
-      Ctrie_Node(const HASH_VALUE_TYPE bmp, const std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> &branches)
-        : ICtrie_Node<HASH_VALUE_TYPE>(bmp),
+      Ctrie_Node(const FLAG_TYPE bmp, const std::array<const Main_Node *, hamming<FLAG_TYPE>()> &branches)
+        : ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE>(bmp),
         m_branches(reinterpret_cast<const std::array<const Main_Node *, hamming_value> &>(branches)) //< Should always be smaller, safe to copy subset
       {
       }
@@ -182,9 +182,9 @@ namespace Zeni::Concurrency {
         return m_branches[i];
       }
 
-      const ICtrie_Node<HASH_VALUE_TYPE> * inserted(const size_t pos, const HASH_VALUE_TYPE flag, const Main_Node * const new_branch) const override {
+      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * inserted(const size_t pos, const FLAG_TYPE flag, const Main_Node * const new_branch) const override {
         assert(!(get_bmp() & flag));
-        std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> new_branches;
+        std::array<const Main_Node *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
           std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(const Main_Node *));
           std::memcpy(new_branches.data() + (pos + 1), m_branches.data() + pos, (hamming_value - pos) * sizeof(const Main_Node *));
@@ -192,12 +192,12 @@ namespace Zeni::Concurrency {
             m_branches[i]->increment_refs();
         }
         new_branches[pos] = new_branch;
-        return ICtrie_Node<HASH_VALUE_TYPE>::Create(this->get_bmp() | flag, hamming_value + 1, new_branches);
+        return ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE>::Create(this->get_bmp() | flag, hamming_value + 1, new_branches);
       }
 
-      const ICtrie_Node<HASH_VALUE_TYPE> * updated(const size_t pos, const HASH_VALUE_TYPE flag, const Main_Node * const new_branch) const override {
+      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * updated(const size_t pos, const FLAG_TYPE flag, const Main_Node * const new_branch) const override {
         assert(get_bmp() & flag);
-        std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> new_branches;
+        std::array<const Main_Node *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
           std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(const Main_Node *));
           std::memcpy(new_branches.data() + (pos + 1), m_branches.data() + (pos + 1), (hamming_value - pos - 1) * sizeof(const Main_Node *));
@@ -207,48 +207,48 @@ namespace Zeni::Concurrency {
             new_branches[i]->increment_refs();
         }
         new_branches[pos] = new_branch;
-        return ICtrie_Node<HASH_VALUE_TYPE>::Create(this->get_bmp(), hamming_value, new_branches);
+        return ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE>::Create(this->get_bmp(), hamming_value, new_branches);
       }
 
-      const ICtrie_Node<HASH_VALUE_TYPE> * erased(const size_t pos, const HASH_VALUE_TYPE flag) const override {
+      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * erased(const size_t pos, const FLAG_TYPE flag) const override {
         assert(get_bmp() & flag);
-        std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> new_branches;
+        std::array<const Main_Node *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
           std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(const Main_Node *));
           std::memcpy(new_branches.data() + pos, m_branches.data() + (pos + 1), (hamming_value - pos - 1) * sizeof(const Main_Node *));
           for (size_t i = 0; i != hamming_value - 1; ++i)
             new_branches[i]->increment_refs();
         }
-        return ICtrie_Node<HASH_VALUE_TYPE>::Create(this->get_bmp() & ~flag, hamming_value - 1, new_branches);
+        return ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE>::Create(this->get_bmp() & ~flag, hamming_value - 1, new_branches);
       }
 
     private:
       const std::array<const Main_Node *, hamming_value> m_branches;
     };
 
-    template <typename HASH_VALUE_TYPE, size_t IN = hamming<HASH_VALUE_TYPE>()>
+    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE, size_t IN = hamming<FLAG_TYPE>()>
     struct Ctrie_Node_Generator {
-      static void Create(std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE> *(const HASH_VALUE_TYPE, const std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> &)>, sum(hamming<HASH_VALUE_TYPE>(), HASH_VALUE_TYPE(1))> &generator) {
-        Ctrie_Node_Generator<HASH_VALUE_TYPE, IN - 1>::Create(generator);
+      static void Create(std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> *(const FLAG_TYPE, const std::array<const Main_Node *, hamming<FLAG_TYPE>()> &)>, sum(hamming<FLAG_TYPE>(), FLAG_TYPE(1))> &generator) {
+        Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE, IN - 1>::Create(generator);
 
-        generator[IN] = [](const HASH_VALUE_TYPE bmp, const std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> &branches)->ICtrie_Node<HASH_VALUE_TYPE> * {
-          return new Ctrie_Node<HASH_VALUE_TYPE, IN>(bmp, branches);
+        generator[IN] = [](const FLAG_TYPE bmp, const std::array<const Main_Node *, hamming<FLAG_TYPE>()> &branches)->ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * {
+          return new Ctrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, IN>(bmp, branches);
         };
       }
     };
 
-    template <typename HASH_VALUE_TYPE>
-    struct Ctrie_Node_Generator<HASH_VALUE_TYPE, 0> {
-      static void Create(std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE> *(const HASH_VALUE_TYPE, const std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> &)>, sum(hamming<HASH_VALUE_TYPE>(), HASH_VALUE_TYPE(1))> &generator) {
-        generator[0] = [](const HASH_VALUE_TYPE /*bmp*/, const std::array<const Main_Node *, hamming<HASH_VALUE_TYPE>()> &/*branches*/)->ICtrie_Node<HASH_VALUE_TYPE> * {
+    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE>
+    struct Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE, 0> {
+      static void Create(std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> *(const FLAG_TYPE, const std::array<const Main_Node *, hamming<FLAG_TYPE>()> &)>, sum(hamming<FLAG_TYPE>(), FLAG_TYPE(1))> &generator) {
+        generator[0] = [](const FLAG_TYPE /*bmp*/, const std::array<const Main_Node *, hamming<FLAG_TYPE>()> &/*branches*/)->ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * {
           return nullptr; // new Ctrie_Node<HASH_VALUE_TYPE, 0>(bmp, branches);
         };
       }
     };
 
-    template <typename HASH_VALUE_TYPE>
-    ICtrie_Node<HASH_VALUE_TYPE>::Factory::Factory() {
-      Ctrie_Node_Generator<HASH_VALUE_TYPE>::Create(m_generator);
+    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE>
+    ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE>::Factory::Factory() {
+      Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE>::Create(m_generator);
     }
 
     template <typename KEY>
@@ -315,7 +315,7 @@ namespace Zeni::Concurrency {
     };
   }
 
-  template <typename KEY, typename HASH = std::hash<KEY>>
+  template <typename KEY, typename HASH = std::hash<KEY>, typename FLAG_TYPE = uint32_t>
   class Antiable_Hash_Trie {
     Antiable_Hash_Trie & operator=(const Antiable_Hash_Trie &) = delete;
 
@@ -324,13 +324,14 @@ namespace Zeni::Concurrency {
     typedef HASH Hash;
 
     typedef decltype(Hash()(Key())) Hash_Value;
+    typedef FLAG_TYPE Flag_Type;
 
     typedef Antiable_Hash_Trie_Internal::Main_Node MNode;
     typedef Antiable_Hash_Trie_Internal::Singleton_Node<Key> SNode;
-    typedef Antiable_Hash_Trie_Internal::ICtrie_Node<Hash_Value> CNode;
+    typedef Antiable_Hash_Trie_Internal::ICtrie_Node<Hash_Value, Flag_Type> CNode;
     typedef Antiable_Hash_Trie_Internal::List_Node<Key> LNode;
 
-    typedef Antiable_Hash_Trie<KEY, HASH> Snapshot;
+    typedef Antiable_Hash_Trie<Key, Hash, Flag_Type> Snapshot;
 
     class const_iterator {
       struct Level {
