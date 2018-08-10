@@ -273,37 +273,40 @@ namespace Zeni::Concurrency {
       }
 
       std::pair<bool, List_Node *> updated(const KEY &key, const bool insertion) const {
+        const Singleton_Node<KEY> * found = nullptr;
         List_Node * new_head = nullptr;
         List_Node * new_tail = nullptr;
         List_Node * old_head = const_cast<List_Node *>(this);
-        if (snode->key == key) {
-          const auto new_snode = old_head->snode->updated_count(insertion);
-          if (old_head->next)
-            old_head->next->increment_refs();
-          return new_snode ? std::make_pair(false, new List_Node(new_snode, old_head->next)) : std::make_pair(!insertion, old_head->next);
-        }
-        else {
-          new_head = new List_Node(old_head->snode, nullptr);
-          new_tail = new_head;
-          old_head = old_head->next;
-        }
         for (; old_head; old_head = old_head->next) {
           if (old_head->snode->key == key) {
-            const auto new_snode = old_head->snode->updated_count(insertion);
+            found = old_head->snode;
             if (old_head->next) {
               old_head->next->increment_refs();
-              new_tail->next = old_head->next;
+              if (new_head)
+                new_tail->next = old_head->next;
+              else {
+                new_head = old_head->next;
+                new_tail = new_head;
+              }
+              break;
             }
-            return new_snode ? std::make_pair(false, new List_Node(new_snode, new_head)) : std::make_pair(!insertion, new_head);
           }
           else {
             old_head->snode->increment_refs();
-            new_head = new List_Node(old_head->snode, new_head);
+            if (new_head)
+              new_head = new List_Node(old_head->snode, new_head);
+            else {
+              new_head = new List_Node(old_head->snode, nullptr);
+              new_tail = new_head;
+            }
           }
         }
-        increment_refs();
-        delete new_head;
-        return std::make_pair(insertion, new List_Node(new Singleton_Node<KEY>(key, insertion), const_cast<List_Node *>(this)));
+        if (found) {
+          const auto new_snode = found->updated_count(insertion);
+          return new_snode ? std::make_pair(false, new List_Node(new_snode, new_head)) : std::make_pair(!insertion, new_head);
+        }
+        else
+          return std::make_pair(insertion, new List_Node(new Singleton_Node<KEY>(key, insertion), new_head));
       }
 
     public:
