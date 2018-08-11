@@ -625,8 +625,6 @@ namespace Zeni::Concurrency {
     Antiable_Hash_Trie & operator=(const Antiable_Hash_Trie &rhs) {
       const MNode * root = m_root.load(std::memory_order_acquire);
       const MNode * const new_root = rhs.isnapshot();
-      if (new_root)
-        new_root->increment_refs();
       CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire);
       return *this;
     }
