@@ -740,7 +740,7 @@ namespace Zeni::Concurrency {
           else if (!new_lnode->next) {
             const SNode * const snode = new_lnode->snode;
             snode->increment_refs();
-            delete new_lnode;
+            new_lnode->decrement_refs();
             return std::make_pair(snode, found);
           }
           else
