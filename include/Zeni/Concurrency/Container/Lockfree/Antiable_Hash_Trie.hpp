@@ -329,7 +329,7 @@ namespace Zeni::Concurrency {
       }
 
       Hash_Trie_Super_Node(Types&&... types) {
-        initialize(std::forward<Types...>(types));
+        initialize(std::forward<Types...>(types...));
       }
 
       template <size_t index, typename Key>
@@ -355,8 +355,8 @@ namespace Zeni::Concurrency {
 
       template <typename First, typename... Rest>
       void initialize(First &&first, Rest&&... rest, const size_t index = 0) {
-        m_hash_tries::get<index>() = std::forward<First>(first);
-        initialize(rest, index + 1);
+        std::get<index>(m_hash_tries) = std::forward<First>(first);
+        initialize(rest..., index + 1);
       }
 
       std::tuple<Types ...> m_hash_tries;
@@ -397,7 +397,7 @@ namespace Zeni::Concurrency {
     template <size_t index, typename Key>
     auto lookup(const Key &key) const {
       const Hash_Trie_Super_Node * const super_root = isnapshot();
-      const auto found = super_root->looked_up<index>(key);
+      const auto found = super_root->template looked_up<index>(key);
       return std::make_pair(found, Snapshot(super_root));
     }
 
@@ -418,7 +418,7 @@ namespace Zeni::Concurrency {
     template <size_t index>
     auto snapshot() const {
       const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
-      return super_root->snapshot<index>();
+      return super_root->template snapshot<index>();
     }
 
   private:
@@ -426,7 +426,7 @@ namespace Zeni::Concurrency {
     auto insert_or_erase(const Key &key, const bool insertion) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
       for (;;) {
-        const auto[first_or_last, new_super_root] = super_root->inserted_or_erased<index>(key, insertion);
+        const auto[first_or_last, new_super_root] = super_root->template inserted_or_erased<index>(key, insertion);
         if (new_super_root)
           new_super_root->increment_refs();
         if (super_root)

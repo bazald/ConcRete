@@ -1290,11 +1290,11 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " +" << *selected << ':';
 #endif
-        const auto[first, snapshot] = m_antiable_hash_tries->insert<MINE>(*selected);
+        const auto[first, snapshot] = m_antiable_hash_tries->template insert<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (first) {
           int64_t sum = 0;
-          const auto theirs = snapshot.snapshot<THEIRS>();
+          const auto theirs = snapshot.template snapshot<THEIRS>();
           for (const auto &value : theirs) {
             sum += *selected * value.key;
 #ifdef DEBUG_HARD
@@ -1315,11 +1315,11 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " -" << *selected << ':';
 #endif
-        const auto[last, snapshot] = m_antiable_hash_tries->erase<MINE>(*selected);
+        const auto[last, snapshot] = m_antiable_hash_tries->template erase<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (last) {
           int64_t sum = 0;
-          const auto theirs = snapshot.snapshot<THEIRS>();
+          const auto theirs = snapshot.template snapshot<THEIRS>();
           for (const auto &value : theirs) {
             sum += *selected * value.key;
 #ifdef DEBUG_HARD
