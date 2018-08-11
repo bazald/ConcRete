@@ -345,6 +345,11 @@ namespace Zeni::Concurrency {
         return std::make_pair(updated_value.first, updated_node);
       }
 
+      template <size_t index>
+      auto snapshot() const {
+        return std::get<index>(m_hash_tries).snapshot();
+      }
+
     private:
       void initialize(const size_t) {}
 
@@ -365,16 +370,20 @@ namespace Zeni::Concurrency {
     {
     }
 
+    ~Super_Hash_Trie() {
+      const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
+      if (super_root)
+        super_root->decrement_refs();
+    }
+
     Super_Hash_Trie(const Super_Hash_Trie &rhs)
       : m_super_root(rhs.isnapshot())
     {
     }
 
     Super_Hash_Trie & operator=(const Super_Hash_Trie &rhs) {
-      const Hash_Trie_Super_Node * super_root = m_super_root.load();
+      const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
       const Hash_Trie_Super_Node * const new_super_root = rhs.isnapshot();
-      if (new_super_root)
-        new_super_root->increment_refs();
       CAS(m_super_root, super_root, new_super_root, std::memory_order_release, std::memory_order_acquire);
       return *this;
     }
@@ -404,6 +413,12 @@ namespace Zeni::Concurrency {
 
     Snapshot snapshot() const {
       return isnapshot();
+    }
+
+    template <size_t index>
+    auto snapshot() const {
+      const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
+      return super_root->snapshot<index>();
     }
 
   private:
@@ -608,7 +623,7 @@ namespace Zeni::Concurrency {
     }
 
     Antiable_Hash_Trie & operator=(const Antiable_Hash_Trie &rhs) {
-      const MNode * root = m_root.load();
+      const MNode * root = m_root.load(std::memory_order_acquire);
       const MNode * const new_root = rhs.isnapshot();
       if (new_root)
         new_root->increment_refs();
@@ -642,7 +657,7 @@ namespace Zeni::Concurrency {
 
     Intrusive_Shared_Ptr<const SNode> looked_up(const Key &key) const {
       const Hash_Value hash_value = Hash()(key);
-      const MNode * const root = m_root.load();
+      const MNode * const root = m_root.load(std::memory_order_acquire);
       const SNode * const found = ilookup(root, key, hash_value, 0);
       if (found && found->inserted) {
         found->increment_refs();
