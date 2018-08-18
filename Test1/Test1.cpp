@@ -282,7 +282,7 @@ void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &wo
     std::default_random_engine dre;
   };
 
-  const auto hash_trie = std::make_shared<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>>();
+  const auto hash_trie = std::shared_ptr<Zeni::Concurrency::Hash_Trie<uint64_t, const char *>>(new Zeni::Concurrency::Hash_Trie<uint64_t, const char *>);
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
   for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
@@ -407,16 +407,16 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
   for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
-    jobs.emplace_back(std::make_shared<Antiable<0, 1>>(antiable_hash_tries, 256,
+    jobs.emplace_back(std::shared_ptr<Antiable<0, 1>>(new Antiable<0, 1>(antiable_hash_tries, 256,
 #ifdef DEBUG_HARD
       debug_output,
 #endif
-      sum));
-    jobs.emplace_back(std::make_shared<Antiable<1, 0>>(antiable_hash_tries, 256,
+      sum)));
+    jobs.emplace_back(std::shared_ptr<Antiable<1, 0>>(new Antiable<1, 0>(antiable_hash_tries, 256,
 #ifdef DEBUG_HARD
       debug_output,
 #endif
-      sum));
+      sum)));
   }
   job_queue->give_many(std::move(jobs));
 

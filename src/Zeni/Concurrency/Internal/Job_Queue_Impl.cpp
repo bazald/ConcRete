@@ -20,7 +20,7 @@ namespace Zeni::Concurrency {
       Friendly_Job_Queue_Impl(Worker_Threads * const worker_threads) : Job_Queue_Impl(worker_threads) {}
     };
 
-    return std::make_shared<Friendly_Job_Queue_Impl>(worker_threads);
+    return std::shared_ptr<Friendly_Job_Queue_Impl>(new Friendly_Job_Queue_Impl(worker_threads));
   }
 
   std::shared_ptr<IJob> Job_Queue_Impl::try_take_one(const bool is_already_awake) noexcept {

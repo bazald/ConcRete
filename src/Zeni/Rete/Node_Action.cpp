@@ -28,7 +28,7 @@ namespace Zeni::Rete {
         const Action &retraction_) : Node_Action(name_, input, variables, action_, retraction_) {}
     };
 
-    const auto action_fun = std::make_shared<Friendly_Node_Action>(name, input, variables, action, retraction);
+    const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, input, variables, action, retraction));
 
     network->source_rule(job_queue, action_fun, user_action);
 

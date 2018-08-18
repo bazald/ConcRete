@@ -60,7 +60,7 @@ namespace Zeni::Rete {
       Friendly_Node_Unary_Gate(const std::shared_ptr<Node> &input) : Node_Unary_Gate(input) {}
     };
 
-    const auto created = std::make_shared<Friendly_Node_Unary_Gate>(input);
+    const auto created = std::shared_ptr<Friendly_Node_Unary_Gate>(new Friendly_Node_Unary_Gate(input));
     const auto connected = std::static_pointer_cast<Node_Unary_Gate>(input->connect_gate(network, job_queue, created));
 
     if (connected != created) {

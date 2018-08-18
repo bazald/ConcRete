@@ -1,8 +1,8 @@
+#if defined(_MSC_VER) && defined(_M_AMD64)
+
 #include <memory>
 
 #include "jemalloc/jemalloc.h"
-
-#if defined(_MSC_VER) && defined(_M_AMD64)
 
 void * operator new(size_t size) noexcept(false) {
   return je_malloc(size);

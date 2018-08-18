@@ -166,7 +166,7 @@ namespace Zeni::Rete {
       }
     };
 
-    auto network_instantiation = Instantiation::Create(std::make_shared<Friendly_Network>(printed_output));
+    auto network_instantiation = Instantiation::Create(std::shared_ptr<Friendly_Network>(new Friendly_Network(printed_output)));
 
     return network_instantiation;
   }
@@ -189,7 +189,7 @@ namespace Zeni::Rete {
       }
     };
 
-    return Instantiation::Create(std::make_shared<Friendly_Network>(printed_output, worker_threads));
+    return Instantiation::Create(std::shared_ptr<Friendly_Network>(new Friendly_Network(printed_output, worker_threads)));
   }
 
   void Network::Destroy() {

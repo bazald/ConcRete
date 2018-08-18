@@ -39,7 +39,7 @@ namespace Zeni::Rete {
       Friendly_Node_Filter(const std::shared_ptr<Network> &network, const WME &wme_) : Node_Filter(network, wme_) {}
     };
 
-    const auto created = std::make_shared<Friendly_Node_Filter>(network, wme);
+    const auto created = std::shared_ptr<Friendly_Node_Filter>(new Friendly_Node_Filter(network, wme));
     const auto connected = std::static_pointer_cast<Node_Filter>(network->connect_output(network, job_queue, created));
 
     if (connected != created) {

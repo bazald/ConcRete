@@ -21,7 +21,7 @@ namespace Zeni::Concurrency {
     {
     };
 
-    return std::make_shared<Friendly_Worker_Threads_Impl>();
+    return std::shared_ptr<Friendly_Worker_Threads_Impl>(new Friendly_Worker_Threads_Impl);
   }
 
   std::shared_ptr<Worker_Threads_Impl> Worker_Threads_Impl::Create(const int16_t num_threads) noexcept(false) {
@@ -30,7 +30,7 @@ namespace Zeni::Concurrency {
       Friendly_Worker_Threads_Impl(const int16_t num_threads) : Worker_Threads_Impl(num_threads) {}
     };
 
-    return std::make_shared<Friendly_Worker_Threads_Impl>(num_threads);
+    return std::shared_ptr<Friendly_Worker_Threads_Impl>(new Friendly_Worker_Threads_Impl(num_threads));
   }
 
 #if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE

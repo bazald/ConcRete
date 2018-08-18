@@ -34,7 +34,7 @@ namespace Zeni::Rete {
       Friendly_Node_Passthrough(const std::shared_ptr<Node> &input) : Node_Passthrough(input) {}
     };
 
-    const auto created = std::make_shared<Friendly_Node_Passthrough>(input);
+    const auto created = std::shared_ptr<Friendly_Node_Passthrough>(new Friendly_Node_Passthrough(input));
     const auto connected = std::static_pointer_cast<Node_Passthrough>(input->connect_output(network, job_queue, created));
 
     if (connected != created) {
