@@ -243,7 +243,7 @@ namespace Zeni::Concurrency {
       Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE>::Create(m_generator);
     }
 
-    template <typename KEY, typename TYPE>
+    template <typename KEY, typename TYPE, typename PRED>
     struct List_Node : public Main_Node {
     private:
       List_Node(const List_Node &) = delete;
@@ -270,7 +270,7 @@ namespace Zeni::Concurrency {
         List_Node * new_tail = nullptr;
         List_Node * old_head = const_cast<List_Node *>(this);
         for (; old_head; old_head = old_head->next) {
-          if (old_head->snode->key == snode->key) {
+          if (PRED()(old_head->snode->key, snode->key)) {
             found = old_head->snode;
             if (old_head->next) {
               old_head->next->increment_refs();
@@ -302,7 +302,7 @@ namespace Zeni::Concurrency {
         List_Node * new_tail = nullptr;
         List_Node * old_head = const_cast<List_Node *>(this);
         for (; old_head; old_head = old_head->next) {
-          if (old_head->snode->key == key) {
+          if (PRED()(old_head->snode->key, key)) {
             found = old_head->snode;
             if (old_head->next) {
               old_head->next->increment_refs();
@@ -335,12 +335,13 @@ namespace Zeni::Concurrency {
     };
   }
 
-  template <typename KEY, typename TYPE, typename HASH = std::hash<KEY>, typename FLAG_TYPE = uint32_t>
+  template <typename KEY, typename TYPE, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t>
   class Hash_Trie {
   public:
     typedef KEY Key;
     typedef TYPE Type;
     typedef HASH Hash;
+    typedef PRED Pred;
 
     typedef decltype(Hash()(Key())) Hash_Value;
     typedef FLAG_TYPE Flag_Type;
@@ -348,9 +349,9 @@ namespace Zeni::Concurrency {
     typedef Hash_Trie_Internal::Main_Node MNode;
     typedef Hash_Trie_Internal::Singleton_Node<Key, Type> SNode;
     typedef Hash_Trie_Internal::ICtrie_Node<Hash_Value, Flag_Type> CNode;
-    typedef Hash_Trie_Internal::List_Node<Key, Type> LNode;
+    typedef Hash_Trie_Internal::List_Node<Key, Type, Pred> LNode;
 
-    typedef Hash_Trie<Key, Type, Hash, Flag_Type> Snapshot;
+    typedef Hash_Trie<Key, Type, Hash, Pred, Flag_Type> Snapshot;
 
     class const_iterator {
       struct Level {
@@ -633,7 +634,7 @@ namespace Zeni::Concurrency {
         }
         else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
           do {
-            if (lnode->snode->key == key)
+            if (Pred()(lnode->snode->key, key))
               return lnode->snode;
             else
               lnode = lnode->next;
@@ -641,7 +642,7 @@ namespace Zeni::Concurrency {
           return nullptr;
         }
         else if (auto snode = dynamic_cast<const SNode *>(mnode))
-          return snode->key == key ? snode : nullptr;
+          return Pred()(snode->key, key) ? snode : nullptr;
         else
           return nullptr;
       }
@@ -677,7 +678,7 @@ namespace Zeni::Concurrency {
           snode->increment_refs();
           return CNode::Create(new SNode(key, value), hash_value, snode, snode_hash, level);
         }
-        else if (snode->key != key) {
+        else if (Pred()(snode->key, key)) {
           snode->increment_refs();
           return new LNode(new SNode(key, value), new LNode(snode));
         }
@@ -748,7 +749,7 @@ namespace Zeni::Concurrency {
         }
       }
       else if (auto snode = dynamic_cast<const SNode *>(mnode))
-        return std::make_pair(nullptr, snode->key == key ? snode : nullptr);
+        return std::make_pair(nullptr, Pred()(snode->key, key) ? snode : nullptr);
       else
         return std::make_pair(nullptr, nullptr);
     }

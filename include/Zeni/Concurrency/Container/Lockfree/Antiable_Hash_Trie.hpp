@@ -251,7 +251,7 @@ namespace Zeni::Concurrency {
       Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE>::Create(m_generator);
     }
 
-    template <typename KEY>
+    template <typename KEY, typename PRED>
     struct List_Node : public Main_Node {
     private:
       List_Node(const List_Node &) = delete;
@@ -278,7 +278,7 @@ namespace Zeni::Concurrency {
         List_Node * new_tail = nullptr;
         List_Node * old_head = const_cast<List_Node *>(this);
         for (; old_head; old_head = old_head->next) {
-          if (old_head->snode->key == key) {
+          if (PRED()(old_head->snode->key, key)) {
             found = old_head->snode;
             if (old_head->next) {
               old_head->next->increment_refs();
@@ -473,11 +473,12 @@ namespace Zeni::Concurrency {
     std::atomic<const Hash_Trie_Super_Node *> m_super_root;
   };
 
-  template <typename KEY, typename HASH = std::hash<KEY>, typename FLAG_TYPE = uint32_t>
+  template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t>
   class Antiable_Hash_Trie {
   public:
     typedef KEY Key;
     typedef HASH Hash;
+    typedef PRED Pred;
 
     typedef decltype(Hash()(Key())) Hash_Value;
     typedef FLAG_TYPE Flag_Type;
@@ -485,9 +486,9 @@ namespace Zeni::Concurrency {
     typedef Antiable_Hash_Trie_Internal::Main_Node MNode;
     typedef Antiable_Hash_Trie_Internal::Singleton_Node<Key> SNode;
     typedef Antiable_Hash_Trie_Internal::ICtrie_Node<Hash_Value, Flag_Type> CNode;
-    typedef Antiable_Hash_Trie_Internal::List_Node<Key> LNode;
+    typedef Antiable_Hash_Trie_Internal::List_Node<Key, Pred> LNode;
 
-    typedef Antiable_Hash_Trie<Key, Hash, Flag_Type> Snapshot;
+    typedef Antiable_Hash_Trie<Key, Hash, Pred, Flag_Type> Snapshot;
 
     class const_iterator {
       struct Level {
@@ -746,7 +747,7 @@ namespace Zeni::Concurrency {
         }
         else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
           do {
-            if (lnode->snode->key == key)
+            if (Pred()(lnode->snode->key, key))
               return lnode->snode;
             else
               lnode = lnode->next;
@@ -754,7 +755,7 @@ namespace Zeni::Concurrency {
           return nullptr;
         }
         else if (auto snode = dynamic_cast<const SNode *>(mnode))
-          return snode->inserted && snode->key == key ? snode : nullptr;
+          return snode->inserted && Pred()(snode->key, key) ? snode : nullptr;
         else
           return nullptr;
       }
@@ -816,7 +817,7 @@ namespace Zeni::Concurrency {
           snode->increment_refs();
           return std::make_pair(insertion ? true : false, CNode::Create(new SNode(key, insertion), hash_value, snode, snode_hash, level));
         }
-        else if (snode->key != key) {
+        else if (Pred()(snode->key, key)) {
           snode->increment_refs();
           return std::make_pair(insertion ? true : false, new LNode(new SNode(key, insertion), new LNode(snode)));
         }
