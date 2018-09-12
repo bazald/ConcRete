@@ -27,6 +27,8 @@ namespace Zeni::Concurrency {
   public:
     Message(const std::shared_ptr<Recipient> &recipient) noexcept;
 
+    virtual ~Message() {}
+
     const std::shared_ptr<Recipient> & get_recipient() const noexcept;
 
     void execute() noexcept override;

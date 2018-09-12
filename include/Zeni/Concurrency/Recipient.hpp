@@ -27,6 +27,8 @@ namespace Zeni::Concurrency {
     Recipient() = default;
 
   public:
+    virtual ~Recipient() {}
+
     virtual void receive(const std::shared_ptr<const Message> message) noexcept = 0;
 
   protected:

@@ -16,6 +16,8 @@ namespace Zeni::Rete {
   public:
     ZENI_RETE_LINKAGE Token(const int64_t size);
 
+    ZENI_RETE_LINKAGE virtual ~Token() {}
+
     ZENI_RETE_LINKAGE int64_t size() const;
 
     ZENI_RETE_LINKAGE bool eval_bindings(const bool from_left, const Variable_Bindings &bindings, const Token &rhs, const bool rhs_from_left) const;

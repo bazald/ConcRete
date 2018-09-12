@@ -26,6 +26,8 @@ namespace Zeni::Concurrency {
   public:
     ZENI_CONCURRENCY_LINKAGE Job_Queue() = default;
 
+    ZENI_CONCURRENCY_LINKAGE virtual ~Job_Queue() {}
+
     ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Job_Queue> Create(Worker_Threads * const worker_threads) noexcept;
 
     /// Take a Job off the queue.

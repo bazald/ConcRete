@@ -20,6 +20,8 @@ namespace Zeni::Concurrency {
   public:
     ZENI_CONCURRENCY_LINKAGE Worker_Threads() = default;
 
+    ZENI_CONCURRENCY_LINKAGE virtual ~Worker_Threads() {}
+
     /// Initialize the number of threads to std::thread::hardware_concurrency()
     ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Worker_Threads> Create() noexcept(false);
     /// Initialize the number of threads to 0 or 1 for single-threaded operation, anything higher for multithreaded

@@ -23,6 +23,8 @@ namespace Zeni::Concurrency {
   public:
     Job() = default;
 
+    virtual ~Job() {}
+
     const std::shared_ptr<Job_Queue> & get_Job_Queue() const noexcept override;
 
   private:

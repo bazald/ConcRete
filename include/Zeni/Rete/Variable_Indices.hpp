@@ -19,6 +19,8 @@ namespace Zeni::Rete {
     Variable_Indices() = default;
 
   public:
+    ZENI_RETE_LINKAGE virtual ~Variable_Indices() {}
+
     ZENI_RETE_LINKAGE static std::shared_ptr<Variable_Indices> Create();
 
     ZENI_RETE_LINKAGE virtual const std::unordered_multimap<std::string, Token_Index> & get_indices() const = 0;

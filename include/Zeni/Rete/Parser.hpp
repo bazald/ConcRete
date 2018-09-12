@@ -19,6 +19,8 @@ namespace Zeni::Rete {
     Parser() = default;
 
   public:
+    ZENI_RETE_LINKAGE virtual ~Parser() {}
+
     ZENI_RETE_LINKAGE static std::shared_ptr<Parser> Create();
 
     ZENI_RETE_LINKAGE virtual void parse_file(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &filename, const bool user_command) = 0;
