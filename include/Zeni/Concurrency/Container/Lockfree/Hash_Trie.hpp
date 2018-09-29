@@ -175,7 +175,7 @@ namespace Zeni::Concurrency {
       }
 
       const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * inserted(const size_t pos, const FLAG_TYPE flag, const Main_Node * const new_branch) const override {
-        assert(!(get_bmp() & flag));
+        assert(!(this->get_bmp() & flag));
         std::array<const Main_Node *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
           std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(const Main_Node *));
@@ -188,7 +188,7 @@ namespace Zeni::Concurrency {
       }
 
       const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * updated(const size_t pos, const FLAG_TYPE flag, const Main_Node * const new_branch) const override {
-        assert(get_bmp() & flag);
+        assert(this->get_bmp() & flag);
         std::array<const Main_Node *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
           std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(const Main_Node *));
@@ -203,7 +203,7 @@ namespace Zeni::Concurrency {
       }
 
       const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * erased(const size_t pos, const FLAG_TYPE flag) const override {
-        assert(get_bmp() & flag);
+        assert(this->get_bmp() & flag);
         std::array<const Main_Node *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
           std::memcpy(new_branches.data(), m_branches.data(), pos * sizeof(const Main_Node *));
