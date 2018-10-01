@@ -35,6 +35,7 @@ Compiler( 'MSVC' )
                     + ' /WX-'          // Warnings NOT as errors
                     + ' /EHsc'         // Exception handling model
                     + ' /std:c++17'    // C++17
+                    + ' /permissive-'  // Encourage standards conformance
 .CompilerOptionsDebug = ' /sdl-'
                       + ' /Od'
                       + ' /MDd'
