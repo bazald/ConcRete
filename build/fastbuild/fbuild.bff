@@ -133,14 +133,16 @@ Executable( 'Test1-Release' )
   .LinkerOptions + ' /PDB:"$VSCMD_ARG_TGT_ARCH$\Release\Test1\Test1.pdb"'
 }
 
-.ProjectBuildCommand = 'call "^$(VCInstallDir)\Auxiliary\Build\vcvarsall.bat" ^$(PlatformTarget) &amp;&amp; cd "^$(SolutionDir)" &amp;&amp; "^$(SolutionDir)\FBuild.exe" -cache -dist ^$(MSBuildProjectName)-^$(Configuration)'
-.ProjectRebuildCommand = 'call "^$(VCInstallDir)\Auxiliary\Build\vcvarsall.bat" ^$(PlatformTarget) &amp;&amp; cd "^$(SolutionDir)" &amp;&amp; "^$(SolutionDir)\FBuild.exe" -cache -dist -clean ^$(MSBuildProjectName)-^$(Configuration)'
+.ProjectBuildCommand = 'call "^$(VCInstallDir)\Auxiliary\Build\vcvarsall.bat" ^$(PlatformTarget) &amp;&amp; cd "^$(SolutionDir)" &amp;&amp; "^$(SolutionDir)\FBuild.exe" -ide -cache -dist ^$(MSBuildProjectName)-^$(Configuration)'
+.ProjectRebuildCommand = 'call "^$(VCInstallDir)\Auxiliary\Build\vcvarsall.bat" ^$(PlatformTarget) &amp;&amp; cd "^$(SolutionDir)" &amp;&amp; "^$(SolutionDir)\FBuild.exe" -ide -cache -dist -clean ^$(MSBuildProjectName)-^$(Configuration)'
 
 VCXProject( 'ConcurrencyProject' )
 {
   .ProjectOutput              = 'Concurrency.vcxproj'
   .ProjectIncludePaths        = '..\..\src\Zeni\'
   .ProjectIncludePathsExclude = '..\..\src\Zeni\Rete\'
+  .ProjectInputPaths          = { '..\..\include\Zeni\' , '..\..\src\Zeni\' }
+  .ProjectInputPathsExclude   = { '..\..\include\Zeni\Rete\', '..\..\src\Zeni\Rete\' }
 }
 
 VCXProject( 'ReteProject' )
@@ -148,12 +150,15 @@ VCXProject( 'ReteProject' )
   .ProjectOutput              = 'Rete.vcxproj'
   .ProjectIncludePaths        = '..\..\src\Zeni\'
   .ProjectIncludePathsExclude = '..\..\src\Zeni\Concurrency\'
+  .ProjectInputPaths          = { '..\..\include\Zeni\', '..\..\src\Zeni\' }
+  .ProjectInputPathsExclude   = { '..\..\include\Zeni\Concurrency\', '..\..\src\Zeni\Concurrency\' }
 }
 
 VCXProject( 'Test1Project' )
 {
-  .ProjectOutput              = 'Test1.vcxproj'
-  .ProjectIncludePaths        = '..\..\Test1\'
+  .ProjectOutput       = 'Test1.vcxproj'
+  .ProjectIncludePaths = '..\..\Test1\'
+  .ProjectInputPaths   = '..\..\Test1\'
 }
 
 VSSolution( 'ConcReteSolution' )
