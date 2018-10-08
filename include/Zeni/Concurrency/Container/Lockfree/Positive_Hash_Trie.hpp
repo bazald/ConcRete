@@ -260,7 +260,7 @@ namespace Zeni::Concurrency {
         First_Insertion,    ///< Count increases to 1 and object inserted into trie
         Last_Removal,       ///< Count decrements to 0 and object removed from trie
         Extra_Insertion,    ///< Count increases past 1
-        Canceling_Removal  ///< Count decreases to a natural number
+        Canceling_Removal   ///< Count decreases to a natural number
       };
 
       List_Node(const Singleton_Node<KEY> * const snode_, List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
