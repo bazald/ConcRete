@@ -1,5 +1,5 @@
-#ifndef ZENI_CONCURRENCY_ANTIABLE_HASH_TRIE_HPP
-#define ZENI_CONCURRENCY_ANTIABLE_HASH_TRIE_HPP
+#ifndef ZENI_CONCURRENCY_POSITIVE_HASH_TRIE_HPP
+#define ZENI_CONCURRENCY_POSITIVE_HASH_TRIE_HPP
 
 #include "Intrusive_Shared_Ptr.hpp"
 
@@ -10,7 +10,7 @@
 
 namespace Zeni::Concurrency {
 
-  namespace Antiable_Hash_Trie_Internal {
+  namespace Positive_Hash_Trie_Internal {
 
     template <typename INT_TYPE>
     constexpr static INT_TYPE hamming(const INT_TYPE value = std::numeric_limits<INT_TYPE>::max()) {
@@ -51,20 +51,18 @@ namespace Zeni::Concurrency {
       Singleton_Node & operator=(const Singleton_Node &) = delete;
 
       template <typename KEY_TYPE>
-      Singleton_Node(KEY_TYPE &&key_, const bool insertion_, const int64_t count_) : key(std::forward<KEY_TYPE>(key_)), inserted(insertion_), count(count_) {}
+      Singleton_Node(KEY_TYPE &&key_, const int64_t count_) : key(std::forward<KEY_TYPE>(key_)), count(count_) {}
 
     public:
       template <typename KEY_TYPE>
-      Singleton_Node(KEY_TYPE &&key_, const bool insertion_) : key(std::forward<KEY_TYPE>(key_)), inserted(insertion_), count(insertion_ ? 1 : -1) {}
+      Singleton_Node(KEY_TYPE &&key_) : key(std::forward<KEY_TYPE>(key_)), count(1) {}
 
       const Singleton_Node * updated_count(const bool insertion) const {
-        assert(count);
         const int64_t new_count = count + (insertion ? 1 : -1);
-        return new_count != 0 ? new Singleton_Node(key, inserted, new_count) : nullptr;
+        return new_count != 0 ? new Singleton_Node(key, new_count) : nullptr;
       }
 
       const KEY key;
-      const bool inserted;
       const int64_t count;
     };
 
@@ -262,9 +260,7 @@ namespace Zeni::Concurrency {
         First_Insertion,    ///< Count increases to 1 and object inserted into trie
         Last_Removal,       ///< Count decrements to 0 and object removed from trie
         Extra_Insertion,    ///< Count increases past 1
-        Canceling_Removal,  ///< Count decreases to a natural number
-        Extra_Removal,      ///< Count decreases into negatives
-        Canceling_Insertion ///< Count increases to a non-positive number
+        Canceling_Removal  ///< Count decreases to a natural number
       };
 
       List_Node(const Singleton_Node<KEY> * const snode_, List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
@@ -312,19 +308,13 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           const auto new_snode = found->updated_count(insertion);
-          Result result;
-          if (new_snode) {
-            if (new_snode->count > 0)
-              result = insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
-            else
-              result = insertion ? Result::Canceling_Insertion : Result::Extra_Removal;
-          }
-          else
-            result = insertion ? Result::Canceling_Insertion : Result::Last_Removal;
+          const Result result = !new_snode ? Result::Last_Removal : insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
           return std::make_pair(result, new_snode ? new List_Node(new_snode, new_head) : new_head);
         }
-        else
-          return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, new List_Node(new Singleton_Node<KEY>(key, insertion), new_head));
+        else {
+          assert(insertion);
+          return std::make_pair(Result::First_Insertion, new List_Node(new Singleton_Node<KEY>(key), new_head));
+        }
       }
 
     public:
@@ -334,7 +324,7 @@ namespace Zeni::Concurrency {
   }
 
   template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t>
-  class Antiable_Hash_Trie {
+  class Positive_Hash_Trie {
   public:
     typedef KEY Key;
     typedef HASH Hash;
@@ -343,12 +333,12 @@ namespace Zeni::Concurrency {
     typedef decltype(Hash()(Key())) Hash_Value;
     typedef FLAG_TYPE Flag_Type;
 
-    typedef Antiable_Hash_Trie_Internal::Main_Node MNode;
-    typedef Antiable_Hash_Trie_Internal::Singleton_Node<Key> SNode;
-    typedef Antiable_Hash_Trie_Internal::ICtrie_Node<Hash_Value, Flag_Type> CNode;
-    typedef Antiable_Hash_Trie_Internal::List_Node<Key, Pred> LNode;
+    typedef Positive_Hash_Trie_Internal::Main_Node MNode;
+    typedef Positive_Hash_Trie_Internal::Singleton_Node<Key> SNode;
+    typedef Positive_Hash_Trie_Internal::ICtrie_Node<Hash_Value, Flag_Type> CNode;
+    typedef Positive_Hash_Trie_Internal::List_Node<Key, Pred> LNode;
 
-    typedef Antiable_Hash_Trie<Key, Hash, Pred, Flag_Type> Snapshot;
+    typedef Positive_Hash_Trie<Key, Hash, Pred, Flag_Type> Snapshot;
 
     typedef typename LNode::Result Result;
 
@@ -386,14 +376,10 @@ namespace Zeni::Concurrency {
             if (lnode->next)
               m_level_stack.push({ lnode->next, size_t(-1) });
             m_level_stack.push({ lnode->snode, size_t(-1) });
-            if (!lnode->snode->inserted)
-              ++*this;
             break;
           }
           else if (const auto snode = dynamic_cast<const SNode *>(root)) {
             m_level_stack.push({ snode, size_t(-1) });
-            if (!snode->inserted)
-              ++*this;
             break;
           }
           else
@@ -419,10 +405,8 @@ namespace Zeni::Concurrency {
               m_level_stack.push({ cnode, top.pos + 1 });
             const auto mnode_next = cnode->at(top.pos);
             if (const auto snode_next = dynamic_cast<const SNode *>(mnode_next)) {
-              if (snode_next->inserted) {
-                m_level_stack.push({ snode_next, size_t(0) });
-                break;
-              }
+              m_level_stack.push({ snode_next, size_t(0) });
+              break;
             }
             else
               m_level_stack.push({ mnode_next, size_t(0) });
@@ -430,10 +414,8 @@ namespace Zeni::Concurrency {
           else if (const auto lnode = dynamic_cast<const LNode *>(top.mnode)) {
             if (lnode->next)
               m_level_stack.push({ lnode->next, size_t(-1) });
-            if (lnode->snode->inserted) {
-              m_level_stack.push({ lnode->snode, size_t(-1) });
-              break;
-            }
+            m_level_stack.push({ lnode->snode, size_t(-1) });
+            break;
           }
           else if (const auto snode = dynamic_cast<const SNode *>(top.mnode)) {
             abort();
@@ -478,27 +460,27 @@ namespace Zeni::Concurrency {
       return cend();
     }
 
-    Antiable_Hash_Trie() = default;
+    Positive_Hash_Trie() = default;
 
-    Antiable_Hash_Trie(const Antiable_Hash_Trie &rhs)
+    Positive_Hash_Trie(const Positive_Hash_Trie &rhs)
       : m_root(rhs.isnapshot())
     {
     }
 
-    Antiable_Hash_Trie & operator=(const Antiable_Hash_Trie &rhs) {
+    Positive_Hash_Trie & operator=(const Positive_Hash_Trie &rhs) {
       const MNode * root = m_root.load(std::memory_order_acquire);
       const MNode * const new_root = rhs.isnapshot();
       CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire);
       return *this;
     }
 
-    Antiable_Hash_Trie(Antiable_Hash_Trie &&rhs)
+    Positive_Hash_Trie(Positive_Hash_Trie &&rhs)
       : m_root(rhs.m_root.load(std::memory_order_relaxed))
     {
       rhs.m_root.store(nullptr, std::memory_order_relaxed);
     }
 
-    ~Antiable_Hash_Trie() {
+    ~Positive_Hash_Trie() {
       const MNode * const mnode = m_root.load(std::memory_order_acquire);
       if (mnode)
         mnode->decrement_refs();
@@ -579,7 +561,7 @@ namespace Zeni::Concurrency {
       return std::make_pair(result, Snapshot(new_root));
     }
 
-    Antiable_Hash_Trie(const MNode * const mnode)
+    Positive_Hash_Trie(const MNode * const mnode)
       : m_root(mnode)
     {
     }
@@ -637,8 +619,10 @@ namespace Zeni::Concurrency {
       if (const auto cnode = dynamic_cast<const CNode *>(mnode)) {
         const auto[flag, pos] = cnode->flagpos(hash_value, level);
         const MNode * const next = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
-        if (!next)
-          return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, cnode->inserted(pos, flag, new SNode(key, insertion)));
+        if (!next) {
+          assert(insertion);
+          return std::make_pair(Result::First_Insertion, cnode->inserted(pos, flag, new SNode(key)));
+        }
         const auto[result, new_next] = iinsert(next, key, hash_value, insertion, level + CNode::W);
         if (!new_next) {
           const auto new_cnode = cnode->erased(pos, flag);
@@ -663,8 +647,9 @@ namespace Zeni::Concurrency {
       else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
         const Hash_Value lnode_hash = Hash()(lnode->snode->key);
         if (lnode_hash != hash_value) {
+          assert(insertion);
           lnode->increment_refs();
-          return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, CNode::Create(new SNode(key, insertion), hash_value, lnode, lnode_hash, level));
+          return std::make_pair(Result::First_Insertion, CNode::Create(new SNode(key), hash_value, lnode, lnode_hash, level));
         }
         else {
           const auto[result, new_lnode] = lnode->updated(key, insertion);
@@ -680,29 +665,25 @@ namespace Zeni::Concurrency {
       else if (auto snode = dynamic_cast<const SNode *>(mnode)) {
         const Hash_Value snode_hash = Hash()(snode->key);
         if (snode_hash != hash_value) {
+          assert(insertion);
           snode->increment_refs();
-          return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, CNode::Create(new SNode(key, insertion), hash_value, snode, snode_hash, level));
+          return std::make_pair(Result::First_Insertion, CNode::Create(new SNode(key), hash_value, snode, snode_hash, level));
         }
         else if (Pred()(snode->key, key)) {
           const auto new_snode = snode->updated_count(insertion);
-          Result result;
-          if (new_snode) {
-            if (new_snode->count > 0)
-              result = insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
-            else
-              result = insertion ? Result::Canceling_Insertion : Result::Extra_Removal;
-          }
-          else
-            result = insertion ? Result::Canceling_Insertion : Result::Last_Removal;
+          const Result result = !new_snode ? Result::Last_Removal : insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
           return std::make_pair(result, new_snode);
         }
         else {
+          assert(insertion);
           snode->increment_refs();
-          return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, new LNode(new SNode(key, insertion), new LNode(snode)));
+          return std::make_pair(Result::First_Insertion, new LNode(new SNode(key), new LNode(snode)));
         }
       }
-      else
-        return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, new SNode(key, insertion));
+      else {
+        assert(insertion);
+        return std::make_pair(Result::First_Insertion, new SNode(key));
+      }
     }
 
     template <typename VALUE_TYPE, typename DESIRED>
