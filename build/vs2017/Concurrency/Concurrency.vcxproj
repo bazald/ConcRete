@@ -39,6 +39,7 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Shared_Ptr.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Smart_Queue.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Stack.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Super_Hash_Trie.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Unordered_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Antiable_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Epoch_List.hpp" />
@@ -61,6 +62,7 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Shared_Ptr.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Smart_Queue.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Stack.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Super_Hash_Trie.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Unordered_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\IJob.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Job_Queue_Impl.hpp" />

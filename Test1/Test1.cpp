@@ -5,8 +5,9 @@
 #endif
 
 #include "Zeni/Concurrency/Container/Antiable_Hash_Trie.hpp"
-//#include "Zeni/Concurrency/Container/Ctrie.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie.hpp"
+#include "Zeni/Concurrency/Container/Super_Hash_Trie.hpp"
+//#include "Zeni/Concurrency/Container/Ctrie.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Message.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
@@ -339,9 +340,9 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " +" << *selected << ':';
 #endif
-        const auto[first, snapshot] = m_antiable_hash_tries->template insert<MINE>(*selected);
+        const auto[result, snapshot] = m_antiable_hash_tries->template insert<MINE>(*selected);
         //snapshots.push_back(snapshot);
-        if (first) {
+        if (result == Zeni::Concurrency::Antiable_Hash_Trie<int64_t>::Result::First_Insertion) {
           int64_t sum = 0;
           const auto theirs = snapshot.template snapshot<THEIRS>();
           for (const auto &value : theirs) {
@@ -364,9 +365,9 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " -" << *selected << ':';
 #endif
-        const auto[last, snapshot] = m_antiable_hash_tries->template erase<MINE>(*selected);
+        const auto[result, snapshot] = m_antiable_hash_tries->template erase<MINE>(*selected);
         //snapshots.push_back(snapshot);
-        if (last) {
+        if (result == Zeni::Concurrency::Antiable_Hash_Trie<int64_t>::Result::Last_Removal) {
           int64_t sum = 0;
           const auto theirs = snapshot.template snapshot<THEIRS>();
           for (const auto &value : theirs) {

@@ -258,6 +258,15 @@ namespace Zeni::Concurrency {
       List_Node & operator=(const List_Node &) = delete;
 
     public:
+      enum class Result {
+        First_Insertion,    ///< Count increases to 1 and object inserted into trie
+        Last_Removal,       ///< Count decrements to 0 and object removed from trie
+        Extra_Insertion,    ///< Count increases past 1
+        Canceling_Removal,  ///< Count decreases to a natural number
+        Extra_Removal,      ///< Count decreases into negatives
+        Canceling_Insertion ///< Count increases to a non-positive number
+      };
+
       List_Node(const Singleton_Node<KEY> * const snode_, List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
 
       ~List_Node() {
@@ -272,7 +281,7 @@ namespace Zeni::Concurrency {
         }
       }
 
-      std::pair<bool, List_Node *> updated(const KEY &key, const bool insertion) const {
+      std::pair<Result, List_Node *> updated(const KEY &key, const bool insertion) const {
         const Singleton_Node<KEY> * found = nullptr;
         List_Node * new_head = nullptr;
         List_Node * new_tail = nullptr;
@@ -303,10 +312,19 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           const auto new_snode = found->updated_count(insertion);
-          return new_snode ? std::make_pair(false, new List_Node(new_snode, new_head)) : std::make_pair(!insertion, new_head);
+          Result result;
+          if (!new_snode)
+            result = insertion ? Result::Canceling_Insertion : Result::Last_Removal;
+          else {
+            if (snode->count > 0)
+              result = insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
+            else
+              result = insertion ? Result::Canceling_Insertion : Result::Extra_Removal;
+          }
+          return std::make_pair(result, new_snode ? new List_Node(new_snode, new_head) : new_head);
         }
         else
-          return std::make_pair(insertion, new List_Node(new Singleton_Node<KEY>(key, insertion), new_head));
+          return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, new List_Node(new Singleton_Node<KEY>(key, insertion), new_head));
       }
 
     public:
@@ -314,164 +332,6 @@ namespace Zeni::Concurrency {
       List_Node * next = nullptr;
     };
   }
-
-  template <typename... Types>
-  class Super_Hash_Trie {
-    class Hash_Trie_Super_Node : public Enable_Intrusive_Sharing<Hash_Trie_Super_Node> {
-      Hash_Trie_Super_Node & operator=(const Hash_Trie_Super_Node &rhs) = delete;
-
-    public:
-      Hash_Trie_Super_Node() = default;
-
-      Hash_Trie_Super_Node(const Hash_Trie_Super_Node &rhs)
-        : m_hash_tries(rhs.m_hash_tries)
-      {
-      }
-
-      Hash_Trie_Super_Node(Types&&... types) {
-        initialize(std::forward<Types...>(types...));
-      }
-
-      template <size_t index, typename Key>
-      auto looked_up(const Key &key) const {
-        return std::get<index>(m_hash_tries).looked_up(key);
-      }
-
-      template <size_t index, typename Key>
-      std::pair<bool, const Hash_Trie_Super_Node *> inserted_or_erased(const Key &key, const bool insertion) const {
-        const auto updated_value = insertion ? std::get<index>(m_hash_tries).inserted(key) : std::get<index>(m_hash_tries).erased(key);
-        Hash_Trie_Super_Node * const updated_node = new Hash_Trie_Super_Node(*this);
-        std::get<index>(updated_node->m_hash_tries) = updated_value.second;
-        return std::make_pair(updated_value.first, updated_node);
-      }
-
-      template <size_t index>
-      auto snapshot() const {
-        return std::get<index>(m_hash_tries).snapshot();
-      }
-
-    private:
-      void initialize(const size_t) {}
-
-      template <typename First, typename... Rest>
-      void initialize(First &&first, Rest&&... rest, const size_t index = 0) {
-        std::get<index>(m_hash_tries) = std::forward<First>(first);
-        initialize(rest..., index + 1);
-      }
-
-      std::tuple<Types ...> m_hash_tries;
-    };
-
-  public:
-    typedef Super_Hash_Trie<Types...> Snapshot;
-
-    Super_Hash_Trie()
-      : m_super_root(new Hash_Trie_Super_Node())
-    {
-    }
-
-    ~Super_Hash_Trie() {
-      const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
-      if (super_root)
-        super_root->decrement_refs();
-    }
-
-    Super_Hash_Trie(const Super_Hash_Trie &rhs)
-      : m_super_root(rhs.isnapshot())
-    {
-    }
-
-    Super_Hash_Trie & operator=(const Super_Hash_Trie &rhs) {
-      const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
-      const Hash_Trie_Super_Node * const new_super_root = rhs.isnapshot();
-      CAS(m_super_root, super_root, new_super_root, std::memory_order_release, std::memory_order_acquire);
-      return *this;
-    }
-
-    Super_Hash_Trie(Super_Hash_Trie &&rhs)
-      : m_super_root(rhs.m_super_root.load(std::memory_order_relaxed))
-    {
-      rhs.m_super_root.store(nullptr, std::memory_order_relaxed);
-    }
-
-    template <size_t index, typename Key>
-    auto lookup(const Key &key) const {
-      const Hash_Trie_Super_Node * const super_root = isnapshot();
-      const auto found = super_root->template looked_up<index>(key);
-      return std::make_pair(found, Snapshot(super_root));
-    }
-
-    template <size_t index, typename Key>
-    std::pair<bool, Snapshot> insert(const Key &key) {
-      return insert_or_erase<index>(key, true);
-    }
-
-    template <size_t index, typename Key>
-    std::pair<bool, Snapshot> erase(const Key &key) {
-      return insert_or_erase<index>(key, false);
-    }
-
-    Snapshot snapshot() const {
-      return isnapshot();
-    }
-
-    template <size_t index>
-    auto snapshot() const {
-      const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
-      return super_root->template snapshot<index>();
-    }
-
-  private:
-    template <size_t index, typename Key>
-    auto insert_or_erase(const Key &key, const bool insertion) {
-      const Hash_Trie_Super_Node * super_root = isnapshot();
-      for (;;) {
-        const auto[first_or_last, new_super_root] = super_root->template inserted_or_erased<index>(key, insertion);
-        if (new_super_root)
-          new_super_root->increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (CAS(m_super_root, super_root, new_super_root, std::memory_order_release, std::memory_order_acquire))
-          return std::make_pair(first_or_last, Snapshot(new_super_root));
-        else {
-          if (new_super_root)
-            new_super_root->decrement_refs();
-          enforce_snapshot(super_root);
-        }
-      }
-    }
-
-    Super_Hash_Trie(const Hash_Trie_Super_Node * const super_node)
-      : m_super_root(super_node)
-    {
-    }
-
-    const Hash_Trie_Super_Node * isnapshot() const {
-      const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
-      enforce_snapshot(super_root);
-      return super_root;
-    }
-
-    void enforce_snapshot(const Hash_Trie_Super_Node * &super_root) const {
-      while (super_root && !super_root->increment_refs())
-        super_root = m_super_root.load(std::memory_order_acquire);
-    }
-
-    static bool CAS(std::atomic<const Hash_Trie_Super_Node *> &atomic_value, const Hash_Trie_Super_Node * &expected, const Hash_Trie_Super_Node * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
-      if (atomic_value.compare_exchange_strong(expected, desired, success, failure)) {
-        if (expected)
-          expected->decrement_refs();
-        return true;
-      }
-      else {
-        if (desired)
-          desired->decrement_refs();
-        return false;
-      }
-    }
-
-    std::atomic<const Hash_Trie_Super_Node *> m_super_root;
-  };
 
   template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t>
   class Antiable_Hash_Trie {
@@ -489,6 +349,8 @@ namespace Zeni::Concurrency {
     typedef Antiable_Hash_Trie_Internal::List_Node<Key, Pred> LNode;
 
     typedef Antiable_Hash_Trie<Key, Hash, Pred, Flag_Type> Snapshot;
+
+    typedef typename LNode::Result Result;
 
     class const_iterator {
       struct Level {
@@ -549,7 +411,7 @@ namespace Zeni::Concurrency {
 
       const_iterator & operator++() {
         m_level_stack.pop();
-        while(!m_level_stack.empty()) {
+        while (!m_level_stack.empty()) {
           const auto top = m_level_stack.top();
           m_level_stack.pop();
           if (const auto cnode = dynamic_cast<const CNode *>(top.mnode)) {
@@ -638,8 +500,12 @@ namespace Zeni::Concurrency {
 
     ~Antiable_Hash_Trie() {
       const MNode * const mnode = m_root.load(std::memory_order_acquire);
-      if(mnode)
+      if (mnode)
         mnode->decrement_refs();
+    }
+
+    bool empty() const {
+      return m_root.load(std::memory_order_acquire) != nullptr;
     }
 
     std::pair<Intrusive_Shared_Ptr<const SNode>, Snapshot> lookup(const Key &key) const {
@@ -666,19 +532,19 @@ namespace Zeni::Concurrency {
         return nullptr;
     }
 
-    std::pair<bool, Snapshot> insert(const Key &key) {
+    std::pair<Result, Snapshot> insert(const Key &key) {
       return insert_or_erase(key, true);
     }
 
-    std::pair<bool, Snapshot> inserted(const Key &key) const {
+    std::pair<Result, Snapshot> inserted(const Key &key) const {
       return inserted_or_erased(key, true);
     }
 
-    std::pair<bool, Snapshot> erase(const Key &key) {
+    std::pair<Result, Snapshot> erase(const Key &key) {
       return insert_or_erase(key, false);
     }
 
-    std::pair<bool, Snapshot> erased(const Key &key) const {
+    std::pair<Result, Snapshot> erased(const Key &key) const {
       return inserted_or_erased(key, false);
     }
 
@@ -687,17 +553,17 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    std::pair<bool, Snapshot> insert_or_erase(const Key &key, const bool insertion) {
+    std::pair<Result, Snapshot> insert_or_erase(const Key &key, const bool insertion) {
       const Hash_Value hash_value = Hash()(key);
       const MNode * root = isnapshot();
       for (;;) {
-        const auto[first_or_last, new_root] = iinsert(root, key, hash_value, insertion, 0);
+        const auto[result, new_root] = iinsert(root, key, hash_value, insertion, 0);
         if (new_root)
           new_root->increment_refs();
         if (root)
           root->decrement_refs();
         if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
-          return std::make_pair(first_or_last, Snapshot(new_root));
+          return std::make_pair(result, Snapshot(new_root));
         else {
           if (new_root)
             new_root->decrement_refs();
@@ -706,11 +572,11 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::pair<bool, Snapshot> inserted_or_erased(const Key &key, const bool insertion) const {
+    std::pair<Result, Snapshot> inserted_or_erased(const Key &key, const bool insertion) const {
       const Hash_Value hash_value = Hash()(key);
       const MNode * const root = m_root.load(std::memory_order_acquire);
-      const auto[first_or_last, new_root] = iinsert(root, key, hash_value, insertion, 0);
-      return std::make_pair(first_or_last, Snapshot(new_root));
+      const auto[result, new_root] = iinsert(root, key, hash_value, insertion, 0);
+      return std::make_pair(result, Snapshot(new_root));
     }
 
     Antiable_Hash_Trie(const MNode * const mnode)
@@ -761,7 +627,7 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::pair<bool, const MNode *> iinsert(
+    std::pair<Result, const MNode *> iinsert(
       const MNode * const mnode,
       const Key &key,
       const Hash_Value &hash_value,
@@ -772,62 +638,71 @@ namespace Zeni::Concurrency {
         const auto[flag, pos] = cnode->flagpos(hash_value, level);
         const MNode * const next = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
         if (!next)
-          return std::make_pair(insertion ? true : false, cnode->inserted(pos, flag, new SNode(key, insertion)));
-        const auto[first_or_last, new_next] = iinsert(next, key, hash_value, insertion, level + CNode::W);
+          return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, cnode->inserted(pos, flag, new SNode(key, insertion)));
+        const auto[result, new_next] = iinsert(next, key, hash_value, insertion, level + CNode::W);
         if (!new_next) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
-            return std::make_pair(first_or_last, nullptr);
+            return std::make_pair(result, nullptr);
           else if (new_cnode->get_hamming_value() != 1)
-            return std::make_pair(first_or_last, new_cnode);
+            return std::make_pair(result, new_cnode);
           else {
             const auto new_mnode = new_cnode->at(0);
             if (dynamic_cast<const CNode *>(new_mnode))
-              return std::make_pair(first_or_last, new_cnode);
+              return std::make_pair(result, new_cnode);
             else {
               new_mnode->increment_refs();
               delete new_cnode;
-              return std::make_pair(first_or_last, new_mnode);
+              return std::make_pair(result, new_mnode);
             }
           }
         }
         else
-          return std::make_pair(first_or_last, cnode->updated(pos, flag, new_next));
+          return std::make_pair(result, cnode->updated(pos, flag, new_next));
       }
       else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
         const Hash_Value lnode_hash = Hash()(lnode->snode->key);
         if (lnode_hash != hash_value) {
           lnode->increment_refs();
-          return std::make_pair(insertion ? true : false, CNode::Create(new SNode(key, insertion), hash_value, lnode, lnode_hash, level));
+          return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, CNode::Create(new SNode(key, insertion), hash_value, lnode, lnode_hash, level));
         }
         else {
-          const auto [first_or_last, new_lnode] = lnode->updated(key, insertion);
+          const auto[result, new_lnode] = lnode->updated(key, insertion);
           if (!new_lnode->next) {
             const auto new_snode = new_lnode->snode;
             new_snode->increment_refs();
             new_lnode->decrement_refs();
-            return std::make_pair(first_or_last, new_snode);
+            return std::make_pair(result, new_snode);
           }
-          return std::make_pair(first_or_last, new_lnode);
+          return std::make_pair(result, new_lnode);
         }
       }
       else if (auto snode = dynamic_cast<const SNode *>(mnode)) {
         const Hash_Value snode_hash = Hash()(snode->key);
         if (snode_hash != hash_value) {
           snode->increment_refs();
-          return std::make_pair(insertion ? true : false, CNode::Create(new SNode(key, insertion), hash_value, snode, snode_hash, level));
+          return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, CNode::Create(new SNode(key, insertion), hash_value, snode, snode_hash, level));
         }
         else if (Pred()(snode->key, key)) {
-          snode->increment_refs();
-          return std::make_pair(insertion ? true : false, new LNode(new SNode(key, insertion), new LNode(snode)));
+          const auto new_snode = snode->updated_count(insertion);
+          Result result;
+          if (!new_snode)
+            result = insertion ? Result::Canceling_Insertion : Result::Last_Removal;
+          else {
+            if (snode->count > 0)
+              result = insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
+            else
+              result = insertion ? Result::Canceling_Insertion : Result::Extra_Removal;
+          }
+          return std::make_pair(result, new_snode);
         }
         else {
-          const auto new_snode = snode->updated_count(insertion);
-          return std::make_pair(!insertion && !new_snode, new_snode);
+          snode->increment_refs();
+          return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, new LNode(new SNode(key, insertion), new LNode(snode)));
         }
       }
       else
-        return std::make_pair(insertion ? true : false, new SNode(key, insertion));
+        return std::make_pair(insertion ? Result::First_Insertion : Result::Extra_Removal, new SNode(key, insertion));
     }
 
     template <typename VALUE_TYPE, typename DESIRED>
