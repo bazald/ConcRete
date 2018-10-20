@@ -4,6 +4,7 @@
 #include "Intrusive_Shared_Ptr.hpp"
 
 #include <functional>
+#include <tuple>
 
 namespace Zeni::Concurrency {
 
@@ -22,6 +23,11 @@ namespace Zeni::Concurrency {
 
       Hash_Trie_Super_Node(Types&&... types) {
         initialize(std::forward<Types...>(types...));
+      }
+
+      template <size_t index>
+      bool empty() const {
+        return std::get<index>(m_hash_tries).empty();
       }
 
       template <size_t index, typename Key>
@@ -89,7 +95,7 @@ namespace Zeni::Concurrency {
     template <size_t index>
     bool empty() const {
       const auto super_root = m_super_root.load(std::memory_order_acquire);
-      return std::get<index>(super_root)->empty();
+      return super_root->template empty<index>();
     }
 
     template <size_t index, typename Key>

@@ -315,9 +315,9 @@ public:
           int64_t sum = 0;
           const auto theirs = snapshot.template snapshot<THEIRS>();
           for (const auto &value : theirs) {
-            sum += *selected * value.key;
+            sum += *selected * value;
 #ifdef DEBUG_HARD
-            oss << ' ' << value.key;
+            oss << ' ' << value;
 #endif
           }
           m_sum.fetch_add(sum, std::memory_order_relaxed);
@@ -340,9 +340,9 @@ public:
           int64_t sum = 0;
           const auto theirs = snapshot.template snapshot<THEIRS>();
           for (const auto &value : theirs) {
-            sum += *selected * value.key;
+            sum += *selected * value;
 #ifdef DEBUG_HARD
-            oss << ' ' << value.key;
+            oss << ' ' << value;
 #endif
           }
           m_sum.fetch_sub(sum, std::memory_order_relaxed);
@@ -452,9 +452,9 @@ public:
           int64_t sum = 0;
           const auto theirs = snapshot.template snapshot<THEIRS>();
           for (const auto &value : theirs) {
-            sum += *selected * value.key;
+            sum += *selected * value;
 #ifdef DEBUG_HARD
-            oss << ' ' << value.key;
+            oss << ' ' << value;
 #endif
           }
           m_sum.fetch_add(sum, std::memory_order_relaxed);
@@ -478,9 +478,9 @@ public:
           int64_t sum = 0;
           const auto theirs = snapshot.template snapshot<THEIRS>();
           for (const auto &value : theirs) {
-            sum += *selected * value.key;
+            sum += *selected * value;
 #ifdef DEBUG_HARD
-            oss << ' ' << value.key;
+            oss << ' ' << value;
 #endif
           }
           m_sum.fetch_sub(sum, std::memory_order_relaxed);
@@ -589,9 +589,9 @@ public:
           int64_t sum = 0;
           const auto theirs = snapshot.template snapshot<THEIRS>();
           for (const auto &value : theirs) {
-            sum += *selected * value.key;
+            sum += *selected * value;
 #ifdef DEBUG_HARD
-            oss << ' ' << value.key;
+            oss << ' ' << value;
 #endif
           }
           m_sum.fetch_add(sum, std::memory_order_relaxed);
@@ -615,9 +615,9 @@ public:
           int64_t sum = 0;
           const auto theirs = snapshot.template snapshot<THEIRS>();
           for (const auto &value : theirs) {
-            sum += *selected * value.key;
+            sum += *selected * value;
 #ifdef DEBUG_HARD
-            oss << ' ' << value.key;
+            oss << ' ' << value;
 #endif
           }
           m_sum.fetch_sub(sum, std::memory_order_relaxed);

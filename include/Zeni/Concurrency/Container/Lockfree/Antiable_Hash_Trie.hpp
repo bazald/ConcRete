@@ -369,8 +369,8 @@ namespace Zeni::Concurrency {
 
     public:
       typedef std::forward_iterator_tag iterator_category;
-      typedef const SNode value_type;
-      typedef const SNode & reference;
+      typedef const Key value_type;
+      typedef value_type & reference;
 
       const_iterator() = default;
 
@@ -404,7 +404,7 @@ namespace Zeni::Concurrency {
       }
 
       reference operator*() const {
-        return *static_cast<const SNode *>(m_level_stack.top().mnode);
+        return static_cast<const SNode *>(m_level_stack.top().mnode)->key;
       }
 
       const_iterator next() const {
