@@ -277,7 +277,7 @@ namespace Zeni::Concurrency {
         }
       }
 
-      std::pair<Result, List_Node *> updated(const KEY &key, const bool insertion) const {
+      std::tuple<Result, List_Node *, const Singleton_Node<KEY> *> updated(const KEY &key, const bool insertion) const {
         const Singleton_Node<KEY> * found = nullptr;
         List_Node * new_head = nullptr;
         List_Node * new_tail = nullptr;
@@ -309,11 +309,12 @@ namespace Zeni::Concurrency {
         if (found) {
           const auto new_snode = found->updated_count(insertion);
           const Result result = !new_snode ? Result::Last_Removal : insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
-          return std::make_pair(result, new_snode ? new List_Node(new_snode, new_head) : new_head);
+          return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode);
         }
         else {
           assert(insertion);
-          return std::make_pair(Result::First_Insertion, new List_Node(new Singleton_Node<KEY>(key), new_head));
+          const auto new_snode = new Singleton_Node<KEY>(key);
+          return std::make_tuple(Result::First_Insertion, new List_Node(new_snode, new_head), new_snode);
         }
       }
 
@@ -514,19 +515,19 @@ namespace Zeni::Concurrency {
         return nullptr;
     }
 
-    std::pair<Result, Snapshot> insert(const Key &key) {
+    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> insert(const Key &key) {
       return insert_or_erase(key, true);
     }
 
-    std::pair<Result, Snapshot> inserted(const Key &key) const {
+    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> inserted(const Key &key) const {
       return inserted_or_erased(key, true);
     }
 
-    std::pair<Result, Snapshot> erase(const Key &key) {
+    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> erase(const Key &key) {
       return insert_or_erase(key, false);
     }
 
-    std::pair<Result, Snapshot> erased(const Key &key) const {
+    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> erased(const Key &key) const {
       return inserted_or_erased(key, false);
     }
 
@@ -535,17 +536,20 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    std::pair<Result, Snapshot> insert_or_erase(const Key &key, const bool insertion) {
+    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> insert_or_erase(const Key &key, const bool insertion) {
       const Hash_Value hash_value = Hash()(key);
       const MNode * root = isnapshot();
       for (;;) {
-        const auto[result, new_root] = iinsert(root, key, hash_value, insertion, 0);
+        const auto[result, new_root, inserted] = iinsert(root, key, hash_value, insertion, 0);
         if (new_root)
           new_root->increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
-          return std::make_pair(result, Snapshot(new_root));
+        if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire)) {
+          if (inserted)
+            inserted->increment_refs();
+          return std::make_tuple(result, Snapshot(new_root), inserted);
+        }
         else {
           if (new_root)
             new_root->decrement_refs();
@@ -554,11 +558,13 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::pair<Result, Snapshot> inserted_or_erased(const Key &key, const bool insertion) const {
+    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> inserted_or_erased(const Key &key, const bool insertion) const {
       const Hash_Value hash_value = Hash()(key);
       const MNode * const root = m_root.load(std::memory_order_acquire);
-      const auto[result, new_root] = iinsert(root, key, hash_value, insertion, 0);
-      return std::make_pair(result, Snapshot(new_root));
+      const auto[result, new_root, inserted] = iinsert(root, key, hash_value, insertion, 0);
+      if (inserted)
+        inserted->increment_refs();
+      return std::make_tuple(result, Snapshot(new_root), inserted);
     }
 
     Positive_Hash_Trie(const MNode * const mnode)
@@ -609,7 +615,7 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::pair<Result, const MNode *> iinsert(
+    std::tuple<Result, const MNode *, const SNode *> iinsert(
       const MNode * const mnode,
       const Key &key,
       const Hash_Value &hash_value,
@@ -621,45 +627,46 @@ namespace Zeni::Concurrency {
         const MNode * const next = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
         if (!next) {
           assert(insertion);
-          return std::make_pair(Result::First_Insertion, cnode->inserted(pos, flag, new SNode(key)));
+          const SNode * const new_snode = new SNode(key);
+          return std::make_tuple(Result::First_Insertion, cnode->inserted(pos, flag, new_snode), new_snode);
         }
-        const auto[result, new_next] = iinsert(next, key, hash_value, insertion, level + CNode::W);
+        const auto[result, new_next, new_snode] = iinsert(next, key, hash_value, insertion, level + CNode::W);
         if (!new_next) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
-            return std::make_pair(result, nullptr);
+            return std::make_tuple(result, nullptr, new_snode);
           else if (new_cnode->get_hamming_value() != 1)
-            return std::make_pair(result, new_cnode);
+            return std::make_tuple(result, new_cnode, new_snode);
           else {
             const auto new_mnode = new_cnode->at(0);
             if (dynamic_cast<const CNode *>(new_mnode))
-              return std::make_pair(result, new_cnode);
+              return std::make_tuple(result, new_cnode, new_snode);
             else {
               new_mnode->increment_refs();
               delete new_cnode;
-              return std::make_pair(result, new_mnode);
+              return std::make_tuple(result, new_mnode, new_snode);
             }
           }
         }
         else
-          return std::make_pair(result, cnode->updated(pos, flag, new_next));
+          return std::make_tuple(result, cnode->updated(pos, flag, new_next), new_snode);
       }
       else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
         const Hash_Value lnode_hash = Hash()(lnode->snode->key);
         if (lnode_hash != hash_value) {
           assert(insertion);
           lnode->increment_refs();
-          return std::make_pair(Result::First_Insertion, CNode::Create(new SNode(key), hash_value, lnode, lnode_hash, level));
+          const SNode * const new_snode = new SNode(key);
+          return std::make_tuple(Result::First_Insertion, CNode::Create(new_snode, hash_value, lnode, lnode_hash, level), new_snode);
         }
         else {
-          const auto[result, new_lnode] = lnode->updated(key, insertion);
+          const auto[result, new_lnode, new_snode] = lnode->updated(key, insertion);
           if (!new_lnode->next) {
-            const auto new_snode = new_lnode->snode;
             new_snode->increment_refs();
             new_lnode->decrement_refs();
-            return std::make_pair(result, new_snode);
+            return std::make_tuple(result, new_snode, new_snode);
           }
-          return std::make_pair(result, new_lnode);
+          return std::make_tuple(result, new_lnode, new_snode);
         }
       }
       else if (auto snode = dynamic_cast<const SNode *>(mnode)) {
@@ -667,22 +674,25 @@ namespace Zeni::Concurrency {
         if (snode_hash != hash_value) {
           assert(insertion);
           snode->increment_refs();
-          return std::make_pair(Result::First_Insertion, CNode::Create(new SNode(key), hash_value, snode, snode_hash, level));
+          const SNode * const new_snode = new SNode(key);
+          return std::make_tuple(Result::First_Insertion, CNode::Create(new_snode, hash_value, snode, snode_hash, level), new_snode);
         }
         else if (Pred()(snode->key, key)) {
           const auto new_snode = snode->updated_count(insertion);
           const Result result = !new_snode ? Result::Last_Removal : insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
-          return std::make_pair(result, new_snode);
+          return std::make_tuple(result, new_snode, new_snode);
         }
         else {
           assert(insertion);
           snode->increment_refs();
-          return std::make_pair(Result::First_Insertion, new LNode(new SNode(key), new LNode(snode)));
+          const SNode * const new_snode = new SNode(key);
+          return std::make_tuple(Result::First_Insertion, new LNode(new_snode, new LNode(snode)), new_snode);
         }
       }
       else {
         assert(insertion);
-        return std::make_pair(Result::First_Insertion, new SNode(key));
+        const SNode * const new_snode = new SNode(key);
+        return std::make_tuple(Result::First_Insertion, new_snode, new_snode);
       }
     }
 

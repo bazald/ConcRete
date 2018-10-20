@@ -31,10 +31,10 @@ namespace Zeni::Concurrency {
 
       template <size_t index, typename Key>
       auto inserted_or_erased(const Key &key, const bool insertion) const {
-        const auto updated_value = insertion ? std::get<index>(m_hash_tries).inserted(key) : std::get<index>(m_hash_tries).erased(key);
+        const auto[result, new_next, new_snode] = insertion ? std::get<index>(m_hash_tries).inserted(key) : std::get<index>(m_hash_tries).erased(key);
         Hash_Trie_Super_Node * const updated_node = new Hash_Trie_Super_Node(*this);
-        std::get<index>(updated_node->m_hash_tries) = updated_value.second;
-        return std::make_pair(updated_value.first, updated_node);
+        std::get<index>(updated_node->m_hash_tries) = new_next;
+        return std::make_tuple(result, updated_node, new_snode);
       }
 
       template <size_t index>
@@ -124,13 +124,13 @@ namespace Zeni::Concurrency {
     auto insert_or_erase(const Key &key, const bool insertion) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
       for (;;) {
-        const auto[result, new_super_root] = super_root->template inserted_or_erased<index>(key, insertion);
+        const auto[result, new_super_root, inserted] = super_root->template inserted_or_erased<index>(key, insertion);
         if (new_super_root)
           new_super_root->increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, new_super_root, std::memory_order_release, std::memory_order_acquire))
-          return std::make_pair(result, Snapshot(new_super_root));
+          return std::make_tuple(result, Snapshot(new_super_root), inserted);
         else {
           if (new_super_root)
             new_super_root->decrement_refs();

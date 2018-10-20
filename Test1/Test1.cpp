@@ -17,12 +17,12 @@
 
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 
-#include "Zeni/Rete/Network.hpp"
-#include "Zeni/Rete/Node_Action.hpp"
-#include "Zeni/Rete/Node_Filter.hpp"
-#include "Zeni/Rete/Node_Passthrough_Gated.hpp"
-#include "Zeni/Rete/Node_Unary_Gate.hpp"
-#include "Zeni/Rete/Parser.hpp"
+//#include "Zeni/Rete/Network.hpp"
+//#include "Zeni/Rete/Node_Action.hpp"
+//#include "Zeni/Rete/Node_Filter.hpp"
+//#include "Zeni/Rete/Node_Passthrough_Gated.hpp"
+//#include "Zeni/Rete/Node_Unary_Gate.hpp"
+//#include "Zeni/Rete/Parser.hpp"
 
 #include <array>
 #include <atomic>
@@ -86,8 +86,8 @@ private:
 static void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Positive_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
-static void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
-static void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+//static void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+//static void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 
 //struct ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER UInt128 {
 //  UInt128() = default;
@@ -186,19 +186,19 @@ int main()
   }
   std::cout << std::endl;
 
-  Zeni::Rete::Debug_Counters::print(std::cerr);
-  test_Rete_Network(worker_threads, job_queue);
-  Zeni::Rete::Debug_Counters::print(std::cerr);
-  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //  abort();
-  //}
-  Zeni::Rete::Debug_Counters::reset();
+  //Zeni::Rete::Debug_Counters::print(std::cerr);
+  //test_Rete_Network(worker_threads, job_queue);
+  //Zeni::Rete::Debug_Counters::print(std::cerr);
+  ////if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  ////  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  ////  abort();
+  ////}
+  //Zeni::Rete::Debug_Counters::reset();
 
   std::cerr << "Test: ";
   for (int i = 1; i != 11; ++i) {
     std::cerr << ' ' << i;
-    test_Rete_Network(worker_threads, job_queue);
+    //test_Rete_Network(worker_threads, job_queue);
     //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
     //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
     //  Zeni::Rete::Debug_Counters::print(std::cerr);
@@ -209,7 +209,7 @@ int main()
 
   std::cerr << std::endl;
 
-  test_Parser(worker_threads, job_queue);
+  //test_Parser(worker_threads, job_queue);
   //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
   //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
   //  Zeni::Rete::Debug_Counters::print(std::cerr);
@@ -309,7 +309,7 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " +" << *selected << ':';
 #endif
-        const auto[result, snapshot] = m_antiable_hash_tries->template insert<MINE>(*selected);
+        const auto[result, snapshot, inserted] = m_antiable_hash_tries->template insert<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Antiable_Hash_Trie<int64_t>::Result::First_Insertion) {
           int64_t sum = 0;
@@ -334,7 +334,7 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " -" << *selected << ':';
 #endif
-        const auto[result, snapshot] = m_antiable_hash_tries->template erase<MINE>(*selected);
+        const auto[result, snapshot, inserted] = m_antiable_hash_tries->template erase<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Antiable_Hash_Trie<int64_t>::Result::Last_Removal) {
           int64_t sum = 0;
@@ -446,7 +446,7 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " +" << *selected << ':';
 #endif
-        const auto[result, snapshot] = m_hash_tries->template insert<MINE>(*selected);
+        const auto[result, snapshot, inserted] = m_hash_tries->template insert<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Hash_Trie<int64_t>::Result::First_Insertion) {
           int64_t sum = 0;
@@ -472,7 +472,7 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " -" << *selected << ':';
 #endif
-        const auto[result, snapshot] = m_hash_tries->template erase<MINE>(*selected);
+        const auto[result, snapshot, inserted] = m_hash_tries->template erase<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Hash_Trie<int64_t>::Result::Last_Removal) {
           int64_t sum = 0;
@@ -583,7 +583,7 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " +" << *selected << ':';
 #endif
-        const auto[result, snapshot] = m_positive_hash_tries->template insert<MINE>(*selected);
+        const auto[result, snapshot, inserted] = m_positive_hash_tries->template insert<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Positive_Hash_Trie<int64_t>::Result::First_Insertion) {
           int64_t sum = 0;
@@ -609,7 +609,7 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " -" << *selected << ':';
 #endif
-        const auto[result, snapshot] = m_positive_hash_tries->template erase<MINE>(*selected);
+        const auto[result, snapshot, inserted] = m_positive_hash_tries->template erase<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Positive_Hash_Trie<int64_t>::Result::Last_Removal) {
           int64_t sum = 0;
@@ -683,102 +683,102 @@ void test_Positive_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
   //std::cout << std::endl;
 }
 
-void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
-  const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, worker_threads);
-
-  for (int i = 0; i != 101; ++i) {
-    std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
-      {
-        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(1),
-        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(2),
-        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(3),
-        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(4),
-        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(5)
-      }
-    };
-
-    {
-      auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
-      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-      auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), job_queue, filter1);
-      auto gated_passthrough01 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), job_queue, filter0, unary_gate1);
-      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, gated_passthrough01, Zeni::Rete::Variable_Indices::Create(),
-        [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-        std::cout << '(' << std::flush;
-      }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-        std::cout << ')' << std::flush;
-      });
-
-      //job_queue->give_one(
-      //  std::make_shared<Zeni::Rete::Message_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
-      //job_queue->give_one(
-      //  std::make_shared<Zeni::Rete::Message_Disconnect_Output>(network->get(), network->get(), filter1, true));
-    }
-
-    //(*network)->get_Worker_Threads()->finish_jobs();
-
-    (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
-
-    //(*network)->get_Worker_Threads()->finish_jobs();
-
-    (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
-
-    //(*network)->get_Worker_Threads()->finish_jobs();
-
-    (*network)->excise_rule(job_queue, "hello-world", false);
-
-    //(*network)->get_Worker_Threads()->finish_jobs();
-
-    {
-      auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
-      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-      auto unary_gate0 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), job_queue, filter0);
-      auto gated_passthrough10 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), job_queue, filter1, unary_gate0);
-      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, gated_passthrough10, Zeni::Rete::Variable_Indices::Create(),
-        [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-        std::cout << '[' << std::flush;
-      }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
-        std::cout << ']' << std::flush;
-      });
-
-      //job_queue->give_one(
-      //  std::make_shared<Zeni::Rete::Message_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
-    }
-
-    //(*network)->get_Worker_Threads()->finish_jobs();
-
-    (*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
-
-    //(*network)->get_Worker_Threads()->finish_jobs();
-
-    (*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
-
-    //(*network)->get_Worker_Threads()->finish_jobs();
-
-    //(*network)->excise_all(job_queue);
-  }
-}
-
-void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
-  const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, worker_threads);
-
-  auto parser = Zeni::Rete::Parser::Create();
-
-  parser->parse_string(network->get(), job_queue, "sp {test-rule\r\n  (<s> ^attr 42)\r\n  (<s> ^attr 3.14159)\r\n-->\r\n}\r\n", true);
-
-  (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(
-    std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
-    std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
-    std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
-
-  (*network)->get_Worker_Threads()->finish_jobs();
-
-  //(*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(
-  //  std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
-  //  std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
-  //  std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
-
-  //(*network)->get_Worker_Threads()->finish_jobs();
-}
+//void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+//  const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, worker_threads);
+//
+//  for (int i = 0; i != 101; ++i) {
+//    std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
+//      {
+//        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(1),
+//        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(2),
+//        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(3),
+//        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(4),
+//        std::make_shared<Zeni::Rete::Symbol_Constant_Int>(5)
+//      }
+//    };
+//
+//    {
+//      auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+//      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
+//      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+//      auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), job_queue, filter1);
+//      auto gated_passthrough01 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), job_queue, filter0, unary_gate1);
+//      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, gated_passthrough01, Zeni::Rete::Variable_Indices::Create(),
+//        [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
+//        std::cout << '(' << std::flush;
+//      }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
+//        std::cout << ')' << std::flush;
+//      });
+//
+//      //job_queue->give_one(
+//      //  std::make_shared<Zeni::Rete::Message_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
+//      //job_queue->give_one(
+//      //  std::make_shared<Zeni::Rete::Message_Disconnect_Output>(network->get(), network->get(), filter1, true));
+//    }
+//
+//    //(*network)->get_Worker_Threads()->finish_jobs();
+//
+//    (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+//
+//    //(*network)->get_Worker_Threads()->finish_jobs();
+//
+//    (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+//
+//    //(*network)->get_Worker_Threads()->finish_jobs();
+//
+//    (*network)->excise_rule(job_queue, "hello-world", false);
+//
+//    //(*network)->get_Worker_Threads()->finish_jobs();
+//
+//    {
+//      auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+//      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
+//      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+//      auto unary_gate0 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), job_queue, filter0);
+//      auto gated_passthrough10 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), job_queue, filter1, unary_gate0);
+//      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, gated_passthrough10, Zeni::Rete::Variable_Indices::Create(),
+//        [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
+//        std::cout << '[' << std::flush;
+//      }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
+//        std::cout << ']' << std::flush;
+//      });
+//
+//      //job_queue->give_one(
+//      //  std::make_shared<Zeni::Rete::Message_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
+//    }
+//
+//    //(*network)->get_Worker_Threads()->finish_jobs();
+//
+//    (*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[0]));
+//
+//    //(*network)->get_Worker_Threads()->finish_jobs();
+//
+//    (*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
+//
+//    //(*network)->get_Worker_Threads()->finish_jobs();
+//
+//    //(*network)->excise_all(job_queue);
+//  }
+//}
+//
+//void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+//  const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, worker_threads);
+//
+//  auto parser = Zeni::Rete::Parser::Create();
+//
+//  parser->parse_string(network->get(), job_queue, "sp {test-rule\r\n  (<s> ^attr 42)\r\n  (<s> ^attr 3.14159)\r\n-->\r\n}\r\n", true);
+//
+//  (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(
+//    std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
+//    std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
+//    std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
+//
+//  (*network)->get_Worker_Threads()->finish_jobs();
+//
+//  //(*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(
+//  //  std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
+//  //  std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
+//  //  std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
+//
+//  //(*network)->get_Worker_Threads()->finish_jobs();
+//}
