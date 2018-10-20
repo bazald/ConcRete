@@ -503,19 +503,19 @@ namespace Zeni::Concurrency {
         return nullptr;
     }
 
-    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> insert(const Key &key) {
+    std::tuple<Result, Snapshot, Key> insert(const Key &key) {
       return insert_or_erase(key, true);
     }
 
-    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> inserted(const Key &key) const {
+    std::tuple<Result, Snapshot, Key> inserted(const Key &key) const {
       return inserted_or_erased(key, true);
     }
 
-    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> erase(const Key &key) {
+    std::tuple<Result, Snapshot, Key> erase(const Key &key) {
       return insert_or_erase(key, false);
     }
 
-    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> erased(const Key &key) const {
+    std::tuple<Result, Snapshot, Key> erased(const Key &key) const {
       return inserted_or_erased(key, false);
     }
 
@@ -524,7 +524,7 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> insert_or_erase(const Key &key, const bool insertion) {
+    std::tuple<Result, Snapshot, Key> insert_or_erase(const Key &key, const bool insertion) {
       const Hash_Value hash_value = Hash()(key);
       const MNode * root = isnapshot();
       for (;;) {
@@ -533,11 +533,8 @@ namespace Zeni::Concurrency {
           new_root->increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire)) {
-          if (inserted)
-            inserted->increment_refs();
-          return std::make_tuple(result, Snapshot(new_root), inserted);
-        }
+        if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
+          return std::make_tuple(result, Snapshot(new_root), inserted ? inserted->key : Key());
         else {
           if (new_root)
             new_root->decrement_refs();
@@ -546,13 +543,11 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::tuple<Result, Snapshot, Intrusive_Shared_Ptr<const SNode>> inserted_or_erased(const Key &key, const bool insertion) const {
+    std::tuple<Result, Snapshot, Key> inserted_or_erased(const Key &key, const bool insertion) const {
       const Hash_Value hash_value = Hash()(key);
       const MNode * const root = m_root.load(std::memory_order_acquire);
       const auto[result, new_root, inserted] = iinsert(root, key, hash_value, insertion, 0);
-      if (inserted)
-        inserted->increment_refs();
-      return std::make_tuple(result, Snapshot(new_root), inserted);
+      return std::make_tuple(result, Snapshot(new_root), inserted ? inserted->key : Key());
     }
 
     Hash_Trie(const MNode * const mnode)
