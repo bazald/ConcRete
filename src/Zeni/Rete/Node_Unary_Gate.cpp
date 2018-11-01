@@ -4,11 +4,11 @@
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Internal/Message_Connect_Gate.hpp"
 #include "Zeni/Rete/Internal/Message_Connect_Output.hpp"
-#include "Zeni/Rete/Internal/Message_Decrement_Child_Count.hpp"
 #include "Zeni/Rete/Internal/Message_Disconnect_Gate.hpp"
 #include "Zeni/Rete/Internal/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Internal/Message_Status_Empty.hpp"
 #include "Zeni/Rete/Internal/Message_Status_Nonempty.hpp"
+#include "Zeni/Rete/Internal/Token_Alpha.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 
@@ -16,33 +16,10 @@
 
 namespace Zeni::Rete {
 
-  Node_Unary_Gate::Unlocked_Node_Unary_Gate_Data::Unlocked_Node_Unary_Gate_Data()
-  {
-  }
-
-  Node_Unary_Gate::Locked_Node_Unary_Gate_Data_Const::Locked_Node_Unary_Gate_Data_Const(const Node_Unary_Gate * node, const Locked_Node_Data_Const &)
-    : m_data(node->m_unlocked_node_unary_gate_data)
-  {
-  }
-
-  int64_t Node_Unary_Gate::Locked_Node_Unary_Gate_Data_Const::get_input_tokens() const {
-    return m_data->m_input_tokens;
-  }
-
-  Node_Unary_Gate::Locked_Node_Unary_Gate_Data::Locked_Node_Unary_Gate_Data(Node_Unary_Gate * node, const Locked_Node_Data &data)
-    : Locked_Node_Unary_Gate_Data_Const(node, data),
-    m_data(node->m_unlocked_node_unary_gate_data)
-  {
-  }
-
-  int64_t & Node_Unary_Gate::Locked_Node_Unary_Gate_Data::modify_input_tokens() {
-    return m_data->m_input_tokens;
-  }
-
   Node_Unary_Gate::Node_Unary_Gate(const std::shared_ptr<Node> input)
     : Node(input->get_height(), input->get_size(), 0, hash_combine(std::hash<int>()(3), input->get_hash())),
-    m_unlocked_node_unary_gate_data(std::make_shared<Unlocked_Node_Unary_Gate_Data>()),
-    m_input(input)
+    m_input(input),
+    m_nonempty_token(std::make_shared<Token_Alpha>(std::make_shared<WME>(m_nonempty_token_symbol, m_nonempty_token_symbol, m_nonempty_token_symbol)))
   {
   }
 
@@ -51,7 +28,7 @@ namespace Zeni::Rete {
   }
 
   void Node_Unary_Gate::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
-    job_queue->give_one(std::make_shared<Message_Disconnect_Gate>(get_input(), network, shared_from_this(), true));
+    job_queue->give_one(std::make_shared<Message_Disconnect_Gate>(get_input(), network, shared_from_this()));
   }
 
   std::shared_ptr<Node_Unary_Gate> Node_Unary_Gate::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input) {
@@ -61,192 +38,110 @@ namespace Zeni::Rete {
     };
 
     const auto created = std::shared_ptr<Friendly_Node_Unary_Gate>(new Friendly_Node_Unary_Gate(input));
-    const auto connected = std::static_pointer_cast<Node_Unary_Gate>(input->connect_gate(network, job_queue, created));
+    const auto connected = std::static_pointer_cast<Node_Unary_Gate>(input->connect_new_or_existing_gate(network, job_queue, created));
 
-    if (connected != created) {
+    if (connected != created)
       DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 1);
-      job_queue->give_one(std::make_shared<Message_Decrement_Child_Count>(input, network));
-    }
 
     return connected;
   }
 
-  void Node_Unary_Gate::receive(const Message_Connect_Gate &message) {
-    Locked_Node_Data locked_node_data(this);
+  bool Node_Unary_Gate::receive(const Message_Connect_Gate &message) {
+    const bool has_tokens_to_pass = Node::receive(message);
+    if (!has_tokens_to_pass)
+      return false;
 
-    const bool first_insertion = Node::receive(message, locked_node_data);
-    if (!first_insertion)
-      return;
+    const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
+    inputs.first->connect_existing_gate(message.network, message.get_Job_Queue(), message.child);
+    if (inputs.second)
+      inputs.second->connect_existing_gate(message.network, message.get_Job_Queue(), message.child);
 
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
-
-    {
-      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
-
-      const int64_t tokens_input = locked_node_unary_gate_data.get_input_tokens();
-
-      if (tokens_input > 0) {
-        const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.first, message.network, message.child));
-        if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.second, message.network, message.child));
-      }
-    }
-
-    message.get_Job_Queue()->give_many(std::move(jobs));
+    return has_tokens_to_pass;
   }
 
-  void Node_Unary_Gate::receive(const Message_Connect_Output &message) {
-    Locked_Node_Data locked_node_data(this);
+  bool Node_Unary_Gate::receive(const Message_Connect_Output &message) {
+    const bool has_tokens_to_pass = Node::receive(message);
+    if (!has_tokens_to_pass)
+      return false;
 
-    const bool first_insertion = Node::receive(message, locked_node_data);
-    if (!first_insertion)
-      return;
+    const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
+    inputs.first->connect_existing_output(message.network, message.get_Job_Queue(), message.child);
+    if (inputs.second)
+      inputs.second->connect_existing_output(message.network, message.get_Job_Queue(), message.child);
 
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
-
-    {
-      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
-
-      const int64_t tokens_input = locked_node_unary_gate_data.get_input_tokens();
-
-      if (tokens_input > 0) {
-        const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.first, message.network, message.child));
-        if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.second, message.network, message.child));
-      }
-    }
-
-    message.get_Job_Queue()->give_many(std::move(jobs));
+    return true;
   }
 
-  void Node_Unary_Gate::receive(const Message_Disconnect_Gate &message) {
-    Locked_Node_Data locked_node_data(this);
-
-    const bool erased_last = Node::receive(message, locked_node_data);
-    if (!erased_last)
-      return;
+  bool Node_Unary_Gate::receive(const Message_Disconnect_Gate &message) {
+    const bool has_tokens_to_retract = Node::receive(message);
+    if (!has_tokens_to_retract)
+      return false;
 
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
-    {
-      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
-
-      const int64_t tokens_input = locked_node_unary_gate_data.get_input_tokens();
-
-      if (tokens_input > 0) {
-        const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.network, message.child, false));
-        if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.second, message.network, message.child, false));
-      }
-    }
+    const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
+    jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.network, message.child));
+    if (inputs.second)
+      jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.second, message.network, message.child));
 
     message.get_Job_Queue()->give_many(std::move(jobs));
+
+    return true;
   }
 
-  void Node_Unary_Gate::receive(const Message_Disconnect_Output &message) {
-    Locked_Node_Data locked_node_data(this);
-
-    const bool erased_last = Node::receive(message, locked_node_data);
-    if (!erased_last)
-      return;
+  bool Node_Unary_Gate::receive(const Message_Disconnect_Output &message) {
+    const bool has_tokens_to_retract = Node::receive(message);
+    if (!has_tokens_to_retract)
+      return false;
 
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
-    {
-      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
-
-      const int64_t tokens_input = locked_node_unary_gate_data.get_input_tokens();
-
-      if (tokens_input > 0) {
-        const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.network, message.child, false));
-        if(inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.second, message.network, message.child, false));
-      }
-    }
+    const auto inputs = std::const_pointer_cast<Node>(message.child)->get_inputs();
+    jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.network, message.child));
+    if(inputs.second)
+      jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.second, message.network, message.child));
 
     message.get_Job_Queue()->give_many(std::move(jobs));
+
+    return true;
   }
 
   void Node_Unary_Gate::receive(const Message_Status_Empty &message) {
-    const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
+    const auto[result, snapshot, value] = m_node_data.insert<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>(m_nonempty_token);
+    if (result != Input_Token_Trie::Result::First_Insertion)
+      return;
 
-    {
-      Locked_Node_Data locked_node_data(this);
-      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
-
-      const Outputs &gates = locked_node_data.get_gates();
-      const Outputs &outputs = locked_node_data.get_outputs();
-      int64_t &tokens_input = locked_node_unary_gate_data.modify_input_tokens();
-
-      if (--tokens_input != 0)
-        return;
-
-      size_t num_jobs = 0;
-      for (auto &output : outputs)
-        num_jobs += output->get_inputs().second ? 2 : 1;
-      for (auto &output : gates)
-        num_jobs += output->get_inputs().second ? 2 : 1;
-
-      jobs.reserve(num_jobs);
-      for (auto &output : outputs) {
-        const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.first, message.network, output, false));
-        if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(inputs.second, message.network, output, false));
-      }
-      for (auto &output : gates) {
-        const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.first, message.network, output, false));
-        if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Disconnect_Gate>(inputs.second, message.network, output, false));
-      }
+    for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>()) {
+      const auto inputs = output->get_inputs();
+      inputs.first->connect_existing_gate(message.network, message.get_Job_Queue(), message.child);
+      if (inputs.second)
+        inputs.second->connect_existing_gate(message.network, message.get_Job_Queue(), message.child);
     }
-
-    message.get_Job_Queue()->give_many(std::move(jobs));
+    for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_GATES>()) {
+      const auto inputs = output->get_inputs();
+      inputs.first->connect_existing_gate(message.network, message.get_Job_Queue(), message.child);
+      if (inputs.second)
+        inputs.second->connect_existing_gate(message.network, message.get_Job_Queue(), message.child);
+    }
   }
 
   void Node_Unary_Gate::receive(const Message_Status_Nonempty &message) {
-    const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
+    const auto[result, snapshot, value] = m_node_data.erase<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>(m_nonempty_token);
+    if (result != Input_Token_Trie::Result::Last_Removal)
+      return;
 
-    {
-      Locked_Node_Data locked_node_data(this);
-      Locked_Node_Unary_Gate_Data locked_node_unary_gate_data(this, locked_node_data);
-
-      const Outputs &gates = locked_node_data.get_gates();
-      const Outputs &outputs = locked_node_data.get_outputs();
-      int64_t &tokens_input = locked_node_unary_gate_data.modify_input_tokens();
-
-      if (++tokens_input != 1)
-        return;
-
-      size_t num_jobs = 0;
-      for (auto &output : outputs)
-        num_jobs += output->get_inputs().second ? 2 : 1;
-      for (auto &output : gates)
-        num_jobs += output->get_inputs().second ? 2 : 1;
-
-      jobs.reserve(num_jobs);
-      for (auto &output : outputs) {
-        const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.first, message.network, output));
-        if(inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Connect_Output>(inputs.second, message.network, output));
-      }
-      for (auto &output : gates) {
-        const auto inputs = output->get_inputs();
-        jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.first, message.network, output));
-        if (inputs.second)
-          jobs.emplace_back(std::make_shared<Message_Connect_Gate>(inputs.second, message.network, output));
-      }
+    for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>()) {
+      const auto inputs = output->get_inputs();
+      inputs.first->connect_existing_output(message.network, message.get_Job_Queue(), message.child);
+      if(inputs.second)
+        inputs.second->connect_existing_output(message.network, message.get_Job_Queue(), message.child);
     }
-
-    message.get_Job_Queue()->give_many(std::move(jobs));
+    for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_GATES>()) {
+      const auto inputs = output->get_inputs();
+      inputs.first->connect_existing_output(message.network, message.get_Job_Queue(), message.child);
+      if (inputs.second)
+        inputs.second->connect_existing_output(message.network, message.get_Job_Queue(), message.child);
+    }
   }
 
   void Node_Unary_Gate::receive(const Message_Token_Insert &) {

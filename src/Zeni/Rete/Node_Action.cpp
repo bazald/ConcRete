@@ -20,6 +20,16 @@ namespace Zeni::Rete {
     assert(!m_name.empty());
   }
 
+  Node_Action::Node_Action(const std::string_view name_)
+    : Node_Unary(1, 0, 0, size_t(this), nullptr),
+    m_variables(nullptr),
+    m_name(name_),
+    m_action(Action()),
+    m_retraction(Action())
+  {
+    assert(!m_name.empty());
+  }
+
   std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
     class Friendly_Node_Action : public Node_Action {
     public:
@@ -32,13 +42,17 @@ namespace Zeni::Rete {
 
     network->source_rule(job_queue, action_fun, user_action);
 
-    input->connect_output(network, job_queue, action_fun);
+    input->connect_new_or_existing_output(network, job_queue, action_fun);
 
     return action_fun;
   }
 
   Node_Action::~Node_Action()
   {
+  }
+
+  void Node_Action::Destroy(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
+    send_disconnect_from_parents(network, job_queue);
   }
 
   std::string Node_Action::get_name() const {
@@ -58,35 +72,17 @@ namespace Zeni::Rete {
   }
 
   void Node_Action::receive(const Message_Token_Insert &message) {
-    const auto sft = shared_from_this();
+    const auto[result, snapshot, value] = m_node_data.insert<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>(message.token);
 
-    {
-      Locked_Node_Data locked_node_data(this);
-      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
-
-      Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
-
-      if (!tokens_input.try_emplace(message.token))
-        return;
-    }
-
-    m_action(*this, *message.token);
+    if (result == Input_Token_Trie::Result::First_Insertion)
+      m_action(*this, *value);
   }
 
   void Node_Action::receive(const Message_Token_Remove &message) {
-    const auto sft = shared_from_this();
+    const auto[result, snapshot, value] = m_node_data.erase<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>(message.token);
 
-    {
-      Locked_Node_Data locked_node_data(this);
-      Locked_Node_Unary_Data locked_node_unary_data(this, locked_node_data);
-
-      Tokens_Input &tokens_input = locked_node_unary_data.modify_input_tokens();
-
-      if (!tokens_input.try_erase(message.token))
-        return;
-    }
-
-    m_retraction(*this, *message.token);
+    if (result == Input_Token_Trie::Result::Last_Removal)
+      m_retraction(*this, *value);
   }
 
   bool Node_Action::operator==(const Node &rhs) const {

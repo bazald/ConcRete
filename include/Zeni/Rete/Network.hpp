@@ -1,8 +1,10 @@
 #ifndef ZENI_RETE_NETWORK_HPP
 #define ZENI_RETE_NETWORK_HPP
 
+#include "Zeni/Concurrency/Container/Hash_Trie.hpp"
 #include "Zeni/Concurrency/Recipient.hpp"
 #include "Node.hpp"
+#include "Node_Action.hpp"
 
 #include <set>
 #include <unordered_set>
@@ -16,9 +18,6 @@ namespace Zeni::Concurrency {
 
 namespace Zeni::Rete {
 
-  class Locked_Network_Data;
-  class Locked_Network_Data_Const;
-  class Unlocked_Network_Data;
   class Node_Action;
   class Node_Filter;
   class WME;
@@ -59,7 +58,6 @@ namespace Zeni::Rete {
       const std::shared_ptr<Network> m_network;
     };
 
-    enum class ZENI_RETE_LINKAGE Node_Sharing { Enabled, Disabled };
     enum class ZENI_RETE_LINKAGE Printed_Output { Normal, None };
 
   private:
@@ -81,7 +79,6 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::set<std::string> get_rule_names() const;
     ZENI_RETE_LINKAGE int64_t get_rule_name_index() const;
     ZENI_RETE_LINKAGE void set_rule_name_index(const int64_t rule_name_index_);
-    ZENI_RETE_LINKAGE Node_Sharing get_Node_Sharing() const;
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
     ZENI_RETE_LINKAGE std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() override;
@@ -92,7 +89,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &) override;
 
     ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_command);
-    ZENI_RETE_LINKAGE void excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue);
+    ZENI_RETE_LINKAGE void excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command);
     ZENI_RETE_LINKAGE void excise_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &name, const bool user_command);
     ZENI_RETE_LINKAGE std::string next_rule_name(const std::string_view prefix);
     ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> unname_rule(const std::string &name, const bool user_command);
@@ -105,10 +102,13 @@ namespace Zeni::Rete {
 
   private:
     const std::shared_ptr<Concurrency::Worker_Threads> m_worker_threads;
-    const std::shared_ptr<Unlocked_Network_Data> m_unlocked_network_data;
+
+    typedef Concurrency::Hash_Trie<std::shared_ptr<Node_Action>, Node_Action::Hash_By_Name, Node_Action::Compare_By_Name_Eq> Rule_Trie;
+    Rule_Trie m_rules;
+
+    Concurrency::Atomic_int64_t<false> m_rule_name_index = 0;
 
     // Options
-    const Node_Sharing m_node_sharing = Node_Sharing::Enabled;
     const Printed_Output m_printed_output;
   };
 

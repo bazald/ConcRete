@@ -102,9 +102,6 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Output.cpp">
       <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Decrement_Child_Count.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Disconnect_Gate.cpp">
       <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
@@ -213,9 +210,6 @@
       <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Output.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Decrement_Child_Count.hpp">
       <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Disconnect_Gate.hpp">

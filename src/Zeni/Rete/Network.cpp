@@ -5,8 +5,8 @@
 #include "Zeni/Rete/Internal/Antiable_Map.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Internal/Message_Connect_Output.hpp"
-#include "Zeni/Rete/Internal/Message_Decrement_Child_Count.hpp"
-#include "Zeni/Rete/Internal/Message_Disconnect_Output.hpp"
+#include "Zeni/Rete/Internal/Message_Status_Empty.hpp"
+#include "Zeni/Rete/Internal/Message_Status_Nonempty.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Internal/Token_Alpha.hpp"
@@ -19,81 +19,6 @@
 #include <string_view>
 
 namespace Zeni::Rete {
-
-  class Unlocked_Network_Data {
-    Unlocked_Network_Data(const Unlocked_Network_Data &) = delete;
-    Unlocked_Network_Data & operator=(const Unlocked_Network_Data &) = delete;
-
-    friend class Locked_Network_Data_Const;
-    friend class Locked_Network_Data;
-
-  public:
-    typedef Antiable_Map<std::shared_ptr<const WME>, std::shared_ptr<const Token>, hash_deref<WME>, compare_deref_eq> WMEs;
-
-    Unlocked_Network_Data() {}
-
-  private:
-    std::unordered_map<std::string, std::shared_ptr<Node_Action>> m_rules;
-    int64_t m_rule_name_index = 0;
-    WMEs m_wmes;
-  };
-
-  class Locked_Network_Data;
-
-  class Locked_Network_Data_Const {
-    Locked_Network_Data_Const(const Locked_Network_Data_Const &) = delete;
-    Locked_Network_Data_Const & operator=(const Locked_Network_Data_Const &) = delete;
-
-    friend Locked_Network_Data;
-
-  public:
-    Locked_Network_Data_Const(const Network * network, const Node::Locked_Node_Data_Const &)
-      : m_data(network->m_unlocked_network_data)
-    {
-    }
-
-    const std::unordered_map<std::string, std::shared_ptr<Node_Action>> & get_rules() const {
-      return m_data->m_rules;
-    }
-
-    int64_t get_rule_name_index() const {
-      return m_data->m_rule_name_index;
-    }
-
-    const Unlocked_Network_Data::WMEs & get_wmes() const {
-      return m_data->m_wmes;
-    }
-
-  private:
-    const std::shared_ptr<const Unlocked_Network_Data> m_data;
-  };
-
-  class Locked_Network_Data : public Locked_Network_Data_Const {
-    Locked_Network_Data(const Locked_Network_Data &) = delete;
-    Locked_Network_Data & operator=(const Locked_Network_Data &) = delete;
-
-  public:
-    Locked_Network_Data(Network * network, const Node::Locked_Node_Data_Const &node_data)
-      : Locked_Network_Data_Const(network, node_data),
-      m_data(network->m_unlocked_network_data)
-    {
-    }
-
-    std::unordered_map<std::string, std::shared_ptr<Node_Action>> & modify_rules() {
-      return m_data->m_rules;
-    }
-
-    int64_t & modify_rule_name_index() {
-      return m_data->m_rule_name_index;
-    }
-
-    Unlocked_Network_Data::WMEs & modify_wmes() const {
-      return m_data->m_wmes;
-    }
-
-  private:
-    const std::shared_ptr<Unlocked_Network_Data> m_data;
-  };
 
   std::shared_ptr<const Network> Network::shared_from_this() const {
     return std::static_pointer_cast<const Network>(Concurrency::Recipient::shared_from_this());
@@ -151,7 +76,6 @@ namespace Zeni::Rete {
   Network::Network(const Network::Printed_Output printed_output)
     : Node(0, 0, 1, 0),
     m_worker_threads(Concurrency::Worker_Threads::Create()),
-    m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
     DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
@@ -174,7 +98,6 @@ namespace Zeni::Rete {
   Network::Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Worker_Threads> &worker_threads)
     : Node(0, 0, 1, 0),
     m_worker_threads(worker_threads),
-    m_unlocked_network_data(std::make_shared<Unlocked_Network_Data>()),
     m_printed_output(printed_output)
   {
     DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
@@ -193,7 +116,7 @@ namespace Zeni::Rete {
   }
 
   void Network::Destroy() {
-    excise_all(m_worker_threads->get_main_Job_Queue());
+    excise_all(m_worker_threads->get_main_Job_Queue(), false);
     m_worker_threads->finish_jobs();
   }
 
@@ -210,65 +133,32 @@ namespace Zeni::Rete {
   }
 
   std::shared_ptr<Node_Action> Network::get_rule(const std::string &name) const {
-    Locked_Node_Data_Const locked_node_data(this);
-    Locked_Network_Data_Const locked_network_data(this, locked_node_data);
-
-    const auto found = locked_network_data.get_rules().find(name);
-    if (found != locked_network_data.get_rules().cend())
-      return found->second;
-
-    return nullptr;
+    const auto [found, snapshot] = m_rules.lookup(std::make_shared<Node_Action>(name));
+    return found;
   }
 
   std::set<std::string> Network::get_rule_names() const {
-    Locked_Node_Data_Const locked_node_data(this);
-    Locked_Network_Data_Const locked_network_data(this, locked_node_data);
-
     std::set<std::string> rv;
-    for (auto rule : locked_network_data.get_rules())
-      rv.emplace(rule.first);
+    for (auto rule : m_rules.snapshot())
+      rv.emplace(rule->get_name());
     return rv;
   }
 
   int64_t Network::get_rule_name_index() const {
-    Locked_Node_Data_Const locked_node_data(this);
-    Locked_Network_Data_Const locked_network_data(this, locked_node_data);
-
-    return locked_network_data.get_rule_name_index();
+    return m_rule_name_index.load();
   }
 
   void Network::set_rule_name_index(const int64_t rule_name_index_) {
-    Locked_Node_Data locked_node_data(this);
-    Locked_Network_Data locked_network_data(this, locked_node_data);
-
-    locked_network_data.modify_rule_name_index() = rule_name_index_;
-  }
-
-  Network::Node_Sharing Network::get_Node_Sharing() const {
-    return m_node_sharing;
+    m_rule_name_index.store(rule_name_index_);
   }
 
   Network::Printed_Output Network::get_Printed_Output() const {
     return m_printed_output;
   }
 
-  void Network::excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
-    const auto sft = shared_from_this();
-    std::unordered_map<std::string, std::shared_ptr<Node_Action>> rules;
-
-    {
-      Locked_Node_Data locked_node_data(this);
-      Locked_Network_Data locked_network_data(this, locked_node_data);
-
-      rules.swap(locked_network_data.modify_rules());
-    }
-
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
-    jobs.reserve(rules.size());
-    for (auto rule : rules)
-      jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(rule.second->get_input(), sft, rule.second, true));
-
-    job_queue->give_many(std::move(jobs));
+  void Network::excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command) {
+    for (auto rule : m_rules.snapshot())
+      excise_rule(job_queue, rule->get_name(), user_command);
   }
 
   std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> Network::get_inputs() {
@@ -292,172 +182,90 @@ namespace Zeni::Rete {
   }
 
   void Network::excise_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &name, const bool user_command) {
-    std::shared_ptr<Node_Action> action;
+    auto erased = unname_rule(name, user_command);
 
-    {
-      Locked_Node_Data locked_node_data(this);
-      Locked_Network_Data locked_network_data(this, locked_node_data);
-
-      auto found = locked_network_data.get_rules().find(name);
-      if (found == locked_network_data.get_rules().end()) {
-        //#ifndef NDEBUG
-        //      std::cerr << "Rule '" << name << "' not found." << std::endl;
-        //#endif
-      }
-      else {
-        //#ifndef NDEBUG
-        //      std::cerr << "Rule '" << name << "' excised." << std::endl;
-        //#endif
-        action = found->second;
-        locked_network_data.modify_rules().erase(found);
-        if (user_command)
-          std::cerr << '#';
-      }
-    }
-
-    if(action)
-      job_queue->give_one(std::make_shared<Message_Decrement_Child_Count>(action, shared_from_this()));
+    if(erased)
+      erased->Destroy(shared_from_this(), job_queue);
   }
 
   std::string Network::next_rule_name(const std::string_view prefix) {
-    Locked_Node_Data locked_node_data(this);
-    Locked_Network_Data locked_network_data(this, locked_node_data);
-
     std::ostringstream oss;
-    do {
+    for(;;) {
       oss.str("");
-      oss << prefix << ++locked_network_data.modify_rule_name_index();
-    } while (locked_network_data.get_rules().find(oss.str()) != locked_network_data.get_rules().end());
+      oss << prefix << m_rule_name_index.fetch_add() + 1;
+      const auto [found, snapshot] = m_rules.lookup(std::make_shared<Node_Action>(oss.str()));
+      if (!found)
+        break;
+    }
     return oss.str();
   }
 
   std::shared_ptr<Node_Action> Network::unname_rule(const std::string &name, const bool user_command) {
-    Locked_Node_Data locked_node_data(this);
-    Locked_Network_Data locked_network_data(this, locked_node_data);
+    const auto[result, snapshot, erased] = m_rules.erase(std::make_shared<Node_Action>(name));
 
-    std::shared_ptr<Node_Action> ptr;
-    auto found = locked_network_data.get_rules().find(name);
-    if (found != locked_network_data.get_rules().end()) {
-      ptr = found->second;
-      locked_network_data.modify_rules().erase(found);
-      if (user_command)
-        std::cerr << '#';
-    }
-    return ptr;
+    if (result == Rule_Trie::Result::Failed_Removal)
+      return nullptr;
+
+    if (user_command && m_printed_output != Printed_Output::None)
+      std::cerr << '#';
+
+    return erased;
   }
 
   void Network::insert_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme) {
+    const auto[result, snapshot, value] = m_node_data.insert<NODE_DATA_SUBTRIE_TOKEN_OUTPUTS>(std::make_shared<Token_Alpha>(wme));
+    if (result != Output_Token_Trie::Result::First_Insertion)
+      return;
+
     const auto sft = shared_from_this();
+    const auto output_tokens = snapshot.template snapshot<NODE_DATA_SUBTRIE_TOKEN_OUTPUTS>();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
-#ifdef DEBUG_OUTPUT
-    std::cerr << "rete.insert" << *wme << std::endl;
-#endif
-
-    {
-      Locked_Node_Data locked_node_data(this);
-      Locked_Network_Data locked_network_data(this, locked_node_data);
-
-      const Outputs &outputs = locked_node_data.get_outputs();
-      Unlocked_Network_Data::WMEs &wmes = locked_network_data.modify_wmes();
-
-      const auto [first_insertion, output_token] = wmes.try_emplace(std::make_pair(wme, std::make_shared<Token_Alpha>(wme)));
-
-      if (!first_insertion)
-        return;
-
-      locked_node_data.modify_output_tokens().emplace(output_token);
-      jobs.reserve(outputs.size());
-      for (auto &output : outputs)
-        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, sft, nullptr, output_token));
+    for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+      jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, sft, sft, value));
+    if (++output_tokens.cbegin() == output_tokens.cend()) {
+      for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_GATES>())
+        jobs.emplace_back(std::make_shared<Message_Status_Nonempty>(output, sft, sft));
     }
 
     job_queue->give_many(std::move(jobs));
   }
 
   void Network::remove_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme) {
+    const auto[result, snapshot, value] = m_node_data.erase<NODE_DATA_SUBTRIE_TOKEN_OUTPUTS>(std::make_shared<Token_Alpha>(wme));
+    if (result != Output_Token_Trie::Result::Last_Removal)
+      return;
+
     const auto sft = shared_from_this();
+    const auto output_tokens = snapshot.template snapshot<NODE_DATA_SUBTRIE_TOKEN_OUTPUTS>();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
-#ifdef DEBUG_OUTPUT
-    std::cerr << "rete.remove" << *wme << std::endl;
-#endif
-
-    {
-      Locked_Node_Data locked_node_data(this);
-      Locked_Network_Data locked_network_data(this, locked_node_data);
-
-      const Outputs &outputs = locked_node_data.get_outputs();
-      Unlocked_Network_Data::WMEs &wmes = locked_network_data.modify_wmes();
-
-      const auto [last_instance, output_token] = wmes.try_erase(wme);
-
-      if (!last_instance)
-        return;
-
-      jobs.reserve(outputs.size());
-      for (auto &output : outputs)
-        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, nullptr, output_token));
+    for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+      jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, sft, value));
+    if (++output_tokens.cbegin() == output_tokens.cend()) {
+      for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_GATES>())
+        jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, sft, sft));
     }
 
     job_queue->give_many(std::move(jobs));
   }
 
   void Network::clear_wmes(const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
-    const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
-
-    {
-      Locked_Node_Data locked_node_data(this);
-      Locked_Network_Data locked_network_data(this, locked_node_data);
-
-      const Outputs &outputs = locked_node_data.get_outputs();
-      Unlocked_Network_Data::WMEs &wmes = locked_network_data.modify_wmes();
-
-      jobs.reserve(locked_node_data.get_output_tokens().size() * outputs.size());
-      for (auto &token : locked_node_data.get_output_tokens()) {
-        for (auto &output : outputs)
-          jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, nullptr, token));
-      }
-      locked_node_data.modify_output_tokens().clear();
-      wmes.clear();
-    }
-
-    job_queue->give_many(std::move(jobs));
+    for (auto token : m_node_data.snapshot<NODE_DATA_SUBTRIE_TOKEN_OUTPUTS>())
+      remove_wme(job_queue, dynamic_cast<const Token_Alpha &>(*token).get_wme());
   }
 
   void Network::source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_command) {
-    const auto sft = shared_from_this();
+    const auto[result, snapshot, inserted, replaced] = m_rules.insert(action);
 
-    std::shared_ptr<Node_Action> excised;
-
-    {
-      Locked_Node_Data locked_node_data(this);
-      Locked_Network_Data locked_network_data(this, locked_node_data);
-
-      auto found = locked_network_data.modify_rules().find(action->get_name());
-      if (found != locked_network_data.get_rules().end()) {
-        //#ifndef NDEBUG
-        //      std::cerr << "Rule '" << action->get_name() << "' replaced." << std::endl;
-        //#endif
-        assert(found->second != action);
-        excised = found->second;
-        if (user_command && m_printed_output != Printed_Output::None)
-          std::cerr << '#';
-        found->second = action;
-      }
-      else {
-        //#ifndef NDEBUG
-        //      std::cerr << "Rule '" << action->get_name() << "' sourced." << std::endl;
-        //#endif
-        locked_network_data.modify_rules()[action->get_name()] = action;
-      }
-      if (user_command && m_printed_output != Printed_Output::None)
-        std::cerr << '*';
+    if (user_command && m_printed_output != Printed_Output::None) {
+      if (replaced)
+        std::cerr << '#';
+      std::cerr << '*';
     }
 
-    if(excised)
-      job_queue->give_one(std::make_shared<Message_Decrement_Child_Count>(excised, sft));
+    if(replaced)
+      replaced->Destroy(shared_from_this(), job_queue);
   }
 
   bool Network::operator==(const Node &rhs) const {

@@ -24,7 +24,6 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Gate.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Output.cpp" />
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Decrement_Child_Count.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Disconnect_Gate.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Disconnect_Output.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Status_Empty.cpp" />
@@ -61,7 +60,6 @@
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Gate.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Output.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Decrement_Child_Count.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Disconnect_Gate.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Disconnect_Output.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Status_Empty.hpp" />

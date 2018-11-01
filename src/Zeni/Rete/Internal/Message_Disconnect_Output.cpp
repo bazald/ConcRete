@@ -5,18 +5,14 @@
 
 namespace Zeni::Rete {
 
-  Message_Disconnect_Output::Message_Disconnect_Output(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<Node> child_, const bool decrement_output_count_)
+  Message_Disconnect_Output::Message_Disconnect_Output(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<Node> child_)
     : Message(recipient, network),
-    child(child_),
-    decrement_output_count(decrement_output_count_)
+    child(child_)
   {
   }
 
   void Message_Disconnect_Output::receive() const {
-    if (decrement_output_count)
-      DEBUG_COUNTER_INCREMENT(g_disconnect_output_and_decrements_received, 1);
-    else
-      DEBUG_COUNTER_INCREMENT(g_disconnect_output_but_nodecrements_received, 1);
+    DEBUG_COUNTER_INCREMENT(g_disconnect_output_and_decrements_received, 1);
     std::dynamic_pointer_cast<Node>(get_recipient())->receive(*this);
   }
 

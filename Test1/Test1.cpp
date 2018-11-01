@@ -334,7 +334,7 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " -" << *selected << ':';
 #endif
-        const auto[result, snapshot, inserted] = m_antiable_hash_tries->template erase<MINE>(*selected);
+        const auto[result, snapshot, erased] = m_antiable_hash_tries->template erase<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Antiable_Hash_Trie<int64_t>::Result::Last_Removal) {
           int64_t sum = 0;
@@ -446,7 +446,7 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " +" << *selected << ':';
 #endif
-        const auto[result, snapshot, inserted] = m_hash_tries->template insert<MINE>(*selected);
+        const auto[result, snapshot, inserted, replaced] = m_hash_tries->template insert<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Hash_Trie<int64_t>::Result::First_Insertion) {
           int64_t sum = 0;
@@ -472,7 +472,7 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " -" << *selected << ':';
 #endif
-        const auto[result, snapshot, inserted] = m_hash_tries->template erase<MINE>(*selected);
+        const auto[result, snapshot, erased] = m_hash_tries->template erase<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Hash_Trie<int64_t>::Result::Last_Removal) {
           int64_t sum = 0;
@@ -609,7 +609,7 @@ public:
         std::ostringstream oss, oss2;
         oss << std::this_thread::get_id() << " -" << *selected << ':';
 #endif
-        const auto[result, snapshot, inserted] = m_positive_hash_tries->template erase<MINE>(*selected);
+        const auto[result, snapshot, erased] = m_positive_hash_tries->template erase<MINE>(*selected);
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Positive_Hash_Trie<int64_t>::Result::Last_Removal) {
           int64_t sum = 0;

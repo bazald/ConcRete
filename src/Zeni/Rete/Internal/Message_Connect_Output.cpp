@@ -5,8 +5,9 @@
 
 namespace Zeni::Rete {
 
-  Message_Connect_Output::Message_Connect_Output(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<Node> child_)
+  Message_Connect_Output::Message_Connect_Output(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<const Node::Node_Data_Snapshot> snapshot_, const std::shared_ptr<Node> child_)
     : Message(recipient, network),
+    snapshot(snapshot_),
     child(child_)
   {
   }

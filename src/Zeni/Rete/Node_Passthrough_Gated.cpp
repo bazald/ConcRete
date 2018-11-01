@@ -2,7 +2,6 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
-#include "Zeni/Rete/Internal/Message_Decrement_Child_Count.hpp"
 #include "Zeni/Rete/Internal/Message_Connect_Output.hpp"
 #include "Zeni/Rete/Internal/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Network.hpp"
@@ -22,8 +21,7 @@ namespace Zeni::Rete {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
-    jobs.emplace_back(std::make_shared<Message_Decrement_Child_Count>(get_input(), network));
-    jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(m_gate, network, sft, true));
+    jobs.emplace_back(std::make_shared<Message_Disconnect_Output>(m_gate, network, sft));
 
     job_queue->give_many(std::move(jobs));
   }
@@ -38,15 +36,10 @@ namespace Zeni::Rete {
     };
 
     const auto created = std::shared_ptr<Friendly_Node_Passthrough_Gated>(new Friendly_Node_Passthrough_Gated(input, gate));
-    const auto connected = std::dynamic_pointer_cast<Node_Passthrough_Gated>(gate->connect_output(network, job_queue, created));
+    const auto connected = std::dynamic_pointer_cast<Node_Passthrough_Gated>(gate->connect_new_or_existing_output(network, job_queue, created));
 
-    if (connected != created) {
+    if (connected != created)
       DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 2);
-      std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
-      jobs.emplace_back(std::make_shared<Message_Decrement_Child_Count>(gate, network));
-      jobs.emplace_back(std::make_shared<Message_Decrement_Child_Count>(input, network));
-      job_queue->give_many(std::move(jobs));
-    }
 
     return connected;
   }

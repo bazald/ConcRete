@@ -488,31 +488,38 @@ namespace Zeni::Concurrency {
     }
 
     bool empty() const {
-      return m_root.load(std::memory_order_acquire) != nullptr;
+      auto it = cbegin();
+      const auto iend = cend();
+      if (it != iend)
+        return ++it == iend;
+      return false;
     }
 
-    std::pair<Intrusive_Shared_Ptr<const SNode>, Snapshot> lookup(const Key &key) const {
+    size_t size() const {
+      size_t sz = 0;
+      for ([[maybe_unused]] auto &value : *this)
+        ++sz;
+      return sz;
+    }
+
+    std::pair<Key, Snapshot> lookup(const Key &key) const {
       const Hash_Value hash_value = Hash()(key);
       const MNode * const root = isnapshot();
       const SNode * const found = ilookup(root, key, hash_value, 0);
-      if (found && found->inserted) {
-        found->increment_refs();
-        return std::make_pair(found, Snapshot(root));
-      }
+      if (found)
+        return std::make_pair(found->key, Snapshot(root));
       else
-        return std::make_pair(nullptr, Snapshot(root));
+        return std::make_pair(Key(), Snapshot(root));
     }
 
-    Intrusive_Shared_Ptr<const SNode> looked_up(const Key &key) const {
+    Key looked_up(const Key &key) const {
       const Hash_Value hash_value = Hash()(key);
       const MNode * const root = m_root.load(std::memory_order_acquire);
       const SNode * const found = ilookup(root, key, hash_value, 0);
-      if (found && found->inserted) {
-        found->increment_refs();
-        return found;
-      }
+      if (found)
+        return found->key;
       else
-        return nullptr;
+        return Key();
     }
 
     std::tuple<Result, Snapshot, Key> insert(const Key &key) {
@@ -604,7 +611,7 @@ namespace Zeni::Concurrency {
           return nullptr;
         }
         else if (auto snode = dynamic_cast<const SNode *>(mnode))
-          return snode->inserted && Pred()(snode->key, key) ? snode : nullptr;
+          return Pred()(snode->key, key) ? snode : nullptr;
         else
           return nullptr;
       }
