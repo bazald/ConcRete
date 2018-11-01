@@ -303,7 +303,7 @@ namespace Zeni::Concurrency {
             return std::make_tuple(Result::Replacing_Insertion, new List_Node(new_snode, new_head), new_snode, found);
           }
           else
-            return std::make_tuple(Result::Last_Removal, new_head, nullptr, nullptr);
+            return std::make_tuple(Result::Last_Removal, new_head, found, nullptr);
         }
         else {
           if (insertion) {
@@ -696,7 +696,7 @@ namespace Zeni::Concurrency {
             return std::make_tuple(Result::Replacing_Insertion, new_snode, new_snode, snode);
           }
           else
-            return std::make_tuple(Result::Last_Removal, nullptr, nullptr, nullptr);
+            return std::make_tuple(Result::Last_Removal, nullptr, snode, nullptr);
         }
         else {
           snode->increment_refs();

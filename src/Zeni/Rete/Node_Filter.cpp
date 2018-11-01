@@ -41,8 +41,9 @@ namespace Zeni::Rete {
     const auto created = std::shared_ptr<Friendly_Node_Filter>(new Friendly_Node_Filter(network, wme));
     const auto connected = std::static_pointer_cast<Node_Filter>(network->connect_new_or_existing_output(network, job_queue, created));
 
-    if (connected != created)
+    if (connected != created) {
       DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 1);
+    }
 
     return connected;
   }
@@ -125,6 +126,8 @@ namespace Zeni::Rete {
       for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_GATES>())
         jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, message.network, sft));
     }
+
+    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   bool Node_Filter::operator==(const Node &rhs) const {

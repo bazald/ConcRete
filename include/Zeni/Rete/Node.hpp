@@ -30,7 +30,7 @@ namespace Zeni::Rete {
 
   public:
     typedef Concurrency::Positive_Hash_Trie<std::shared_ptr<Node>, hash_deref<Node>, compare_deref_eq> Node_Trie;
-    typedef Concurrency::Positive_Hash_Trie<std::shared_ptr<const Token>> Output_Token_Trie;
+    typedef Concurrency::Antiable_Hash_Trie<std::shared_ptr<const Token>, hash_deref<Token>, compare_deref_eq> Output_Token_Trie;
     typedef Concurrency::Antiable_Hash_Trie<std::shared_ptr<const Token>> Input_Token_Trie;
     typedef Concurrency::Super_Hash_Trie <
       Node_Trie,

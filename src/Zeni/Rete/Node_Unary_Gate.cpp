@@ -40,8 +40,9 @@ namespace Zeni::Rete {
     const auto created = std::shared_ptr<Friendly_Node_Unary_Gate>(new Friendly_Node_Unary_Gate(input));
     const auto connected = std::static_pointer_cast<Node_Unary_Gate>(input->connect_new_or_existing_gate(network, job_queue, created));
 
-    if (connected != created)
+    if (connected != created) {
       DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 1);
+    }
 
     return connected;
   }

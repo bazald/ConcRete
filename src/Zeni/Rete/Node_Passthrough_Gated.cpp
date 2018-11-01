@@ -38,8 +38,9 @@ namespace Zeni::Rete {
     const auto created = std::shared_ptr<Friendly_Node_Passthrough_Gated>(new Friendly_Node_Passthrough_Gated(input, gate));
     const auto connected = std::dynamic_pointer_cast<Node_Passthrough_Gated>(gate->connect_new_or_existing_output(network, job_queue, created));
 
-    if (connected != created)
+    if (connected != created) {
       DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 2);
+    }
 
     return connected;
   }

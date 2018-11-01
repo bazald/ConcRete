@@ -16,11 +16,11 @@ namespace Zeni::Rete {
 
     struct Compare_By_Name_Eq {
       bool operator()(const std::shared_ptr<Node_Action> &lhs, const std::shared_ptr<Node_Action> &rhs) const noexcept {
-        return lhs->get_name() < rhs->get_name();
+        return lhs->get_name() == rhs->get_name();
       }
 
       bool operator()(const Node_Action &lhs, const Node_Action &rhs) const noexcept {
-        return lhs.get_name() < rhs.get_name();
+        return lhs.get_name() == rhs.get_name();
       }
     };
 

@@ -309,7 +309,7 @@ namespace Zeni::Concurrency {
         if (found) {
           const auto new_snode = found->updated_count(insertion);
           const Result result = !new_snode ? Result::Last_Removal : insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
-          return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode);
+          return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode ? new_snode : found);
         }
         else {
           assert(insertion);
@@ -682,7 +682,7 @@ namespace Zeni::Concurrency {
         else if (Pred()(snode->key, key)) {
           const auto new_snode = snode->updated_count(insertion);
           const Result result = !new_snode ? Result::Last_Removal : insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
-          return std::make_tuple(result, new_snode, new_snode);
+          return std::make_tuple(result, new_snode, new_snode ? new_snode : snode);
         }
         else {
           assert(insertion);

@@ -242,7 +242,7 @@ namespace Zeni::Rete {
 
     for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
       jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, sft, value));
-    if (++output_tokens.cbegin() == output_tokens.cend()) {
+    if (output_tokens.empty()) {
       for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_GATES>())
         jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, sft, sft));
     }

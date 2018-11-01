@@ -321,7 +321,7 @@ namespace Zeni::Concurrency {
           }
           else
             result = insertion ? Result::Canceling_Insertion : Result::Last_Removal;
-          return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode);
+          return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode ? new_snode : found);
         }
         else {
           const auto new_snode = new Singleton_Node<KEY>(key, insertion);
@@ -706,7 +706,7 @@ namespace Zeni::Concurrency {
           }
           else
             result = insertion ? Result::Canceling_Insertion : Result::Last_Removal;
-          return std::make_tuple(result, new_snode, new_snode);
+          return std::make_tuple(result, new_snode, new_snode ? new_snode : snode);
         }
         else {
           snode->increment_refs();
