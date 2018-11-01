@@ -39,6 +39,8 @@ namespace Zeni::Rete {
     const auto connected = std::dynamic_pointer_cast<Node_Passthrough_Gated>(gate->connect_new_or_existing_output(network, job_queue, created));
 
     if (connected != created) {
+      input->send_disconnect_from_parents(network, job_queue);
+      gate->send_disconnect_from_parents(network, job_queue);
       DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 2);
     }
 

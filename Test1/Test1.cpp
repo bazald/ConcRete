@@ -699,11 +699,11 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 
     {
       auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
+      auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
       //auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
       //auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), job_queue, filter1);
       //auto gated_passthrough01 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), job_queue, filter0, unary_gate1);
-      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, filter0, Zeni::Rete::Variable_Indices::Create(),
+      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, passthrough0, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
         std::cout << '(' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -732,11 +732,11 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 
     {
       auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
+      auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
       //auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
       //auto unary_gate0 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), job_queue, filter0);
       //auto gated_passthrough10 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), job_queue, filter1, unary_gate0);
-      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, filter0, Zeni::Rete::Variable_Indices::Create(),
+      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, passthrough0, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
         std::cout << '[' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -757,7 +757,7 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 
     //(*network)->get_Worker_Threads()->finish_jobs();
 
-    (*network)->excise_all(job_queue, false);
+    //(*network)->excise_all(job_queue, false);
 
     //(*network)->get_Worker_Threads()->finish_jobs();
   }
