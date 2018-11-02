@@ -20,8 +20,8 @@
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Filter.hpp"
-#include "Zeni/Rete/Node_Passthrough_Gated.hpp"
-#include "Zeni/Rete/Node_Unary_Gate.hpp"
+#include "Zeni/Rete/Node_Join.hpp"
+#include "Zeni/Rete/Node_Passthrough.hpp"
 #include "Zeni/Rete/Parser.hpp"
 
 #include <array>
@@ -699,11 +699,10 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 
     {
       auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-      auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
-      //auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-      //auto unary_gate1 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), job_queue, filter1);
-      //auto gated_passthrough01 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), job_queue, filter0, unary_gate1);
-      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, passthrough0, Zeni::Rete::Variable_Indices::Create(),
+      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
+      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+      auto join0 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, filter0, filter1, Zeni::Rete::Variable_Bindings());
+      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, join0, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
         std::cout << '(' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -724,19 +723,18 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 
     (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
-    //(*network)->get_Worker_Threads()->finish_jobs();
+    (*network)->get_Worker_Threads()->finish_jobs();
 
     (*network)->excise_rule(job_queue, "hello-world", false);
 
-    //(*network)->get_Worker_Threads()->finish_jobs();
+    (*network)->get_Worker_Threads()->finish_jobs();
 
     {
       auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-      auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
-      //auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-      //auto unary_gate0 = Zeni::Rete::Node_Unary_Gate::Create(network->get(), job_queue, filter0);
-      //auto gated_passthrough10 = Zeni::Rete::Node_Passthrough_Gated::Create(network->get(), job_queue, filter1, unary_gate0);
-      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, passthrough0, Zeni::Rete::Variable_Indices::Create(),
+      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
+      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+      auto join0 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, filter0, filter1, Zeni::Rete::Variable_Bindings());
+      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, join0, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
         std::cout << '[' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -757,9 +755,9 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 
     //(*network)->get_Worker_Threads()->finish_jobs();
 
-    //(*network)->excise_all(job_queue, false);
+    (*network)->excise_all(job_queue, false);
 
-    //(*network)->get_Worker_Threads()->finish_jobs();
+    (*network)->get_Worker_Threads()->finish_jobs();
   }
 }
 

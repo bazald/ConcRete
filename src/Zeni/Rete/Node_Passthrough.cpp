@@ -91,9 +91,10 @@ namespace Zeni::Rete {
   }
 
   bool Node_Passthrough::operator==(const Node &rhs) const {
-    if (auto rhs_passthrough = dynamic_cast<const Node_Passthrough *>(&rhs)) {
+    //return this == &rhs;
+
+    if (auto rhs_passthrough = dynamic_cast<const Node_Passthrough *>(&rhs))
       return get_input() == rhs_passthrough->get_input();
-    }
 
     return false;
   }

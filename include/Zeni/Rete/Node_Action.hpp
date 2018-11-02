@@ -1,7 +1,7 @@
 #ifndef ZENI_RETE_NODE_ACTION_HPP
 #define ZENI_RETE_NODE_ACTION_HPP
 
-#include "Node_Unary.hpp"
+#include "Internal/Node_Unary.hpp"
 
 #include <functional>
 

@@ -488,11 +488,7 @@ namespace Zeni::Concurrency {
     }
 
     bool empty() const {
-      auto it = cbegin();
-      const auto iend = cend();
-      if (it != iend)
-        return ++it == iend;
-      return false;
+      return cbegin() == cend();
     }
 
     size_t size() const {

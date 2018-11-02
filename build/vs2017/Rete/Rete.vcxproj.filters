@@ -36,9 +36,6 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Passthrough_Gated.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Unary.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Unary_Gate.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
@@ -120,6 +117,15 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Remove.cpp">
       <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Binary.cpp">
+      <Filter>Source Files\Zeni\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Unary.cpp">
+      <Filter>Source Files\Zeni\Internal</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Utility.hpp">
@@ -135,9 +141,6 @@
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Predicate.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Unary.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Unary_Gate.hpp">
@@ -174,9 +177,6 @@
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Action.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Binary.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Existential.hpp">
@@ -243,6 +243,12 @@
       <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Antiable_Map.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Unary.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Binary.hpp">
       <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
   </ItemGroup>

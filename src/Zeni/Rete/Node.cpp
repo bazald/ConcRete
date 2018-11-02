@@ -58,7 +58,7 @@ namespace Zeni::Rete {
 
     if (result == Node_Trie::Result::First_Insertion)
       job_queue->give_one(std::make_shared<Message_Connect_Output>(shared_from_this(), network, std::make_shared<Node::Node_Data_Snapshot>(snapshot), value));
-    else 
+    else
       DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
 
     return value;

@@ -1,7 +1,7 @@
 #ifndef ZENI_RETE_NODE_PASSTHROUGH_HPP
 #define ZENI_RETE_NODE_PASSTHROUGH_HPP
 
-#include "Node_Unary.hpp"
+#include "Internal/Node_Unary.hpp"
 
 namespace Zeni::Rete {
 
