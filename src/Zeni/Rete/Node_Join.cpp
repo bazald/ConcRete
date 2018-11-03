@@ -2,8 +2,6 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
-#include "Zeni/Rete/Internal/Message_Status_Empty.hpp"
-#include "Zeni/Rete/Internal/Message_Status_Nonempty.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Internal/Token_Beta.hpp"
@@ -84,14 +82,6 @@ namespace Zeni::Rete {
     return connected;
   }
 
-  void Node_Join::receive(const Message_Status_Empty &) {
-    abort();
-  }
-
-  void Node_Join::receive(const Message_Status_Nonempty &) {
-    abort();
-  }
-
   void Node_Join::receive(const Message_Token_Insert &message) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
@@ -110,11 +100,11 @@ namespace Zeni::Rete {
         if (oresult != Output_Token_Trie::Result::First_Insertion)
           return;
 
-        for (auto &output : osnapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+        for (auto &output : osnapshot.snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
           jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, output_token));
       }
       else {
-        for (auto token_right : snapshot.template snapshot<NODE_DATA_SUBTRIE_TOKEN_INPUTS_RIGHT>()) {
+        for (auto token_right : snapshot.snapshot<NODE_DATA_SUBTRIE_TOKEN_INPUTS_RIGHT>()) {
           if (!test_variable_bindings(message.token, token_right))
             continue;
 
@@ -123,7 +113,7 @@ namespace Zeni::Rete {
           if (oresult != Output_Token_Trie::Result::First_Insertion)
             continue;
 
-          for (auto &output : osnapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+          for (auto &output : osnapshot.snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
             jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, output_token));
         }
       }
@@ -135,7 +125,7 @@ namespace Zeni::Rete {
       if (result != Input_Token_Trie::Result::First_Insertion)
         return;
 
-      for (auto token_left : snapshot.template snapshot<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>()) {
+      for (auto token_left : snapshot.snapshot<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>()) {
         if (!test_variable_bindings(token_left, message.token))
           continue;
 
@@ -144,7 +134,7 @@ namespace Zeni::Rete {
         if (oresult != Output_Token_Trie::Result::First_Insertion)
           continue;
 
-        for (auto &output : osnapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+        for (auto &output : osnapshot.snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
           jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, output_token));
       }
     }
@@ -170,11 +160,11 @@ namespace Zeni::Rete {
         if (oresult != Output_Token_Trie::Result::Last_Removal)
           return;
 
-        for (auto &output : osnapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+        for (auto &output : osnapshot.snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
           jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, ovalue));
       }
       else {
-        for (auto token_right : snapshot.template snapshot<NODE_DATA_SUBTRIE_TOKEN_INPUTS_RIGHT>()) {
+        for (auto token_right : snapshot.snapshot<NODE_DATA_SUBTRIE_TOKEN_INPUTS_RIGHT>()) {
           if (!test_variable_bindings(message.token, token_right))
             continue;
 
@@ -183,7 +173,7 @@ namespace Zeni::Rete {
           if (oresult != Output_Token_Trie::Result::Last_Removal)
             continue;
 
-          for (auto &output : osnapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+          for (auto &output : osnapshot.snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
             jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, ovalue));
         }
       }
@@ -195,7 +185,7 @@ namespace Zeni::Rete {
       if (result != Input_Token_Trie::Result::Last_Removal)
         return;
 
-      for (auto token_left : snapshot.template snapshot<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>()) {
+      for (auto token_left : snapshot.snapshot<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>()) {
         if (!test_variable_bindings(token_left, message.token))
           continue;
 
@@ -204,7 +194,7 @@ namespace Zeni::Rete {
         if (oresult != Output_Token_Trie::Result::Last_Removal)
           return;
 
-        for (auto &output : osnapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+        for (auto &output : osnapshot.snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
           jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, ovalue));
       }
     }

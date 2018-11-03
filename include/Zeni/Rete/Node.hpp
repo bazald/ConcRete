@@ -14,9 +14,7 @@ namespace Zeni::Rete {
 
   class Custom_Data;
   class Network;
-  class Message_Connect_Gate;
   class Message_Connect_Output;
-  class Message_Disconnect_Gate;
   class Message_Disconnect_Output;
   class Message_Status_Empty;
   class Message_Status_Nonempty;
@@ -34,17 +32,15 @@ namespace Zeni::Rete {
     typedef Concurrency::Antiable_Hash_Trie<std::shared_ptr<const Token>> Input_Token_Trie;
     typedef Concurrency::Super_Hash_Trie <
       Node_Trie,
-      Node_Trie,
       Output_Token_Trie,
       Input_Token_Trie,
       Input_Token_Trie> Node_Data;
     typedef Node_Data::Snapshot Node_Data_Snapshot;
     enum Node_Data_Subtrie {
-      NODE_DATA_SUBTRIE_GATES = 0,
-      NODE_DATA_SUBTRIE_OUTPUTS = 1,
-      NODE_DATA_SUBTRIE_TOKEN_OUTPUTS = 2,
-      NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT = 3,
-      NODE_DATA_SUBTRIE_TOKEN_INPUTS_RIGHT = 4
+      NODE_DATA_SUBTRIE_OUTPUTS = 0,
+      NODE_DATA_SUBTRIE_TOKEN_OUTPUTS = 1,
+      NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT = 2,
+      NODE_DATA_SUBTRIE_TOKEN_INPUTS_RIGHT = 3
     };
 
   protected:
@@ -63,8 +59,6 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() = 0;
 
     /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
-    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_new_or_existing_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child);
-    /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
     ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child);
     /// Initiate reconnection of an existing gate.
     ZENI_RETE_LINKAGE void connect_existing_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child);
@@ -73,15 +67,9 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE void receive(const std::shared_ptr<const Concurrency::Message> message) noexcept override;
     /// Returns true if there exist tokens to pass to the sender gate, otherwise false
-    ZENI_RETE_LINKAGE virtual bool receive(const Message_Connect_Gate &message);
-    /// Returns true if there exist tokens to retract from the sender output, otherwise false
     ZENI_RETE_LINKAGE virtual bool receive(const Message_Connect_Output &message);
-    /// Returns true if there exist tokens to pass to the sender gate, otherwise false
-    ZENI_RETE_LINKAGE virtual bool receive(const Message_Disconnect_Gate &message);
     /// Returns true if there exist tokens to retract from the sender output, otherwise false
     ZENI_RETE_LINKAGE virtual bool receive(const Message_Disconnect_Output &message);
-    ZENI_RETE_LINKAGE virtual void receive(const Message_Status_Empty &message) = 0;
-    ZENI_RETE_LINKAGE virtual void receive(const Message_Status_Nonempty &message) = 0;
     ZENI_RETE_LINKAGE virtual void receive(const Message_Token_Insert &message) = 0;
     ZENI_RETE_LINKAGE virtual void receive(const Message_Token_Remove &message) = 0;
 

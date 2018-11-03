@@ -56,6 +56,11 @@ namespace Zeni::Concurrency {
         return std::get<index>(m_hash_tries).size();
       }
 
+      template <size_t index>
+      bool size_one() const {
+        return std::get<index>(m_hash_tries).size_one();
+      }
+
       template <size_t index, typename Key>
       auto looked_up(const Key &key) const {
         return std::get<index>(m_hash_tries).looked_up(key);
@@ -136,6 +141,12 @@ namespace Zeni::Concurrency {
     size_t size() const {
       const auto super_root = m_super_root.load(std::memory_order_acquire);
       return super_root->template size<index>();
+    }
+
+    template <size_t index>
+    bool size_one() const {
+      const auto super_root = m_super_root.load(std::memory_order_acquire);
+      return super_root->template size_one<index>();
     }
 
     template <size_t index, typename Key>

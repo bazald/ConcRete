@@ -83,8 +83,6 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() override;
 
-    ZENI_RETE_LINKAGE void receive(const Message_Status_Empty &) override;
-    ZENI_RETE_LINKAGE void receive(const Message_Status_Nonempty &) override;
     ZENI_RETE_LINKAGE void receive(const Message_Token_Insert &) override;
     ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &) override;
 

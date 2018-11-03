@@ -313,7 +313,7 @@ public:
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Antiable_Hash_Trie<int64_t>::Result::First_Insertion) {
           int64_t sum = 0;
-          const auto theirs = snapshot.template snapshot<THEIRS>();
+          const auto theirs = snapshot.snapshot<THEIRS>();
           for (const auto &value : theirs) {
             sum += *selected * value;
 #ifdef DEBUG_HARD
@@ -338,7 +338,7 @@ public:
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Antiable_Hash_Trie<int64_t>::Result::Last_Removal) {
           int64_t sum = 0;
-          const auto theirs = snapshot.template snapshot<THEIRS>();
+          const auto theirs = snapshot.snapshot<THEIRS>();
           for (const auto &value : theirs) {
             sum += *selected * value;
 #ifdef DEBUG_HARD
@@ -450,7 +450,7 @@ public:
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Hash_Trie<int64_t>::Result::First_Insertion) {
           int64_t sum = 0;
-          const auto theirs = snapshot.template snapshot<THEIRS>();
+          const auto theirs = snapshot.snapshot<THEIRS>();
           for (const auto &value : theirs) {
             sum += *selected * value;
 #ifdef DEBUG_HARD
@@ -476,7 +476,7 @@ public:
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Hash_Trie<int64_t>::Result::Last_Removal) {
           int64_t sum = 0;
-          const auto theirs = snapshot.template snapshot<THEIRS>();
+          const auto theirs = snapshot.snapshot<THEIRS>();
           for (const auto &value : theirs) {
             sum += *selected * value;
 #ifdef DEBUG_HARD
@@ -587,7 +587,7 @@ public:
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Positive_Hash_Trie<int64_t>::Result::First_Insertion) {
           int64_t sum = 0;
-          const auto theirs = snapshot.template snapshot<THEIRS>();
+          const auto theirs = snapshot.snapshot<THEIRS>();
           for (const auto &value : theirs) {
             sum += *selected * value;
 #ifdef DEBUG_HARD
@@ -613,7 +613,7 @@ public:
         //snapshots.push_back(snapshot);
         if (result == Zeni::Concurrency::Positive_Hash_Trie<int64_t>::Result::Last_Removal) {
           int64_t sum = 0;
-          const auto theirs = snapshot.template snapshot<THEIRS>();
+          const auto theirs = snapshot.snapshot<THEIRS>();
           for (const auto &value : theirs) {
             sum += *selected * value;
 #ifdef DEBUG_HARD
@@ -697,12 +697,12 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
       }
     };
 
-    {
+    //{
       auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
       //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
-      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-      auto join0 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, filter0, filter1, Zeni::Rete::Variable_Bindings());
-      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, join0, Zeni::Rete::Variable_Indices::Create(),
+      //auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+      //auto join0 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, filter0, filter1, Zeni::Rete::Variable_Bindings());
+      auto action0 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, filter0, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
         std::cout << '(' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -713,7 +713,7 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
       //  std::make_shared<Zeni::Rete::Message_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
       //job_queue->give_one(
       //  std::make_shared<Zeni::Rete::Message_Disconnect_Output>(network->get(), network->get(), filter1, true));
-    }
+    //}
 
     //(*network)->get_Worker_Threads()->finish_jobs();
 
@@ -723,18 +723,18 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 
     (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(symbols[0], symbols[0], symbols[1]));
 
-    (*network)->get_Worker_Threads()->finish_jobs();
+    //(*network)->get_Worker_Threads()->finish_jobs();
 
     (*network)->excise_rule(job_queue, "hello-world", false);
 
-    (*network)->get_Worker_Threads()->finish_jobs();
+    //(*network)->get_Worker_Threads()->finish_jobs();
 
-    {
-      auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
+    //{
+      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
       //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
-      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-      auto join0 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, filter0, filter1, Zeni::Rete::Variable_Bindings());
-      auto action = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, join0, Zeni::Rete::Variable_Indices::Create(),
+      //auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
+      //auto join0 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, filter0, filter1, Zeni::Rete::Variable_Bindings());
+      auto action1 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, filter1, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
         std::cout << '[' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -743,7 +743,7 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 
       //job_queue->give_one(
       //  std::make_shared<Zeni::Rete::Message_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
-    }
+    //}
 
     //(*network)->get_Worker_Threads()->finish_jobs();
 
@@ -757,7 +757,7 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 
     (*network)->excise_all(job_queue, false);
 
-    (*network)->get_Worker_Threads()->finish_jobs();
+    //(*network)->get_Worker_Threads()->finish_jobs();
   }
 }
 

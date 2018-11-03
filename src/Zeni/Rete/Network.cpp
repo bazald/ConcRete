@@ -5,8 +5,6 @@
 #include "Zeni/Rete/Internal/Antiable_Map.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Internal/Message_Connect_Output.hpp"
-#include "Zeni/Rete/Internal/Message_Status_Empty.hpp"
-#include "Zeni/Rete/Internal/Message_Status_Nonempty.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Internal/Token_Alpha.hpp"
@@ -165,14 +163,6 @@ namespace Zeni::Rete {
     return std::make_pair(nullptr, nullptr);
   }
 
-  void Network::receive(const Message_Status_Empty &) {
-    abort();
-  }
-
-  void Network::receive(const Message_Status_Nonempty &) {
-    abort();
-  }
-
   void Network::receive(const Message_Token_Insert &) {
     abort();
   }
@@ -218,15 +208,10 @@ namespace Zeni::Rete {
       return;
 
     const auto sft = shared_from_this();
-    const auto output_tokens = snapshot.template snapshot<NODE_DATA_SUBTRIE_TOKEN_OUTPUTS>();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
-    for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+    for (auto &output : snapshot.snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
       jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, sft, sft, value));
-    if (++output_tokens.cbegin() == output_tokens.cend()) {
-      for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_GATES>())
-        jobs.emplace_back(std::make_shared<Message_Status_Nonempty>(output, sft, sft));
-    }
 
     job_queue->give_many(std::move(jobs));
   }
@@ -237,15 +222,10 @@ namespace Zeni::Rete {
       return;
 
     const auto sft = shared_from_this();
-    const auto output_tokens = snapshot.template snapshot<NODE_DATA_SUBTRIE_TOKEN_OUTPUTS>();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
-    for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+    for (auto &output : snapshot.snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
       jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, sft, sft, value));
-    if (output_tokens.empty()) {
-      for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_GATES>())
-        jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, sft, sft));
-    }
 
     job_queue->give_many(std::move(jobs));
   }

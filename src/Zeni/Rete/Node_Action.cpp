@@ -63,14 +63,6 @@ namespace Zeni::Rete {
     return m_variables;
   }
 
-  void Node_Action::receive(const Message_Status_Empty &) {
-    abort();
-  }
-
-  void Node_Action::receive(const Message_Status_Nonempty &) {
-    abort();
-  }
-
   void Node_Action::receive(const Message_Token_Insert &message) {
     const auto[result, snapshot, value] = m_node_data.insert<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>(message.token);
 

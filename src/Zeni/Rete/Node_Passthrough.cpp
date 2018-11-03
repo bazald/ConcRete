@@ -2,8 +2,6 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Internal/Debug_Counters.hpp"
-#include "Zeni/Rete/Internal/Message_Status_Empty.hpp"
-#include "Zeni/Rete/Internal/Message_Status_Nonempty.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Network.hpp"
@@ -37,19 +35,11 @@ namespace Zeni::Rete {
     const auto connected = std::static_pointer_cast<Node_Passthrough>(input->connect_new_or_existing_output(network, job_queue, created));
 
     if (connected != created) {
-      input->send_disconnect_from_parents(network, job_queue);
+      //input->send_disconnect_from_parents(network, job_queue);
       DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 1);
     }
 
     return connected;
-  }
-
-  void Node_Passthrough::receive(const Message_Status_Empty &) {
-    abort();
-  }
-
-  void Node_Passthrough::receive(const Message_Status_Nonempty &) {
-    abort();
   }
 
   void Node_Passthrough::receive(const Message_Token_Insert &message) {
@@ -58,15 +48,10 @@ namespace Zeni::Rete {
       return;
 
     const auto sft = shared_from_this();
-    const auto output_tokens = snapshot.template snapshot<NODE_DATA_SUBTRIE_TOKEN_OUTPUTS>();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
-    for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+    for (auto &output : snapshot.snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
       jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, message.token));
-    if (++output_tokens.cbegin() == output_tokens.cend()) {
-      for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_GATES>())
-        jobs.emplace_back(std::make_shared<Message_Status_Nonempty>(output, message.network, sft));
-    }
 
     message.get_Job_Queue()->give_many(std::move(jobs));
   }
@@ -77,15 +62,10 @@ namespace Zeni::Rete {
       return;
 
     const auto sft = shared_from_this();
-    const auto output_tokens = snapshot.template snapshot<NODE_DATA_SUBTRIE_TOKEN_OUTPUTS>();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
-    for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
+    for (auto &output : snapshot.snapshot<NODE_DATA_SUBTRIE_OUTPUTS>())
       jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, message.token));
-    if (output_tokens.cbegin() == output_tokens.cend()) {
-      for (auto &output : snapshot.template snapshot<NODE_DATA_SUBTRIE_GATES>())
-        jobs.emplace_back(std::make_shared<Message_Status_Empty>(output, message.network, sft));
-    }
 
     message.get_Job_Queue()->give_many(std::move(jobs));
   }

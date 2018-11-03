@@ -495,6 +495,14 @@ namespace Zeni::Concurrency {
       return sz;
     }
 
+    bool size_one() const {
+      auto it = cbegin();
+      const auto iend = cend();
+      if (it != iend)
+        return ++it == iend;
+      return false;
+    }
+
     std::pair<Key, Snapshot> lookup(const Key &key) const {
       const Hash_Value hash_value = Hash()(key);
       const MNode * const root = isnapshot();
@@ -668,9 +676,9 @@ namespace Zeni::Concurrency {
         else {
           const auto[result, new_lnode, new_snode, replaced_snode] = lnode->updated(key, insertion);
           if (!new_lnode->next) {
-            new_snode->increment_refs();
+            new_lnode->snode->increment_refs();
             new_lnode->decrement_refs();
-            return std::make_tuple(result, new_snode, new_snode, replaced_snode);
+            return std::make_tuple(result, new_lnode->snode, new_snode, replaced_snode);
           }
           return std::make_tuple(result, new_lnode, new_snode, replaced_snode);
         }

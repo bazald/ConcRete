@@ -21,8 +21,6 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE static std::shared_ptr<Node_Join> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, const Variable_Bindings &variable_bindings);
     ZENI_RETE_LINKAGE static std::shared_ptr<Node_Join> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, Variable_Bindings &&variable_bindings);
 
-    ZENI_RETE_LINKAGE void receive(const Message_Status_Empty &) override;
-    ZENI_RETE_LINKAGE void receive(const Message_Status_Nonempty &) override;
     ZENI_RETE_LINKAGE void receive(const Message_Token_Insert &message) override;
     ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &message) override;
 
