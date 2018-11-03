@@ -59,11 +59,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() = 0;
 
     /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists.
-    ZENI_RETE_LINKAGE std::shared_ptr<Node> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child);
+    ZENI_RETE_LINKAGE std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child);
     /// Initiate reconnection of an existing gate.
-    ZENI_RETE_LINKAGE void connect_existing_gate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child);
-    /// Initiate reconnection of an existing output.
-    ZENI_RETE_LINKAGE void connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child);
+    ZENI_RETE_LINKAGE Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child);
 
     ZENI_RETE_LINKAGE void receive(const std::shared_ptr<const Concurrency::Message> message) noexcept override;
     /// Returns true if there exist tokens to pass to the sender gate, otherwise false

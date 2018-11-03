@@ -32,14 +32,16 @@ namespace Zeni::Rete {
     };
 
     const auto created = std::shared_ptr<Friendly_Node_Passthrough>(new Friendly_Node_Passthrough(input));
-    const auto connected = std::static_pointer_cast<Node_Passthrough>(input->connect_new_or_existing_output(network, job_queue, created));
+    const auto [result, connected] = input->connect_new_or_existing_output(network, job_queue, created);
 
-    if (connected != created) {
+    const auto connected_passthrough = std::static_pointer_cast<Node_Passthrough>(connected);
+
+    if (result != Node_Trie::Result::First_Insertion) {
+      assert(input == connected_passthrough->get_input());
       input->send_disconnect_from_parents(network, job_queue);
-      DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 1);
     }
 
-    return connected;
+    return connected_passthrough;
   }
 
   void Node_Passthrough::receive(const Message_Token_Insert &message) {

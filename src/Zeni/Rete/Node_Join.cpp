@@ -63,22 +63,23 @@ namespace Zeni::Rete {
   }
 
   std::shared_ptr<Node_Join> Node_Join::connect_created(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, const std::shared_ptr<Node_Join> created) {
-    const auto connected = std::static_pointer_cast<Node_Join>(input_left->connect_new_or_existing_output(network, job_queue, created));
+    const auto [result0, connected] = input_left->connect_new_or_existing_output(network, job_queue, created);
+
+    const auto connected_join = std::static_pointer_cast<Node_Join>(connected);
+
+    if (result0 != Node_Trie::Result::First_Insertion) {
+      assert(input_left == connected_join->get_input_left());
+      assert(input_right == connected_join->get_input_right());
+      input_left->send_disconnect_from_parents(network, job_queue);
+    }
 
     if (input_left != input_right) {
-      if (connected != created) {
-        assert(input_right == connected->get_input_right());
-      }
-      input_right->connect_existing_output(network, job_queue, connected);
+      const auto result1 = input_right->connect_existing_output(network, job_queue, connected);
+      if (result1 != Node_Trie::Result::First_Insertion)
+        input_right->send_disconnect_from_parents(network, job_queue);
     }
 
-    if (connected != created) {
-      input_left->send_disconnect_from_parents(network, job_queue);
-      input_right->send_disconnect_from_parents(network, job_queue);
-      DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 1);
-    }
-
-    return connected;
+    return connected_join;
   }
 
   void Node_Join::receive(const Message_Token_Insert &message) {

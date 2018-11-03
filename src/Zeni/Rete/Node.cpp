@@ -38,7 +38,7 @@ namespace Zeni::Rete {
     return m_token_size;
   }
 
-  std::shared_ptr<Node> Node::connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) {
+  std::pair<Node::Node_Trie::Result, std::shared_ptr<Node>> Node::connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) {
     const auto[result, snapshot, value] = m_node_data.insert<NODE_DATA_SUBTRIE_OUTPUTS>(child);
 
     if (result == Node_Trie::Result::First_Insertion)
@@ -46,16 +46,18 @@ namespace Zeni::Rete {
     else
       DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
 
-    return value;
+    return std::make_pair(result, value);
   }
 
-  void Node::connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) {
+  Node::Node_Trie::Result Node::connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) {
     const auto[result, snapshot, value] = m_node_data.insert<NODE_DATA_SUBTRIE_OUTPUTS>(child);
 
     assert(value == child);
 
     if (result == Node_Trie::Result::First_Insertion)
       job_queue->give_one(std::make_shared<Message_Connect_Output>(shared_from_this(), network, std::make_shared<Node::Node_Data_Snapshot>(snapshot), value));
+
+    return result;
   }
 
   void Node::receive(const std::shared_ptr<const Concurrency::Message> message) noexcept {

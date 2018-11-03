@@ -37,13 +37,9 @@ namespace Zeni::Rete {
     };
 
     const auto created = std::shared_ptr<Friendly_Node_Filter>(new Friendly_Node_Filter(network, wme));
-    const auto connected = std::static_pointer_cast<Node_Filter>(network->connect_new_or_existing_output(network, job_queue, created));
+    const auto [result, connected] = network->connect_new_or_existing_output(network, job_queue, created);
 
-    if (connected != created) {
-      DEBUG_COUNTER_DECREMENT(g_decrement_children_received, 1);
-    }
-
-    return connected;
+    return std::static_pointer_cast<Node_Filter>(connected);
   }
 
   void Node_Filter::receive(const Message_Token_Insert &message) {
