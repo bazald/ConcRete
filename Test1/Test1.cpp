@@ -758,6 +758,9 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
     (*network)->excise_all(job_queue, false);
 
     //(*network)->get_Worker_Threads()->finish_jobs();
+
+    if(i % 100 == 99)
+      (*network)->get_Worker_Threads()->finish_jobs();
   }
 }
 
