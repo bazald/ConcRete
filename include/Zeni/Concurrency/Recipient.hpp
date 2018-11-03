@@ -31,8 +31,10 @@ namespace Zeni::Concurrency {
 
     virtual void receive(const std::shared_ptr<const Message> message) noexcept = 0;
 
+#if ZENI_CONCURRENCY == ZENI_CONCURRENCY_LOCKING
   protected:
     mutable Mutex m_mutex;
+#endif
   };
 
 }

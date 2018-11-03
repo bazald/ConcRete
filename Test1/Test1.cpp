@@ -54,34 +54,6 @@ private:
 
 //static ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t g_num_recvs = 0;
 
-class Gossip : public Zeni::Concurrency::Recipient {
-public:
-  typedef std::shared_ptr<Gossip> Ptr;
-
-  void receive(const std::shared_ptr<const Zeni::Concurrency::Message> message) noexcept override {
-    const auto whisper = std::dynamic_pointer_cast<const Whisper>(message);
-
-    std::cerr << whisper->get_message() + "\n";
-    //++g_num_recvs;
-
-    std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-    Zeni::Concurrency::Mutex::Lock mutex_lock(m_mutex);
-    for (Ptr gossip : m_gossips)
-      jobs.emplace_back(std::make_shared<Whisper>(gossip, whisper->get_message()));
-
-    const auto job_queue = message->get_Job_Queue();
-    job_queue->give_many(std::move(jobs));
-  }
-
-  void tell(const Ptr gossip) {
-    Zeni::Concurrency::Mutex::Lock mutex_lock(m_mutex);
-    m_gossips.emplace(gossip);
-  }
-
-private:
-  std::unordered_set<Ptr> m_gossips;
-};
-
 //static void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
@@ -686,7 +658,7 @@ void test_Positive_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
 void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
   const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, worker_threads);
 
-  for (int i = 0; i != 10001; ++i) {
+  for (int i = 1; i != 101; ++i) {
     std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
       {
         std::make_shared<Zeni::Rete::Symbol_Constant_Int>(1),
@@ -759,7 +731,7 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 
     //(*network)->get_Worker_Threads()->finish_jobs();
 
-    if(i % 100 == 99)
+    if(i % 100 == 0)
       (*network)->get_Worker_Threads()->finish_jobs();
   }
 }

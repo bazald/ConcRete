@@ -27,7 +27,6 @@ namespace Zeni::Concurrency {
 
     const std::shared_ptr<Job_Queue> & get_Job_Queue() const noexcept override;
 
-  private:
     void set_Job_Queue(const std::shared_ptr<Job_Queue> &job_queue) noexcept override;
     void set_Job_Queue(std::shared_ptr<Job_Queue> &&job_queue) noexcept override;
 

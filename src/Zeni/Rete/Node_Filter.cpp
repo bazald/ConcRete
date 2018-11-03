@@ -111,7 +111,7 @@ namespace Zeni::Rete {
   }
 
   bool Node_Filter::operator==(const Node &rhs) const {
-    return this == &rhs;
+    //return this == &rhs;
 
     if (auto filter = dynamic_cast<const Node_Filter *>(&rhs)) {
       if ((std::get<0>(m_variable) != nullptr) ^ (std::get<0>(filter->m_variable) != nullptr))

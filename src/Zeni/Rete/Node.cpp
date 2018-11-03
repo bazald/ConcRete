@@ -82,8 +82,7 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Last_Removal)
       return false;
 
-    if (snapshot.empty<NODE_DATA_SUBTRIE_OUTPUTS>())
-      send_disconnect_from_parents(message.network, message.get_Job_Queue());
+    send_disconnect_from_parents(message.network, message.get_Job_Queue());
 
     const auto sft = shared_from_this();
     const auto output_tokens = snapshot.snapshot<NODE_DATA_SUBTRIE_TOKEN_OUTPUTS>();

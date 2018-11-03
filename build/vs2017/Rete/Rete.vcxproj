@@ -24,6 +24,7 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Output.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Disconnect_Output.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Sequential_Pair.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Insert.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Remove.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Binary.cpp" />
@@ -56,6 +57,7 @@
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Output.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Disconnect_Output.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Sequential_Pair.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Token_Insert.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Token_Remove.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Binary.hpp" />
