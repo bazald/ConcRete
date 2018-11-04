@@ -188,6 +188,13 @@ int main()
   //  abort();
   //}
 
+  //Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Hash_Trie<int>, Zeni::Concurrency::Positive_Hash_Trie<float>, Zeni::Concurrency::Antiable_Hash_Trie<void *>> s1;
+  //Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Hash_Trie<int>, Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<float>, Zeni::Concurrency::Antiable_Hash_Trie<void *>>> s2;
+
+  //s2.insert<0>(42);
+  //s2.insert_2<1, 0>(13.37f);
+  //s2.insert_2<1, 1>(nullptr);
+
   return 0;
 }
 
