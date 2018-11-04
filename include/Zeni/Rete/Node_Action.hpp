@@ -22,15 +22,39 @@ namespace Zeni::Rete {
       bool operator()(const Node_Action &lhs, const Node_Action &rhs) const noexcept {
         return lhs.get_name() == rhs.get_name();
       }
+
+      bool operator()(const std::string_view &lhs, const std::string_view &rhs) const noexcept {
+        return lhs == rhs;
+      }
+
+      bool operator()(const std::shared_ptr<Node_Action> &lhs, const std::string_view &rhs) const noexcept {
+        return lhs->get_name() == rhs;
+      }
+
+      bool operator()(const std::string_view &lhs, const std::shared_ptr<Node_Action> &rhs) const noexcept {
+        return lhs == rhs->get_name();
+      }
+
+      bool operator()(const Node_Action &lhs, const std::string_view &rhs) const noexcept {
+        return lhs.get_name() == rhs;
+      }
+
+      bool operator()(const std::string_view &lhs, const Node_Action &rhs) const noexcept {
+        return lhs == rhs.get_name();
+      }
     };
 
     struct Hash_By_Name {
       size_t operator()(const std::shared_ptr<Node_Action> &rete_action) const noexcept {
-        return std::hash<std::string>()(rete_action->get_name());
+        return std::hash<std::string_view>()(rete_action->get_name());
       }
 
       size_t operator()(const Node_Action &rete_action) const noexcept {
-        return std::hash<std::string>()(rete_action.get_name());
+        return std::hash<std::string_view>()(rete_action.get_name());
+      }
+
+      size_t operator()(const std::string_view &name) const noexcept {
+        return std::hash<std::string_view>()(name);
       }
     };
 

@@ -525,20 +525,22 @@ namespace Zeni::Concurrency {
       return false;
     }
 
-    std::pair<Key, Snapshot> lookup(const Key &key) const {
-      const Hash_Value hash_value = Hash()(key);
+    template <typename Comparable, typename CHash = Hash, typename CPred = Pred>
+    std::pair<Key, Snapshot> lookup(const Comparable &key) const {
+      const Hash_Value hash_value = CHash()(key);
       const MNode * const root = isnapshot();
-      const SNode * const found = ilookup(root, key, hash_value, 0);
+      const SNode * const found = ilookup<Comparable, CPred>(root, key, hash_value, 0);
       if (found && found->inserted)
         return std::make_pair(found->key, Snapshot(root));
       else
         return std::make_pair(Key(), Snapshot(root));
     }
 
-    Key looked_up(const Key &key) const {
-      const Hash_Value hash_value = Hash()(key);
+    template <typename Comparable, typename CHash = Hash, typename CPred = Pred>
+    Key looked_up(const Comparable &key) const {
+      const Hash_Value hash_value = CHash()(key);
       const MNode * const root = m_root.load(std::memory_order_acquire);
-      const SNode * const found = ilookup(root, key, hash_value, 0);
+      const SNode * const found = ilookup<Comparable, CPred>(root, key, hash_value, 0);
       if (found && found->inserted)
         return found->key;
       else
@@ -608,9 +610,10 @@ namespace Zeni::Concurrency {
         root = m_root.load(std::memory_order_acquire);
     }
 
+    template <typename Comparable, typename CPred>
     const SNode * ilookup(
       const MNode * mnode,
-      const Key &key,
+      const Comparable &key,
       const Hash_Value &hash_value,
       size_t level) const
     {
@@ -626,7 +629,7 @@ namespace Zeni::Concurrency {
         }
         else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
           do {
-            if (Pred()(lnode->snode->key, key))
+            if (CPred()(lnode->snode->key, key))
               return lnode->snode;
             else
               lnode = lnode->next;
@@ -634,7 +637,7 @@ namespace Zeni::Concurrency {
           return nullptr;
         }
         else if (auto snode = dynamic_cast<const SNode *>(mnode))
-          return snode->inserted && Pred()(snode->key, key) ? snode : nullptr;
+          return snode->inserted && CPred()(snode->key, key) ? snode : nullptr;
         else
           return nullptr;
       }

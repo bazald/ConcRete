@@ -131,7 +131,7 @@ namespace Zeni::Rete {
   }
 
   std::shared_ptr<Node_Action> Network::get_rule(const std::string &name) const {
-    const auto [found, snapshot] = m_rules.lookup(std::make_shared<Node_Action>(name));
+    const auto [found, snapshot] = m_rules.lookup(name);
     return found;
   }
 
@@ -183,7 +183,7 @@ namespace Zeni::Rete {
     for(;;) {
       oss.str("");
       oss << prefix << m_rule_name_index.fetch_add() + 1;
-      const auto [found, snapshot] = m_rules.lookup(std::make_shared<Node_Action>(oss.str()));
+      const auto [found, snapshot] = m_rules.lookup(oss.str());
       if (!found)
         break;
     }

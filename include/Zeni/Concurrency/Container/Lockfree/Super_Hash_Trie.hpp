@@ -61,9 +61,9 @@ namespace Zeni::Concurrency {
         return std::get<index>(m_hash_tries).size_one();
       }
 
-      template <size_t index, typename Key>
-      auto looked_up(const Key &key) const {
-        return std::get<index>(m_hash_tries).looked_up(key);
+      template <size_t index, typename Comparable, typename CHash = typename std::tuple_element<index, std::tuple<Types...> >::type::Hash, typename CPred = typename std::tuple_element<index, std::tuple<Types...> >::type::Pred>
+      auto looked_up(const Comparable &key) const {
+        return std::get<index>(m_hash_tries).template looked_up<Comparable, CHash, CPred>(key);
       }
 
       template <size_t index, typename Key>
@@ -149,10 +149,10 @@ namespace Zeni::Concurrency {
       return super_root->template size_one<index>();
     }
 
-    template <size_t index, typename Key>
-    auto lookup(const Key &key) const {
+    template <size_t index, typename Comparable, typename CHash = typename std::tuple_element<index, std::tuple<Types...> >::type::Hash, typename CPred = typename std::tuple_element<index, std::tuple<Types...> >::type::Pred>
+    auto lookup(const Comparable &key) const {
       const Hash_Trie_Super_Node * const super_root = isnapshot();
-      const auto found = super_root->template looked_up<index>(key);
+      const auto found = super_root->template looked_up<index, Comparable, CHash, CPred>(key);
       return std::make_pair(found, Snapshot(super_root));
     }
 
