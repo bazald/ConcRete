@@ -21,7 +21,7 @@ namespace Zeni::Rete {
 #else
     FILE * in_file = std::fopen(filename.c_str(), "r");
 #endif
-    PEG::read_input<PEG::tracking_mode::LAZY> input(in_file, filename);
+    PEG::read_input<PEG::tracking_mode::lazy> input(in_file, filename);
 
     parse(input, network, job_queue, user_command);
 
@@ -29,8 +29,7 @@ namespace Zeni::Rete {
   }
 
   void Parser_Impl::parse_string(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view str, const bool user_command) {
-    PEG::memory_input<PEG::tracking_mode::LAZY>
-      input(str.data(), str.data() + str.length(), "Zeni::Parser::parse_string(const std::shared_ptr<Network> &, const std::string_view )");
+    PEG::memory_input<PEG::tracking_mode::lazy> input(str.data(), str.data() + str.length(), "Zeni::Parser::parse_string(const std::shared_ptr<Network> &, const std::string_view )");
 
     parse(input, network, job_queue, user_command);
   }

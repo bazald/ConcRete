@@ -14,6 +14,17 @@ namespace Zeni::Rete {
     return std::make_shared<Friendly_Variable_Indices_Impl>();
   }
 
+  std::shared_ptr<Variable_Indices_Impl> Variable_Indices_Impl::Create(const int64_t left_size, const int64_t left_token_size, const Variable_Indices &left, const Variable_Indices &right) {
+    const auto created = Create();
+    for (auto entry : left.get_indices())
+      created->insert(entry.first, entry.second);
+    for (auto entry : right.get_indices()) {
+      if (created->find_index(entry.first) == Token_Index())
+        created->insert(entry.first, Token_Index(left_size + entry.second.rete_row, left_token_size + entry.second.token_row, entry.second.column));
+    }
+    return created;
+  }
+
   const std::unordered_multimap<std::string, Token_Index> & Variable_Indices_Impl::get_indices() const {
     return name_to_index;
   }

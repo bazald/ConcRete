@@ -13,6 +13,7 @@ namespace Zeni::Rete {
 
   public:
     static std::shared_ptr<Variable_Indices_Impl> Create();
+    static std::shared_ptr<Variable_Indices_Impl> Create(const int64_t left_size, const int64_t left_token_size, const Variable_Indices &left, const Variable_Indices &right);
 
     const std::unordered_multimap<std::string, Token_Index> & get_indices() const override;
 
