@@ -9,6 +9,27 @@
 namespace Zeni::Concurrency {
 
   namespace Super_Hash_Trie_Internal {
+    template<int... Is>
+    struct seq { };
+
+    template<int N, int... Is>
+    struct gen_seq : gen_seq<N - 1, N - 1, Is...> { };
+
+    template<int... Is>
+    struct gen_seq<0, Is...> : seq<Is...> { };
+
+    template<typename T, typename F, int... Is>
+    void for_each(T&& t, F f, seq<Is...>)
+    {
+      [[maybe_unused]] auto l = { (f(std::get<Is>(t)), 0)... };
+    }
+
+    template<typename... Ts, typename F>
+    void for_each_in_tuple(std::tuple<Ts...> const& t, F f)
+    {
+      for_each(t, f, gen_seq<sizeof...(Ts)>());
+    }
+
     template <size_t tuple_size>
     struct Update_Tuple_1 {};
 
@@ -29,8 +50,12 @@ namespace Zeni::Concurrency {
     };
   }
 
-  template <typename... Types>
+  template <typename... TYPES>
   class Super_Hash_Trie {
+  public:
+    typedef std::tuple<TYPES...> Types;
+
+  private:
     class Hash_Trie_Super_Node : public Enable_Intrusive_Sharing<Hash_Trie_Super_Node> {
       Hash_Trie_Super_Node & operator=(const Hash_Trie_Super_Node &rhs) = delete;
 
@@ -42,8 +67,14 @@ namespace Zeni::Concurrency {
       {
       }
 
-      Hash_Trie_Super_Node(Types&&... types) {
-        initialize(std::forward<Types...>(types...));
+      Hash_Trie_Super_Node(TYPES&&... types) {
+        initialize(std::forward<TYPES...>(types...));
+      }
+
+      bool empty() const {
+        bool rv = true;
+        Super_Hash_Trie_Internal::for_each_in_tuple(m_hash_tries, [&rv](const auto &t) {rv &= t.empty(); });
+        return rv;
       }
 
       template <size_t index>
@@ -61,14 +92,19 @@ namespace Zeni::Concurrency {
         return std::get<index>(m_hash_tries).size_one();
       }
 
-      template <size_t index, typename Comparable, typename CHash = typename std::tuple_element<index, std::tuple<Types...> >::type::Hash, typename CPred = typename std::tuple_element<index, std::tuple<Types...> >::type::Pred>
+      template <size_t index, typename Comparable, typename CHash = typename std::tuple_element<index, Types>::type::Hash, typename CPred = typename std::tuple_element<index, Types>::type::Pred>
       auto looked_up(const Comparable &key) const {
         return std::get<index>(m_hash_tries).template looked_up<Comparable, CHash, CPred>(key);
       }
 
-      template <size_t index1, size_t index2, typename Comparable, typename CHash = typename std::tuple_element<index2, typename std::tuple_element<index1, std::tuple<Types...> >::type>::type::Hash, typename CPred = typename std::tuple_element<index2, typename std::tuple_element<index1, std::tuple<Types...> >::type>::type::Pred>
+      template <size_t index1, size_t index2, typename Comparable, typename CHash = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type>::type::Hash, typename CPred = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type>::type::Pred>
       auto looked_up_2(const Comparable &key) const {
         return std::get<index1>(m_hash_tries).template looked_up<index2, Comparable, CHash, CPred>(key);
+      }
+
+      template <size_t index1, size_t index2, typename Comparable1, typename Comparable2, typename CHash1 = typename std::tuple_element<index1, Types>::type::Hash, typename CPred1 = typename std::tuple_element<index1, Types>::type::Pred, typename CHash2 = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type::Subtrie::Types>::type::Hash, typename CPred2 = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type::Subtrie::Types>::type::Pred>
+      auto looked_up_2(const Comparable1 &key, const Comparable2 &value) const {
+        return std::get<index1>(m_hash_tries).template looked_up<index2, Comparable1, Comparable2, CHash1, CPred1, CHash2, CPred2>(key, value);
       }
 
       template <size_t index, typename Key>
@@ -82,6 +118,14 @@ namespace Zeni::Concurrency {
       template <size_t index1, size_t index2, typename Key>
       auto inserted_2(const Key &key) const {
         auto tuple_value = std::get<index1>(m_hash_tries).template inserted<index2>(key);
+        Hash_Trie_Super_Node * const updated_node = new Hash_Trie_Super_Node(*this);
+        std::get<index1>(updated_node->m_hash_tries) = std::get<1>(tuple_value);
+        return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
+      }
+
+      template <size_t index1, size_t index2, typename Key, typename Value>
+      auto inserted_2(const Key &key, const Value &value) const {
+        auto tuple_value = std::get<index1>(m_hash_tries).template inserted<index2>(key, value);
         Hash_Trie_Super_Node * const updated_node = new Hash_Trie_Super_Node(*this);
         std::get<index1>(updated_node->m_hash_tries) = std::get<1>(tuple_value);
         return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
@@ -103,6 +147,14 @@ namespace Zeni::Concurrency {
         return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
       }
 
+      template <size_t index1, size_t index2, typename Key, typename Value>
+      auto erased_2(const Key &key, const Value &value) const {
+        auto tuple_value = std::get<index1>(m_hash_tries).template erased<index2>(key, value);
+        Hash_Trie_Super_Node * const updated_node = new Hash_Trie_Super_Node(*this);
+        std::get<index1>(updated_node->m_hash_tries) = std::get<1>(tuple_value);
+        return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
+      }
+
       template <size_t index>
       auto snapshot() const {
         return std::get<index>(m_hash_tries).snapshot();
@@ -117,11 +169,11 @@ namespace Zeni::Concurrency {
         initialize(rest..., index + 1);
       }
 
-      std::tuple<Types ...> m_hash_tries;
+      std::tuple<TYPES ...> m_hash_tries;
     };
 
   public:
-    typedef Super_Hash_Trie<Types...> Snapshot;
+    typedef Super_Hash_Trie<TYPES...> Snapshot;
 
     Super_Hash_Trie()
       : m_super_root(new Hash_Trie_Super_Node())
@@ -152,6 +204,11 @@ namespace Zeni::Concurrency {
       rhs.m_super_root.store(nullptr, std::memory_order_relaxed);
     }
 
+    bool empty() const {
+      const auto super_root = m_super_root.load(std::memory_order_acquire);
+      return super_root->empty();
+    }
+
     template <size_t index>
     bool empty() const {
       const auto super_root = m_super_root.load(std::memory_order_acquire);
@@ -170,30 +227,43 @@ namespace Zeni::Concurrency {
       return super_root->template size_one<index>();
     }
 
-    template <size_t index, typename Comparable, typename CHash = typename std::tuple_element<index, std::tuple<Types...> >::type::Hash, typename CPred = typename std::tuple_element<index, std::tuple<Types...> >::type::Pred>
+    template <size_t index, typename Comparable, typename CHash = typename std::tuple_element<index, Types>::type::Hash, typename CPred = typename std::tuple_element<index, Types>::type::Pred>
     auto lookup(const Comparable &key) const {
       const Hash_Trie_Super_Node * const super_root = isnapshot();
       const auto found = super_root->template looked_up<index, Comparable, CHash, CPred>(key);
       return std::make_pair(found, Snapshot(super_root));
     }
 
-    template <size_t index1, size_t index2, typename Comparable, typename CHash = typename std::tuple_element<index2, typename std::tuple_element<index1, std::tuple<Types...> >::type>::type::Hash, typename CPred = typename std::tuple_element<index2, typename std::tuple_element<index1, std::tuple<Types...> >::type>::type::Pred>
+    template <size_t index1, size_t index2, typename Comparable, typename CHash = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type>::type::Hash, typename CPred = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type>::type::Pred>
     auto lookup_2(const Comparable &key) const {
       const Hash_Trie_Super_Node * const super_root = isnapshot();
       const auto found = super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key);
       return std::make_pair(found, Snapshot(super_root));
     }
 
-    template <size_t index, typename Comparable, typename CHash = typename std::tuple_element<index, std::tuple<Types...> >::type::Hash, typename CPred = typename std::tuple_element<index, std::tuple<Types...> >::type::Pred>
+    template <size_t index1, size_t index2, typename Comparable1, typename Comparable2, typename CHash1 = typename std::tuple_element<index1, Types>::type::Hash, typename CPred1 = typename std::tuple_element<index1, Types>::type::Pred, typename CHash2 = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type::Subtrie::Types>::type::Hash, typename CPred2 = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type::Subtrie::Types>::type::Pred>
+    auto lookup_2(const Comparable1 &key, const Comparable2 &value) const {
+      const Hash_Trie_Super_Node * const super_root = isnapshot();
+      const auto found = super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred1, CHash2, CPred2>(key, value);
+      return std::make_pair(found, Snapshot(super_root));
+    }
+
+    template <size_t index, typename Comparable, typename CHash = typename std::tuple_element<index, Types>::type::Hash, typename CPred = typename std::tuple_element<index, Types>::type::Pred>
     auto looked_up(const Comparable &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       return super_root->template looked_up<index, Comparable, CHash, CPred>(key);
     }
 
-    template <size_t index1, size_t index2, typename Comparable, typename CHash = typename std::tuple_element<index2, typename std::tuple_element<index1, std::tuple<Types...> >::type>::type::Hash, typename CPred = typename std::tuple_element<index2, typename std::tuple_element<index1, std::tuple<Types...> >::type>::type::Pred>
+    template <size_t index1, size_t index2, typename Comparable, typename CHash = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type>::type::Hash, typename CPred = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type>::type::Pred>
     auto looked_up_2(const Comparable &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       return super_root->template looked_up<index1, index2, Comparable, CHash, CPred>(key);
+    }
+
+    template <size_t index1, size_t index2, typename Comparable1, typename Comparable2, typename CHash1 = typename std::tuple_element<index1, Types>::type::Hash, typename CPred1 = typename std::tuple_element<index1, Types>::type::Pred, typename CHash2 = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type::Subtrie::Types>::type::Hash, typename CPred2 = typename std::tuple_element<index2, typename std::tuple_element<index1, Types>::type::Subtrie::Types>::type::Pred>
+    auto looked_up_2(const Comparable1 &key, const Comparable2 &value) const {
+      const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
+      return super_root->template looked_up<index1, index2, Comparable1, Comparable2, CHash1, CPred2, CHash2, CPred2>(key, value);
     }
 
     template <size_t index, typename Key>
@@ -206,6 +276,11 @@ namespace Zeni::Concurrency {
       return iinsert_2<index1, index2>(key);
     }
 
+    template <size_t index1, size_t index2, typename Key, typename Value>
+    auto insert_2(const Key &key, const Value &value) {
+      return iinsert_2<index1, index2>(key, value);
+    }
+
     template <size_t index, typename Key>
     auto inserted(const Key &key) const {
       return iinserted<index>(key);
@@ -214,6 +289,11 @@ namespace Zeni::Concurrency {
     template <size_t index1, size_t index2, typename Key>
     auto inserted_2(const Key &key) const {
       return iinserted_2<index1, index2>(key);
+    }
+
+    template <size_t index1, size_t index2, typename Key, typename Value>
+    auto inserted_2(const Key &key, const Value &value) const {
+      return iinserted_2<index1, index2>(key, value);
     }
 
     template <size_t index, typename Key>
@@ -228,15 +308,27 @@ namespace Zeni::Concurrency {
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
+    template <size_t index1, size_t index2, typename Key, typename Value>
+    auto erase_2(const Key &key, const Value &value) {
+      const auto tuple_value = ierase_2<index1, index2>(key, value);
+      return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
+    }
+
     template <size_t index, typename Key>
     auto erased(const Key &key) const {
-      const auto tuple_value = ierase<index>(key);
+      const auto tuple_value = ierased<index>(key);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto erased_2(const Key &key) const {
-      const auto tuple_value = ierase_2<index1, index2>(key);
+      const auto tuple_value = ierased_2<index1, index2>(key);
+      return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
+    }
+
+    template <size_t index1, size_t index2, typename Key, typename Value>
+    auto erased_2(const Key &key, const Value &value) const {
+      const auto tuple_value = ierased_2<index1, index2>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
@@ -295,6 +387,25 @@ namespace Zeni::Concurrency {
       }
     }
 
+    template <size_t index1, size_t index2, typename Key, typename Value>
+    auto iinsert_2(const Key &key, const Value &value) {
+      const Hash_Trie_Super_Node * super_root = isnapshot();
+      for (;;) {
+        const auto tuple_value = super_root->template inserted_2<index1, index2>(key, value);
+        if (std::get<1>(tuple_value))
+          std::get<1>(tuple_value)->increment_refs();
+        if (super_root)
+          super_root->decrement_refs();
+        if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
+          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+        else {
+          if (std::get<1>(tuple_value))
+            std::get<1>(tuple_value)->decrement_refs();
+          enforce_snapshot(super_root);
+        }
+      }
+    }
+
     template <size_t index, typename Key>
     auto iinserted(const Key &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
@@ -306,6 +417,13 @@ namespace Zeni::Concurrency {
     auto iinserted_2(const Key &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       const auto tuple_value = super_root->template inserted_2<index1, index2>(key);
+      return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+    }
+
+    template <size_t index1, size_t index2, typename Key, typename Value>
+    auto iinserted_2(const Key &key, const Value &value) const {
+      const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
+      const auto tuple_value = super_root->template inserted_2<index1, index2>(key, value);
       return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
     }
 
@@ -347,6 +465,25 @@ namespace Zeni::Concurrency {
       }
     }
 
+    template <size_t index1, size_t index2, typename Key, typename Value>
+    auto ierase_2(const Key &key, const Value &value) {
+      const Hash_Trie_Super_Node * super_root = isnapshot();
+      for (;;) {
+        const auto tuple_value = super_root->template erased_2<index1, index2>(key, value);
+        if (std::get<1>(tuple_value))
+          std::get<1>(tuple_value)->increment_refs();
+        if (super_root)
+          super_root->decrement_refs();
+        if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
+          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+        else {
+          if (std::get<1>(tuple_value))
+            std::get<1>(tuple_value)->decrement_refs();
+          enforce_snapshot(super_root);
+        }
+      }
+    }
+
     template <size_t index, typename Key>
     auto ierased(const Key &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
@@ -358,6 +495,13 @@ namespace Zeni::Concurrency {
     auto ierased_2(const Key &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       const auto tuple_value = super_root->template erased_2<index1, index2>(key);
+      return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+    }
+
+    template <size_t index1, size_t index2, typename Key, typename Value>
+    auto ierased_2(const Key &key, const Value &value) const {
+      const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
+      const auto tuple_value = super_root->template erased_2<index1, index2>(key, value);
       return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
     }
 

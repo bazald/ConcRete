@@ -7,6 +7,7 @@
 #include "Zeni/Concurrency/Container/Antiable_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie_2.hpp"
+#include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
 #include "Zeni/Concurrency/Container/Positive_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Super_Hash_Trie.hpp"
 //#include "Zeni/Concurrency/Container/Ctrie.hpp"
@@ -189,33 +190,28 @@ int main()
   //  abort();
   //}
 
-  //Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Hash_Trie<int>, Zeni::Concurrency::Positive_Hash_Trie<float>, Zeni::Concurrency::Antiable_Hash_Trie<void *>> s1;
-  //Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Hash_Trie<int>, Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<float>, Zeni::Concurrency::Antiable_Hash_Trie<void *>>> s2;
+  //Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int>,
+  //  Zeni::Concurrency::Hash_Trie_S2<double,
+  //  Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Antiable_Hash_Trie<float>, Zeni::Concurrency::Antiable_Hash_Trie<char>>>> shsh;
 
-  //s2.insert<0>(42);
-  //s2.insert_2<1, 0>(13.37f);
-  //s2.insert_2<1, 1>(nullptr);
-
-  Zeni::Concurrency::Hash_Trie_2<int, Zeni::Concurrency::Hash_Trie<double>> ht2;
-
-  {
-    const auto[result, snapshot, value, replaced] = ht2.insert(42, 13.37);
-  }
-  {
-    const auto[result, snapshot, value, replaced] = ht2.insert(42, 13.37);
-  }
-  {
-    const auto[value, snapshot] = ht2.lookup(42, 13.37);
-  }
-  {
-    const auto[value, snapshot] = ht2.lookup(12, 13.37);
-  }
-  {
-    const auto[value, snapshot] = ht2.lookup(42, 12.0);
-  }
-  {
-    const auto[result, snapshot, value] = ht2.erase(42, 13.37);
-  }
+  //{
+  //  const auto[result, snapshot, value] = shsh.insert<0>(42);
+  //}
+  //{
+  //  const auto[value, snapshot] = shsh.lookup<0>(42);
+  //}
+  //{
+  //  const auto[result, snapshot, value] = shsh.erase<0>(42);
+  //}
+  //{
+  //  const auto[result, snapshot, value] = shsh.insert_2<1, 0>(42.0, 13.37f);
+  //}
+  //{
+  //  const auto[value, snapshot] = shsh.lookup_2<1, 0>(42.0, 13.37f);
+  //}
+  //{
+  //  const auto[result, snapshot, value] = shsh.erase_2<1, 0>(42.0, 13.37f);
+  //}
 
   return 0;
 }

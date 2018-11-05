@@ -65,4 +65,4 @@ Test1/%.o:
 	$(CXX) $(CPPFLAGS) -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_TEST1))
 
 clean:
-	$(RMDIR) Concurrency Rete Test1 $(BINARIES)
+	$(RMDIR) Concurrency Rete Test1 $(BINARIES) $(DEPENDENCIES)
