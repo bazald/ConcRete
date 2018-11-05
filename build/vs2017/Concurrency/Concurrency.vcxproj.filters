@@ -228,6 +228,12 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Positive_Hash_Trie.hpp">
       <Filter>Header Files\Zeni\Container\Lockfree</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Hash_Trie_2.hpp">
+      <Filter>Header Files\Zeni\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Hash_Trie_2.hpp">
+      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job.cpp">

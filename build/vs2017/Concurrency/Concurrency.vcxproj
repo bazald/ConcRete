@@ -26,6 +26,7 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ctrie.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Epoch_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Hash_Trie.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Hash_Trie_2.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Intrusive_Shared_Ptr.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Antiable_Hashset.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Antiable_Hash_Trie.hpp" />
@@ -33,6 +34,7 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Ctrie.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Epoch_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Hash_Trie.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Hash_Trie_2.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Intrusive_Shared_Ptr.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Ordered_List.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Positive_Hash_Trie.hpp" />
