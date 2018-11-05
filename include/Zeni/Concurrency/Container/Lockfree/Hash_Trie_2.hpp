@@ -12,6 +12,25 @@ namespace Zeni::Concurrency {
 
   namespace Hash_Trie_2_Internal {
 
+    template <size_t tuple_size>
+    struct Update_Tuple_1 {};
+
+    template <>
+    struct Update_Tuple_1<3> {
+      template <typename Tuple_Tupe, typename Updated_Node_Type>
+      static auto updated(Tuple_Tupe tuple_value, Updated_Node_Type updated_node) {
+        return std::make_tuple(std::get<0>(tuple_value), updated_node, std::get<2>(tuple_value));
+      }
+    };
+
+    template <>
+    struct Update_Tuple_1<4> {
+      template <typename Tuple_Tupe, typename Updated_Node_Type>
+      static auto updated(Tuple_Tupe tuple_value, Updated_Node_Type updated_node) {
+        return std::make_tuple(std::get<0>(tuple_value), updated_node, std::get<2>(tuple_value), std::get<3>(tuple_value));
+      }
+    };
+
     template <typename INT_TYPE>
     constexpr static INT_TYPE hamming(const INT_TYPE value = std::numeric_limits<INT_TYPE>::max()) {
       return (value & 0x1) + ((value >> 1) ? hamming(value >> 1) : 0);
@@ -55,36 +74,43 @@ namespace Zeni::Concurrency {
 
     public:
       template <typename KEY_TYPE, typename VALUE_TYPE>
-      static auto Create(KEY_TYPE &&key_, VALUE_TYPE &&value_, const bool insertion) {
-        auto new_subtrie = insertion ? SUBTRIE().inserted(std::forward<VALUE_TYPE>(value_)) : SUBTRIE().erased(std::forward<VALUE_TYPE>(value_));
-        auto new_snode = new Singleton_Node<KEY, SUBTRIE>(std::forward<KEY_TYPE>(key_), std::get<1>(new_subtrie));
-        return std::make_tuple(std::get<0>(new_subtrie), new_snode, std::get<2>(new_subtrie));
+      static auto Create_Insert(KEY_TYPE &&key_, VALUE_TYPE &&value_) {
+        auto tuple_value = SUBTRIE().inserted(std::forward<VALUE_TYPE>(value_));
+        auto new_snode = new Singleton_Node<KEY, SUBTRIE>(std::forward<KEY_TYPE>(key_), std::get<1>(tuple_value));
+        return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_snode);
+      }
+
+      template <typename KEY_TYPE, typename VALUE_TYPE>
+      static auto Create_Erase(KEY_TYPE &&key_, VALUE_TYPE &&value_) {
+        auto tuple_value = SUBTRIE().erased(std::forward<VALUE_TYPE>(value_));
+        auto new_snode = new Singleton_Node<KEY, SUBTRIE>(std::forward<KEY_TYPE>(key_), std::get<1>(tuple_value));
+        return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_snode);
       }
 
       auto inserted(const KEY &key, const typename SUBTRIE::Key &value) const {
-        const auto [result, new_subtrie, updated] = subtrie.inserted(value);
-        auto new_snode = new_subtrie.empty() ? nullptr : new Singleton_Node<KEY, SUBTRIE>(key, std::move(new_subtrie));
-        return std::make_tuple(result, new_snode, updated);
+        auto tuple_value = subtrie.inserted(value);
+        auto new_snode = std::get<1>(tuple_value).empty() ? nullptr : new Singleton_Node<KEY, SUBTRIE>(key, std::move(std::get<1>(tuple_value)));
+        return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_snode);
       }
 
       template <typename index>
       auto inserted_2(const KEY &key, const typename SUBTRIE::Key &value) const {
-        const auto[result, new_subtrie, updated] = subtrie.template inserted<index>(value);
-        auto new_snode = new_subtrie.empty() ? nullptr : new Singleton_Node<KEY, SUBTRIE>(key, std::move(new_subtrie));
-        return std::make_tuple(result, new_snode, updated);
+        auto tuple_value = subtrie.template inserted<index>(value);
+        auto new_snode = std::get<1>(tuple_value).empty() ? nullptr : new Singleton_Node<KEY, SUBTRIE>(key, std::move(std::get<1>(tuple_value)));
+        return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_snode);
       }
 
       auto erased(const KEY &key, const typename SUBTRIE::Key &value) const {
-        const auto[result, new_subtrie, updated] = subtrie.erased(value);
-        auto new_snode = new_subtrie.empty() ? nullptr : new Singleton_Node<KEY, SUBTRIE>(key, std::move(new_subtrie));
-        return std::make_tuple(result, new_snode, updated);
+        auto tuple_value = subtrie.erased(value);
+        auto new_snode = std::get<1>(tuple_value).empty() ? nullptr : new Singleton_Node<KEY, SUBTRIE>(key, std::move(std::get<1>(tuple_value)));
+        return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_snode);
       }
 
       template <typename index>
       auto erased_2(const KEY &key, const typename SUBTRIE::Key &value) const {
-        const auto[result, new_subtrie, updated] = subtrie.template erased<index>(value);
-        auto new_snode = new_subtrie.empty() ? nullptr : new Singleton_Node<KEY, SUBTRIE>(key, std::move(new_subtrie));
-        return std::make_tuple(result, new_snode, updated);
+        auto tuple_value = subtrie.template erased<index>(value);
+        auto new_snode = std::get<1>(tuple_value).empty() ? nullptr : new Singleton_Node<KEY, SUBTRIE>(key, std::move(std::get<1>(tuple_value)));
+        return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_snode);
       }
 
       const KEY key;
@@ -295,7 +321,7 @@ namespace Zeni::Concurrency {
         }
       }
 
-      auto updated(const KEY &key, const typename SUBTRIE::Key &value, const bool insertion) const {
+      auto inserted(const KEY &key, const typename SUBTRIE::Key &value) const {
         const Singleton_Node<KEY, SUBTRIE> * found = nullptr;
         List_Node * new_head = nullptr;
         List_Node * new_tail = nullptr;
@@ -325,12 +351,51 @@ namespace Zeni::Concurrency {
           }
         }
         if (found) {
-          const auto [result, new_snode, updated] = insertion ? found->inserted(key, value) : found->erased(key, value);
-          return std::make_tuple(result, new List_Node(new_snode, new_head), updated);
+          auto tuple_value = found->inserted(key, value);
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
         }
         else {
-          const auto[result, new_snode, updated] = Singleton_Node<KEY, SUBTRIE>::Create(key, value, insertion);
-          return std::make_tuple(result, new List_Node(new_snode, new_head), updated);
+          auto tuple_value = Singleton_Node<KEY, SUBTRIE>::Create_Insert(key, value);
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
+        }
+      }
+
+      auto erased(const KEY &key, const typename SUBTRIE::Key &value) const {
+        const Singleton_Node<KEY, SUBTRIE> * found = nullptr;
+        List_Node * new_head = nullptr;
+        List_Node * new_tail = nullptr;
+        List_Node * old_head = const_cast<List_Node *>(this);
+        for (; old_head; old_head = old_head->next) {
+          if (PRED()(old_head->snode->key, key)) {
+            found = old_head->snode;
+            if (old_head->next) {
+              old_head->next->increment_refs();
+              if (new_head)
+                new_tail->next = old_head->next;
+              else {
+                new_head = old_head->next;
+                new_tail = new_head;
+              }
+              break;
+            }
+          }
+          else {
+            old_head->snode->increment_refs();
+            if (new_head)
+              new_head = new List_Node(old_head->snode, new_head);
+            else {
+              new_head = new List_Node(old_head->snode, nullptr);
+              new_tail = new_head;
+            }
+          }
+        }
+        if (found) {
+          auto tuple_value = found->erased(key, value);
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
+        }
+        else {
+          auto tuple_value = Singleton_Node<KEY, SUBTRIE>::Create_Erase(key, value);
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
         }
       }
 
@@ -537,19 +602,19 @@ namespace Zeni::Concurrency {
     }
 
     auto insert(const Key &key, const typename Subtrie::Key &value) {
-      return insert_or_erase(key, value, true);
+      return iinsert(key, value);
     }
 
     auto inserted(const Key &key, const typename Subtrie::Key &value) const {
-      return inserted_or_erased(key, value, true);
+      return iinserted(key, value);
     }
 
     auto erase(const Key &key, const typename Subtrie::Key &value) {
-      return insert_or_erase(key, value, false);
+      return ierase(key, value);
     }
 
     auto erased(const Key &key, const typename Subtrie::Key &value) const {
-      return inserted_or_erased(key, value, false);
+      return ierased(key, value);
     }
 
     Snapshot snapshot() const {
@@ -557,30 +622,56 @@ namespace Zeni::Concurrency {
     }
 
   private:
-    auto insert_or_erase(const Key &key, const typename Subtrie::Key &value, const bool insertion) {
+    auto iinsert(const Key &key, const typename Subtrie::Key &value) {
       const Hash_Value hash_value = Hash()(key);
       const MNode * root = isnapshot();
       for (;;) {
-        const auto[result, new_root, updated] = iinsert(root, key, value, hash_value, insertion, 0);
-        if (new_root)
-          new_root->increment_refs();
+        auto tuple_value = iinsert(root, key, value, hash_value, 0);
+        if (std::get<1>(tuple_value))
+          std::get<1>(tuple_value)->increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
-          return std::make_tuple(result, Snapshot(new_root), updated);
+        if (CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
-          if (new_root)
-            new_root->decrement_refs();
+          if (std::get<1>(tuple_value))
+            std::get<1>(tuple_value)->decrement_refs();
           enforce_snapshot(root);
         }
       }
     }
 
-    auto inserted_or_erased(const Key &key, const typename Subtrie::Key &value, const bool insertion) const {
+    auto ierase(const Key &key, const typename Subtrie::Key &value) {
+      const Hash_Value hash_value = Hash()(key);
+      const MNode * root = isnapshot();
+      for (;;) {
+        auto tuple_value = ierase(root, key, value, hash_value, 0);
+        if (std::get<1>(tuple_value))
+          std::get<1>(tuple_value)->increment_refs();
+        if (root)
+          root->decrement_refs();
+        if (CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+        else {
+          if (std::get<1>(tuple_value))
+            std::get<1>(tuple_value)->decrement_refs();
+          enforce_snapshot(root);
+        }
+      }
+    }
+
+    auto iinserted(const Key &key, const typename Subtrie::Key &value) const {
       const Hash_Value hash_value = Hash()(key);
       const MNode * const root = m_root.load(std::memory_order_acquire);
-      const auto[result, new_root, inserted] = iinsert(root, key, value, hash_value, insertion, 0);
-      return std::make_tuple(result, Snapshot(new_root), inserted ? inserted->key : Key());
+      auto tuple_value = iinsert(root, key, value, hash_value, 0);
+      return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+    }
+
+    auto ierased(const Key &key, const typename Subtrie::Key &value) const {
+      const Hash_Value hash_value = Hash()(key);
+      const MNode * const root = m_root.load(std::memory_order_acquire);
+      auto tuple_value = ierase(root, key, value, hash_value, 0);
+      return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
     }
 
     Hash_Trie_2(const MNode * const mnode)
@@ -638,74 +729,148 @@ namespace Zeni::Concurrency {
       const Key &key,
       const typename Subtrie::Key &value,
       const Hash_Value &hash_value,
-      const bool insertion,
       const size_t level) const
     {
       if (const auto cnode = dynamic_cast<const CNode *>(mnode)) {
         const auto[flag, pos] = cnode->flagpos(hash_value, level);
         const MNode * const next = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
         if (!next) {
-          const auto[result, new_snode, updated] = SNode::Create(key, value, insertion);
-          return std::make_tuple(result, static_cast<const MNode *>(cnode->inserted(pos, flag, new_snode)), updated);
+          auto tuple_value = SNode::Create_Insert(key, value);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode->inserted(pos, flag, std::get<1>(tuple_value))));
         }
-        const auto[result, new_next, updated] = iinsert(next, key, value, hash_value, insertion, level + CNode::W);
-        if (!new_next) {
+        auto tuple_value = iinsert(next, key, value, hash_value, level + CNode::W);
+        if (!std::get<1>(tuple_value)) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
-            return std::make_tuple(result, static_cast<const MNode *>(new_cnode), updated);
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(nullptr));
           else if (new_cnode->get_hamming_value() != 1)
-            return std::make_tuple(result, static_cast<const MNode *>(new_cnode), updated);
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new_cnode));
           else {
             const auto new_mnode = new_cnode->at(0);
             if (dynamic_cast<const CNode *>(new_mnode))
-              return std::make_tuple(result, static_cast<const MNode *>(new_cnode), updated);
+              return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new_cnode));
             else {
               new_mnode->increment_refs();
               delete new_cnode;
-              return std::make_tuple(result, new_mnode, updated);
+              return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_mnode);
             }
           }
         }
         else
-          return std::make_tuple(result, static_cast<const MNode *>(cnode->updated(pos, flag, new_next)), updated);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode->updated(pos, flag, std::get<1>(tuple_value))));
       }
       else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
         const Hash_Value lnode_hash = Hash()(lnode->snode->key);
         if (lnode_hash != hash_value) {
           lnode->increment_refs();
-          const auto[result, new_snode, updated] = SNode::Create(key, value, insertion);
-          return std::make_tuple(result, static_cast<const MNode *>(CNode::Create(new_snode, hash_value, lnode, lnode_hash, level)), updated);
+          auto tuple_value = SNode::Create_Insert(key, value);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(CNode::Create(std::get<1>(tuple_value), hash_value, lnode, lnode_hash, level)));
         }
         else {
-          const auto[result, new_lnode, updated] = lnode->updated(key, value, insertion);
-          if (!new_lnode->next) {
-            new_lnode->snode->increment_refs();
-            new_lnode->decrement_refs();
-            return std::make_tuple(result, static_cast<const MNode *>(new_lnode->snode), updated);
+          auto tuple_value = lnode->inserted(key, value);
+          if (!std::get<1>(tuple_value)->next) {
+            std::get<1>(tuple_value)->snode->increment_refs();
+            std::get<1>(tuple_value)->decrement_refs();
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)->snode));
           }
-          return std::make_tuple(result, static_cast<const MNode *>(new_lnode), updated);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
         }
       }
       else if (auto snode = dynamic_cast<const SNode *>(mnode)) {
         const Hash_Value snode_hash = Hash()(snode->key);
         if (snode_hash != hash_value) {
           snode->increment_refs();
-          const auto[result, new_snode, updated] = SNode::Create(key, value, insertion);
-          return std::make_tuple(result, static_cast<const MNode *>(CNode::Create(new_snode, hash_value, snode, snode_hash, level)), updated);
+          auto tuple_value = SNode::Create_Insert(key, value);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(CNode::Create(std::get<1>(tuple_value), hash_value, snode, snode_hash, level)));
         }
         else if (Pred()(snode->key, key)) {
-          const auto[result, new_snode, updated] = insertion ? snode->inserted(key, value) : snode->erased(key, value);
-          return std::make_tuple(result, static_cast<const MNode *>(new_snode), updated);
+          auto tuple_value = snode->inserted(key, value);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
         }
         else {
           snode->increment_refs();
-          const auto[result, new_snode, updated] = SNode::Create(key, value, insertion);
-          return std::make_tuple(result, static_cast<const MNode *>(new LNode(new_snode, new LNode(snode))), updated);
+          auto tuple_value = SNode::Create_Insert(key, value);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new LNode(std::get<1>(tuple_value), new LNode(std::get<1>(tuple_value)))));
         }
       }
       else {
-        const auto[result, new_snode, updated] = SNode::Create(key, value, insertion);
-        return std::make_tuple(result, static_cast<const MNode *>(new_snode), updated);
+        auto tuple_value = SNode::Create_Insert(key, value);
+        return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+      }
+    }
+
+    auto ierase(
+      const MNode * const mnode,
+      const Key &key,
+      const typename Subtrie::Key &value,
+      const Hash_Value &hash_value,
+      const size_t level) const
+    {
+      if (const auto cnode = dynamic_cast<const CNode *>(mnode)) {
+        const auto[flag, pos] = cnode->flagpos(hash_value, level);
+        const MNode * const next = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+        if (!next) {
+          auto tuple_value = SNode::Create_Erase(key, value);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode->inserted(pos, flag, std::get<1>(tuple_value))));
+        }
+        auto tuple_value = ierase(next, key, value, hash_value, level + CNode::W);
+        if (!std::get<1>(tuple_value)) {
+          const auto new_cnode = cnode->erased(pos, flag);
+          if (!new_cnode)
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(nullptr));
+          else if (new_cnode->get_hamming_value() != 1)
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new_cnode));
+          else {
+            const auto new_mnode = new_cnode->at(0);
+            if (dynamic_cast<const CNode *>(new_mnode))
+              return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new_cnode));
+            else {
+              new_mnode->increment_refs();
+              delete new_cnode;
+              return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_mnode);
+            }
+          }
+        }
+        else
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode->updated(pos, flag, std::get<1>(tuple_value))));
+      }
+      else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
+        const Hash_Value lnode_hash = Hash()(lnode->snode->key);
+        if (lnode_hash != hash_value) {
+          lnode->increment_refs();
+          auto tuple_value = SNode::Create_Erase(key, value);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(CNode::Create(std::get<1>(tuple_value), hash_value, lnode, lnode_hash, level)));
+        }
+        else {
+          auto tuple_value = lnode->erased(key, value);
+          if (!std::get<1>(tuple_value)->next) {
+            std::get<1>(tuple_value)->snode->increment_refs();
+            std::get<1>(tuple_value)->decrement_refs();
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)->snode));
+          }
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+        }
+      }
+      else if (auto snode = dynamic_cast<const SNode *>(mnode)) {
+        const Hash_Value snode_hash = Hash()(snode->key);
+        if (snode_hash != hash_value) {
+          snode->increment_refs();
+          auto tuple_value = SNode::Create_Erase(key, value);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(CNode::Create(std::get<1>(tuple_value), hash_value, snode, snode_hash, level)));
+        }
+        else if (Pred()(snode->key, key)) {
+          auto tuple_value = snode->erased(key, value);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+        }
+        else {
+          snode->increment_refs();
+          auto tuple_value = SNode::Create_Erase(key, value);
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new LNode(std::get<1>(tuple_value), new LNode(std::get<1>(tuple_value)))));
+        }
+      }
+      else {
+        auto tuple_value = SNode::Create_Erase(key, value);
+        return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
       }
     }
 

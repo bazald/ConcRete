@@ -196,23 +196,26 @@ int main()
   //s2.insert_2<1, 0>(13.37f);
   //s2.insert_2<1, 1>(nullptr);
 
-  //Zeni::Concurrency::Hash_Trie_2<int, Zeni::Concurrency::Antiable_Hash_Trie<double>> ht2;
+  Zeni::Concurrency::Hash_Trie_2<int, Zeni::Concurrency::Hash_Trie<double>> ht2;
 
-  //{
-  //  const auto[result, snapshot, value] = ht2.insert(42, 13.37);
-  //}
-  //{
-  //  const auto[value, snapshot] = ht2.lookup(42, 13.37);
-  //}
-  //{
-  //  const auto[value, snapshot] = ht2.lookup(12, 13.37);
-  //}
-  //{
-  //  const auto[value, snapshot] = ht2.lookup(42, 12.0);
-  //}
-  //{
-  //  const auto[result, snapshot, value] = ht2.erase(42, 13.37);
-  //}
+  {
+    const auto[result, snapshot, value, replaced] = ht2.insert(42, 13.37);
+  }
+  {
+    const auto[result, snapshot, value, replaced] = ht2.insert(42, 13.37);
+  }
+  {
+    const auto[value, snapshot] = ht2.lookup(42, 13.37);
+  }
+  {
+    const auto[value, snapshot] = ht2.lookup(12, 13.37);
+  }
+  {
+    const auto[value, snapshot] = ht2.lookup(42, 12.0);
+  }
+  {
+    const auto[result, snapshot, value] = ht2.erase(42, 13.37);
+  }
 
   return 0;
 }

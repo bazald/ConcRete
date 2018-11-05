@@ -8,7 +8,7 @@
 
 namespace Zeni::Concurrency {
 
-  namespace Internal {
+  namespace Super_Hash_Trie_Internal {
     template <size_t tuple_size>
     struct Update_Tuple_1 {};
 
@@ -76,7 +76,7 @@ namespace Zeni::Concurrency {
         auto tuple_value = std::get<index>(m_hash_tries).inserted(key);
         Hash_Trie_Super_Node * const updated_node = new Hash_Trie_Super_Node(*this);
         std::get<index>(updated_node->m_hash_tries) = std::get<1>(tuple_value);
-        return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
+        return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
       }
 
       template <size_t index1, size_t index2, typename Key>
@@ -84,7 +84,7 @@ namespace Zeni::Concurrency {
         auto tuple_value = std::get<index1>(m_hash_tries).template inserted<index2>(key);
         Hash_Trie_Super_Node * const updated_node = new Hash_Trie_Super_Node(*this);
         std::get<index1>(updated_node->m_hash_tries) = std::get<1>(tuple_value);
-        return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
+        return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
       }
 
       template <size_t index, typename Key>
@@ -92,7 +92,7 @@ namespace Zeni::Concurrency {
         auto tuple_value = std::get<index>(m_hash_tries).erased(key);
         Hash_Trie_Super_Node * const updated_node = new Hash_Trie_Super_Node(*this);
         std::get<index>(updated_node->m_hash_tries) = std::get<1>(tuple_value);
-        return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
+        return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
       }
 
       template <size_t index1, size_t index2, typename Key>
@@ -100,7 +100,7 @@ namespace Zeni::Concurrency {
         auto tuple_value = std::get<index1>(m_hash_tries).template erased<index2>(key);
         Hash_Trie_Super_Node * const updated_node = new Hash_Trie_Super_Node(*this);
         std::get<index1>(updated_node->m_hash_tries) = std::get<1>(tuple_value);
-        return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
+        return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, updated_node);
       }
 
       template <size_t index>
@@ -267,7 +267,7 @@ namespace Zeni::Concurrency {
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
           if (std::get<1>(tuple_value))
             std::get<1>(tuple_value)->decrement_refs();
@@ -286,7 +286,7 @@ namespace Zeni::Concurrency {
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
           if (std::get<1>(tuple_value))
             std::get<1>(tuple_value)->decrement_refs();
@@ -299,14 +299,14 @@ namespace Zeni::Concurrency {
     auto iinserted(const Key &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       const auto tuple_value = super_root->template inserted<index>(key);
-      return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+      return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto iinserted_2(const Key &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       const auto tuple_value = super_root->template inserted_2<index1, index2>(key);
-      return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+      return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
     }
 
     template <size_t index, typename Key>
@@ -319,7 +319,7 @@ namespace Zeni::Concurrency {
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
           if (std::get<1>(tuple_value))
             std::get<1>(tuple_value)->decrement_refs();
@@ -338,7 +338,7 @@ namespace Zeni::Concurrency {
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
           if (std::get<1>(tuple_value))
             std::get<1>(tuple_value)->decrement_refs();
@@ -351,14 +351,14 @@ namespace Zeni::Concurrency {
     auto ierased(const Key &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       const auto tuple_value = super_root->template erased<index>(key);
-      return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+      return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto ierased_2(const Key &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       const auto tuple_value = super_root->template erased_2<index1, index2>(key);
-      return Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+      return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
     }
 
     Super_Hash_Trie(const Hash_Trie_Super_Node * const super_node)
