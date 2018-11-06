@@ -448,8 +448,8 @@ namespace Zeni::Concurrency {
 
     public:
       typedef std::forward_iterator_tag iterator_category;
-      typedef const Key value_type;
-      typedef value_type & reference;
+      typedef std::pair<Key, Subtrie> value_type;
+      typedef std::pair<const Key &, const Subtrie &> reference;
 
       const_iterator() = default;
 
@@ -479,7 +479,8 @@ namespace Zeni::Concurrency {
       }
 
       reference operator*() const {
-        return static_cast<const SNode *>(m_level_stack.top().mnode)->key;
+        const SNode * const snode = static_cast<const SNode *>(m_level_stack.top().mnode);
+        return std::make_pair(std::reference_wrapper<const Key>(snode->key), std::reference_wrapper<const Subtrie>(snode->subtrie));
       }
 
       const_iterator next() const {
@@ -635,6 +636,13 @@ namespace Zeni::Concurrency {
       return isnapshot();
     }
 
+    template <size_t index, typename Comparable1, typename CHash1 = Hash, typename CPred1 = Pred>
+    auto lookup_snapshot(const Comparable1 &key) const {
+      const Hash_Value hash_value = CHash1()(key);
+      const MNode * const root = m_root.load(std::memory_order_acquire);
+      return isnapshot<index, Comparable1, CPred1>(root, key, hash_value, 0);
+    }
+
   private:
     template <size_t index>
     auto iinsert(const Key &key, const typename std::tuple_element<index, typename Subtrie::Types>::type::Key &value) {
@@ -739,6 +747,39 @@ namespace Zeni::Concurrency {
           return CPred1()(snode->key, key) ? snode->subtrie.template looked_up<index, Comparable2, CHash2, CPred2>(value) : typename std::tuple_element<index, typename Subtrie::Types>::type::Key();
         else
           return typename std::tuple_element<index, typename Subtrie::Types>::type::Key();
+      }
+    }
+
+    template <size_t index, typename Comparable1, typename CPred1>
+    typename std::tuple_element<index, typename Subtrie::Types>::type::Snapshot isnapshot(
+      const MNode * mnode,
+      const Comparable1 &key,
+      const Hash_Value &hash_value,
+      size_t level) const
+    {
+      for (;;) {
+        if (const auto cnode = dynamic_cast<const CNode *>(mnode)) {
+          const auto[flag, pos] = cnode->flagpos(hash_value, level);
+          const MNode * const next = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          if (!next)
+            return typename std::tuple_element<index, typename Subtrie::Types>::type::Snapshot();
+          mnode = next;
+          level += CNode::W;
+          continue;
+        }
+        else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
+          do {
+            if (CPred1()(lnode->snode->key, key))
+              return lnode->snode->subtrie.template snapshot<index>();
+            else
+              lnode = lnode->next;
+          } while (lnode);
+          return typename std::tuple_element<index, typename Subtrie::Types>::type::Snapshot();
+        }
+        else if (auto snode = dynamic_cast<const SNode *>(mnode))
+          return CPred1()(snode->key, key) ? snode->subtrie.template snapshot<index>() : typename std::tuple_element<index, typename Subtrie::Types>::type::Snapshot();
+        else
+          return typename std::tuple_element<index, typename Subtrie::Types>::type::Snapshot();
       }
     }
 

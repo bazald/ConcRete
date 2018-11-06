@@ -66,9 +66,6 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Action.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Parser_Impl.cpp">
       <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
@@ -110,6 +107,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Sequential_Pair.cpp">
       <Filter>Source Files\Zeni\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_0.cpp">
+      <Filter>Source Files\Zeni</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -159,9 +159,6 @@
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Existential.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter.hpp">
       <Filter>Header Files\Zeni</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join.hpp">
@@ -220,6 +217,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Sequential_Pair.hpp">
       <Filter>Header Files\Zeni\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter_0.hpp">
+      <Filter>Header Files\Zeni</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

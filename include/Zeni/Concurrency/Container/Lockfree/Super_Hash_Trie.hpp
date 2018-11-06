@@ -345,7 +345,13 @@ namespace Zeni::Concurrency {
     template <size_t index1, size_t index2>
     auto snapshot_2() const {
       const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
-      return super_root->template snapshot<index1>()->template snapshot<index2>();
+      return super_root->template snapshot<index1>().template snapshot<index2>();
+    }
+
+    template <size_t index1, size_t index2>
+    auto lookup_snapshot(const typename std::tuple_element<index1, Types>::type::Key &key) const {
+      const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
+      return super_root->template snapshot<index1>().template lookup_snapshot<index2>(key);
     }
 
   private:

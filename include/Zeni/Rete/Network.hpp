@@ -1,7 +1,11 @@
 #ifndef ZENI_RETE_NETWORK_HPP
 #define ZENI_RETE_NETWORK_HPP
 
+#include "Zeni/Concurrency/Container/Antiable_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie.hpp"
+#include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
+#include "Zeni/Concurrency/Container/Positive_Hash_Trie.hpp"
+#include "Zeni/Concurrency/Container/Super_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Recipient.hpp"
 #include "Node.hpp"
 #include "Node_Action.hpp"
@@ -100,6 +104,21 @@ namespace Zeni::Rete {
 
   private:
     const std::shared_ptr<Concurrency::Worker_Threads> m_worker_threads;
+
+    typedef Concurrency::Antiable_Hash_Trie<std::shared_ptr<const Token>, hash_deref<Token>, compare_deref_eq> Token_Trie;
+    typedef Concurrency::Positive_Hash_Trie<std::shared_ptr<Node>, hash_deref<Node>, compare_deref_eq> Node_Trie;
+    typedef Concurrency::Hash_Trie_S2<std::shared_ptr<const Symbol>, Concurrency::Super_Hash_Trie<Token_Trie, Node_Trie>, hash_deref<Symbol>, compare_deref_eq> Symbol_Trie;
+    typedef Concurrency::Super_Hash_Trie<Symbol_Trie, Node_Trie> Filter_Layer_0_Trie;
+    typedef Filter_Layer_0_Trie::Snapshot Filter_Layer_0_Snapshot;
+    enum Filter_Layer_0 {
+      FILTER_LAYER_0_SYMBOL = 0,
+      FILTER_LAYER_0_VARIABLE_OUTPUTS = 1
+    };
+    enum Filter_Layer_0_Symbol {
+      FILTER_LAYER_0_SYMBOL_TOKENS = 0,
+      FILTER_LAYER_0_SYMBOL_OUTPUTS = 1
+    };
+    Filter_Layer_0_Trie m_filter_layer_0_trie;
 
     typedef Concurrency::Hash_Trie<std::shared_ptr<Node_Action>, Node_Action::Hash_By_Name, Node_Action::Compare_By_Name_Eq> Rule_Trie;
     Rule_Trie m_rules;
