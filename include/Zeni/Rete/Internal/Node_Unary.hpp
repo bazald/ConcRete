@@ -10,18 +10,21 @@ namespace Zeni::Rete {
     Node_Unary & operator=(const Node_Unary &) = delete;
 
   protected:
-    Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const size_t hash, const std::shared_ptr<Node> input);
+    Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const size_t hash, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> input);
 
   public:
     ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) override;
 
     ZENI_RETE_LINKAGE std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() override;
+    ZENI_RETE_LINKAGE std::shared_ptr<const Node_Key> get_key_for_input(const std::shared_ptr<const Node> input) const override;
 
     ZENI_RETE_LINKAGE std::shared_ptr<const Node> get_input() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Node> get_input();
+    ZENI_RETE_LINKAGE std::shared_ptr<const Node_Key> get_key() const;
 
   private:
     const std::shared_ptr<Node> m_input;
+    const std::shared_ptr<const Node_Key> m_key;
   };
 
 }
