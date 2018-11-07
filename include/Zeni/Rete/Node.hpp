@@ -13,6 +13,7 @@ namespace Zeni::Rete {
   class Custom_Data;
   class Message_Connect_Filter_0;
   class Message_Connect_Filter_1;
+  class Message_Connect_Filter_2;
   class Message_Disconnect_Output;
   class Message_Token_Insert;
   class Message_Token_Remove;
@@ -54,6 +55,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual void receive(const Message_Token_Remove &message) = 0;
     ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Filter_0 &message);
     ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Filter_1 &message);
+    ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Filter_2 &message);
     ZENI_RETE_LINKAGE virtual void receive(const Message_Disconnect_Output &message) = 0;
 
     ZENI_RETE_LINKAGE virtual size_t get_hash() const;

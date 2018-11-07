@@ -47,6 +47,11 @@ namespace Zeni::Rete {
     abort();
   }
 
+  void Node::receive(const Message_Connect_Filter_2 &)
+  {
+    abort();
+  }
+
   void Node::receive(const std::shared_ptr<const Concurrency::Message> message) noexcept {
     std::dynamic_pointer_cast<const Rete::Message>(message)->receive();
   }

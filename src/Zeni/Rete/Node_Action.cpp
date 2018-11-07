@@ -9,7 +9,7 @@
 
 namespace Zeni::Rete {
 
-  Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Action &action_, const Action &retraction_)
+  Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Action &action_, const Action &retraction_)
     : Node_Unary(input->get_height() + 1, input->get_size(), input->get_token_size(), Hash_By_Name()(name_), node_key, input),
     m_variables(variables),
     m_name(name_),
@@ -29,45 +29,13 @@ namespace Zeni::Rete {
     assert(!m_name.empty());
   }
 
-  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
+  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
     class Friendly_Node_Action : public Node_Action {
     public:
-      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables, const Action &action_, const Action &retraction_)
-        : Node_Action(name_, nullptr, input, variables, action_, retraction_) {}
+      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<const Node_Key> node_key_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables, const Action &action_, const Action &retraction_) : Node_Action(name_, node_key_, input, variables, action_, retraction_) {}
     };
 
-    const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, input, variables, action, retraction));
-
-    network->source_rule(job_queue, action_fun, user_action);
-
-    input->connect_new_or_existing_output(network, job_queue, action_fun);
-
-    return action_fun;
-  }
-
-  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Symbol> &symbol, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
-    class Friendly_Node_Action : public Node_Action {
-    public:
-      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<Node_Key> node_key_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables, const Action &action_, const Action &retraction_)
-        : Node_Action(name_, node_key_, input, variables, action_, retraction_) {}
-    };
-
-    const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, std::make_shared<Node_Key_Symbol>(symbol), input, variables, action, retraction));
-
-    network->source_rule(job_queue, action_fun, user_action);
-
-    input->connect_new_or_existing_output(network, job_queue, action_fun);
-
-    return action_fun;
-  }
-
-  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Variable_Bindings> &variable_bindings, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
-    class Friendly_Node_Action : public Node_Action {
-    public:
-      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<Node_Key> node_key_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables, const Action &action_, const Action &retraction_) : Node_Action(name_, node_key_, input, variables, action_, retraction_) {}
-    };
-
-    const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, std::make_shared<Node_Key_Variable_Bindings>(variable_bindings), input, variables, action, retraction));
+    const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, node_key, input, variables, action, retraction));
 
     network->source_rule(job_queue, action_fun, user_action);
 

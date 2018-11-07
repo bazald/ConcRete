@@ -15,4 +15,18 @@ namespace Zeni::Rete {
 ZENI_RETE_LINKAGE std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Variable_Binding &binding);
 ZENI_RETE_LINKAGE std::ostream & operator<<(std::ostream &os, const Zeni::Rete::Variable_Bindings &bindings);
 
+namespace std {
+  template <> struct hash<Zeni::Rete::Variable_Binding> {
+    size_t operator()(const Zeni::Rete::Variable_Binding &variable_binding) const {
+      return Zeni::hash_combine(std::hash<Zeni::Rete::Token_Index>()(variable_binding.first), std::hash<Zeni::Rete::Token_Index>()(variable_binding.second));
+    }
+  };
+
+  template <> struct hash<Zeni::Rete::Variable_Bindings> {
+    size_t operator()(const Zeni::Rete::Variable_Bindings &variable_bindings) const {
+      return Zeni::hash_container<Zeni::Rete::Variable_Binding>()(variable_bindings);
+    }
+  };
+}
+
 #endif

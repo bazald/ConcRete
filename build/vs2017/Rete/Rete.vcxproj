@@ -24,6 +24,7 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_1.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_0.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_2.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Disconnect_Output.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Sequential_Pair.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Insert.cpp" />
@@ -39,6 +40,7 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Action.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_1.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_2.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Passthrough.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Parser.cpp" />
@@ -59,6 +61,7 @@
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_1.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_0.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_2.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Disconnect_Output.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Sequential_Pair.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Token_Insert.hpp" />
@@ -75,6 +78,7 @@
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Action.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Existential.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter_1.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter_2.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Existential.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Negation.hpp" />

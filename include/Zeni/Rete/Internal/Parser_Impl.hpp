@@ -2,7 +2,8 @@
 #define ZENI_RETE_PARSER_IMPL_HPP
 
 #include "../Node_Action.hpp"
-#include "../Node_Filter.hpp"
+#include "../Node_Filter_1.hpp"
+#include "../Node_Filter_2.hpp"
 #include "../Node_Join.hpp"
 #include "../Parser.hpp"
 #include "../Symbol.hpp"

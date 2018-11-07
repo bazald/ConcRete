@@ -117,6 +117,12 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_0.cpp">
       <Filter>Source Files\Zeni\Internal</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_2.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_2.cpp">
+      <Filter>Source Files\Zeni\Internal</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Utility.hpp">
@@ -231,6 +237,12 @@
       <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_0.hpp">
+      <Filter>Header Files\Zeni\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter_2.hpp">
+      <Filter>Header Files\Zeni</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_2.hpp">
       <Filter>Header Files\Zeni\Internal</Filter>
     </ClInclude>
   </ItemGroup>
