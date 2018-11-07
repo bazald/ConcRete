@@ -2,16 +2,15 @@
 
 #include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Remove.hpp"
+#include "Zeni/Rete/Internal/Node_Key.hpp"
 #include "Zeni/Rete/Network.hpp"
 
 #include <cassert>
 
 namespace Zeni::Rete {
 
-  Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables,
-    const Action &action_,
-    const Action &retraction_)
-    : Node_Unary(input->get_height() + 1, input->get_size(), input->get_token_size(), Hash_By_Name()(name_), input),
+  Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Action &action_, const Action &retraction_)
+    : Node_Unary(input->get_height() + 1, input->get_size(), input->get_token_size(), Hash_By_Name()(name_), node_key, input),
     m_variables(variables),
     m_name(name_),
     m_action(action_),
@@ -21,7 +20,7 @@ namespace Zeni::Rete {
   }
 
   Node_Action::Node_Action(const std::string_view name_)
-    : Node_Unary(1, 0, 0, size_t(this), nullptr),
+    : Node_Unary(1, 0, 0, size_t(this), nullptr, nullptr),
     m_variables(nullptr),
     m_name(name_),
     m_action(Action()),
@@ -33,12 +32,42 @@ namespace Zeni::Rete {
   std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
     class Friendly_Node_Action : public Node_Action {
     public:
-      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables,
-        const Action &action_,
-        const Action &retraction_) : Node_Action(name_, input, variables, action_, retraction_) {}
+      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables, const Action &action_, const Action &retraction_)
+        : Node_Action(name_, nullptr, input, variables, action_, retraction_) {}
     };
 
     const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, input, variables, action, retraction));
+
+    network->source_rule(job_queue, action_fun, user_action);
+
+    input->connect_new_or_existing_output(network, job_queue, action_fun);
+
+    return action_fun;
+  }
+
+  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Symbol> &symbol, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
+    class Friendly_Node_Action : public Node_Action {
+    public:
+      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<Node_Key> node_key_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables, const Action &action_, const Action &retraction_)
+        : Node_Action(name_, node_key_, input, variables, action_, retraction_) {}
+    };
+
+    const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, std::make_shared<Node_Key_Symbol>(symbol), input, variables, action, retraction));
+
+    network->source_rule(job_queue, action_fun, user_action);
+
+    input->connect_new_or_existing_output(network, job_queue, action_fun);
+
+    return action_fun;
+  }
+
+  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Variable_Bindings> &variable_bindings, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
+    class Friendly_Node_Action : public Node_Action {
+    public:
+      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<Node_Key> node_key_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables, const Action &action_, const Action &retraction_) : Node_Action(name_, node_key_, input, variables, action_, retraction_) {}
+    };
+
+    const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, std::make_shared<Node_Key_Variable_Bindings>(variable_bindings), input, variables, action, retraction));
 
     network->source_rule(job_queue, action_fun, user_action);
 
@@ -63,17 +92,29 @@ namespace Zeni::Rete {
     return m_variables;
   }
 
-  void Node_Action::receive(const Message_Token_Insert &message) {
-    const auto[result, snapshot, value] = m_node_data.insert<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>(message.token);
+  std::pair<Node::Node_Trie::Result, std::shared_ptr<Node>> Node_Action::connect_new_or_existing_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node>) {
+    abort();
+  }
 
-    if (result == Input_Token_Trie::Result::First_Insertion)
+  Node::Node_Trie::Result Node_Action::connect_existing_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node>) {
+    abort();
+  }
+
+  void Node_Action::receive(const Message_Disconnect_Output &) {
+    abort();
+  }
+
+  void Node_Action::receive(const Message_Token_Insert &message) {
+    const auto[result, snapshot, value] = m_token_trie.insert(message.token);
+
+    if (result == Token_Trie::Result::First_Insertion)
       m_action(*this, *value);
   }
 
   void Node_Action::receive(const Message_Token_Remove &message) {
-    const auto[result, snapshot, value] = m_node_data.erase<NODE_DATA_SUBTRIE_TOKEN_INPUTS_LEFT>(message.token);
+    const auto[result, snapshot, value] = m_token_trie.erase(message.token);
 
-    if (result == Input_Token_Trie::Result::Last_Removal)
+    if (result == Token_Trie::Result::Last_Removal)
       m_retraction(*this, *value);
   }
 

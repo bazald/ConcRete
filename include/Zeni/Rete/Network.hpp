@@ -39,6 +39,18 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::shared_ptr<Network> shared_from_this();
 
   public:
+    typedef Concurrency::Hash_Trie_S2<std::shared_ptr<const Symbol>, Concurrency::Super_Hash_Trie<Token_Trie, Node_Trie>, hash_deref<Symbol>, compare_deref_eq> Symbol_Trie;
+    typedef Concurrency::Super_Hash_Trie<Symbol_Trie, Node_Trie> Filter_Layer_0_Trie;
+    typedef Filter_Layer_0_Trie::Snapshot Filter_Layer_0_Snapshot;
+    enum Filter_Layer_0 {
+      FILTER_LAYER_0_SYMBOL = 0,
+      FILTER_LAYER_0_VARIABLE_OUTPUTS = 1
+    };
+    enum Filter_Layer_0_Symbol {
+      FILTER_LAYER_0_SYMBOL_TOKENS = 0,
+      FILTER_LAYER_0_SYMBOL_OUTPUTS = 1
+    };
+
     class Instantiation : public std::enable_shared_from_this<Instantiation> {
       Instantiation(const Instantiation &) = delete;
       Instantiation & operator=(const Instantiation &) = delete;
@@ -86,9 +98,15 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
     ZENI_RETE_LINKAGE std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() override;
+    ZENI_RETE_LINKAGE std::shared_ptr<const Node_Key> get_key_for_input(const std::shared_ptr<const Node> input) const override;
+
+    ZENI_RETE_LINKAGE std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) override;
+    ZENI_RETE_LINKAGE Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) override;
 
     ZENI_RETE_LINKAGE void receive(const Message_Token_Insert &) override;
     ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Connect_Filter_0 &message) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Disconnect_Output &message) override;
 
     ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_command);
     ZENI_RETE_LINKAGE void excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command);
@@ -105,19 +123,6 @@ namespace Zeni::Rete {
   private:
     const std::shared_ptr<Concurrency::Worker_Threads> m_worker_threads;
 
-    typedef Concurrency::Antiable_Hash_Trie<std::shared_ptr<const Token>, hash_deref<Token>, compare_deref_eq> Token_Trie;
-    typedef Concurrency::Positive_Hash_Trie<std::shared_ptr<Node>, hash_deref<Node>, compare_deref_eq> Node_Trie;
-    typedef Concurrency::Hash_Trie_S2<std::shared_ptr<const Symbol>, Concurrency::Super_Hash_Trie<Token_Trie, Node_Trie>, hash_deref<Symbol>, compare_deref_eq> Symbol_Trie;
-    typedef Concurrency::Super_Hash_Trie<Symbol_Trie, Node_Trie> Filter_Layer_0_Trie;
-    typedef Filter_Layer_0_Trie::Snapshot Filter_Layer_0_Snapshot;
-    enum Filter_Layer_0 {
-      FILTER_LAYER_0_SYMBOL = 0,
-      FILTER_LAYER_0_VARIABLE_OUTPUTS = 1
-    };
-    enum Filter_Layer_0_Symbol {
-      FILTER_LAYER_0_SYMBOL_TOKENS = 0,
-      FILTER_LAYER_0_SYMBOL_OUTPUTS = 1
-    };
     Filter_Layer_0_Trie m_filter_layer_0_trie;
 
     typedef Concurrency::Hash_Trie<std::shared_ptr<Node_Action>, Node_Action::Hash_By_Name, Node_Action::Compare_By_Name_Eq> Rule_Trie;

@@ -59,14 +59,14 @@ namespace Zeni::Rete {
     };
 
   private:
-    Node_Action(const std::string_view name_, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables,
-      const Action &action_ = [](const Node_Action &, const Token &) {},
-      const Action &retraction_ = [](const Node_Action &, const Token &) {});
+    Node_Action(const std::string_view name, const std::shared_ptr<Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Action &action_, const Action &retraction_);
 
   public:
-    Node_Action(const std::string_view name_);
+    Node_Action(const std::string_view name);
 
     ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction = [](const Node_Action &, const Token &) {});
+    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Symbol> &symbol0, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction = [](const Node_Action &, const Token &) {});
+    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Variable_Bindings> &variable_bindings, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction = [](const Node_Action &, const Token &) {});
 
     ZENI_RETE_LINKAGE ~Node_Action();
 
@@ -75,8 +75,12 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::string get_name() const;
     ZENI_RETE_LINKAGE std::shared_ptr<const Variable_Indices> get_variables() const;
 
+    ZENI_RETE_LINKAGE std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) override;
+    ZENI_RETE_LINKAGE Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) override;
+
     ZENI_RETE_LINKAGE void receive(const Message_Token_Insert &message) override;
     ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &message) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Disconnect_Output &message) override;
 
     ZENI_RETE_LINKAGE bool operator==(const Node &) const override;
 
@@ -85,6 +89,8 @@ namespace Zeni::Rete {
     const std::string m_name;
     Action m_action;
     Action m_retraction;
+
+    Token_Trie m_token_trie;
   };
 
 }
