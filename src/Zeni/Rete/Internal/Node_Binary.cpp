@@ -23,8 +23,8 @@ namespace Zeni::Rete {
 
     if (m_input_left != m_input_right || *m_key_left != *m_key_right) {
       job_queue->give_one(std::make_shared<Message_Sequential_Pair>(network, std::make_pair(
-        std::make_shared<Message_Disconnect_Output>(m_input_right, network, m_key_left, sft),
-        std::make_shared<Message_Disconnect_Output>(m_input_left, network, m_key_right, sft)
+        std::make_shared<Message_Disconnect_Output>(m_input_right, network, m_key_right, sft),
+        std::make_shared<Message_Disconnect_Output>(m_input_left, network, m_key_left, sft)
       )));
     }
     else

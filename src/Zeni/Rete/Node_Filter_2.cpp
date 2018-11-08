@@ -179,12 +179,6 @@ namespace Zeni::Rete {
 
     if (result != Node_Trie::Result::Last_Removal)
       return;
-    if (!snapshot.empty<FILTER_LAYER_2_VARIABLE_OUTPUTS_02>() || !snapshot.empty<FILTER_LAYER_2_VARIABLE_OUTPUTS_12>())
-      return;
-    for (const auto tokens : snapshot.snapshot<FILTER_LAYER_2_SYMBOL>()) {
-      if (!tokens.second.empty<FILTER_LAYER_2_SYMBOL_OUTPUTS>())
-        return;
-    }
 
     send_disconnect_from_parents(message.network, message.get_Job_Queue());
 

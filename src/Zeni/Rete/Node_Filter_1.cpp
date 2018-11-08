@@ -150,12 +150,6 @@ namespace Zeni::Rete {
 
     if (result != Node_Trie::Result::Last_Removal)
       return;
-    if (!snapshot.empty<FILTER_LAYER_1_VARIABLE_OUTPUTS_01>())
-      return;
-    for (const auto tokens : snapshot.snapshot<FILTER_LAYER_1_SYMBOL>()) {
-      if (!tokens.second.empty<FILTER_LAYER_1_SYMBOL_OUTPUTS>())
-        return;
-    }
 
     send_disconnect_from_parents(message.network, message.get_Job_Queue());
 

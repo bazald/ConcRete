@@ -61,7 +61,7 @@ namespace Zeni::Rete {
     }
 
     if (input_left != input_right || *connected_join->get_key_left() != *connected_join->get_key_right()) {
-      const auto result1 = input_right->connect_existing_output(network, job_queue, created->get_key_right(), connected);
+      const auto result1 = input_right->connect_existing_output(network, job_queue, connected_join->get_key_right(), connected);
       if (result1 != Node_Trie::Result::First_Insertion)
         input_right->send_disconnect_from_parents(network, job_queue);
     }

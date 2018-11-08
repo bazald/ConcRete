@@ -507,7 +507,7 @@ namespace Zeni::Concurrency {
     }
 
     bool empty() const {
-      return cbegin() == cend();
+      return !m_root.load(std::memory_order_acquire);
     }
 
     size_t size() const {
