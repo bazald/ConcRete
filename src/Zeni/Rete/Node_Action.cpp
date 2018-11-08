@@ -2,8 +2,8 @@
 
 #include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Remove.hpp"
-#include "Zeni/Rete/Internal/Node_Key.hpp"
 #include "Zeni/Rete/Network.hpp"
+#include "Zeni/Rete/Node_Key.hpp"
 
 #include <cassert>
 
@@ -39,7 +39,7 @@ namespace Zeni::Rete {
 
     network->source_rule(job_queue, action_fun, user_action);
 
-    input->connect_new_or_existing_output(network, job_queue, action_fun);
+    input->connect_new_or_existing_output(network, job_queue, node_key, action_fun);
 
     return action_fun;
   }
@@ -60,11 +60,11 @@ namespace Zeni::Rete {
     return m_variables;
   }
 
-  std::pair<Node::Node_Trie::Result, std::shared_ptr<Node>> Node_Action::connect_new_or_existing_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node>) {
+  std::pair<Node::Node_Trie::Result, std::shared_ptr<Node>> Node_Action::connect_new_or_existing_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<const Node_Key>, const std::shared_ptr<Node>) {
     abort();
   }
 
-  Node::Node_Trie::Result Node_Action::connect_existing_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node>) {
+  Node::Node_Trie::Result Node_Action::connect_existing_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<const Node_Key>, const std::shared_ptr<Node>) {
     abort();
   }
 
@@ -87,7 +87,13 @@ namespace Zeni::Rete {
   }
 
   bool Node_Action::operator==(const Node &rhs) const {
-    return this == &rhs;
+    //return this == &rhs;
+
+    if (auto action = dynamic_cast<const Node_Action *>(&rhs)) {
+      return *get_key() == *action->get_key();
+    }
+
+    return false;
   }
 
 }

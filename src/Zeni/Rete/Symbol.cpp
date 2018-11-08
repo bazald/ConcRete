@@ -1,5 +1,6 @@
 #include "Zeni/Rete/Symbol.hpp"
 
+#include "Zeni/Rete/Variable_Indices.hpp"
 #include "Zeni/Utility.hpp"
 #include <algorithm>
 #include <iostream>

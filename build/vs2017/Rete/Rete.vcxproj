@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -25,12 +25,12 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_1.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_0.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_2.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Join.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Disconnect_Output.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Sequential_Pair.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Insert.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Remove.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Binary.cpp" />
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Key.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Unary.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Parser_Impl.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Token_Alpha.cpp" />
@@ -42,7 +42,7 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_1.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_2.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join.cpp" />
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Passthrough.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Key.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Parser.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Symbol.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Token.cpp" />
@@ -62,12 +62,12 @@
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_1.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_0.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_2.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Join.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Disconnect_Output.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Sequential_Pair.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Token_Insert.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Token_Remove.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Binary.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Key.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Unary.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Parser_Impl.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Token_Alpha.hpp" />
@@ -82,8 +82,8 @@
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Existential.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Negation.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Key.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Negation.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Passthrough.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Predicate.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Parser.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Symbol.hpp" />

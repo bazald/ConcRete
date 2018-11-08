@@ -5,9 +5,10 @@
 
 namespace Zeni::Rete {
 
-  Message_Token_Remove::Message_Token_Remove(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<Node> parent_, const std::shared_ptr<const Token> token_)
+  Message_Token_Remove::Message_Token_Remove(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<Node> parent_, const std::shared_ptr<const Node_Key> key_, const std::shared_ptr<const Token> token_)
     : Message(recipient, network),
     parent(parent_),
+    key(key_),
     token(token_)
   {
   }

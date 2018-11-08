@@ -1,8 +1,6 @@
 #ifndef ZENI_RETE_NODE_FILTER_2_HPP
 #define ZENI_RETE_NODE_FILTER_2_HPP
 
-#include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
-#include "Zeni/Concurrency/Container/Super_Hash_Trie.hpp"
 #include "Internal/Node_Unary.hpp"
 
 namespace Zeni::Rete {
@@ -11,7 +9,7 @@ namespace Zeni::Rete {
     Node_Filter_2(const Node_Filter_2 &) = delete;
     Node_Filter_2 & operator=(const Node_Filter_2 &) = delete;
 
-    Node_Filter_2(const std::shared_ptr<Network> network, const std::shared_ptr<const Node_Key> node_key);
+    Node_Filter_2(const std::shared_ptr<Network> network, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input);
 
   public:
     typedef Concurrency::Hash_Trie_S2<std::shared_ptr<const Symbol>, Concurrency::Super_Hash_Trie<Token_Trie, Node_Trie>, hash_deref<Symbol>, compare_deref_eq> Symbol_Trie;
@@ -27,10 +25,10 @@ namespace Zeni::Rete {
       FILTER_LAYER_2_SYMBOL_OUTPUTS = 1
     };
 
-    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Filter_2> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> node_key);
+    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Filter_2> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input);
 
-    ZENI_RETE_LINKAGE std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) override;
-    ZENI_RETE_LINKAGE Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) override;
+    ZENI_RETE_LINKAGE std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) override;
+    ZENI_RETE_LINKAGE Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) override;
 
     ZENI_RETE_LINKAGE void receive(const Message_Token_Insert &message) override;
     ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &message) override;

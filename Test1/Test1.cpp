@@ -21,10 +21,12 @@
 
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
-#include "Zeni/Rete/Node_Filter.hpp"
+#include "Zeni/Rete/Node_Filter_1.hpp"
+#include "Zeni/Rete/Node_Filter_2.hpp"
 #include "Zeni/Rete/Node_Join.hpp"
-#include "Zeni/Rete/Node_Passthrough.hpp"
+#include "Zeni/Rete/Node_Key.hpp"
 #include "Zeni/Rete/Parser.hpp"
+#include "Zeni/Rete/Variable_Indices.hpp"
 
 #include <array>
 #include <atomic>
@@ -695,11 +697,10 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
     };
 
     {
-      auto filter0 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-      //auto passthrough0 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter0);
-      auto filter1 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-      auto join0 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, filter0, filter1, Zeni::Rete::Variable_Bindings());
-      auto action0 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, join0, Zeni::Rete::Variable_Indices::Create(),
+      auto filter01 = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]));
+      auto filter02 = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]), filter01);
+      auto join0 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]), std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[1]), filter02, filter02, { Zeni::Rete::Variable_Binding(Zeni::Rete::Token_Index(0, 0, 0), Zeni::Rete::Token_Index(0, 0, 0)) });
+      auto action0 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, std::make_shared<Zeni::Rete::Node_Key_Null>(), join0, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
         std::cout << '(' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -727,11 +728,10 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
     //(*network)->get_Worker_Threads()->finish_jobs();
 
     {
-      auto filter2 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[0]));
-      //auto passthrough1 = Zeni::Rete::Node_Passthrough::Create(network->get(), job_queue, filter2);
-      auto filter3 = Zeni::Rete::Node_Filter::Create(network->get(), job_queue, Zeni::Rete::WME(symbols[0], symbols[0], symbols[1]));
-      auto join1 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, filter2, filter3, Zeni::Rete::Variable_Bindings());
-      auto action1 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, join1, Zeni::Rete::Variable_Indices::Create(),
+      auto filter11 = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]));
+      auto filter12 = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]), filter11);
+      auto join1 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]), std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[1]), filter12, filter12, { Zeni::Rete::Variable_Binding(Zeni::Rete::Token_Index(0, 0, 0), Zeni::Rete::Token_Index(0, 0, 0)) });
+      auto action1 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, std::make_shared<Zeni::Rete::Node_Key_Null>(), join1, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
         std::cout << '[' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -762,6 +762,8 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
 }
 
 void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+  return;
+
   const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, worker_threads);
 
   auto parser = Zeni::Rete::Parser::Create();

@@ -16,15 +16,10 @@ namespace Zeni::Rete {
   }
 
   void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
-    job_queue->give_one(std::make_shared<Message_Disconnect_Output>(m_input, network, shared_from_this()));
+    job_queue->give_one(std::make_shared<Message_Disconnect_Output>(m_input, network, m_key, shared_from_this()));
   }
 
-  std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> Node_Unary::get_inputs() {
-    return std::make_pair(m_input, nullptr);
-  }
-
-  std::shared_ptr<const Node_Key> Node_Unary::get_key_for_input(const std::shared_ptr<const Node> input) const {
-    assert(input == m_input);
+  std::shared_ptr<const Node_Key> Node_Unary::get_key() const {
     return m_key;
   }
 
@@ -34,10 +29,6 @@ namespace Zeni::Rete {
 
   std::shared_ptr<Node> Node_Unary::get_input() {
     return m_input;
-  }
-
-  ZENI_RETE_LINKAGE std::shared_ptr<const Node_Key> Node_Unary::get_key() const {
-    return m_key;
   }
 
 }

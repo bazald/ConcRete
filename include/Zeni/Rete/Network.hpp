@@ -1,11 +1,7 @@
 #ifndef ZENI_RETE_NETWORK_HPP
 #define ZENI_RETE_NETWORK_HPP
 
-#include "Zeni/Concurrency/Container/Antiable_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie.hpp"
-#include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
-#include "Zeni/Concurrency/Container/Positive_Hash_Trie.hpp"
-#include "Zeni/Concurrency/Container/Super_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Recipient.hpp"
 #include "Node.hpp"
 #include "Node_Action.hpp"
@@ -23,7 +19,6 @@ namespace Zeni::Concurrency {
 namespace Zeni::Rete {
 
   class Node_Action;
-  class Node_Filter;
   class WME;
 
   class Network : public Node {
@@ -97,11 +92,8 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE void set_rule_name_index(const int64_t rule_name_index_);
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
-    ZENI_RETE_LINKAGE std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> get_inputs() override;
-    ZENI_RETE_LINKAGE std::shared_ptr<const Node_Key> get_key_for_input(const std::shared_ptr<const Node> input) const override;
-
-    ZENI_RETE_LINKAGE std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) override;
-    ZENI_RETE_LINKAGE Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child) override;
+    ZENI_RETE_LINKAGE std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) override;
+    ZENI_RETE_LINKAGE Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) override;
 
     ZENI_RETE_LINKAGE void receive(const Message_Token_Insert &) override;
     ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &) override;

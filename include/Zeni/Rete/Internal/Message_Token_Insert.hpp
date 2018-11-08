@@ -5,6 +5,7 @@
 
 namespace Zeni::Rete {
 
+  class Node_Key;
   class Token;
 
   class Message_Token_Insert : public Message {
@@ -12,11 +13,12 @@ namespace Zeni::Rete {
     Message_Token_Insert operator=(const Message_Token_Insert &) = delete;
 
   public:
-    ZENI_RETE_LINKAGE Message_Token_Insert(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<Node> parent, const std::shared_ptr<const Token> token);
+    ZENI_RETE_LINKAGE Message_Token_Insert(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const std::shared_ptr<Node> parent, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<const Token> token);
 
     void receive() const override;
 
     const std::shared_ptr<Node> parent;
+    const std::shared_ptr<const Node_Key> key;
     const std::shared_ptr<const Token> token;
   };
 

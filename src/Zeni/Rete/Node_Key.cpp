@@ -1,4 +1,4 @@
-#include "Zeni/Rete/Internal/Node_Key.hpp"
+#include "Zeni/Rete/Node_Key.hpp"
 
 namespace Zeni::Rete {
 
@@ -19,10 +19,6 @@ namespace Zeni::Rete {
   }
 
   bool Node_Key::operator==(const Node_Key_12 &) const {
-    return false;
-  }
-
-  bool Node_Key::operator==(const Node_Key_Variable_Bindings &) const {
     return false;
   }
 
@@ -105,23 +101,6 @@ namespace Zeni::Rete {
 
   bool Node_Key_12::operator==(const Node_Key_12 &) const {
     return true;
-  }
-
-  Node_Key_Variable_Bindings::Node_Key_Variable_Bindings(const std::shared_ptr<const Variable_Bindings> variable_bindings_)
-    : variable_bindings(variable_bindings_)
-  {
-  }
-
-  size_t Node_Key_Variable_Bindings::hash() const {
-    return std::hash<Variable_Bindings>()(*variable_bindings);
-  }
-
-  bool Node_Key_Variable_Bindings::operator==(const Node_Key &rhs) const {
-    return rhs == *this;
-  }
-
-  bool Node_Key_Variable_Bindings::operator==(const Node_Key_Variable_Bindings &rhs) const {
-    return *variable_bindings == *rhs.variable_bindings;
   }
 
 }

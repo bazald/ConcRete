@@ -1,9 +1,10 @@
 #ifndef ZENI_RETE_SYMBOL_HPP
 #define ZENI_RETE_SYMBOL_HPP
 
-#include "Variable_Indices.hpp"
+#include "Internal/Linkage.hpp"
 
 #include <memory>
+#include <string>
 
 namespace Zeni::Rete {
 
@@ -14,6 +15,7 @@ namespace Zeni::Rete {
   class Symbol_Constant_String;
   class Symbol_Identifier;
   class Symbol_Variable;
+  class Variable_Indices;
 
   class Symbol
   {
