@@ -786,6 +786,8 @@ void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worke
   //  //  std::make_shared<Zeni::Rete::Message_Decrement_Output_Count>(gated_passthrough1, network->get(), gated_passthrough1));
   //}
 
+  (*network)->get_Worker_Threads()->finish_jobs();
+
   (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(
     std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
     std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),

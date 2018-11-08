@@ -51,6 +51,20 @@ namespace Zeni {
     }
   };
 
+  class compare_deref_container_deref_eq {
+  public:
+    template <typename CONTAINER>
+    bool operator()(const CONTAINER &lhs, const CONTAINER &rhs) const noexcept {
+      if (lhs->size() != rhs->size())
+        return false;
+      for (auto lt = lhs->cbegin(), rt = rhs->cbegin(), lend = lhs->cend(); lt != lend; ++lt, ++rt) {
+        if (**lt != **rt)
+          return false;
+      }
+      return true;
+    }
+  };
+
   class compare_container_deref_lt {
   public:
     template <typename CONTAINER>

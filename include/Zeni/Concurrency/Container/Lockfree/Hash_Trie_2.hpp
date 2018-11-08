@@ -338,7 +338,8 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           auto tuple_value = found->inserted(key, value);
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
+          auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
         }
         else {
           auto tuple_value = Singleton_Node<KEY, SUBTRIE>::Create_Insert(key, value);
@@ -377,7 +378,8 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           auto tuple_value = found->erased(key, value);
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
+          auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
         }
         else {
           auto tuple_value = Singleton_Node<KEY, SUBTRIE>::Create_Erase(key, value);
@@ -776,7 +778,7 @@ namespace Zeni::Concurrency {
         else {
           snode->increment_refs();
           auto tuple_value = SNode::Create_Insert(key, value);
-          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new LNode(std::get<1>(tuple_value), new LNode(std::get<1>(tuple_value)))));
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new LNode(std::get<1>(tuple_value), snode)));
         }
       }
       else {
@@ -851,7 +853,7 @@ namespace Zeni::Concurrency {
         else {
           snode->increment_refs();
           auto tuple_value = SNode::Create_Erase(key, value);
-          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new LNode(std::get<1>(tuple_value), new LNode(std::get<1>(tuple_value)))));
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new LNode(std::get<1>(tuple_value), snode)));
         }
       }
       else {

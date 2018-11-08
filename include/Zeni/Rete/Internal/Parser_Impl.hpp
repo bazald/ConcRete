@@ -205,7 +205,7 @@ namespace Zeni::Rete::PEG {
         for (auto right : second.second->get_indices()) {
           auto left = first.second->find_index(right.first);
           if (left != Token_Index())
-            variable_bindings.emplace(std::make_pair(left, right.second));
+            variable_bindings.emplace(left, right.second);
         }
         first.second = Variable_Indices::Create(first.first.first->get_size(), first.first.first->get_token_size(), *first.second, *second.second);
         first.first = std::make_pair(Node_Join::Create(data.network, data.job_queue, first.first.second, second.first.second, first.first.first, second.first.first, std::move(variable_bindings)), std::make_shared<Node_Key_Null>());

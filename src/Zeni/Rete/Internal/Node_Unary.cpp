@@ -10,8 +10,8 @@ namespace Zeni::Rete {
 
   Node_Unary::Node_Unary(const int64_t height, const int64_t size, const int64_t token_size, const size_t hash, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> input)
     : Node(height, size, token_size, hash),
-    m_input(input),
-    m_key(key)
+    m_key(key),
+    m_input(input)
   {
   }
 

@@ -7,8 +7,15 @@
 #include <string>
 
 namespace Zeni::Rete {
-
   class Symbol;
+}
+
+namespace std {
+  template class ZENI_RETE_LINKAGE std::shared_ptr<const Zeni::Rete::Symbol>;
+}
+
+namespace Zeni::Rete {
+
   class Symbol_Constant;
   class Symbol_Constant_Float;
   class Symbol_Constant_Int;
