@@ -88,14 +88,14 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     for (auto &output : snapshot.lookup_snapshot<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_OUTPUTS>(symbol))
-      jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, std::make_shared<Node_Key_Symbol>(symbol), message.token));
+      jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_Symbol::Create(symbol), message.token));
     if (*std::get<0>(symbols) == *std::get<2>(symbols)) {
       for (auto &output : snapshot.snapshot<FILTER_LAYER_2_VARIABLE_OUTPUTS_02>())
-        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, std::make_shared<Node_Key_02>(), message.token));
+        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_02::Create(), message.token));
     }
     if (*std::get<1>(symbols) == *std::get<2>(symbols)) {
       for (auto &output : snapshot.snapshot<FILTER_LAYER_2_VARIABLE_OUTPUTS_12>())
-        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, std::make_shared<Node_Key_12>(), message.token));
+        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_12::Create(), message.token));
     }
 
     message.get_Job_Queue()->give_many(std::move(jobs));
@@ -114,14 +114,14 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     for (auto &output : snapshot.lookup_snapshot<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_OUTPUTS>(symbol))
-      jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, std::make_shared<Node_Key_Symbol>(symbol), message.token));
+      jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_Symbol::Create(symbol), message.token));
     if (*std::get<0>(symbols) == *std::get<2>(symbols)) {
       for (auto &output : snapshot.snapshot<FILTER_LAYER_2_VARIABLE_OUTPUTS_02>())
-        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, std::make_shared<Node_Key_02>(), message.token));
+        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_02::Create(), message.token));
     }
     if (*std::get<1>(symbols) == *std::get<2>(symbols)) {
       for (auto &output : snapshot.snapshot<FILTER_LAYER_2_VARIABLE_OUTPUTS_12>())
-        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, std::make_shared<Node_Key_12>(), message.token));
+        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_12::Create(), message.token));
     }
 
     message.get_Job_Queue()->give_many(std::move(jobs));
@@ -138,7 +138,7 @@ namespace Zeni::Rete {
 
     if (key_symbol) {
       for (const auto &token : message.snapshot.lookup_snapshot<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_TOKENS>(key_symbol->symbol))
-        jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, std::make_shared<Node_Key_Symbol>(key_symbol->symbol), token));
+        jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
     }
     else if (dynamic_cast<const Node_Key_02 *>(key_node.get())) {
       for (const auto tokens : message.snapshot.snapshot<FILTER_LAYER_2_SYMBOL>()) {
@@ -146,7 +146,7 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<0>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, std::make_shared<Node_Key_02>(), token));
+            jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_02::Create(), token));
         }
       }
     }
@@ -156,7 +156,7 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<1>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, std::make_shared<Node_Key_12>(), token));
+            jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_12::Create(), token));
         }
       }
     }
@@ -186,7 +186,7 @@ namespace Zeni::Rete {
 
     if (key_symbol) {
       for (const auto &token : snapshot.lookup_snapshot<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_TOKENS>(key_symbol->symbol))
-        jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, std::make_shared<Node_Key_Symbol>(key_symbol->symbol), token));
+        jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
     }
     else if (dynamic_cast<const Node_Key_02 *>(key_node.get())) {
       for (const auto tokens : snapshot.snapshot<FILTER_LAYER_2_SYMBOL>()) {
@@ -194,7 +194,7 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<0>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, std::make_shared<Node_Key_02>(), token));
+            jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_02::Create(), token));
         }
       }
     }
@@ -204,7 +204,7 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<1>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, std::make_shared<Node_Key_12>(), token));
+            jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_12::Create(), token));
         }
       }
     }

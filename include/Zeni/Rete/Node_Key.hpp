@@ -24,9 +24,10 @@ namespace Zeni::Rete {
     Node_Key(const Node_Key &) = delete;
     Node_Key & operator=(const Node_Key &) = delete;
 
-  public:
+  protected:
     Node_Key() {}
 
+  public:
     virtual size_t hash() const = 0;
 
     virtual bool operator==(const Node_Key &rhs) const = 0;
@@ -44,8 +45,10 @@ namespace Zeni::Rete {
     Node_Key_Symbol(const Node_Key_Symbol &) = delete;
     Node_Key_Symbol & operator=(const Node_Key_Symbol &) = delete;
 
-  public:
     Node_Key_Symbol(const std::shared_ptr<const Symbol> symbol);
+
+  public:
+    static std::shared_ptr<const Node_Key_Symbol> Create(const std::shared_ptr<const Symbol> symbol);
 
     size_t hash() const override;
     bool operator==(const Node_Key &rhs) const override;
@@ -58,8 +61,10 @@ namespace Zeni::Rete {
     Node_Key_Null(const Node_Key_Null &) = delete;
     Node_Key_Null & operator=(const Node_Key_Null &) = delete;
 
-  public:
     Node_Key_Null();
+
+  public:
+    static std::shared_ptr<const Node_Key_Null> Create();
 
     size_t hash() const override;
     bool operator==(const Node_Key &rhs) const override;
@@ -70,8 +75,10 @@ namespace Zeni::Rete {
     Node_Key_01(const Node_Key_01 &) = delete;
     Node_Key_01 & operator=(const Node_Key_01 &) = delete;
 
-  public:
     Node_Key_01();
+
+  public:
+    static std::shared_ptr<const Node_Key_01> Create();
 
     size_t hash() const override;
     bool operator==(const Node_Key &rhs) const override;
@@ -82,8 +89,10 @@ namespace Zeni::Rete {
     Node_Key_02(const Node_Key_02 &) = delete;
     Node_Key_02 & operator=(const Node_Key_02 &) = delete;
 
-  public:
     Node_Key_02();
+
+  public:
+    static std::shared_ptr<const Node_Key_02> Create();
 
     size_t hash() const override;
     bool operator==(const Node_Key &rhs) const override;
@@ -94,8 +103,10 @@ namespace Zeni::Rete {
     Node_Key_12(const Node_Key_12 &) = delete;
     Node_Key_12 & operator=(const Node_Key_12 &) = delete;
 
-  public:
     Node_Key_12();
+
+  public:
+    static std::shared_ptr<const Node_Key_12> Create();
 
     size_t hash() const override;
     bool operator==(const Node_Key &rhs) const override;

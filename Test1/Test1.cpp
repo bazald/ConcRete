@@ -42,14 +42,25 @@ static void test_Positive_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Wor
 static void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 
-int main()
+static int16_t g_num_cores = 0;
+
+int main(int argc, char **argv)
 {
 #ifdef _MSC_VER
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
   //_CrtSetBreakAlloc(4479);
 #endif
 
-  const auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
+  if (argc > 2 || (argc == 2 && !std::strcmp(argv[1], "--help"))) {
+    std::cerr << "Usage: " << argv[0] << " [cores=" << std::thread::hardware_concurrency() << ']' << std::endl;
+    return 1;
+  }
+  else if (argc == 2)
+    g_num_cores = int16_t(std::atoi(argv[1]));
+  else
+    g_num_cores = std::thread::hardware_concurrency();
+
+  const auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(g_num_cores);
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
   //for (int i = 0; i != 80; ++i) {
@@ -213,7 +224,7 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
   ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
+  for (int16_t i = 0; i != g_num_cores / 2; ++i) {
     jobs.emplace_back(std::shared_ptr<Antiable<0, 1>>(new Antiable<0, 1>(antiable_hash_tries, 256,
 #ifdef DEBUG_HARD
       debug_output,
@@ -352,7 +363,7 @@ void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &wo
   ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
+  for (int16_t i = 0; i != g_num_cores / 2; ++i) {
     jobs.emplace_back(std::shared_ptr<Normal<0, 1>>(new Normal<0, 1>(hash_tries, 256, i,
 #ifdef DEBUG_HARD
       debug_output,
@@ -488,7 +499,7 @@ void test_Positive_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
   ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
 
   std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-  for (uint64_t i = 0; i != std::thread::hardware_concurrency() / 2; ++i) {
+  for (int16_t i = 0; i != g_num_cores / 2; ++i) {
     jobs.emplace_back(std::shared_ptr<Positive<0, 1>>(new Positive<0, 1>(positive_hash_tries, 256,
 #ifdef DEBUG_HARD
       debug_output,
@@ -535,12 +546,12 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
     };
 
     {
-      auto filter01a = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]));
-      auto filter02a = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]), filter01a);
-      auto filter01b = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]));
-      auto filter02b = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]), filter01b);
-      auto join0 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]), std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[1]), filter02a, filter02b, { Zeni::Rete::Variable_Binding(Zeni::Rete::Token_Index(0, 0, 0), Zeni::Rete::Token_Index(0, 0, 0)) });
-      auto action0 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, std::make_shared<Zeni::Rete::Node_Key_Null>(), join0, Zeni::Rete::Variable_Indices::Create(),
+      auto filter01a = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]));
+      auto filter02a = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]), filter01a);
+      auto filter01b = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]));
+      auto filter02b = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]), filter01b);
+      auto join0 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]), Zeni::Rete::Node_Key_Symbol::Create(symbols[1]), filter02a, filter02b, { Zeni::Rete::Variable_Binding(Zeni::Rete::Token_Index(0, 0, 0), Zeni::Rete::Token_Index(0, 0, 0)) });
+      auto action0 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "hello-world", false, Zeni::Rete::Node_Key_Null::Create(), join0, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
         std::cout << '(' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
@@ -563,12 +574,12 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
     //(*network)->get_Worker_Threads()->finish_jobs();
 
     {
-      auto filter11a = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]));
-      auto filter12a = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]), filter11a);
-      auto filter11b = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]));
-      auto filter12b = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]), filter11b);
-      auto join1 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[0]), std::make_shared<Zeni::Rete::Node_Key_Symbol>(symbols[1]), filter12a, filter12b, { Zeni::Rete::Variable_Binding(Zeni::Rete::Token_Index(0, 0, 0), Zeni::Rete::Token_Index(0, 0, 0)) });
-      auto action1 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, std::make_shared<Zeni::Rete::Node_Key_Null>(), join1, Zeni::Rete::Variable_Indices::Create(),
+      auto filter11a = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]));
+      auto filter12a = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]), filter11a);
+      auto filter11b = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]));
+      auto filter12b = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]), filter11b);
+      auto join1 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]), Zeni::Rete::Node_Key_Symbol::Create(symbols[1]), filter12a, filter12b, { Zeni::Rete::Variable_Binding(Zeni::Rete::Token_Index(0, 0, 0), Zeni::Rete::Token_Index(0, 0, 0)) });
+      auto action1 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, Zeni::Rete::Node_Key_Null::Create(), join1, Zeni::Rete::Variable_Indices::Create(),
         [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {
         std::cout << '[' << std::flush;
       }, [](const Zeni::Rete::Node_Action &, const Zeni::Rete::Token &) {

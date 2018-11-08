@@ -113,7 +113,7 @@ namespace Zeni::Rete {
             continue;
 
           for (auto &output : osnapshot.snapshot<JOIN_LAYER_OUTPUTS>())
-            jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, std::make_shared<Node_Key_Null>(), output_token));
+            jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_Null::Create(), output_token));
         }
       }
     }
@@ -131,7 +131,7 @@ namespace Zeni::Rete {
             continue;
 
           for (auto &output : osnapshot.snapshot<JOIN_LAYER_OUTPUTS>())
-            jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, std::make_shared<Node_Key_Null>(), output_token));
+            jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_Null::Create(), output_token));
         }
       }
     }
@@ -156,7 +156,7 @@ namespace Zeni::Rete {
             continue;
 
           for (auto &output : osnapshot.snapshot<JOIN_LAYER_OUTPUTS>())
-            jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, std::make_shared<Node_Key_Null>(), output_token));
+            jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_Null::Create(), output_token));
         }
       }
     }
@@ -174,7 +174,7 @@ namespace Zeni::Rete {
             continue;
 
           for (auto &output : osnapshot.snapshot<JOIN_LAYER_OUTPUTS>())
-            jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, std::make_shared<Node_Key_Null>(), output_token));
+            jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_Null::Create(), output_token));
         }
       }
     }
@@ -190,7 +190,7 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     for (const auto &token : message.snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())
-      jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, std::make_shared<Node_Key_Null>(), token));
+      jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_Null::Create(), token));
 
     message.get_Job_Queue()->give_many(std::move(jobs));
   }
@@ -209,7 +209,7 @@ namespace Zeni::Rete {
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 
     for (const auto &token : snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())
-      jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, std::make_shared<Node_Key_Null>(), token));
+      jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_Null::Create(), token));
 
     message.get_Job_Queue()->give_many(std::move(jobs));
   }

@@ -72,9 +72,9 @@ namespace Zeni::Rete::PEG {
     const std::shared_ptr<Network> network;
     const std::shared_ptr<Concurrency::Job_Queue> job_queue;
     const bool user_command;
-    std::queue<std::pair<std::string, std::shared_ptr<Rete::Symbol>>> symbols;
-    std::queue<std::pair<std::pair<std::shared_ptr<Node>, std::shared_ptr<Node_Key>>, std::shared_ptr<Variable_Indices>>> filters;
-    std::queue<std::pair<std::pair<std::shared_ptr<Node>, std::shared_ptr<Node_Key>>, std::shared_ptr<Variable_Indices>>> nodes;
+    std::queue<std::pair<std::string, std::shared_ptr<const Rete::Symbol>>> symbols;
+    std::queue<std::pair<std::pair<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>> filters;
+    std::queue<std::pair<std::pair<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>> nodes;
     std::string rule_name;
   };
 
@@ -134,7 +134,7 @@ namespace Zeni::Rete::PEG {
     template<typename Input>
     static void apply(const Input &, Data &data) {
       assert(data.symbols.size() == 3);
-      const std::pair<std::string, std::shared_ptr<Rete::Symbol>> first = data.symbols.front();
+      const std::pair<std::string, std::shared_ptr<const Rete::Symbol>> first = data.symbols.front();
       data.symbols.pop();
       auto second = data.symbols.front();
       data.symbols.pop();
@@ -144,22 +144,22 @@ namespace Zeni::Rete::PEG {
       std::shared_ptr<Node> node = data.network;
       auto variable_indices = Variable_Indices::Create();
 
-      std::shared_ptr<Node_Key> key;
+      std::shared_ptr<const Node_Key> key;
       if (first.second)
-        key = std::make_shared<Node_Key_Symbol>(first.second);
+        key = Node_Key_Symbol::Create(first.second);
       else {
-        key = std::make_shared<Node_Key_Null>();
+        key = Node_Key_Null::Create();
         variable_indices->insert(first.first, Token_Index(0, 0, Symbol_Variable::First));
       }
 
       if (second.second) {
         node = Node_Filter_1::Create(data.network, data.job_queue, key);
-        key = std::make_shared<Node_Key_Symbol>(second.second);
+        key = Node_Key_Symbol::Create(second.second);
       }
       else {
         if (!first.second && first.first == second.first) {
           node = Node_Filter_1::Create(data.network, data.job_queue, key);
-          key = std::make_shared<Node_Key_01>();
+          key = Node_Key_01::Create();
         }
         else
           variable_indices->insert(second.first, Token_Index(0, 0, Symbol_Variable::Second));
@@ -167,16 +167,16 @@ namespace Zeni::Rete::PEG {
 
       if (third.second) {
         node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
-        key = std::make_shared<Node_Key_Symbol>(third.second);
+        key = Node_Key_Symbol::Create(third.second);
       }
       else {
         if (!first.second && first.first == third.first) {
           node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
-          key = std::make_shared<Node_Key_02>();
+          key = Node_Key_02::Create();
         }
         else if (!second.second && second.first == third.first) {
           node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
-          key = std::make_shared<Node_Key_12>();
+          key = Node_Key_12::Create();
         }
         else
           variable_indices->insert(third.first, Token_Index(0, 0, Symbol_Variable::Third));
@@ -195,7 +195,7 @@ namespace Zeni::Rete::PEG {
       //std::cout << "Conditions: " << input.string() << std::endl;
 
       assert(!data.filters.empty());
-      std::pair<std::pair<std::shared_ptr<Node>, std::shared_ptr<Node_Key>>, std::shared_ptr<Variable_Indices>> first = data.filters.front();
+      std::pair<std::pair<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>> first = data.filters.front();
       data.filters.pop();
 
       while (!data.filters.empty()) {
@@ -208,7 +208,7 @@ namespace Zeni::Rete::PEG {
             variable_bindings.emplace(left, right.second);
         }
         first.second = Variable_Indices::Create(first.first.first->get_size(), first.first.first->get_token_size(), *first.second, *second.second);
-        first.first = std::make_pair(Node_Join::Create(data.network, data.job_queue, first.first.second, second.first.second, first.first.first, second.first.first, std::move(variable_bindings)), std::make_shared<Node_Key_Null>());
+        first.first = std::make_pair(Node_Join::Create(data.network, data.job_queue, first.first.second, second.first.second, first.first.first, second.first.first, std::move(variable_bindings)), Node_Key_Null::Create());
       }
 
       data.nodes.emplace(first);
