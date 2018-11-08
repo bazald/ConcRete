@@ -763,7 +763,6 @@ void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worke
   auto parser = Zeni::Rete::Parser::Create();
 
   parser->parse_string(network->get(), job_queue, "sp {test-rule\r\n  (<s> ^attr 42)\r\n  (<s> ^attr 3.14159)\r\n-->\r\n}\r\n", true);
-  //parser->parse_string(network->get(), job_queue, "sp {test-rule\r\n  (<s> ^attr 42)\r\n-->\r\n}\r\n", true);
 
   //{
   //  std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 3> symbols = {

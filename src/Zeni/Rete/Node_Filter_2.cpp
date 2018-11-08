@@ -32,6 +32,9 @@ namespace Zeni::Rete {
     const auto created = std::shared_ptr<Friendly_Node_Filter_2>(new Friendly_Node_Filter_2(network, node_key, input));
     const auto [result, connected] = input->connect_new_or_existing_output(network, job_queue, node_key, created);
 
+    if (result != Node_Trie::Result::First_Insertion)
+      input->send_disconnect_from_parents(network, job_queue);
+
     return std::static_pointer_cast<Node_Filter_2>(connected);
   }
 
