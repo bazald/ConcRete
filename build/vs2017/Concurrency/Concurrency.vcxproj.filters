@@ -96,9 +96,6 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Unordered_List.hpp">
       <Filter>Header Files\Zeni\Container</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Antiable_List.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ordered_List.hpp">
       <Filter>Header Files\Zeni\Container</Filter>
     </ClInclude>
@@ -126,16 +123,10 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Unordered_List.hpp">
       <Filter>Header Files\Zeni\Container\Lockfree</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Antiable_List.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Ordered_List.hpp">
       <Filter>Header Files\Zeni\Container\Locking</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Unordered_List.hpp">
-      <Filter>Header Files\Zeni\Container\Locking</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Antiable_List.hpp">
       <Filter>Header Files\Zeni\Container\Locking</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Ordered_List.hpp">
@@ -143,21 +134,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Unordered_List.hpp">
       <Filter>Header Files\Zeni\Container\None</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Antiable_List.hpp">
-      <Filter>Header Files\Zeni\Container\None</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Epoch_List.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Epoch_List.hpp">
-      <Filter>Header Files\Zeni\Container\Locking</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Epoch_List.hpp">
-      <Filter>Header Files\Zeni\Container\None</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Epoch_List.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Concurrency.hpp">
       <Filter>Header Files\Zeni\Internal</Filter>
@@ -180,12 +156,6 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Shared_Ptr.hpp">
       <Filter>Header Files\Zeni\Container\None</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Antiable_Hashset.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Antiable_Hashset.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Intrusive_Shared_Ptr.hpp">
       <Filter>Header Files\Zeni\Container\Lockfree</Filter>
     </ClInclude>
@@ -198,13 +168,7 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Intrusive_Shared_Ptr.hpp">
       <Filter>Header Files\Zeni\Container\None</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Ctrie.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Hash_Trie.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ctrie.hpp">
       <Filter>Header Files\Zeni\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Hash_Trie.hpp">

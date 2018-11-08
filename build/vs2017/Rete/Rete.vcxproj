@@ -20,7 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Custom_Data.cpp" />
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Debug_Counters.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_1.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_0.cpp" />
@@ -54,9 +53,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Custom_Data.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Antiable_Map.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Antiable_Set.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Debug_Counters.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Linkage.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_1.hpp" />
@@ -76,14 +72,12 @@
     <ClInclude Include="..\..\..\include\Zeni\Rete\Network.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Action.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Existential.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter_1.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter_2.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Existential.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Negation.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Key.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Negation.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Predicate.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Parser.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Symbol.hpp" />

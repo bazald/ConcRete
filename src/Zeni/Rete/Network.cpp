@@ -2,8 +2,6 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Worker_Threads.hpp"
-#include "Zeni/Rete/Internal/Antiable_Map.hpp"
-#include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Internal/Message_Connect_Filter_0.hpp"
 #include "Zeni/Rete/Internal/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
@@ -77,7 +75,6 @@ namespace Zeni::Rete {
     m_worker_threads(Concurrency::Worker_Threads::Create()),
     m_printed_output(printed_output)
   {
-    DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
   }
 
   std::shared_ptr<Network::Instantiation> Network::Create(const Network::Printed_Output printed_output) {
@@ -99,7 +96,6 @@ namespace Zeni::Rete {
     m_worker_threads(worker_threads),
     m_printed_output(printed_output)
   {
-    DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
   }
 
   std::shared_ptr<Network::Instantiation> Network::Create(const Network::Printed_Output printed_output, const std::shared_ptr<Concurrency::Worker_Threads> worker_threads) {
@@ -172,8 +168,6 @@ namespace Zeni::Rete {
 
     if (result == Node_Trie::Result::First_Insertion)
       job_queue->give_one(std::make_shared<Message_Connect_Filter_0>(sft, network, std::move(snapshot), key, value));
-    else
-      DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
 
     return std::make_pair(result, value);
   }

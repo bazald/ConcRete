@@ -1,7 +1,6 @@
 #include "Zeni/Rete/Node_Join.hpp"
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
-#include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Internal/Message_Connect_Join.hpp"
 #include "Zeni/Rete/Internal/Message_Disconnect_Output.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
@@ -78,8 +77,6 @@ namespace Zeni::Rete {
 
     if (result == Node_Trie::Result::First_Insertion)
       job_queue->give_one(std::make_shared<Message_Connect_Join>(sft, network, std::move(snapshot), key, value));
-    else
-      DEBUG_COUNTER_DECREMENT(g_node_increments, 1);
 
     return std::make_pair(result, value);
   }

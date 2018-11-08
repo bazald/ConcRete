@@ -1,7 +1,5 @@
 #include "Zeni/Rete/Internal/Message_Connect_Join.hpp"
 
-#include "Zeni/Rete/Internal/Debug_Counters.hpp"
-
 namespace Zeni::Rete {
 
   Message_Connect_Join::Message_Connect_Join(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const Node_Join::Join_Layer_Snapshot snapshot_, const std::shared_ptr<const Node_Key> key_, const std::shared_ptr<Node> child_)
@@ -21,7 +19,6 @@ namespace Zeni::Rete {
   }
 
   void Message_Connect_Join::receive() const {
-    DEBUG_COUNTER_INCREMENT(g_connect_outputs_received, 1);
     std::dynamic_pointer_cast<Node_Join>(get_recipient())->receive(*this);
   }
 

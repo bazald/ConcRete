@@ -1,7 +1,6 @@
 #ifndef ZENI_RETE_TOKEN_HPP
 #define ZENI_RETE_TOKEN_HPP
 
-#include "Internal/Antiable_Set.hpp"
 #include "Token_Index.hpp"
 #include "Variable_Binding.hpp"
 #include "WME.hpp"

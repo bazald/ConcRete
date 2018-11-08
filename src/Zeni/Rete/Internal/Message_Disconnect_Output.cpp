@@ -1,6 +1,5 @@
 #include "Zeni/Rete/Internal/Message_Disconnect_Output.hpp"
 
-#include "Zeni/Rete/Internal/Debug_Counters.hpp"
 #include "Zeni/Rete/Node.hpp"
 
 namespace Zeni::Rete {
@@ -13,7 +12,6 @@ namespace Zeni::Rete {
   }
 
   void Message_Disconnect_Output::receive() const {
-    DEBUG_COUNTER_INCREMENT(g_disconnect_output_and_decrements_received, 1);
     std::dynamic_pointer_cast<Node>(get_recipient())->receive(*this);
   }
 

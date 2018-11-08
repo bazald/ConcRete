@@ -10,14 +10,11 @@
 #include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
 #include "Zeni/Concurrency/Container/Positive_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Super_Hash_Trie.hpp"
-//#include "Zeni/Concurrency/Container/Ctrie.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Message.hpp"
 #include "Zeni/Concurrency/Mutex.hpp"
 #include "Zeni/Concurrency/Recipient.hpp"
 #include "Zeni/Concurrency/Worker_Threads.hpp"
-
-#include "Zeni/Rete/Internal/Debug_Counters.hpp"
 
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
@@ -39,78 +36,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
-class Whisper : public Zeni::Concurrency::Message {
-public:
-  typedef std::shared_ptr<Whisper> Ptr;
-
-  Whisper(const std::shared_ptr<Zeni::Concurrency::Recipient> &recipient, const std::string_view message)
-    : Message(recipient), m_message(message)
-  {
-  }
-
-  std::string get_message() const {
-    return m_message;
-  }
-
-private:
-  std::string m_message;
-};
-
-//static ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t g_num_recvs = 0;
-
-//static void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Positive_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
-
-//struct ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER UInt128 {
-//  UInt128() = default;
-//  UInt128(const uint64_t first_, const uint64_t second_) : second(second_), first(first_) {}
-//
-//  uint64_t second = 0;
-//  uint64_t first = 0;
-//};
-//
-//#ifdef _MSC_VER
-//#include <Windows.h>
-//#undef min
-//#undef max
-//#endif
-//
-//struct ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER Atomic_UInt128 {
-//  Atomic_UInt128() = default;
-//  Atomic_UInt128(const uint64_t first_, const uint64_t second_) : second(second_), first(first_) {}
-//  Atomic_UInt128(const UInt128 value) : second(value.second), first(value.first) {}
-//
-//  inline bool compare_exchange_strong(UInt128 &expected, const UInt128 desired) {
-//#ifdef _MSC_VER
-//    return InterlockedCompareExchange128(reinterpret_cast<volatile LONG64 *>(this),
-//      reinterpret_cast<const LONG64 &>(desired.first),
-//      reinterpret_cast<const LONG64 &>(desired.second),
-//      reinterpret_cast<LONG64 *>(&expected));
-//#else
-//    bool result;
-//    __asm__ __volatile__
-//    (
-//      "lock cmpxchg16b %1\n\t"
-//      "setz %0"
-//      : "=q" (result)
-//      , "+m" (*this)
-//      , "+d" (expected.first)
-//      , "+a" (expected.second)
-//      : "c" (desired.first)
-//      , "b" (desired.second)
-//      : "cc"
-//    );
-//    return result;
-//#endif
-//  }
-//
-//  volatile uint64_t second = 0;
-//  volatile uint64_t first = 0;
-//};
 
 int main()
 {
@@ -121,16 +51,6 @@ int main()
 
   const auto worker_threads = Zeni::Concurrency::Worker_Threads::Create();
   const auto job_queue = worker_threads->get_main_Job_Queue();
-
-  //for (int i = 0; i != 80000; ++i) {
-  //  test_Ctrie(worker_threads, job_queue);
-  //  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //  //  abort();
-  //  //}
-  //  std::cout << 'C' << std::flush;
-  //}
-  //std::cout << std::endl;
 
   //for (int i = 0; i != 80; ++i) {
   //  test_Antiable_Hash_Trie(worker_threads, job_queue);
@@ -162,106 +82,24 @@ int main()
   //}
   //std::cout << std::endl;
 
-  //Zeni::Rete::Debug_Counters::print(std::cerr);
   //test_Rete_Network(worker_threads, job_queue);
-  //Zeni::Rete::Debug_Counters::print(std::cerr);
   ////if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
   ////  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
   ////  abort();
   ////}
-  //Zeni::Rete::Debug_Counters::reset();
 
   std::cerr << "Test: ";
   for (int i = 1; i != 11; ++i) {
     std::cerr << ' ' << i;
     test_Rete_Network(worker_threads, job_queue);
-    //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-    //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-    //  Zeni::Rete::Debug_Counters::print(std::cerr);
-    //  abort();
-    //}
-    Zeni::Rete::Debug_Counters::reset();
   }
 
   std::cerr << std::endl;
 
   test_Parser(worker_threads, job_queue);
-  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //  Zeni::Rete::Debug_Counters::print(std::cerr);
-  //  abort();
-  //}
-
-  //Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int>,
-  //  Zeni::Concurrency::Hash_Trie_S2<double,
-  //  Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Antiable_Hash_Trie<float>, Zeni::Concurrency::Antiable_Hash_Trie<char>>>> shsh;
-
-  //{
-  //  const auto[result, snapshot, value] = shsh.insert<0>(42);
-  //}
-  //{
-  //  const auto[value, snapshot] = shsh.lookup<0>(42);
-  //}
-  //{
-  //  const auto[result, snapshot, value] = shsh.erase<0>(42);
-  //}
-  //{
-  //  const auto[result, snapshot, value] = shsh.insert_2<1, 0>(42.0, 13.37f);
-  //}
-  //{
-  //  const auto[value, snapshot] = shsh.lookup_2<1, 0>(42.0, 13.37f);
-  //}
-  //{
-  //  const auto[result, snapshot, value] = shsh.erase_2<1, 0>(42.0, 13.37f);
-  //}
 
   return 0;
 }
-
-//void test_Ctrie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
-//
-//  class Ctrier : public Zeni::Concurrency::Job {
-//  public:
-//    Ctrier(const std::shared_ptr<Zeni::Concurrency::Ctrie<uint64_t, const char *>> &ctrie) : m_ctrie(ctrie), dre(rd()) {}
-//
-//    void execute() noexcept override {
-//      while (m_to_insert) {
-//        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
-//        m_ctrie->insert(value, nullptr);
-//        --m_to_insert;
-//      }
-//      while (m_to_lookup) {
-//        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
-//        m_ctrie->lookup(value);
-//        --m_to_lookup;
-//      }
-//      while (m_to_remove) {
-//        const uint64_t value = std::uniform_int_distribution<uint64_t>(1, 10000)(dre);
-//        m_ctrie->remove(value);
-//        --m_to_remove;
-//      }
-//    }
-//
-//  private:
-//    std::shared_ptr<Zeni::Concurrency::Ctrie<uint64_t, const char *>> m_ctrie;
-//    int64_t m_to_insert = 1024;
-//    int64_t m_to_lookup = 1024;
-//    int64_t m_to_remove = 1024;
-//    std::random_device rd;
-//    std::default_random_engine dre;
-//  };
-//
-//  const auto ctrie = std::make_shared<Zeni::Concurrency::Ctrie<uint64_t, const char *>>();
-//
-//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-//  for (uint64_t i = 0; i != std::thread::hardware_concurrency(); ++i)
-//    jobs.emplace_back(std::make_shared<Ctrier>(ctrie));
-//  job_queue->give_many(std::move(jobs));
-//
-//  worker_threads->finish_jobs();
-//}
-
-//#define DEBUG_HARD
 
 //struct Null_Hash {
 //  template <typename TYPE>
