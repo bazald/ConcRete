@@ -19,7 +19,7 @@ namespace Zeni::Rete {
   }
 
   void Message_Connect_Join::receive() const {
-    std::dynamic_pointer_cast<Node_Join>(get_recipient())->receive(*this);
+    std::dynamic_pointer_cast<Node>(get_recipient())->receive(*this);
   }
 
 }

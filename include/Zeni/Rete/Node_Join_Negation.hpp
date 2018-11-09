@@ -1,76 +1,52 @@
-#ifndef ZENI_RETE_NODE_JOIN_NEGATION_H
-#define ZENI_RETE_NODE_JOIN_NEGATION_H
+#ifndef ZENI_RETE_NODE_JOIN_NEGATION_HPP
+#define ZENI_RETE_NODE_JOIN_NEGATION_HPP
 
-#include "Node.hpp"
+#include "Internal/Node_Binary.hpp"
 
-#include <functional>
-#include <unordered_map>
+namespace Zeni::Rete {
 
-namespace Zeni {
+  class Node_Join_Negation : public Node_Binary {
+    Node_Join_Negation(const Node_Join_Negation &) = delete;
+    Node_Join_Negation & operator=(const Node_Join_Negation &) = delete;
 
-  namespace Rete {
+    Node_Join_Negation(const std::shared_ptr<const Node_Key> node_key_left, const std::shared_ptr<const Node_Key> node_key_right, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, const Variable_Bindings &variable_bindings);
+    Node_Join_Negation(const std::shared_ptr<const Node_Key> node_key_left, const std::shared_ptr<const Node_Key> node_key_right, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, Variable_Bindings &&variable_bindings);
 
-    class Node_Join_Negation : public Node {
-      Node_Join_Negation(const Node_Join_Negation &);
-      Node_Join_Negation & operator=(const Node_Join_Negation &);
-
-      friend ZENI_RETE_LINKAGE void bind_to_negation_join(const std::shared_ptr<Network> &network, const std::shared_ptr<Node_Join_Negation> &join, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
-
-      Node_Join_Negation(const Variable_Bindings &bindings_);
-
-    public:
-      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Join_Negation> Create(const std::shared_ptr<Network> &network, const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
-
-      ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_left() const override { return input0.lock(); }
-      ZENI_RETE_LINKAGE std::shared_ptr<const Node> parent_right() const override { return input1.lock(); }
-      ZENI_RETE_LINKAGE std::shared_ptr<Node> parent_left() override { return input0.lock(); }
-      ZENI_RETE_LINKAGE std::shared_ptr<Node> parent_right() override { return input1.lock(); }
-
-      ZENI_RETE_LINKAGE const Tokens & get_output_tokens() const override;
-      ZENI_RETE_LINKAGE bool has_output_tokens() const override;
-
-      ZENI_RETE_LINKAGE void insert_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
-      ZENI_RETE_LINKAGE void remove_token(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &token, const std::shared_ptr<const Node> &from) override;
-
-      ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
-
-      ZENI_RETE_LINKAGE void print_details(std::ostream &os) const override; ///< Formatted for dot: http://www.graphviz.org/content/dot-language
-
-      ZENI_RETE_LINKAGE void print_rule(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices, const std::shared_ptr<const Node> &suppress) const override;
-
-      ZENI_RETE_LINKAGE void output_name(std::ostream &os, const int64_t &depth) const override;
-
-      ZENI_RETE_LINKAGE bool is_active() const override;
-
-      ZENI_RETE_LINKAGE std::vector<WME> get_filter_wmes() const override;
-
-      ZENI_RETE_LINKAGE static std::shared_ptr<Node_Join_Negation> find_existing(const Variable_Bindings &bindings, const std::shared_ptr<Node> &out0, const std::shared_ptr<Node> &out1);
-
-      ZENI_RETE_LINKAGE virtual const Variable_Bindings * get_bindings() const override { return &bindings; }
-
-    private:
-      void join_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &lhs);
-      void unjoin_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<const Token> &lhs);
-
-      void pass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
-      void unpass_tokens(const std::shared_ptr<Network> &network, const std::shared_ptr<Node> &output) override;
-
-      Variable_Bindings bindings;
-      std::weak_ptr<Node> input0;
-      std::weak_ptr<Node> input1;
-      int64_t input0_count = 0;
-      int64_t input1_count = 0;
-
-      std::unordered_map<std::pair<std::shared_ptr<const Token>, bool>, std::pair<Tokens, Tokens>, std::function<size_t(const std::pair<std::shared_ptr<const Token>, bool> &)>, std::function<bool(const std::pair<std::shared_ptr<const Token>, bool> &, const std::pair<std::shared_ptr<const Token>, bool> &)>> matching
-        = std::unordered_map<std::pair<std::shared_ptr<const Token>, bool>, std::pair<Tokens, Tokens>, std::function<size_t(const std::pair<std::shared_ptr<const Token>, bool> &)>, std::function<bool(const std::pair<std::shared_ptr<const Token>, bool> &, const std::pair<std::shared_ptr<const Token>, bool> &)>>(0, [this](const std::pair<std::shared_ptr<const Token>, bool> &itoken)->size_t {
-        return itoken.first->hash_bindings(itoken.second, this->bindings);
-      }, [this](const std::pair<std::shared_ptr<const Token>, bool> &lhs, const std::pair<std::shared_ptr<const Token>, bool> &rhs)->bool {
-        return lhs.first->eval_bindings(lhs.second, this->bindings, *rhs.first, rhs.second);
-      });
-      Tokens output_tokens;
+  public:
+    typedef Concurrency::Super_Hash_Trie<Symbols_Trie, Output_Token_Trie, Node_Trie> Join_Layer_Trie;
+    typedef Join_Layer_Trie::Snapshot Join_Layer_Snapshot;
+    enum Join_Layer {
+      JOIN_LAYER_SYMBOLS = 0,
+      JOIN_LAYER_OUTPUT_TOKENS = 1,
+      JOIN_LAYER_OUTPUTS = 2
+    };
+    enum Join_Layer_Symbol {
+      JOIN_LAYER_SYMBOLS_TOKENS_LEFT = 0,
+      JOIN_LAYER_SYMBOLS_TOKENS_RIGHT = 1
     };
 
-  }
+    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Join_Negation> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> node_key_left, const std::shared_ptr<const Node_Key> node_key_right, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, const Variable_Bindings &variable_bindings);
+    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Join_Negation> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> node_key_left, const std::shared_ptr<const Node_Key> node_key_right, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, Variable_Bindings &&variable_bindings);
+
+    ZENI_RETE_LINKAGE std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) override;
+    ZENI_RETE_LINKAGE Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) override;
+
+    ZENI_RETE_LINKAGE void receive(const Message_Token_Insert &message) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &message) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Connect_Join &message) override;
+    ZENI_RETE_LINKAGE void receive(const Message_Disconnect_Output &message) override;
+
+    ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
+
+  private:
+    static std::shared_ptr<Node_Join_Negation> connect_created(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, const std::shared_ptr<Node_Join_Negation> created);
+    std::shared_ptr<Symbols> bind_variables_left(const std::shared_ptr<const Token> token_left) const;
+    std::shared_ptr<Symbols> bind_variables_right(const std::shared_ptr<const Token> token_right) const;
+
+    Join_Layer_Trie m_join_layer_trie;
+
+    const Variable_Bindings m_variable_bindings;
+  };
 
 }
 

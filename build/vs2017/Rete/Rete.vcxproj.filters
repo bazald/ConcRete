@@ -120,6 +120,12 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Key.cpp">
       <Filter>Source Files\Zeni</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join_Negation.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join_Existential.cpp">
+      <Filter>Source Files\Zeni</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Utility.hpp">

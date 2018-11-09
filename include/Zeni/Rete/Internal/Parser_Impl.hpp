@@ -6,16 +6,15 @@
 #include "../Node_Filter_1.hpp"
 #include "../Node_Filter_2.hpp"
 #include "../Node_Join.hpp"
+#include "../Node_Join_Existential.hpp"
+#include "../Node_Join_Negation.hpp"
 #include "../Node_Key.hpp"
 #include "../Parser.hpp"
 #include "../Symbol.hpp"
 #include "../Variable_Indices.hpp"
 
-//#include <cstdio>
-//#include <iostream>
-//#include <stack>
+#include <stack>
 #include <queue>
-//#include <string_view>
 
 #define TAO_PEGTL_NAMESPACE Zeni_Rete_PEG
 
@@ -55,26 +54,40 @@ namespace Zeni::Rete::PEG {
 
   struct Condition : seq<one<'('>, star<space_comment>, Symbol, star<space_comment>, one<'^'>, Symbol, plus<space_comment>, Symbol, star<space_comment>, one<')'>> {};
 
-  struct Conditions : list_tail<Condition, star<space_comment>> {};
+  struct Subnode_First;
+  struct Subnode_Rest;
+
+  struct Inner_Scope : seq<Subnode_First, star<star<space_comment>, Subnode_Rest>> {};
+  struct Begin_Inner_Scope : at<Inner_Scope> {};
+  struct Outer_Scope : seq<one<'{'>, star<space_comment>, Begin_Inner_Scope, Inner_Scope, star<space_comment>, one<'}'>> {};
+  struct Scope : sor<Outer_Scope, Condition> {};
+  struct Scope_Existential : seq<one<'+'>, sor<Outer_Scope, Condition>> {};
+  struct Scope_Negation : seq<one<'-'>, sor<Outer_Scope, Condition>> {};
+
+  struct Subnode_First : Scope {};
+  struct Subnode_Rest : sor<Scope, Scope_Existential, Scope_Negation> {};
 
   struct Rule_Name : seq<plus<alpha>, star<sor<alnum, one<'-', '_', '*'>>>> {};
   struct Source_Production : seq<string<'s', 'p'>, star<space_comment>, one<'{'>, star<space_comment>,
     Rule_Name, star<space_comment>,
-    Conditions,
+    Begin_Inner_Scope, Inner_Scope, star<space_comment>,
     string<'-', '-', '>'>, star<space_comment>,
     one<'}'>> {};
 
   struct Grammar : must<seq<star<space_comment>, list_tail<Source_Production, star<space_comment>>>, eof> {};
 
   struct Data {
-    Data(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_command_) : network(network_), job_queue(job_queue_), user_command(user_command_) {}
+    Data(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_command_)
+      : network(network_), job_queue(job_queue_), user_command(user_command_)
+    {
+      nodes.push(std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>());
+    }
 
     const std::shared_ptr<Network> network;
     const std::shared_ptr<Concurrency::Job_Queue> job_queue;
     const bool user_command;
     std::queue<std::pair<std::string, std::shared_ptr<const Rete::Symbol>>> symbols;
-    std::queue<std::pair<std::pair<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>> filters;
-    std::queue<std::pair<std::pair<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>> nodes;
+    std::stack<std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>> nodes;
     std::string rule_name;
   };
 
@@ -132,7 +145,9 @@ namespace Zeni::Rete::PEG {
   template <>
   struct Action<Condition> {
     template<typename Input>
-    static void apply(const Input &, Data &data) {
+    static void apply(const Input &input, Data &data) {
+      //std::cerr << "Condition: " << input.string() << std::endl;
+
       assert(data.symbols.size() == 3);
       const std::pair<std::string, std::shared_ptr<const Rete::Symbol>> first = data.symbols.front();
       data.symbols.pop();
@@ -141,7 +156,7 @@ namespace Zeni::Rete::PEG {
       auto third = data.symbols.front();
       data.symbols.pop();
 
-      std::shared_ptr<Node> node = data.network;
+      std::shared_ptr<Zeni::Rete::Node> node = data.network;
       auto variable_indices = Variable_Indices::Create();
 
       std::shared_ptr<const Node_Key> key;
@@ -182,54 +197,123 @@ namespace Zeni::Rete::PEG {
           variable_indices->insert(third.first, Token_Index(0, 0, Symbol_Variable::Third));
       }
 
-      //std::cout << "Condition: " << input.string() << std::endl;
-
-      data.filters.emplace(std::make_pair(node, key), variable_indices);
+      data.nodes.top().emplace(std::make_pair(node, key), variable_indices);
     }
   };
 
   template <>
-  struct Action<Conditions> {
+  struct Action<Begin_Inner_Scope> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      //std::cout << "Conditions: " << input.string() << std::endl;
+      //std::cerr << "Begin_Inner_Scope: " << input.string() << std::endl;
 
-      assert(!data.filters.empty());
-      std::pair<std::pair<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>> first = data.filters.front();
-      data.filters.pop();
+      data.nodes.emplace(std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>());
+    }
+  };
 
-      while (!data.filters.empty()) {
-        auto second = data.filters.front();
-        data.filters.pop();
-        Variable_Bindings variable_bindings;
-        for (auto right : second.second->get_indices()) {
-          auto left = first.second->find_index(right.first);
-          if (left != Token_Index())
-            variable_bindings.emplace(left, right.second);
-        }
-        first.second = Variable_Indices::Create(first.first.first->get_size(), first.first.first->get_token_size(), *first.second, *second.second);
-        first.first = std::make_pair(Node_Join::Create(data.network, data.job_queue, first.first.second, second.first.second, first.first.first, second.first.first, std::move(variable_bindings)), Node_Key_Null::Create());
+  template <>
+  struct Action<Inner_Scope> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data) {
+      //std::cerr << "Inner_Scope: " << input.string() << std::endl;
+
+      assert(data.nodes.top().size() == 1);
+      auto top = data.nodes.top().top();
+      data.nodes.pop();
+      data.nodes.top().emplace(std::move(top));
+    }
+  };
+
+  template <>
+  struct Action<Scope> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data) {
+      //std::cout << "Scope: " << input.string() << std::endl;
+
+      const auto node_right = data.nodes.top().top();
+      data.nodes.top().pop();
+      const auto node_left = data.nodes.top().top();
+      data.nodes.top().pop();
+
+      Variable_Bindings variable_bindings;
+      for (auto right : node_right.second->get_indices()) {
+        auto left = node_left.second->find_index(right.first);
+        if (left != Token_Index())
+          variable_bindings.emplace(left, right.second);
       }
 
-      data.nodes.emplace(first);
+      const auto node = Node_Join::Create(data.network, data.job_queue, node_left.first.second, node_right.first.second, node_left.first.first, node_right.first.first, std::move(variable_bindings));
+      const auto variable_indices = Variable_Indices::Create(node_left.first.first->get_size(), node_left.first.first->get_token_size(), *node_left.second, *node_right.second);
+
+      data.nodes.top().emplace(std::make_pair(node, Node_Key_Null::Create()), variable_indices);
+    }
+  };
+
+  template <>
+  struct Action<Scope_Existential> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data) {
+      //std::cout << "Scope_Existential: " << input.string() << std::endl;
+
+      const auto node_right = data.nodes.top().top();
+      data.nodes.top().pop();
+      const auto node_left = data.nodes.top().top();
+      data.nodes.top().pop();
+
+      Variable_Bindings variable_bindings;
+      for (auto right : node_right.second->get_indices()) {
+        auto left = node_left.second->find_index(right.first);
+        if (left != Token_Index())
+          variable_bindings.emplace(left, right.second);
+      }
+
+      const auto node = Node_Join_Existential::Create(data.network, data.job_queue, node_left.first.second, node_right.first.second, node_left.first.first, node_right.first.first, std::move(variable_bindings));
+      const auto variable_indices = Variable_Indices::Create(node_left.first.first->get_size(), node_left.first.first->get_token_size(), *node_left.second, *node_right.second);
+
+      data.nodes.top().emplace(std::make_pair(node, Node_Key_Null::Create()), variable_indices);
+    }
+  };
+
+  template <>
+  struct Action<Scope_Negation> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data) {
+      //std::cout << "Scope_Negation: " << input.string() << std::endl;
+
+      const auto node_right = data.nodes.top().top();
+      data.nodes.top().pop();
+      const auto node_left = data.nodes.top().top();
+      data.nodes.top().pop();
+
+      Variable_Bindings variable_bindings;
+      for (auto right : node_right.second->get_indices()) {
+        auto left = node_left.second->find_index(right.first);
+        if (left != Token_Index())
+          variable_bindings.emplace(left, right.second);
+      }
+
+      const auto node = Node_Join_Negation::Create(data.network, data.job_queue, node_left.first.second, node_right.first.second, node_left.first.first, node_right.first.first, std::move(variable_bindings));
+      const auto variable_indices = Variable_Indices::Create(node_left.first.first->get_size(), node_left.first.first->get_token_size(), *node_left.second, *node_right.second);
+
+      data.nodes.top().emplace(std::make_pair(node, Node_Key_Null::Create()), variable_indices);
     }
   };
 
   template <>
   struct Action<Source_Production> {
     template<typename Input>
-    static void apply(const Input &, Data &data) {
+    static void apply(const Input &input, Data &data) {
       //std::cout << "Source_Production: " << input.string() << std::endl;
 
-      assert(data.filters.empty());
-      assert(data.nodes.size() == 1);
-      Zeni::Rete::Node_Action::Create(data.network, data.job_queue, data.rule_name, data.user_command, data.nodes.front().first.second, data.nodes.front().first.first, data.nodes.front().second,
+      const auto node = data.nodes.top().top();
+      data.nodes.pop();
+
+      Zeni::Rete::Node_Action::Create(data.network, data.job_queue, data.rule_name, data.user_command, node.first.second, node.first.first, node.second,
         [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
         std::cout << rete_action.get_name() << " +: " << token << std::endl;
       }, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
         std::cout << rete_action.get_name() << " -: " << token << std::endl;
       });
-      data.nodes.pop();
     }
   };
 

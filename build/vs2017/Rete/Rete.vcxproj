@@ -41,6 +41,8 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_1.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_2.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join_Existential.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join_Negation.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Key.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Parser.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Symbol.cpp" />
