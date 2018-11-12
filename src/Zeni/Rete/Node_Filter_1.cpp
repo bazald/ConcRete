@@ -37,7 +37,7 @@ namespace Zeni::Rete {
     const auto sft = shared_from_this();
 
     const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
-    assert(key_symbol || dynamic_cast<const Node_Key_12 *>(key.get()));
+    assert(key_symbol || dynamic_cast<const Node_Key_01 *>(key.get()));
 
     const auto[result, snapshot, value] = key_symbol
       ? m_filter_layer_1_trie.insert_2<FILTER_LAYER_1_SYMBOL, FILTER_LAYER_1_SYMBOL_OUTPUTS>(key_symbol->symbol, child)
@@ -53,7 +53,7 @@ namespace Zeni::Rete {
     const auto sft = shared_from_this();
 
     const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
-    assert(key_symbol || dynamic_cast<const Node_Key_12 *>(key.get()));
+    assert(key_symbol || dynamic_cast<const Node_Key_01 *>(key.get()));
 
     const auto[result, snapshot, value] = key_symbol
       ? m_filter_layer_1_trie.insert_2<FILTER_LAYER_1_SYMBOL, FILTER_LAYER_1_SYMBOL_OUTPUTS>(key_symbol->symbol, child)

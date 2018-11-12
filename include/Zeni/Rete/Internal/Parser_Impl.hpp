@@ -13,7 +13,10 @@
 #include "../Symbol.hpp"
 #include "../Variable_Indices.hpp"
 
+#include <deque>
+#include <list>
 #include <stack>
+#include <queue>
 
 #define TAO_PEGTL_NAMESPACE Zeni_Rete_PEG
 
@@ -64,19 +67,22 @@ namespace Zeni::Rete::PEG {
     const std::shared_ptr<Network> network;
     const std::shared_ptr<Concurrency::Job_Queue> job_queue;
     const bool user_command;
-    std::stack<std::pair<std::string, std::shared_ptr<const Rete::Symbol>>> symbols;
+    std::list<std::pair<std::string, std::shared_ptr<const Rete::Symbol>>> symbols;
     std::stack<std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>> nodes;
+    std::list<std::function<void(const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token)>> actions;
+    decltype(actions) retractions;
+    decltype(actions) * actions_or_retractions = &actions;
     std::string rule_name;
   };
 
-  template<typename Rule>
+  template <typename Rule>
   struct Error : public normal<Rule>
   {
-    static const std::string error_message;
+    static inline const char * error_message();
 
     template <typename Input>
     static void raise(const Input& in, Data &) {
-      throw parse_error(error_message, in);
+      throw parse_error(error_message(), in);
     }
   };
 
@@ -96,74 +102,97 @@ namespace Zeni::Rete::PEG {
   struct decimal : seq<number<digit>, opt<e, exponent>> {};
 
   struct comment : if_must<one<'#'>, until<eolf>> {};
-  template<> const std::string Error<until<eolf>>::error_message = "Parser error: failed to process comment"; ///< Probably cannot be triggered
+  template<> inline const char * Error<until<eolf>>::error_message() { return "Parser error: failed to process comment"; } ///< Probably cannot be triggered
 
   struct space_comment : sor<space, comment> {};
 
   struct Unquoted_String : seq<plus<alpha>, star<sor<alnum, one<'-', '_', '*'>>>> {};
 
   struct Constant_Float : if_then_else<plus_minus, must<sor<decimal, inf, nan>>, sor<decimal, inf, nan>> {};
-  template<> const std::string Error<sor<decimal, inf, nan>>::error_message = "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol";
+  template<> inline const char * Error<sor<decimal, inf, nan>>::error_message() { return "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol"; }
   struct Constant_Int : if_then_else<plus_minus, must<plus<digit>>, plus<digit>> {};
-  template<> const std::string Error<plus<digit>>::error_message = "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol";
+  template<> inline const char * Error<plus<digit>>::error_message() { return "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol"; }
   struct Constant_String : Unquoted_String {};
   struct Quoted_Constant_String : if_must<one<'|'>, seq<plus<not_one<'|'>>, one<'|'>>> {};
-  template<> const std::string Error<seq<plus<not_one<'|'>>, one<'|'>>>::error_message = "Parser error: quoted string constant not closed (mismatched '|'s?)";
+  template<> inline const char * Error<seq<plus<not_one<'|'>>, one<'|'>>>::error_message() { return "Parser error: quoted string constant not closed (mismatched '|'s?)"; }
   struct Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
-  template<> const std::string Error<seq<Unquoted_String, one<'>'>>>::error_message = "Parser error: variable not closed (mismatched '<>'s?)";
+  template<> inline const char * Error<seq<Unquoted_String, one<'>'>>>::error_message() { return "Parser error: variable not closed (mismatched '<>'s?)"; }
   struct Unnamed_Variable : seq<one<'{'>, star<space_comment>, one<'}'>> {};
 
-  struct Symbol : sor<seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>, Constant_Int, Constant_String, Quoted_Constant_String, Variable, Unnamed_Variable> {};
+  struct Symbol_w_Var : sor<seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>, Constant_Int, Constant_String, Quoted_Constant_String, Variable, Unnamed_Variable> {};
+  struct Symbol_wo_Var : sor<seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>, Constant_Int, Constant_String, Quoted_Constant_String> {};
 
-  struct Condition_Attr_Value : seq<star<space_comment>, one<'^'>, star<space_comment>, Symbol, plus<space_comment>, Symbol> {};
-  struct Inner_Condition : seq<star<space_comment>, Symbol, star<space_comment>, plus<Condition_Attr_Value>> {};
+  struct Condition_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Symbol_w_Var, plus<space_comment>, Symbol_w_Var> {};
+  struct WME_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Symbol_wo_Var, plus<space_comment>, Symbol_wo_Var> {};
+
+  struct Inner_Condition : seq<star<space_comment>, Symbol_w_Var, plus<Condition_Attr_Value>> {};
   struct Condition_Body : seq<star<space_comment>, Inner_Condition, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Condition_End : if_must<one<'('>, Condition_Body> {};
-  template<> const std::string Error<Condition_Body>::error_message = "Parser error: invalid condition syntax (mismatched '()'s?)";
+  template<> inline const char * Error<Condition_Body>::error_message() { return "Parser error: invalid condition syntax (mismatched '()'s?)"; }
   struct Condition_Begin : at<Condition_End> {};
   struct Condition : seq<Condition_Begin, Condition_End> {};
+
+  struct Inner_WME : seq<star<space_comment>, Symbol_wo_Var, plus<WME_Attr_Value>> {};
 
   struct Subnode_First;
   struct Subnode_Rest;
 
   struct Inner_Scope_Body : seq<Subnode_First, star<space_comment>, star<Subnode_Rest, star<space_comment>>> {};
   struct Inner_Scope_End : must<Inner_Scope_Body> {};
-  template<> const std::string Error<Inner_Scope_Body>::error_message = "Parser error: invalid left-hand side for production rule";
+  template<> inline const char * Error<Inner_Scope_Body>::error_message() { return "Parser error: invalid left-hand side for production rule"; }
   struct Inner_Scope_Begin : at<Inner_Scope_End> {};
   struct Inner_Scope : seq<Inner_Scope_Begin, Inner_Scope_End> {};
   struct Outer_Scope_Body : seq<Inner_Scope, one<'}'>, star<space_comment>> {};
   struct Outer_Scope : if_must<one<'{'>, Outer_Scope_Body> {};
-  template<> const std::string Error<Outer_Scope_Body>::error_message = "Parser error: invalid scope syntax (mismatched '{}'s?)";
+  template<> inline const char * Error<Outer_Scope_Body>::error_message() { return "Parser error: invalid scope syntax (mismatched '{}'s?)"; }
   struct Scope : seq<sor<Outer_Scope, Condition>, star<space_comment>> {};
 
   struct Join : Scope {};
   struct EScope : Scope {};
   struct NScope : Scope {};
   struct Join_Existential : if_must<one<'+'>, EScope> {};
-  template<> const std::string Error<EScope>::error_message = "Parser error: '+' must be immediately followed by a valid condition or scope";
+  template<> inline const char * Error<EScope>::error_message() { return "Parser error: '+' must be immediately followed by a valid condition or scope"; }
   struct Join_Negation : if_must<seq<not_at<string<'-', '-', '>'>>, one<'-'>>, NScope> {};
-  template<> const std::string Error<NScope>::error_message = "Parser error: '-' must be immediately followed by a valid condition or scope";
+  template<> inline const char * Error<NScope>::error_message() { return "Parser error: '-' must be immediately followed by a valid condition or scope"; }
 
   struct Subnode_First : Scope {};
   struct Subnode_Rest : sor<Join, Join_Existential, Join_Negation> {};
+
+  struct Inner_Make : seq<plus<plus<space_comment>, Inner_WME>> {};
+  struct Make : if_must<string<'m', 'a', 'k', 'e'>, Inner_Make> {};
+  template<> inline const char * Error<Inner_Make>::error_message() { return "Parser error: 'make' must be followed by a valid WME"; }
+
+  struct Inner_Write : seq<plus<plus<space_comment>, Symbol_wo_Var>> {};
+  struct Write : if_must<string<'w', 'r', 'i', 't', 'e'>, Inner_Write> {};
+  template<> inline const char * Error<Inner_Write>::error_message() { return "Parser error: 'write' must be followed by valid Symbols"; }
+
+  struct ConcRete_Action : sor<Make, Write> {};
+  struct Action_List : plus<seq<one<'('>, star<space_comment>, ConcRete_Action, star<space_comment>, one<')'>, star<space_comment>>> {};
+  struct Inner_Actions : seq<string<'-', '-', '>'>, star<space_comment>, Action_List> {};
+  struct Begin_Actions : at<Inner_Actions> {};
+  struct Actions : seq<Begin_Actions, Inner_Actions> {};
+  struct Inner_Retractions : seq<string<'<', '-', '-'>, star<space_comment>, Action_List> {};
+  struct Begin_Retractions : at<Inner_Retractions> {};
+  struct Retractions : seq<Begin_Retractions, Inner_Retractions> {};
 
   struct Rule_Name : seq<plus<alpha>, star<sor<alnum, one<'-', '_', '*'>>>> {};
   struct Source_Production_Body : seq<star<space_comment>,
     one<'{'>, star<space_comment>,
     Rule_Name, star<space_comment>,
     Inner_Scope, star<space_comment>,
-    string<'-', '-', '>'>, star<space_comment>,
+    Actions, star<space_comment>,
+    Retractions, star<space_comment>,
     one<'}'>> {};
 
   struct Source_Production : if_must<seq<opt<one<'s'>>, one<'p'>>, Source_Production_Body> {};
-  template<> const std::string Error<Source_Production_Body>::error_message = "Parser error: 'sp' must be followed by a valid production rule body";
+  template<> inline const char * Error<Source_Production_Body>::error_message() { return "Parser error: 'sp' must be followed by a valid production rule body"; }
 
-  struct Command : sor<Source_Production> {};
+  struct Command : sor<Make, Source_Production> {};
 
   struct ConcRete_Grammar : seq<star<space_comment>, list_tail<Command, star<space_comment>>, eof> {};
 
   struct ConcRete : must<ConcRete_Grammar> {};
-  template<> const std::string Error<ConcRete_Grammar>::error_message = "Parser error: could not process ConcRete grammar";
+  template<> inline const char * Error<ConcRete_Grammar>::error_message() { return "Parser error: could not process ConcRete grammar"; }
 
   template <typename Rule>
   struct Action : nothing<Rule> {};
@@ -174,7 +203,7 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data) {
       const double d = std::stod(input.string());
       //std::cerr << "Constant_Float: " << d << std::endl;
-      data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_Float>(d));
+      data.symbols.emplace_back(input.string(), std::make_shared<Symbol_Constant_Float>(d));
     }
   };
 
@@ -184,7 +213,7 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data) {
       const int64_t i = std::stoll(input.string());
       //std::cerr << "Constant_Int: " << i << std::endl;
-      data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_Int>(i));
+      data.symbols.emplace_back(input.string(), std::make_shared<Symbol_Constant_Int>(i));
     }
   };
 
@@ -193,7 +222,7 @@ namespace Zeni::Rete::PEG {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
       //std::cerr << "Constant_String: " << input.string() << std::endl;
-      data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_String>(input.string()));
+      data.symbols.emplace_back(input.string(), std::make_shared<Symbol_Constant_String>(input.string()));
     }
   };
 
@@ -204,7 +233,7 @@ namespace Zeni::Rete::PEG {
       //std::cerr << "Quoted_Constant_String: " << input.string() << std::endl;
       assert(input.string().size() > 2);
       const auto substr = input.string().substr(1, input.string().size() - 2);
-      data.symbols.emplace(substr, std::make_shared<Symbol_Constant_String>(substr));
+      data.symbols.emplace_back(substr, std::make_shared<Symbol_Constant_String>(substr));
     }
   };
 
@@ -215,7 +244,7 @@ namespace Zeni::Rete::PEG {
       //std::cerr << "Constant_Variable: " << input.string() << std::endl;
       assert(input.string().size() > 2);
       const auto substr = input.string().substr(1, input.string().size() - 2);
-      data.symbols.emplace(substr, nullptr);
+      data.symbols.emplace_back(substr, nullptr);
     }
   };
 
@@ -224,7 +253,7 @@ namespace Zeni::Rete::PEG {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
       //std::cerr << "Unnamed_Variable: " << input.string() << std::endl;
-      data.symbols.emplace("", nullptr);
+      data.symbols.emplace_back("", nullptr);
     }
   };
 
@@ -253,11 +282,11 @@ namespace Zeni::Rete::PEG {
       //std::cerr << "Condition_Attr_Value: " << input.string() << std::endl;
 
       assert(data.symbols.size() == 3);
-      const auto third = data.symbols.top();
-      data.symbols.pop();
-      const auto second = data.symbols.top();
-      data.symbols.pop();
-      const auto first = data.symbols.top();
+      const auto third = data.symbols.back();
+      data.symbols.pop_back();
+      const auto second = data.symbols.back();
+      data.symbols.pop_back();
+      const auto first = data.symbols.back();
       // Deliberately leave the first symbol on the stack
 
       std::shared_ptr<Zeni::Rete::Node> node = data.network;
@@ -277,12 +306,14 @@ namespace Zeni::Rete::PEG {
         key = Node_Key_Symbol::Create(second.second);
       }
       else {
-        if (!first.second && first.first == second.first) {
-          node = Node_Filter_1::Create(data.network, data.job_queue, key);
-          key = Node_Key_01::Create();
+        if (!second.first.empty()) {
+          if (!first.second && first.first == second.first) {
+            node = Node_Filter_1::Create(data.network, data.job_queue, key);
+            key = Node_Key_01::Create();
+          }
+          else
+            variable_indices->insert(second.first, Token_Index(0, 0, Symbol_Variable::Second));
         }
-        else if (!second.first.empty())
-          variable_indices->insert(second.first, Token_Index(0, 0, Symbol_Variable::Second));
       }
 
       if (third.second) {
@@ -290,16 +321,18 @@ namespace Zeni::Rete::PEG {
         key = Node_Key_Symbol::Create(third.second);
       }
       else {
-        if (!first.second && first.first == third.first) {
-          node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
-          key = Node_Key_02::Create();
+        if (!third.first.empty()) {
+          if (!first.second && first.first == third.first) {
+            node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
+            key = Node_Key_02::Create();
+          }
+          else if (!second.second && second.first == third.first) {
+            node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
+            key = Node_Key_12::Create();
+          }
+          else
+            variable_indices->insert(third.first, Token_Index(0, 0, Symbol_Variable::Third));
         }
-        else if (!second.second && second.first == third.first) {
-          node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
-          key = Node_Key_12::Create();
-        }
-        else if (!third.first.empty())
-          variable_indices->insert(third.first, Token_Index(0, 0, Symbol_Variable::Third));
       }
 
       data.nodes.top().emplace(std::make_pair(node, key), variable_indices);
@@ -316,7 +349,7 @@ namespace Zeni::Rete::PEG {
       //std::cerr << "Condition_End: " << input.string() << std::endl;
 
       assert(data.symbols.size() == 1);
-      data.symbols.pop();
+      data.symbols.pop_back();
 
       assert(data.nodes.top().size() == 1);
       const auto node = data.nodes.top().top();
@@ -379,6 +412,58 @@ namespace Zeni::Rete::PEG {
   };
 
   template <>
+  struct Action<Make> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data) {
+      //std::cerr << "Make: " << input.string() << std::endl;
+
+      const auto symbol0 = data.symbols.front();
+      data.symbols.pop_front();
+
+      while (!data.symbols.empty()) {
+        const auto symbol1 = data.symbols.front();
+        data.symbols.pop_front();
+        const auto symbol2 = data.symbols.front();
+        data.symbols.pop_front();
+        data.network->insert_wme(data.job_queue, std::make_shared<WME>(symbol0.second, symbol1.second, symbol2.second));
+      }
+    }
+  };
+
+  template <>
+  struct Action<Write> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data) {
+      //std::cerr << "Write: " << input.string() << std::endl;
+
+      std::shared_ptr<decltype(Data::symbols)> symbols = std::make_shared<decltype(Data::symbols)>(std::move(data.symbols));
+      data.symbols.clear();
+
+      data.actions_or_retractions->push_back([symbols](const Node_Action &rete_action, const Token &token) {
+        const auto &variable_indices = rete_action.get_variable_indices();
+        for (const auto &symbol : *symbols)
+          std::cout << *symbol.second;
+      });
+    }
+  };
+
+  template <>
+  struct Action<Begin_Actions> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data) {
+      data.actions_or_retractions = &data.actions;
+    }
+  };
+
+  template <>
+  struct Action<Begin_Retractions> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data) {
+      data.actions_or_retractions = &data.retractions;
+    }
+  };
+
+  template <>
   struct Action<Source_Production> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
@@ -387,11 +472,23 @@ namespace Zeni::Rete::PEG {
       const auto node = data.nodes.top().top();
       data.nodes.pop();
 
+      std::shared_ptr<decltype(Data::actions)> actions = std::make_shared<decltype(Data::actions)>(std::move(data.actions));
+      data.actions.clear();
+
+      std::shared_ptr<decltype(Data::actions)> retractions = std::make_shared<decltype(Data::actions)>(std::move(data.retractions));
+      data.retractions.clear();
+
       Zeni::Rete::Node_Action::Create(data.network, data.job_queue, data.rule_name, data.user_command, node.first.second, node.first.first, node.second,
-        [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
-        std::cout << rete_action.get_name() << " +: " << token << std::endl;
-      }, [](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token) {
-        std::cout << rete_action.get_name() << " -: " << token << std::endl;
+        [actions](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token)
+      {
+        //std::cout << rete_action.get_name() << " +: " << token << std::endl;
+        for (const auto &action : *actions)
+          action(rete_action, token);
+      }, [retractions](const Zeni::Rete::Node_Action &rete_action, const Zeni::Rete::Token &token)
+      {
+        //std::cout << rete_action.get_name() << " -: " << token << std::endl;
+        for (const auto &retraction : *retractions)
+          retraction(rete_action, token);
       });
     }
   };

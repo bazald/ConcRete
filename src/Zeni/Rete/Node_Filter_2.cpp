@@ -18,8 +18,7 @@ namespace Zeni::Rete {
     : Node_Unary(1, 1, 1, hash_combine(std::hash<int>()(2), node_key->hash()), node_key, input)
   {
     assert(dynamic_cast<const Node_Key_Symbol *>(node_key.get())
-      || dynamic_cast<const Node_Key_Null *>(node_key.get())
-      || dynamic_cast<const Node_Key_12 *>(node_key.get()));
+      || dynamic_cast<const Node_Key_01 *>(node_key.get()));
   }
 
   std::shared_ptr<Node_Filter_2> Node_Filter_2::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input) {

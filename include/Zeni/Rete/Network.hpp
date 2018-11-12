@@ -34,6 +34,10 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::shared_ptr<Network> shared_from_this();
 
   public:
+    struct Invalid_Worker_Threads_Setup : public std::runtime_error {
+      Invalid_Worker_Threads_Setup() : std::runtime_error("Zeni::Rete::Network: Worker threads must be uninitialized before they can be (re)initialized!") {}
+    };
+
     typedef Concurrency::Hash_Trie_S2<std::shared_ptr<const Symbol>, Concurrency::Super_Hash_Trie<Token_Trie, Node_Trie>, hash_deref<Symbol>, compare_deref_eq> Symbol_Trie;
     typedef Concurrency::Super_Hash_Trie<Symbol_Trie, Node_Trie> Filter_Layer_0_Trie;
     typedef Filter_Layer_0_Trie::Snapshot Filter_Layer_0_Snapshot;
@@ -92,6 +96,11 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE void set_rule_name_index(const int64_t rule_name_index_);
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
+    ZENI_RETE_LINKAGE void finish_jobs();
+    ZENI_RETE_LINKAGE void finish_jobs_and_destroy_worker_threads();
+    ///< Worker threads must have been initialized to nullptr or destroyed first; Else throws Invalid_Worker_Threads_Setup()
+    ZENI_RETE_LINKAGE void set_worker_threads(const std::shared_ptr<Concurrency::Worker_Threads> worker_threads);
+
     ZENI_RETE_LINKAGE std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) override;
     ZENI_RETE_LINKAGE Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) override;
 
@@ -113,7 +122,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
 
   private:
-    const std::shared_ptr<Concurrency::Worker_Threads> m_worker_threads;
+    std::shared_ptr<Concurrency::Worker_Threads> m_worker_threads;
 
     Filter_Layer_0_Trie m_filter_layer_0_trie;
 

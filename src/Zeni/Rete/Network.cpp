@@ -111,8 +111,10 @@ namespace Zeni::Rete {
   }
 
   void Network::Destroy() {
-    excise_all(m_worker_threads->get_main_Job_Queue(), false);
-    m_worker_threads->finish_jobs();
+    if (m_worker_threads) {
+      excise_all(m_worker_threads->get_main_Job_Queue(), false);
+      m_worker_threads->finish_jobs();
+    }
   }
 
   void Network::send_disconnect_from_parents(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>)
@@ -149,6 +151,21 @@ namespace Zeni::Rete {
 
   Network::Printed_Output Network::get_Printed_Output() const {
     return m_printed_output;
+  }
+
+  void Network::finish_jobs() {
+    m_worker_threads->finish_jobs();
+  }
+
+  void Network::finish_jobs_and_destroy_worker_threads() {
+    finish_jobs();
+    m_worker_threads.reset();
+  }
+
+  void Network::set_worker_threads(const std::shared_ptr<Concurrency::Worker_Threads> worker_threads) {
+    if (m_worker_threads)
+      throw Invalid_Worker_Threads_Setup();
+    m_worker_threads = worker_threads;
   }
 
   void Network::excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command) {

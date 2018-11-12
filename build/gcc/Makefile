@@ -16,15 +16,17 @@ rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst 
 SOURCES_SHARED=$(wildcard ../../src/Zeni/*.cpp)
 SOURCES_CONCURRENCY=$(call rwildcard, ../../src/Zeni/Concurrency, *.cpp) $(SOURCES_SHARED)
 SOURCES_RETE=$(call rwildcard, ../../src/Zeni/Rete, *.cpp) $(SOURCES_SHARED)
+SOURCES_CONSOLE=$(call rwildcard, ../../Console, *.cpp) $(SOURCES_SHARED)
 SOURCES_TEST1=$(call rwildcard, ../../Test1, *.cpp) $(SOURCES_SHARED)
 
 OBJS_CONCURRENCY=$(addprefix Concurrency/, $(subst .cpp,.o,$(notdir $(SOURCES_CONCURRENCY))))
 OBJS_RETE=$(addprefix Rete/, $(subst .cpp,.o,$(notdir $(SOURCES_RETE))))
+OBJS_CONSOLE=$(addprefix Console/, $(subst .cpp,.o,$(notdir $(SOURCES_CONSOLE))))
 OBJS_TEST1=$(addprefix Test1/, $(subst .cpp,.o,$(notdir $(SOURCES_TEST1))))
 
-BINARIES=libConcurrency.so libRete.so Test1.out
-DIRECTORIES=Concurrency Rete Test1
-OBJS=$(OBJS_CONCURRENCY) $(OBJS_RETE) $(OBJS_TEST1)
+BINARIES=libConcurrency.so libRete.so Console.out Test1.out
+DIRECTORIES=Concurrency Rete Console Test1
+OBJS=$(OBJS_CONCURRENCY) $(OBJS_RETE) $(OBJS_CONSOLE) $(OBJS_TEST1)
 SOURCES=$(call rwildcard, ../../src, *.cpp)
 DEPENDENCIES=$(call rwildcard, ., *.d)
 
@@ -37,7 +39,7 @@ release: all
 
 .PHONY: all clean directories
 
-all: directories libConcurrency.so libRete.so Test1.out
+all: directories libConcurrency.so libRete.so Console.out Test1.out
 
 directories: $(DIRECTORIES)
 
@@ -58,6 +60,12 @@ libRete.so: libConcurrency.so $(OBJS_RETE)
 Rete/%.o:
 	$(CXX) $(CPPFLAGS) -fPIC -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_RETE))
 
+Console.out: libConcurrency.so libRete.so $(OBJS_CONSOLE)
+	$(CXX) $(LDFLAGS) -o $@ -lConcurrency -lRete $(OBJS_CONSOLE) $(LDLIBS)
+
+Console/%.o:
+	$(CXX) $(CPPFLAGS) -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_CONSOLE))
+
 Test1.out: libConcurrency.so libRete.so $(OBJS_TEST1)
 	$(CXX) $(LDFLAGS) -o $@ -lConcurrency -lRete $(OBJS_TEST1) $(LDLIBS)
 
@@ -65,4 +73,4 @@ Test1/%.o:
 	$(CXX) $(CPPFLAGS) -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_TEST1))
 
 clean:
-	$(RMDIR) Concurrency Rete Test1 $(BINARIES) $(DEPENDENCIES)
+	$(RMDIR) $(DIRECTORIES) $(BINARIES) $(DEPENDENCIES)

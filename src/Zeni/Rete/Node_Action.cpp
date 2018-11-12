@@ -9,9 +9,9 @@
 
 namespace Zeni::Rete {
 
-  Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Action &action_, const Action &retraction_)
+  Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variable_indices, const Action &action_, const Action &retraction_)
     : Node_Unary(input->get_height() + 1, input->get_size(), input->get_token_size(), Hash_By_Name()(name_), node_key, input),
-    m_variables(variables),
+    m_variable_indices(variable_indices),
     m_name(name_),
     m_action(action_),
     m_retraction(retraction_)
@@ -21,7 +21,7 @@ namespace Zeni::Rete {
 
   Node_Action::Node_Action(const std::string_view name_)
     : Node_Unary(1, 0, 0, size_t(this), nullptr, nullptr),
-    m_variables(nullptr),
+    m_variable_indices(nullptr),
     m_name(name_),
     m_action(Action()),
     m_retraction(Action())
@@ -29,13 +29,13 @@ namespace Zeni::Rete {
     assert(!m_name.empty());
   }
 
-  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variables, const Node_Action::Action action, const Node_Action::Action retraction) {
+  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variable_indices, const Node_Action::Action action, const Node_Action::Action retraction) {
     class Friendly_Node_Action : public Node_Action {
     public:
-      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<const Node_Key> node_key_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variables, const Action &action_, const Action &retraction_) : Node_Action(name_, node_key_, input, variables, action_, retraction_) {}
+      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<const Node_Key> node_key_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variable_indices, const Action &action_, const Action &retraction_) : Node_Action(name_, node_key_, input, variable_indices, action_, retraction_) {}
     };
 
-    const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, node_key, input, variables, action, retraction));
+    const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, node_key, input, variable_indices, action, retraction));
 
     network->source_rule(job_queue, action_fun, user_action);
 
@@ -56,8 +56,8 @@ namespace Zeni::Rete {
     return m_name;
   }
 
-  std::shared_ptr<const Variable_Indices> Node_Action::get_variables() const {
-    return m_variables;
+  std::shared_ptr<const Variable_Indices> Node_Action::get_variable_indices() const {
+    return m_variable_indices;
   }
 
   std::pair<Node::Node_Trie::Result, std::shared_ptr<Node>> Node_Action::connect_new_or_existing_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<const Node_Key>, const std::shared_ptr<Node>) {
