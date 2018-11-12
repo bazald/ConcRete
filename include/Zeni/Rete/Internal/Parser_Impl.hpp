@@ -75,14 +75,12 @@ namespace Zeni::Rete::PEG {
     static const std::string error_message;
 
     template <typename Input>
-    static void raise(const Input& in, Data &data) {
-      std::ostringstream oss;
-      oss << "Error " << error_message;
-      throw parse_error(oss.str(), in);
+    static void raise(const Input& in, Data &) {
+      throw parse_error(error_message, in);
     }
   };
 
-  struct plus_minus : opt<one<'+', '-'>> {};
+  struct plus_minus : one<'+', '-'> {};
   struct dot : one<'.'> {};
 
   struct inf : seq<istring<'i', 'n', 'f'>, opt<istring<'i', 'n', 'i', 't', 'y'>>> {};
@@ -93,66 +91,79 @@ namespace Zeni::Rete::PEG {
 
   struct e : one<'e', 'E'> {};
   struct p : one<'p', 'P'> {};
-  struct exponent : seq<plus_minus, plus<digit>> {};
+  struct exponent : seq<opt<plus_minus>, plus<digit>> {};
 
   struct decimal : seq<number<digit>, opt<e, exponent>> {};
 
   struct comment : if_must<one<'#'>, until<eolf>> {};
-  template<> const std::string Error<until<eolf>>::error_message = "processing comment";
+  template<> const std::string Error<until<eolf>>::error_message = "Parser error: failed to process comment"; ///< Probably cannot be triggered
 
   struct space_comment : sor<space, comment> {};
 
   struct Unquoted_String : seq<plus<alpha>, star<sor<alnum, one<'-', '_', '*'>>>> {};
 
-  struct Constant_Float : seq<plus_minus, sor<decimal, inf, nan>> {};
-  struct Constant_Int : seq<plus_minus, plus<digit>> {};
+  struct Constant_Float : if_then_else<plus_minus, must<sor<decimal, inf, nan>>, sor<decimal, inf, nan>> {};
+  template<> const std::string Error<sor<decimal, inf, nan>>::error_message = "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol";
+  struct Constant_Int : if_then_else<plus_minus, must<plus<digit>>, plus<digit>> {};
+  template<> const std::string Error<plus<digit>>::error_message = "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol";
   struct Constant_String : Unquoted_String {};
-  struct Quoted_Constant_String : seq<one<'|'>, plus<not_one<'|'>>, one<'|'>> {};
-  struct Variable : seq<one<'<'>, Unquoted_String, one<'>'>> {};
+  struct Quoted_Constant_String : if_must<one<'|'>, seq<plus<not_one<'|'>>, one<'|'>>> {};
+  template<> const std::string Error<seq<plus<not_one<'|'>>, one<'|'>>>::error_message = "Parser error: quoted string constant not closed (mismatched '|'s?)";
+  struct Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
+  template<> const std::string Error<seq<Unquoted_String, one<'>'>>>::error_message = "Parser error: variable not closed (mismatched '<>'s?)";
   struct Unnamed_Variable : seq<one<'{'>, star<space_comment>, one<'}'>> {};
 
   struct Symbol : sor<seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>, Constant_Int, Constant_String, Quoted_Constant_String, Variable, Unnamed_Variable> {};
 
-  struct Condition_Attr_Value : seq<one<'^'>, star<space_comment>, Symbol, plus<space_comment>, Symbol> {};
-  struct Inner_Condition : seq<Symbol, star<space_comment>, plus<Condition_Attr_Value>> {};
-  struct Condition_End : seq<one<'('>, star<space_comment>, must<seq<Inner_Condition, star<space_comment>, one<')'>>>> {};
-  template<> const std::string Error<seq<Inner_Condition, star<space_comment>, one<')'>>>::error_message = "processing condition";
+  struct Condition_Attr_Value : seq<star<space_comment>, one<'^'>, star<space_comment>, Symbol, plus<space_comment>, Symbol> {};
+  struct Inner_Condition : seq<star<space_comment>, Symbol, star<space_comment>, plus<Condition_Attr_Value>> {};
+  struct Condition_Body : seq<star<space_comment>, Inner_Condition, star<space_comment>, one<')'>, star<space_comment>> {};
+  struct Condition_End : if_must<one<'('>, Condition_Body> {};
+  template<> const std::string Error<Condition_Body>::error_message = "Parser error: invalid condition syntax (mismatched '()'s?)";
   struct Condition_Begin : at<Condition_End> {};
   struct Condition : seq<Condition_Begin, Condition_End> {};
 
   struct Subnode_First;
   struct Subnode_Rest;
 
-  struct Inner_Scope_End : seq<Subnode_First, star<star<space_comment>, Subnode_Rest>> {};
+  struct Inner_Scope_Body : seq<Subnode_First, star<space_comment>, star<Subnode_Rest, star<space_comment>>> {};
+  struct Inner_Scope_End : must<Inner_Scope_Body> {};
+  template<> const std::string Error<Inner_Scope_Body>::error_message = "Parser error: invalid left-hand side for production rule";
   struct Inner_Scope_Begin : at<Inner_Scope_End> {};
-  struct Inner_Scope : seq<Inner_Scope_Begin, star<space_comment>, Inner_Scope_End> {};
-  struct Outer_Scope : seq<one<'{'>, star<space_comment>, must<seq<Inner_Scope, star<space_comment>, one<'}'>>>> {};
-  template<> const std::string Error<seq<Inner_Scope, star<space_comment>, one<'}'>>>::error_message = "processing scope";
-  struct Scope : sor<Outer_Scope, Condition> {};
+  struct Inner_Scope : seq<Inner_Scope_Begin, Inner_Scope_End> {};
+  struct Outer_Scope_Body : seq<Inner_Scope, one<'}'>, star<space_comment>> {};
+  struct Outer_Scope : if_must<one<'{'>, Outer_Scope_Body> {};
+  template<> const std::string Error<Outer_Scope_Body>::error_message = "Parser error: invalid scope syntax (mismatched '{}'s?)";
+  struct Scope : seq<sor<Outer_Scope, Condition>, star<space_comment>> {};
 
   struct Join : Scope {};
-  struct Join_Existential : seq<one<'+'>, Scope> {};
-  struct Join_Negation : seq<one<'-'>, Scope> {};
+  struct EScope : Scope {};
+  struct NScope : Scope {};
+  struct Join_Existential : if_must<one<'+'>, EScope> {};
+  template<> const std::string Error<EScope>::error_message = "Parser error: '+' must be immediately followed by a valid condition or scope";
+  struct Join_Negation : if_must<seq<not_at<string<'-', '-', '>'>>, one<'-'>>, NScope> {};
+  template<> const std::string Error<NScope>::error_message = "Parser error: '-' must be immediately followed by a valid condition or scope";
 
   struct Subnode_First : Scope {};
   struct Subnode_Rest : sor<Join, Join_Existential, Join_Negation> {};
 
   struct Rule_Name : seq<plus<alpha>, star<sor<alnum, one<'-', '_', '*'>>>> {};
-  struct Source_Production_Body : seq<one<'{'>, star<space_comment>,
+  struct Source_Production_Body : seq<star<space_comment>,
+    one<'{'>, star<space_comment>,
     Rule_Name, star<space_comment>,
     Inner_Scope, star<space_comment>,
     string<'-', '-', '>'>, star<space_comment>,
     one<'}'>> {};
 
-  struct Source_Production : seq<seq<opt<one<'s'>>, one<'p'>>, star<space_comment>, must<Source_Production_Body>> {};
-  template<> const std::string Error<Source_Production_Body>::error_message = "sourcing production";
+  struct Source_Production : if_must<seq<opt<one<'s'>>, one<'p'>>, Source_Production_Body> {};
+  template<> const std::string Error<Source_Production_Body>::error_message = "Parser error: 'sp' must be followed by a valid production rule body";
 
   struct Command : sor<Source_Production> {};
 
-  struct Grammar_Body : seq<star<space_comment>, list_tail<Command, star<space_comment>>, eof> {};
+  struct ConcRete_Grammar : seq<star<space_comment>, list_tail<Command, star<space_comment>>, eof> {};
 
-  struct Grammar : must<Grammar_Body> {};
-  template<> const std::string Error<Grammar_Body>::error_message = "processing ConcRete grammar";
+  struct ConcRete : must<ConcRete_Grammar> {};
+  template<> const std::string Error<ConcRete_Grammar>::error_message = "Parser error: could not process ConcRete grammar";
 
   template <typename Rule>
   struct Action : nothing<Rule> {};
@@ -162,7 +173,7 @@ namespace Zeni::Rete::PEG {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
       const double d = std::stod(input.string());
-      //std::cout << "Constant_Float: " << d << std::endl;
+      //std::cerr << "Constant_Float: " << d << std::endl;
       data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_Float>(d));
     }
   };
@@ -172,7 +183,7 @@ namespace Zeni::Rete::PEG {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
       const int64_t i = std::stoll(input.string());
-      //std::cout << "Constant_Int: " << i << std::endl;
+      //std::cerr << "Constant_Int: " << i << std::endl;
       data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_Int>(i));
     }
   };
@@ -181,7 +192,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Constant_String> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      //std::cout << "Constant_String: " << input.string() << std::endl;
+      //std::cerr << "Constant_String: " << input.string() << std::endl;
       data.symbols.emplace(input.string(), std::make_shared<Symbol_Constant_String>(input.string()));
     }
   };
@@ -190,7 +201,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Quoted_Constant_String> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      //std::cout << "Quoted_Constant_String: " << input.string() << std::endl;
+      //std::cerr << "Quoted_Constant_String: " << input.string() << std::endl;
       assert(input.string().size() > 2);
       const auto substr = input.string().substr(1, input.string().size() - 2);
       data.symbols.emplace(substr, std::make_shared<Symbol_Constant_String>(substr));
@@ -201,7 +212,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Variable> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      //std::cout << "Constant_Variable: " << input.string() << std::endl;
+      //std::cerr << "Constant_Variable: " << input.string() << std::endl;
       assert(input.string().size() > 2);
       const auto substr = input.string().substr(1, input.string().size() - 2);
       data.symbols.emplace(substr, nullptr);
@@ -212,7 +223,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Unnamed_Variable> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      //std::cout << "Unnamed_Variable: " << input.string() << std::endl;
+      //std::cerr << "Unnamed_Variable: " << input.string() << std::endl;
       data.symbols.emplace("", nullptr);
     }
   };
@@ -341,7 +352,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Join> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      //std::cout << "Join: " << input.string() << std::endl;
+      //std::cerr << "Join: " << input.string() << std::endl;
 
       data.join_conditions<Node_Join>();
     }
@@ -351,7 +362,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Join_Existential> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      //std::cout << "Join_Existential: " << input.string() << std::endl;
+      //std::cerr << "Join_Existential: " << input.string() << std::endl;
 
       data.join_conditions<Node_Join_Existential>();
     }
@@ -361,7 +372,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Join_Negation> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      //std::cout << "Join_Negation: " << input.string() << std::endl;
+      //std::cerr << "Join_Negation: " << input.string() << std::endl;
 
       data.join_conditions<Node_Join_Negation>();
     }
@@ -371,7 +382,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Source_Production> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      //std::cout << "Source_Production: " << input.string() << std::endl;
+      //std::cerr << "Source_Production: " << input.string() << std::endl;
 
       const auto node = data.nodes.top().top();
       data.nodes.pop();
@@ -392,7 +403,7 @@ namespace Zeni::Rete {
   class Parser_Analyzer {
   private:
     Parser_Analyzer() {
-      [[maybe_unused]] const size_t number_of_issues = PEG::analyze<PEG::Grammar>();
+      [[maybe_unused]] const size_t number_of_issues = PEG::analyze<PEG::ConcRete>();
       assert(number_of_issues == 0);
     }
 
@@ -412,7 +423,7 @@ namespace Zeni::Rete {
       PEG::Data data(network, job_queue, user_command);
 
       try {
-        PEG::parse<PEG::Grammar, PEG::Action, PEG::Error>(input, data);
+        PEG::parse<PEG::ConcRete, PEG::Action, PEG::Error>(input, data);
       }
       catch (const PEG::parse_error &error) {
         std::ostringstream oposition;
