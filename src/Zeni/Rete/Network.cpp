@@ -117,6 +117,10 @@ namespace Zeni::Rete {
     }
   }
 
+  void Network::connect_to_parents_again(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>)
+  {
+  }
+
   void Network::send_disconnect_from_parents(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>)
   {
   }

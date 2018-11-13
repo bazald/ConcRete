@@ -100,6 +100,14 @@ namespace Zeni::Rete {
     return os << Zeni::to_string(value);
   }
 
+  std::ostream & Symbol_Constant_Float::print_contents(std::ostream &os) const {
+    return os << Zeni::to_string(value);
+  }
+
+  std::ostream & Symbol_Constant_Float::print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
+    return os << Zeni::to_string(value);
+  }
+
 
   Symbol_Constant_Int::Symbol_Constant_Int(const int64_t &value_) : value(value_) {}
 
@@ -144,6 +152,14 @@ namespace Zeni::Rete {
   }
 
   std::ostream & Symbol_Constant_Int::print(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
+    return os << value;
+  }
+
+  std::ostream & Symbol_Constant_Int::print_contents(std::ostream &os) const {
+    return os << value;
+  }
+
+  std::ostream & Symbol_Constant_Int::print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
     return os << value;
   }
 
@@ -195,6 +211,14 @@ namespace Zeni::Rete {
     return print(os);
   }
 
+  std::ostream & Symbol_Constant_String::print_contents(std::ostream &os) const {
+    return os << m_value;
+  }
+
+  std::ostream & Symbol_Constant_String::print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
+    return print_contents(os);
+  }
+
 
   Symbol_Identifier::Symbol_Identifier(const char * value_) : m_value(value_) {}
 
@@ -239,6 +263,14 @@ namespace Zeni::Rete {
     return os << m_value;
   }
 
+  std::ostream & Symbol_Identifier::print_contents(std::ostream &os) const {
+    return os << m_value;
+  }
+
+  std::ostream & Symbol_Identifier::print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
+    return os << m_value;
+  }
+
 
   Symbol_Variable::Symbol_Variable(const Variable &value_) : value(value_) {}
 
@@ -279,13 +311,24 @@ namespace Zeni::Rete {
   }
 
   std::ostream & Symbol_Variable::print(std::ostream &os, const std::shared_ptr<const Variable_Indices> indices) const {
-    os.put('<');
     const auto found = indices->find_name_token(0, value);
     if (!found.empty())
-      os << found;
+      os << '<' << found << '>';
     else
-      os << value;
-    os.put('>');
+      os << "{}";
+    return os;
+  }
+
+  std::ostream & Symbol_Variable::print_contents(std::ostream &) const {
+    abort();
+  }
+
+  std::ostream & Symbol_Variable::print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices> indices) const {
+    const auto found = indices->find_name_token(0, value);
+    if (!found.empty())
+      os << '<' << found << '>';
+    else
+      os << "{}";
     return os;
   }
 

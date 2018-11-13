@@ -18,6 +18,14 @@ namespace Zeni::Rete {
   {
   }
 
+  void Node_Binary::connect_to_parents_again(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
+    const auto sft = shared_from_this();
+
+    m_input_left->connect_existing_output(network, job_queue, m_key_left, sft);
+    if (m_input_left != m_input_right || *m_key_left != *m_key_right)
+      m_input_right->connect_existing_output(network, job_queue, m_key_right, sft);
+  }
+
   void Node_Binary::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
     const auto sft = shared_from_this();
 

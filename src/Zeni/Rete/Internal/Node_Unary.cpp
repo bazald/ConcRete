@@ -15,6 +15,10 @@ namespace Zeni::Rete {
   {
   }
 
+  void Node_Unary::connect_to_parents_again(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
+    m_input->connect_existing_output(network, job_queue, m_key, shared_from_this());
+  }
+
   void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
     job_queue->give_one(std::make_shared<Message_Disconnect_Output>(m_input, network, m_key, shared_from_this()));
   }

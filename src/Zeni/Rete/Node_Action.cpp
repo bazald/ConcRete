@@ -76,14 +76,14 @@ namespace Zeni::Rete {
     const auto[result, snapshot, value] = m_token_trie.insert(message.token);
 
     if (result == Token_Trie::Result::First_Insertion)
-      m_action(*this, *value);
+      m_action(message.network, message.get_Job_Queue(), std::static_pointer_cast<Node_Action>(shared_from_this()), value);
   }
 
   void Node_Action::receive(const Message_Token_Remove &message) {
     const auto[result, snapshot, value] = m_token_trie.erase(message.token);
 
     if (result == Token_Trie::Result::Last_Removal)
-      m_retraction(*this, *value);
+      m_retraction(message.network, message.get_Job_Queue(), std::static_pointer_cast<Node_Action>(shared_from_this()), value);
   }
 
   bool Node_Action::operator==(const Node &rhs) const {

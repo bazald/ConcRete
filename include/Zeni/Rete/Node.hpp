@@ -42,6 +42,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE Node(const int64_t height, const int64_t size, const int64_t token_size, const size_t hash);
 
   public:
+    ZENI_RETE_LINKAGE virtual void connect_to_parents_again(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) = 0;
     ZENI_RETE_LINKAGE virtual void send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) = 0;
 
     ZENI_RETE_LINKAGE int64_t get_height() const;

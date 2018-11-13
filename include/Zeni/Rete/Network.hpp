@@ -81,6 +81,7 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE void Destroy();
 
+    ZENI_RETE_LINKAGE void connect_to_parents_again(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) override;
     ZENI_RETE_LINKAGE void send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) override;
 
   public:
