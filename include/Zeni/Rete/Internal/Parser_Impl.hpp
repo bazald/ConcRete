@@ -29,28 +29,51 @@ namespace Zeni::Rete::PEG {
   using namespace tao::Zeni_Rete_PEG;
 
   struct Data {
-    Data(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_command_)
-      : network(network_), job_queue(job_queue_), user_command(user_command_)
-    {
-      nodes.push(std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>());
-    }
+    class Production {
+      Production(const Production &) = delete;
+      Production & operator=(const Production &) = delete;
 
-    ~Data() {
-      while (!nodes.empty()) {
-        while (!nodes.top().empty()) {
-          nodes.top().top().first.first->send_disconnect_from_parents(network, job_queue);
-          nodes.top().pop();
-        }
-        nodes.pop();
+    public:
+      Production(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_command_)
+        : network(network_), job_queue(job_queue_), user_command(user_command_)
+      {
+        lhs.push(decltype(lhs)::value_type());
       }
+
+      ~Production() {
+        while (!lhs.empty()) {
+          while (!lhs.top().empty()) {
+            lhs.top().top().first.first->send_disconnect_from_parents(network, job_queue);
+            lhs.top().pop();
+          }
+          lhs.pop();
+        }
+      }
+
+      const std::shared_ptr<Network> network;
+      const std::shared_ptr<Concurrency::Job_Queue> job_queue;
+
+      const bool user_command;
+
+      std::string rule_name;
+      std::stack<std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>> lhs;
+      std::list<Node_Action::Action> actions;
+      std::list<Node_Action::Action> retractions;
+      std::list<Node_Action::Action> * actions_or_retractions = &actions;
+    };
+
+    Data(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_command_)
+      : network(network_), job_queue(job_queue_)
+    {
+      productions.push(std::make_shared<Production>(network_, job_queue_, user_command_));
     }
 
     template <typename Join_Type>
     void join_conditions() {
-      const auto node_right = nodes.top().top();
-      nodes.top().pop();
-      const auto node_left = nodes.top().top();
-      nodes.top().pop();
+      const auto node_right = productions.top()->lhs.top().top();
+      productions.top()->lhs.top().pop();
+      const auto node_left = productions.top()->lhs.top().top();
+      productions.top()->lhs.top().pop();
 
       Variable_Bindings variable_bindings;
       for (auto right : node_right.second->get_indices()) {
@@ -62,18 +85,14 @@ namespace Zeni::Rete::PEG {
       const auto node = Join_Type::Create(network, job_queue, node_left.first.second, node_right.first.second, node_left.first.first, node_right.first.first, std::move(variable_bindings));
       const auto variable_indices = Variable_Indices::Create(node_left.first.first->get_size(), node_left.first.first->get_token_size(), *node_left.second, *node_right.second);
 
-      nodes.top().emplace(std::make_pair(node, Node_Key_Null::Create()), variable_indices);
+      productions.top()->lhs.top().emplace(std::make_pair(node, Node_Key_Null::Create()), variable_indices);
     }
 
     const std::shared_ptr<Network> network;
     const std::shared_ptr<Concurrency::Job_Queue> job_queue;
-    const bool user_command;
+
     std::list<std::pair<std::string, std::shared_ptr<const Rete::Symbol>>> symbols;
-    std::stack<std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>> nodes;
-    std::list<Node_Action::Action> actions;
-    decltype(actions) retractions;
-    decltype(actions) * actions_or_retractions = &actions;
-    std::string rule_name;
+    std::stack<std::shared_ptr<Production>> productions;
   };
 
   template <typename Rule>
@@ -169,19 +188,23 @@ namespace Zeni::Rete::PEG {
     Actions, star<space_comment>,
     opt<seq<Retractions, star<space_comment>>>> {};
 
+  struct Exit : string<'e', 'x', 'i', 't'> {};
+
   struct Inner_Make : seq<plus<plus<space_comment>, Inner_WME>> {};
   struct Make : if_must<string<'m', 'a', 'k', 'e'>, Inner_Make> {};
   template<> inline const char * Error<Inner_Make>::error_message() { return "Parser error: 'make' must be followed by a valid WME"; }
 
   struct Production_Body : seq<plus<space_comment>, Inner_Production_Body> {};
-  struct Production : if_must<one<'p'>, Production_Body> {};
+  struct End_Production : if_must<one<'p'>, Production_Body> {};
   template<> inline const char * Error<Production_Body>::error_message() { return "Parser error: 'p' must be followed by a valid production rule body"; }
+  struct Begin_Production : at<End_Production> {};
+  struct Production : seq<Begin_Production, End_Production> {};
 
   struct Inner_Write : plus<plus<space_comment>, Symbol_w_Var> {};
   struct Write : if_must<string<'w', 'r', 'i', 't', 'e'>, Inner_Write> {};
   template<> inline const char * Error<Inner_Write>::error_message() { return "Parser error: 'write' must be followed by valid Symbols"; }
 
-  struct Inner_Action : sor<Make, Production, Write> {};
+  struct Inner_Action : sor<Exit, Make, Production, Write> {};
   struct Enclosed_Action : seq<one<'('>, star<space_comment>, Inner_Action, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Action_List : plus<Enclosed_Action> {};
   struct Inner_Actions : seq<string<'-', '-', '>'>, star<space_comment>, Action_List> {};
@@ -193,7 +216,7 @@ namespace Zeni::Rete::PEG {
 
   struct Command : Enclosed_Action {};
 
-  struct ConcRete_Grammar : seq<star<space_comment>, list_tail<Command, star<space_comment>>, eof> {};
+  struct ConcRete_Grammar : seq<star<space_comment>, star<seq<Command, star<space_comment>>>, eof> {};
 
   struct ConcRete : must<ConcRete_Grammar> {};
   template<> inline const char * Error<ConcRete_Grammar>::error_message() { return "Parser error: could not process ConcRete grammar"; }
@@ -274,7 +297,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Rule_Name> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      data.rule_name = input.string();
+      data.productions.top()->rule_name = input.string();
     }
   };
 
@@ -284,7 +307,7 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data) {
       //std::cerr << "Condition_Begin: " << input.string() << std::endl;
 
-      data.nodes.emplace(std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>());
+      data.productions.top()->lhs.emplace(std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>());
     }
   };
 
@@ -348,9 +371,9 @@ namespace Zeni::Rete::PEG {
         }
       }
 
-      data.nodes.top().emplace(std::make_pair(node, key), variable_indices);
+      data.productions.top()->lhs.top().emplace(std::make_pair(node, key), variable_indices);
 
-      if (data.nodes.top().size() == 2)
+      if (data.productions.top()->lhs.top().size() == 2)
         data.join_conditions<Node_Join>();
     }
   };
@@ -364,10 +387,10 @@ namespace Zeni::Rete::PEG {
       assert(data.symbols.size() == 1);
       data.symbols.pop_back();
 
-      assert(data.nodes.top().size() == 1);
-      const auto node = data.nodes.top().top();
-      data.nodes.pop();
-      data.nodes.top().emplace(node);
+      assert(data.productions.top()->lhs.top().size() == 1);
+      const auto node = data.productions.top()->lhs.top().top();
+      data.productions.top()->lhs.pop();
+      data.productions.top()->lhs.top().emplace(node);
     }
   };
 
@@ -377,7 +400,7 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data) {
       //std::cerr << "Inner_Scope_Begin: " << input.string() << std::endl;
 
-      data.nodes.emplace(std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>());
+      data.productions.top()->lhs.emplace(std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>());
     }
   };
 
@@ -387,10 +410,10 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data) {
       //std::cerr << "Inner_Scope_End: " << input.string() << std::endl;
 
-      assert(data.nodes.top().size() == 1);
-      auto top = data.nodes.top().top();
-      data.nodes.pop();
-      data.nodes.top().emplace(std::move(top));
+      assert(data.productions.top()->lhs.top().size() == 1);
+      auto top = data.productions.top()->lhs.top().top();
+      data.productions.top()->lhs.pop();
+      data.productions.top()->lhs.top().emplace(std::move(top));
     }
   };
 
@@ -425,6 +448,14 @@ namespace Zeni::Rete::PEG {
   };
 
   template <>
+  struct Action<Exit> {
+    template<typename Input>
+    static void apply(const Input &, Data &) {
+      throw Parser::Exit();
+    }
+  };
+
+  template <>
   struct Action<Make> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
@@ -432,6 +463,8 @@ namespace Zeni::Rete::PEG {
 
       class Get_Symbol : public std::enable_shared_from_this<Get_Symbol> {
       public:
+        virtual ~Get_Symbol() {}
+
         virtual std::shared_ptr<const Symbol> get(const Input &input, const std::shared_ptr<const Token>) const = 0;
       };
 
@@ -469,7 +502,7 @@ namespace Zeni::Rete::PEG {
           if (varname_symbol.first.empty())
             throw parse_error("Parser error: cannot print the contents of an unnamed variable", input);
 
-          const auto index = data.nodes.top().top().second->find_index(varname_symbol.first);
+          const auto index = data.productions.top()->lhs.top().top().second->find_index(varname_symbol.first);
           if (index == Token_Index())
             throw parse_error("Parser error: variable used in the RHS not found in the LHS", input);
 
@@ -496,10 +529,18 @@ namespace Zeni::Rete::PEG {
         get_symbol.push_back(std::make_tuple(get_symbol0, get_symbol1, get_symbol2));
       }
 
-      data.actions_or_retractions->push_back([&input,get_symbol](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token> token) {
+      data.productions.top()->actions_or_retractions->push_back([&input,get_symbol](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token> token) {
         for (const auto &getter : get_symbol)
           network ->insert_wme(job_queue, std::make_shared<WME>(std::get<0>(getter)->get(input, token), std::get<1>(getter)->get(input, token), std::get<2>(getter)->get(input, token)));
       });
+    }
+  };
+
+  template <>
+  struct Action<Begin_Production> {
+    template<typename Input>
+    static void apply(const Input &, Data &data) {
+      data.productions.push(std::make_shared<Data::Production>(data.network, data.job_queue, false));
     }
   };
 
@@ -509,8 +550,10 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data) {
       //std::cerr << "Source_Production: " << input.string() << std::endl;
 
-      const auto node = data.nodes.top().top();
-      data.nodes.pop();
+      assert(data.productions.top()->lhs.size() == 1);
+      assert(data.productions.top()->lhs.top().size() == 1);
+      const auto node = data.productions.top()->lhs.top().top();
+      data.productions.top()->lhs.top().pop();
 
       class Input_Node_Wrapper {
         Input_Node_Wrapper(const Input_Node_Wrapper &) = delete;
@@ -542,17 +585,21 @@ namespace Zeni::Rete::PEG {
 
       const auto input_node = std::make_shared<Input_Node_Wrapper>(data.network, node.first.first, node.first.second, node.second);
 
-      const auto rule_name = data.rule_name;
-      const auto user_command = data.user_command;
+      const std::string rule_name = data.productions.top()->rule_name;
 
-      std::shared_ptr<decltype(Data::actions)> actions = std::make_shared<decltype(Data::actions)>(std::move(data.actions));
-      data.actions.clear();
+      std::shared_ptr<decltype(Data::Production::actions)> actions =
+        std::make_shared<decltype(Data::Production::actions)>(std::move(data.productions.top()->actions));
+      data.productions.top()->actions.clear();
 
-      std::shared_ptr<decltype(Data::actions)> retractions = std::make_shared<decltype(Data::actions)>(std::move(data.retractions));
-      data.retractions.clear();
+      std::shared_ptr<decltype(Data::Production::actions)> retractions =
+        std::make_shared<decltype(Data::Production::actions)>(std::move(data.productions.top()->retractions));
+      data.productions.top()->retractions.clear();
 
-      /// TODO: Implement a stack for recursive productions, making productions, ....
-      data.actions.push_back([&input,input_node,rule_name,user_command,actions,retractions](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token> token) {
+      data.productions.pop();
+
+      const bool user_command = data.productions.top()->user_command;
+
+      data.productions.top()->actions_or_retractions->push_back([input_node,rule_name,user_command,actions,retractions](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token> token) {
         Zeni::Rete::Node_Action::Create(network, job_queue, rule_name, user_command, input_node->node_key, input_node->get_input(), input_node->variable_indices,
           [actions](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token)
         {
@@ -577,6 +624,8 @@ namespace Zeni::Rete::PEG {
 
       class Write_Base : public std::enable_shared_from_this<Write_Base> {
       public:
+        virtual ~Write_Base() {}
+
         virtual void write(std::ostream &os, const Input &input, const std::shared_ptr<const Token> token) const = 0;
       };
 
@@ -618,7 +667,7 @@ namespace Zeni::Rete::PEG {
           if (symbol.first.empty())
             throw parse_error("Parser error: cannot print the contents of an unnamed variable", input);
 
-          const auto index = data.nodes.top().top().second->find_index(symbol.first);
+          const auto index = data.productions.top()->lhs.top().top().second->find_index(symbol.first);
           if (index == Token_Index())
             throw parse_error("Parser error: variable used in the RHS not found in the LHS", input);
 
@@ -633,7 +682,7 @@ namespace Zeni::Rete::PEG {
       }
       data.symbols.clear();
 
-      data.actions_or_retractions->push_back([&input,writes](const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token> token) {
+      data.productions.top()->actions_or_retractions->push_back([&input,writes](const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token> token) {
         std::ostringstream oss;
         for (const auto &write : writes)
           write->write(oss, input, token);
@@ -646,7 +695,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Begin_Actions> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      data.actions_or_retractions = &data.actions;
+      data.productions.top()->actions_or_retractions = &data.productions.top()->actions;
     }
   };
 
@@ -654,7 +703,7 @@ namespace Zeni::Rete::PEG {
   struct Action<Begin_Retractions> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      data.actions_or_retractions = &data.retractions;
+      data.productions.top()->actions_or_retractions = &data.productions.top()->retractions;
     }
   };
 
@@ -662,9 +711,9 @@ namespace Zeni::Rete::PEG {
   struct Action<Command> {
     template<typename Input>
     static void apply(const Input &input, Data &data) {
-      assert(data.actions.size() == 1);
-      data.actions.front()(data.network, data.job_queue, nullptr, nullptr);
-      data.actions.pop_front();
+      assert(data.productions.top()->actions.size() == 1);
+      data.productions.top()->actions.front()(data.network, data.job_queue, nullptr, nullptr);
+      data.productions.top()->actions.pop_front();
     }
   };
 

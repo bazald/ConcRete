@@ -19,6 +19,8 @@ namespace Zeni::Rete {
     Parser() = default;
 
   public:
+    class Exit {};
+
     ZENI_RETE_LINKAGE virtual ~Parser() {}
 
     ZENI_RETE_LINKAGE static std::shared_ptr<Parser> Create();
