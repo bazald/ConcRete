@@ -2,6 +2,7 @@
 #define ZENI_RETE_NETWORK_HPP
 
 #include "Zeni/Concurrency/Container/Hash_Trie.hpp"
+#include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Recipient.hpp"
 #include "Node.hpp"
 #include "Node_Action.hpp"
@@ -11,7 +12,6 @@
 
 namespace Zeni::Concurrency {
 
-  class Job_Queue;
   class Worker_Threads;
 
 }

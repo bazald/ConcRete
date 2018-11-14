@@ -15,7 +15,6 @@ namespace std {
 
 namespace Zeni::Concurrency {
 
-  class Job_Queue;
   class Message;
 
   /// A message recipient virtual base class

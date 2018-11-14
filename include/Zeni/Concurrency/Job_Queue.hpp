@@ -11,7 +11,7 @@ namespace Zeni::Concurrency {
 }
 
 namespace std {
-  template class ZENI_CONCURRENCY_LINKAGE std::shared_ptr<Zeni::Concurrency::Job_Queue>;
+  template class ZENI_CONCURRENCY_LINKAGE shared_ptr<Zeni::Concurrency::Job_Queue>;
 }
 
 namespace Zeni::Concurrency {

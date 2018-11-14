@@ -1,4 +1,6 @@
-#include "Zeni/Rete/Internal/Parser_Impl.hpp"
+#include "Zeni/Rete/Parser.hpp"
+
+#include "Zeni/Rete/Parser/Impl.hpp"
 
 namespace Zeni::Rete {
 

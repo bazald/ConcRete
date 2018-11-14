@@ -6,6 +6,7 @@
 #include "Zeni/Concurrency/Container/Positive_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Super_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Atomic.hpp"
+#include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Recipient.hpp"
 #include "Custom_Data.hpp"
 #include "Token.hpp"

@@ -31,7 +31,6 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Remove.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Binary.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Unary.cpp" />
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Parser_Impl.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Token_Alpha.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Token_Beta.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Variable_Indices_Impl.cpp" />
@@ -45,6 +44,7 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join_Negation.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Key.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Parser.cpp" />
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Parser\Data.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Symbol.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Token.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Rete\Token_Index.cpp" />
@@ -67,7 +67,6 @@
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Token_Remove.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Binary.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Unary.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Parser_Impl.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Token_Alpha.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Token_Beta.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Variable_Indices_Impl.hpp" />
@@ -82,6 +81,11 @@
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Key.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Predicate.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Parser.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\Actions.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\Actions_Impl.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\Data.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\Impl.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\PEG.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Symbol.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Token.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Rete\Token_Index.hpp" />

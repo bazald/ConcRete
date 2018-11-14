@@ -52,25 +52,25 @@ libConcurrency.so: $(OBJS_CONCURRENCY)
 	$(CXX) $(LDFLAGS) -shared -o $@ $(OBJS_CONCURRENCY) $(LDLIBS)
 
 Concurrency/%.o:
-	$(CXX) $(CPPFLAGS) -fPIC -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_CONCURRENCY))
+	$(CXX) $(CPPFLAGS) -fPIC -o $@ -c $(filter %$(subst .o,.cpp,/$(notdir $@)), $(SOURCES_CONCURRENCY))
 
 libRete.so: libConcurrency.so $(OBJS_RETE)
 	$(CXX) $(LDFLAGS) -shared -o $@ -lConcurrency $(OBJS_RETE) $(LDLIBS)
 
 Rete/%.o:
-	$(CXX) $(CPPFLAGS) -fPIC -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_RETE))
+	$(CXX) $(CPPFLAGS) -fPIC -o $@ -c $(filter %$(subst .o,.cpp,/$(notdir $@)), $(SOURCES_RETE))
 
 Console.out: libConcurrency.so libRete.so $(OBJS_CONSOLE)
 	$(CXX) $(LDFLAGS) -o $@ -lConcurrency -lRete $(OBJS_CONSOLE) $(LDLIBS)
 
 Console/%.o:
-	$(CXX) $(CPPFLAGS) -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_CONSOLE))
+	$(CXX) $(CPPFLAGS) -o $@ -c $(filter %$(subst .o,.cpp,/$(notdir $@)), $(SOURCES_CONSOLE))
 
 Test1.out: libConcurrency.so libRete.so $(OBJS_TEST1)
 	$(CXX) $(LDFLAGS) -o $@ -lConcurrency -lRete $(OBJS_TEST1) $(LDLIBS)
 
 Test1/%.o:
-	$(CXX) $(CPPFLAGS) -o $@ -c $(filter %$(subst .o,.cpp,$(notdir $@)), $(SOURCES_TEST1))
+	$(CXX) $(CPPFLAGS) -o $@ -c $(filter %$(subst .o,.cpp,/$(notdir $@)), $(SOURCES_TEST1))
 
 clean:
 	$(RMDIR) $(DIRECTORIES) $(BINARIES) $(DEPENDENCIES)

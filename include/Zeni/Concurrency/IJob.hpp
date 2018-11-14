@@ -1,13 +1,12 @@
 #ifndef ZENI_CONCURRENCY_IJOB_HPP
 #define ZENI_CONCURRENCY_IJOB_HPP
 
-#include "Internal/Linkage.hpp"
+#include "Job_Queue.hpp"
 
 #include <memory>
 
 namespace Zeni::Concurrency {
 
-  class Job_Queue;
   class Job_Queue_Impl;
 
   /// A Job virtual base class
