@@ -5,6 +5,8 @@
 
 namespace Zeni::Rete::PEG {
 
+  /// Symbols
+
   template <>
   struct Action<Constant_Float> {
     template<typename Input>
@@ -47,11 +49,7 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data);
   };
 
-  template <>
-  struct Action<Rule_Name> {
-    template<typename Input>
-    static void apply(const Input &input, Data &data);
-  };
+  /// Conditions and WMEs
 
   template <>
   struct Action<Condition_Begin> {
@@ -70,6 +68,8 @@ namespace Zeni::Rete::PEG {
     template<typename Input>
     static void apply(const Input &input, Data &data);
   };
+
+  /// Left-Hand Side / LHS
 
   template <>
   struct Action<Inner_Scope_Begin> {
@@ -101,6 +101,8 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data);
   };
 
+  /// Right-Hand Side / RHS
+
   template <>
   struct Action<Exit> {
     template<typename Input>
@@ -109,6 +111,32 @@ namespace Zeni::Rete::PEG {
 
   template <>
   struct Action<Make> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Write> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  /// Production Rules
+
+  template <>
+  struct Action<Begin_Actions> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Begin_Retractions> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Rule_Name> {
     template<typename Input>
     static void apply(const Input &input, Data &data);
   };
@@ -125,23 +153,7 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data);
   };
 
-  template <>
-  struct Action<Write> {
-    template<typename Input>
-    static void apply(const Input &input, Data &data);
-  };
-
-  template <>
-  struct Action<Begin_Actions> {
-    template<typename Input>
-    static void apply(const Input &input, Data &data);
-  };
-
-  template <>
-  struct Action<Begin_Retractions> {
-    template<typename Input>
-    static void apply(const Input &input, Data &data);
-  };
+  /// Overarching grammar
 
   template <>
   struct Action<Command> {

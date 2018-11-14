@@ -1,10 +1,6 @@
 #ifndef ZENI_RETE_PARSER_ACTIONS_IMPL_HPP
 #define ZENI_RETE_PARSER_ACTIONS_IMPL_HPP
 
-// Include these above PEGTL includes to avoid a strange bug in MSVC
-#include "Zeni/Concurrency/Container/Hash_Trie.hpp"
-#include "Zeni/Rete/Node.hpp"
-
 #include "Actions.hpp"
 
 #include "Zeni/Concurrency/Worker_Threads.hpp"
@@ -19,6 +15,8 @@
 #include "Zeni/Rete/Parser.hpp"
 
 namespace Zeni::Rete::PEG {
+
+  /// Symbols
 
   template <typename Input>
   void Action<Constant_Float>::apply(const Input &input, Data &data) {
@@ -68,10 +66,7 @@ namespace Zeni::Rete::PEG {
     data.symbols.emplace_back("", nullptr);
   }
 
-  template<typename Input>
-  void Action<Rule_Name>::apply(const Input &input, Data &data) {
-    data.productions.top()->rule_name = input.string();
-  }
+  /// Conditions and WMEs
 
   template<typename Input>
   void Action<Condition_Begin>::apply(const Input &input, Data &data) {
@@ -157,6 +152,8 @@ namespace Zeni::Rete::PEG {
     data.productions.top()->lhs.top().emplace(node);
   }
 
+  /// Left-Hand Side / LHS
+
   template<typename Input>
   void Action<Inner_Scope_Begin>::apply(const Input &input, Data &data) {
     //std::cerr << "Inner_Scope_Begin: " << input.string() << std::endl;
@@ -194,6 +191,8 @@ namespace Zeni::Rete::PEG {
 
     data.join_conditions<Node_Join_Negation>();
   }
+
+  /// Right-Hand Side / RHS
 
   template<typename Input>
   void Action<Exit>::apply(const Input &, Data &) {
@@ -279,81 +278,6 @@ namespace Zeni::Rete::PEG {
   }
 
   template<typename Input>
-  void Action<Begin_Production>::apply(const Input &, Data &data) {
-    data.productions.push(std::make_shared<Data::Production>(data.network, data.job_queue, false));
-  }
-
-  template<typename Input>
-  void Action<Production>::apply(const Input &input, Data &data) {
-    //std::cerr << "Source_Production: " << input.string() << std::endl;
-
-    assert(data.productions.top()->lhs.size() == 1);
-    assert(data.productions.top()->lhs.top().size() == 1);
-    const auto node = data.productions.top()->lhs.top().top();
-    data.productions.top()->lhs.top().pop();
-
-    class Input_Node_Wrapper {
-      Input_Node_Wrapper(const Input_Node_Wrapper &) = delete;
-      Input_Node_Wrapper & operator=(const Input_Node_Wrapper &) = delete;
-
-    public:
-      Input_Node_Wrapper(const std::shared_ptr<Network> network_, const std::shared_ptr<Node> input_, const std::shared_ptr<const Node_Key> node_key_, const std::shared_ptr<const Variable_Indices> variable_indices_)
-        : m_network(network_), m_input(input_), node_key(node_key_), variable_indices(variable_indices_)
-      {
-      }
-
-      ~Input_Node_Wrapper() {
-        /// Must be done this way since the Worker Threads could be swapped out before destruction
-        m_input->send_disconnect_from_parents(m_network, m_network->get_Worker_Threads()->get_main_Job_Queue());
-      }
-
-      std::shared_ptr<Node> get_input() const {
-        m_input->connect_to_parents_again(m_network, m_network->get_Worker_Threads()->get_main_Job_Queue());
-        return m_input;
-      }
-
-    private:
-      const std::shared_ptr<Network> m_network;
-      const std::shared_ptr<Node> m_input;
-
-    public:
-      const std::shared_ptr<const Node_Key> node_key;
-      const std::shared_ptr<const Variable_Indices> variable_indices;
-    };
-
-    const auto input_node = std::make_shared<Input_Node_Wrapper>(data.network, node.first.first, node.first.second, node.second);
-
-    const std::string rule_name = data.productions.top()->rule_name;
-
-    std::shared_ptr<decltype(Data::Production::actions)> actions =
-      std::make_shared<decltype(Data::Production::actions)>(std::move(data.productions.top()->actions));
-    data.productions.top()->actions.clear();
-
-    std::shared_ptr<decltype(Data::Production::actions)> retractions =
-      std::make_shared<decltype(Data::Production::actions)>(std::move(data.productions.top()->retractions));
-    data.productions.top()->retractions.clear();
-
-    data.productions.pop();
-
-    const bool user_command = data.productions.top()->user_command;
-
-    data.productions.top()->actions_or_retractions->push_back([input_node, rule_name, user_command, actions, retractions](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token> token) {
-      Zeni::Rete::Node_Action::Create(network, job_queue, rule_name, user_command, input_node->node_key, input_node->get_input(), input_node->variable_indices,
-        [actions](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token)
-      {
-        //std::cout << rete_action.get_name() << " +: " << token << std::endl;
-        for (const auto &action : *actions)
-          action(network, job_queue, rete_action, token);
-      }, [retractions](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token)
-      {
-        //std::cout << rete_action.get_name() << " -: " << token << std::endl;
-        for (const auto &retraction : *retractions)
-          retraction(network, job_queue, rete_action, token);
-      });
-    });
-  }
-
-  template<typename Input>
   void Action<Write>::apply(const Input &input, Data &data) {
     //std::cerr << "Write: " << input.string() << std::endl;
 
@@ -425,6 +349,8 @@ namespace Zeni::Rete::PEG {
     });
   }
 
+  /// Production Rules
+
   template<typename Input>
   void Action<Begin_Actions>::apply(const Input &input, Data &data) {
     data.productions.top()->actions_or_retractions = &data.productions.top()->actions;
@@ -434,6 +360,88 @@ namespace Zeni::Rete::PEG {
   void Action<Begin_Retractions>::apply(const Input &input, Data &data) {
     data.productions.top()->actions_or_retractions = &data.productions.top()->retractions;
   }
+
+  template<typename Input>
+  void Action<Rule_Name>::apply(const Input &input, Data &data) {
+    data.productions.top()->rule_name = input.string();
+  }
+
+  template<typename Input>
+  void Action<Begin_Production>::apply(const Input &, Data &data) {
+    data.productions.push(std::make_shared<Data::Production>(data.network, data.job_queue, false));
+  }
+
+  template<typename Input>
+  void Action<Production>::apply(const Input &input, Data &data) {
+    //std::cerr << "Production: " << input.string() << std::endl;
+
+    assert(data.productions.top()->lhs.size() == 1);
+    assert(data.productions.top()->lhs.top().size() == 1);
+    const auto node = data.productions.top()->lhs.top().top();
+    data.productions.top()->lhs.top().pop();
+
+    class Input_Node_Wrapper {
+      Input_Node_Wrapper(const Input_Node_Wrapper &) = delete;
+      Input_Node_Wrapper & operator=(const Input_Node_Wrapper &) = delete;
+
+    public:
+      Input_Node_Wrapper(const std::shared_ptr<Network> network_, const std::shared_ptr<Node> input_, const std::shared_ptr<const Node_Key> node_key_, const std::shared_ptr<const Variable_Indices> variable_indices_)
+        : m_network(network_), m_input(input_), node_key(node_key_), variable_indices(variable_indices_)
+      {
+      }
+
+      ~Input_Node_Wrapper() {
+        /// Must be done this way since the Worker Threads could be swapped out before destruction
+        m_input->send_disconnect_from_parents(m_network, m_network->get_Worker_Threads()->get_main_Job_Queue());
+      }
+
+      std::shared_ptr<Node> get_input() const {
+        m_input->connect_to_parents_again(m_network, m_network->get_Worker_Threads()->get_main_Job_Queue());
+        return m_input;
+      }
+
+    private:
+      const std::shared_ptr<Network> m_network;
+      const std::shared_ptr<Node> m_input;
+
+    public:
+      const std::shared_ptr<const Node_Key> node_key;
+      const std::shared_ptr<const Variable_Indices> variable_indices;
+    };
+
+    const auto input_node = std::make_shared<Input_Node_Wrapper>(data.network, node.first.first, node.first.second, node.second);
+
+    const std::string rule_name = data.productions.top()->rule_name;
+
+    std::shared_ptr<decltype(Data::Production::actions)> actions =
+      std::make_shared<decltype(Data::Production::actions)>(std::move(data.productions.top()->actions));
+    data.productions.top()->actions.clear();
+
+    std::shared_ptr<decltype(Data::Production::actions)> retractions =
+      std::make_shared<decltype(Data::Production::actions)>(std::move(data.productions.top()->retractions));
+    data.productions.top()->retractions.clear();
+
+    data.productions.pop();
+
+    const bool user_command = data.productions.top()->user_command;
+
+    data.productions.top()->actions_or_retractions->push_back([input_node, rule_name, user_command, actions, retractions](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token> token) {
+      Zeni::Rete::Node_Action::Create(network, job_queue, rule_name, user_command, input_node->node_key, input_node->get_input(), input_node->variable_indices,
+        [actions](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token)
+      {
+        //std::cout << rete_action.get_name() << " +: " << token << std::endl;
+        for (const auto &action : *actions)
+          action(network, job_queue, rete_action, token);
+      }, [retractions](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token)
+      {
+        //std::cout << rete_action.get_name() << " -: " << token << std::endl;
+        for (const auto &retraction : *retractions)
+          retraction(network, job_queue, rete_action, token);
+      });
+    });
+  }
+
+  /// Overarching grammar
 
   template<typename Input>
   void Action<Command>::apply(const Input &input, Data &data) {

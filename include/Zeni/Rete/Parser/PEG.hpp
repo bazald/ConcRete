@@ -1,6 +1,12 @@
 #ifndef ZENI_RETE_PARSER_PEG_HPP
 #define ZENI_RETE_PARSER_PEG_HPP
 
+// Include these above PEGTL includes to avoid a strange bug in MSVC
+#include "Zeni/Concurrency/Container/Antiable_Hash_Trie.hpp"
+#include "Zeni/Concurrency/Container/Hash_Trie.hpp"
+#include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
+#include "Zeni/Concurrency/Container/Positive_Hash_Trie.hpp"
+
 #define TAO_PEGTL_NAMESPACE Zeni_Rete_PEG
 
 #include "tao/pegtl.hpp"
@@ -26,6 +32,8 @@ namespace Zeni::Rete::PEG {
     }
   };
 
+  /// Basic numerical processing
+
   struct plus_minus : one<'+', '-'> {};
   struct dot : one<'.'> {};
 
@@ -41,10 +49,14 @@ namespace Zeni::Rete::PEG {
 
   struct decimal : seq<number<digit>, opt<e, exponent>> {};
 
+  /// Comments and spaces
+
   struct comment : if_must<one<'#'>, until<eolf>> {};
   template<> inline const char * Error<until<eolf>>::error_message() { return "Parser error: failed to process comment"; } ///< Probably cannot be triggered
 
   struct space_comment : sor<space, comment> {};
+
+  /// Symbols
 
   struct Unquoted_String : seq<plus<alpha>, star<sor<alnum, one<'-', '_', '*'>>>> {};
 
@@ -63,6 +75,8 @@ namespace Zeni::Rete::PEG {
   struct Symbol_w_Var : sor<seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>, Constant_Int, Constant_String, Quoted_Constant_String, CRLF, Variable, Unnamed_Variable> {};
   struct Symbol_wo_Var : sor<seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>, Constant_Int, Constant_String, Quoted_Constant_String, CRLF> {};
 
+  /// Conditions and WMEs
+
   struct Condition_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Symbol_w_Var, plus<space_comment>, Symbol_w_Var> {};
   struct WME_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Symbol_wo_Var, plus<space_comment>, Symbol_wo_Var> {};
 
@@ -73,7 +87,9 @@ namespace Zeni::Rete::PEG {
   struct Condition_Begin : at<Condition_End> {};
   struct Condition : seq<Condition_Begin, Condition_End> {};
 
-  struct Inner_WME : seq<star<space_comment>, Symbol_wo_Var, plus<WME_Attr_Value>> {};
+  struct WMEs : seq<star<space_comment>, Symbol_wo_Var, plus<WME_Attr_Value>> {};
+
+  /// Left-Hand Side / LHS
 
   struct Subnode_First;
   struct Subnode_Rest;
@@ -99,21 +115,15 @@ namespace Zeni::Rete::PEG {
   struct Subnode_First : Scope {};
   struct Subnode_Rest : sor<Join, Join_Existential, Join_Negation> {};
 
-  struct Rule_Name : Unquoted_String {};
-  struct Actions;
-  struct Retractions;
-  struct Inner_Production_Body :
-    seq<Rule_Name, star<space_comment>,
-    Inner_Scope, star<space_comment>,
-    Actions, star<space_comment>,
-    opt<seq<Retractions, star<space_comment>>>> {};
+  /// Right-Hand Side / RHS
 
   struct Exit : string<'e', 'x', 'i', 't'> {};
 
-  struct Inner_Make : seq<plus<plus<space_comment>, Inner_WME>> {};
+  struct Inner_Make : seq<plus<plus<space_comment>, WMEs>> {};
   struct Make : if_must<string<'m', 'a', 'k', 'e'>, Inner_Make> {};
   template<> inline const char * Error<Inner_Make>::error_message() { return "Parser error: 'make' must be followed by a valid WME"; }
 
+  struct Inner_Production_Body;
   struct Production_Body : seq<plus<space_comment>, Inner_Production_Body> {};
   struct End_Production : if_must<one<'p'>, Production_Body> {};
   template<> inline const char * Error<Production_Body>::error_message() { return "Parser error: 'p' must be followed by a valid production rule body"; }
@@ -124,6 +134,8 @@ namespace Zeni::Rete::PEG {
   struct Write : if_must<string<'w', 'r', 'i', 't', 'e'>, Inner_Write> {};
   template<> inline const char * Error<Inner_Write>::error_message() { return "Parser error: 'write' must be followed by valid Symbols"; }
 
+  /// Production Rules
+
   struct Inner_Action : sor<Exit, Make, Production, Write> {};
   struct Enclosed_Action : seq<one<'('>, star<space_comment>, Inner_Action, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Action_List : plus<Enclosed_Action> {};
@@ -133,6 +145,14 @@ namespace Zeni::Rete::PEG {
   struct Inner_Retractions : seq<string<'<', '-', '-'>, star<space_comment>, Action_List> {};
   struct Begin_Retractions : at<Inner_Retractions> {};
   struct Retractions : seq<Begin_Retractions, Inner_Retractions> {};
+  struct Rule_Name : Unquoted_String {};
+  struct Inner_Production_Body :
+    seq<Rule_Name, star<space_comment>,
+    Inner_Scope, star<space_comment>,
+    Actions, star<space_comment>,
+    opt<seq<Retractions, star<space_comment>>>> {};
+
+  /// Overarching grammar
 
   struct Command : Enclosed_Action {};
 
