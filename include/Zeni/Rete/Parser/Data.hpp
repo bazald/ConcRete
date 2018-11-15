@@ -2,7 +2,7 @@
 #define ZENI_RETE_PARSER_DATA_HPP
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
-#include "Zeni/Rete/Node.hpp"
+#include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Key.hpp"
 #include "Zeni/Rete/Variable_Indices.hpp"
 
@@ -22,7 +22,12 @@ namespace Zeni::Rete::PEG {
   typedef std::unordered_map<std::shared_ptr<const Symbol_Variable>, std::shared_ptr<const Symbol>> Symbol_Substitutions;
 
   class Symbol_Generator : public std::enable_shared_from_this<Symbol_Generator> {
+    Symbol_Generator(const Symbol_Generator &) = delete;
+    Symbol_Generator & operator=(const Symbol_Generator &) = delete;
+
   public:
+    Symbol_Generator() {}
+
     virtual ~Symbol_Generator() {}
 
     virtual std::shared_ptr<const Symbol_Generator> clone(const Symbol_Substitutions &substitutions) const = 0;
@@ -31,6 +36,9 @@ namespace Zeni::Rete::PEG {
   };
 
   class Symbol_Constant_Generator : public Symbol_Generator {
+    Symbol_Constant_Generator(const Symbol_Constant_Generator &) = delete;
+    Symbol_Constant_Generator & operator=(const Symbol_Constant_Generator &) = delete;
+
   public:
     Symbol_Constant_Generator(const std::shared_ptr<const Symbol> symbol);
 
@@ -42,6 +50,9 @@ namespace Zeni::Rete::PEG {
   };
 
   class Symbol_Variable_Generator : public Symbol_Generator {
+    Symbol_Variable_Generator(const Symbol_Variable_Generator &) = delete;
+    Symbol_Variable_Generator & operator=(const Symbol_Variable_Generator &) = delete;
+
   public:
     Symbol_Variable_Generator(const std::shared_ptr<const Symbol_Variable> symbol);
 
@@ -52,56 +63,126 @@ namespace Zeni::Rete::PEG {
     const std::shared_ptr<const Symbol_Variable> m_symbol;
   };
 
+  class Node_Generator : public std::enable_shared_from_this<Node_Generator> {
+    Node_Generator(const Node_Generator &) = delete;
+    Node_Generator & operator=(const Node_Generator &) = delete;
+
+  public:
+    Node_Generator() {}
+
+    virtual ~Node_Generator() {}
+
+    virtual std::shared_ptr<const Node_Generator> clone(const Symbol_Substitutions &substitutions) const = 0;
+
+    virtual std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const = 0;
+  };
+
+  class Node_Action_Generator : public Node_Generator {
+    Node_Action_Generator(const Node_Action_Generator &) = delete;
+    Node_Action_Generator & operator=(const Node_Action_Generator &) = delete;
+
+  public:
+    Node_Action_Generator(const std::shared_ptr<const Symbol_Generator> name, const std::shared_ptr<const Node_Generator> input, const Node_Action::Action action, const Node_Action::Action retraction);
+
+    std::shared_ptr<const Node_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const override;
+
+    const std::shared_ptr<const Symbol_Generator> name;
+    const std::shared_ptr<const Node_Generator> input;
+
+    const Node_Action::Action action;
+    const Node_Action::Action retraction;
+  };
+
+  class Node_Filter_Generator : public Node_Generator {
+    Node_Filter_Generator(const Node_Filter_Generator &) = delete;
+    Node_Filter_Generator & operator=(const Node_Filter_Generator &) = delete;
+
+  public:
+    Node_Filter_Generator(const std::shared_ptr<const Symbol_Generator> first, const std::shared_ptr<const Symbol_Generator> second, const std::shared_ptr<const Symbol_Generator> third);
+
+    std::shared_ptr<const Node_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const override;
+
+    const std::shared_ptr<const Symbol_Generator> first;
+    const std::shared_ptr<const Symbol_Generator> second;
+    const std::shared_ptr<const Symbol_Generator> third;
+  };
+
+  class Node_Join_Generator : public Node_Generator {
+    Node_Join_Generator(const Node_Join_Generator &) = delete;
+    Node_Join_Generator & operator=(const Node_Join_Generator &) = delete;
+
+  public:
+    Node_Join_Generator(const std::shared_ptr<const Node_Generator> left, const std::shared_ptr<const Node_Generator> right);
+
+    std::shared_ptr<const Node_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const override;
+
+    const std::shared_ptr<const Node_Generator> left;
+    const std::shared_ptr<const Node_Generator> right;
+  };
+
+  class Node_Join_Existential_Generator : public Node_Generator {
+    Node_Join_Existential_Generator(const Node_Join_Existential_Generator &) = delete;
+    Node_Join_Existential_Generator & operator=(const Node_Join_Existential_Generator &) = delete;
+
+  public:
+    Node_Join_Existential_Generator(const std::shared_ptr<const Node_Generator> left, const std::shared_ptr<const Node_Generator> right);
+
+    std::shared_ptr<const Node_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const override;
+
+    const std::shared_ptr<const Node_Generator> left;
+    const std::shared_ptr<const Node_Generator> right;
+  };
+
+  class Node_Join_Negation_Generator : public Node_Generator {
+    Node_Join_Negation_Generator(const Node_Join_Negation_Generator &) = delete;
+    Node_Join_Negation_Generator & operator=(const Node_Join_Negation_Generator &) = delete;
+
+  public:
+    Node_Join_Negation_Generator(const std::shared_ptr<const Node_Generator> left, const std::shared_ptr<const Node_Generator> right);
+
+    std::shared_ptr<const Node_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const override;
+
+    const std::shared_ptr<const Node_Generator> left;
+    const std::shared_ptr<const Node_Generator> right;
+  };
+
   struct Data {
     class Production {
       Production(const Production &) = delete;
       Production & operator=(const Production &) = delete;
 
     public:
-      Production(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command);
-
-      ~Production();
+      Production(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue);
 
       const std::shared_ptr<Network> network;
       const std::shared_ptr<Concurrency::Job_Queue> job_queue;
 
-      const bool user_command;
-
       std::string rule_name;
-      std::stack<std::stack<std::pair<std::pair<std::shared_ptr<Zeni::Rete::Node>, std::shared_ptr<const Node_Key>>, std::shared_ptr<Variable_Indices>>>> lhs;
+      std::stack<std::stack<std::shared_ptr<Node_Generator>>> lhs;
 
-      typedef std::function<void(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token)> NAA;
-      std::list<NAA> actions;
-      std::list<NAA> retractions;
-      std::list<NAA> * actions_or_retractions = &actions;
+      std::list<Node_Action::Action> actions;
+      std::list<Node_Action::Action> retractions;
+      std::list<Node_Action::Action> * actions_or_retractions = &actions;
 
       Symbol_Substitutions substitutions;
     };
 
     Data(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command);
 
-    template <typename Join_Type>
-    void join_conditions() {
-      const auto node_right = productions.top()->lhs.top().top();
-      productions.top()->lhs.top().pop();
-      const auto node_left = productions.top()->lhs.top().top();
-      productions.top()->lhs.top().pop();
-
-      Variable_Bindings variable_bindings;
-      for (auto right : node_right.second->get_indices()) {
-        auto left = node_left.second->find_index(right.first);
-        if (left != Token_Index())
-          variable_bindings.emplace(left, right.second);
-      }
-
-      const auto node = Join_Type::Create(network, job_queue, node_left.first.second, node_right.first.second, node_left.first.first, node_right.first.first, std::move(variable_bindings));
-      const auto variable_indices = Variable_Indices::Create(node_left.first.first->get_size(), node_left.first.first->get_token_size(), *node_left.second, *node_right.second);
-
-      productions.top()->lhs.top().emplace(std::make_pair(node, Node_Key_Null::Create()), variable_indices);
-    }
-
     const std::shared_ptr<Network> network;
     const std::shared_ptr<Concurrency::Job_Queue> job_queue;
+
+    const bool user_command;
 
     std::list<std::shared_ptr<const Symbol_Generator>> symbols;
     std::stack<std::shared_ptr<Production>> productions;

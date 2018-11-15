@@ -42,7 +42,6 @@ namespace Zeni::Rete {
     virtual size_t get_hash() const = 0;
 
     virtual bool operator==(const Variable_Indices &rhs) const = 0;
-
   };
 
 }
