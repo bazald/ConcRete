@@ -95,6 +95,8 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::set<std::string> get_rule_names() const;
     ZENI_RETE_LINKAGE int64_t get_rule_name_index() const;
     ZENI_RETE_LINKAGE void set_rule_name_index(const int64_t rule_name_index_);
+    ZENI_RETE_LINKAGE bool is_exit_requested() const;
+    ZENI_RETE_LINKAGE void request_exit();
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
 
     ZENI_RETE_LINKAGE void finish_jobs();
@@ -130,7 +132,8 @@ namespace Zeni::Rete {
     typedef Concurrency::Hash_Trie<std::shared_ptr<Node_Action>, Node_Action::Hash_By_Name, Node_Action::Compare_By_Name_Eq> Rule_Trie;
     Rule_Trie m_rules;
 
-    Concurrency::Atomic_int64_t<false> m_rule_name_index = 0;
+    Concurrency::Atomic<int64_t> m_rule_name_index = 0;
+    Concurrency::Atomic<bool> m_exit_requested = false;
 
     // Options
     const Printed_Output m_printed_output;

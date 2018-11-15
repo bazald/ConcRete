@@ -41,17 +41,6 @@ namespace Zeni::Rete {
     return os << '(' << *std::get<0>(m_symbols) << " ^" << *std::get<1>(m_symbols) << ' ' << *std::get<2>(m_symbols) << ')';
   }
 
-  std::ostream & WME::print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices) const {
-    os << '(';
-    std::get<0>(m_symbols)->print(os, indices);
-    os << " ^";
-    std::get<1>(m_symbols)->print(os, indices);
-    os << ' ';
-    std::get<2>(m_symbols)->print(os, indices);
-    os << ')';
-    return os;
-  }
-
 }
 
 std::ostream & operator<<(std::ostream &os, const Zeni::Rete::WME &wme) {

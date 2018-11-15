@@ -20,7 +20,6 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE size_t get_hash() const;
 
     ZENI_RETE_LINKAGE std::ostream & print(std::ostream &os) const;
-    ZENI_RETE_LINKAGE std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices> &indices) const;
 
   private:
     Symbols m_symbols;

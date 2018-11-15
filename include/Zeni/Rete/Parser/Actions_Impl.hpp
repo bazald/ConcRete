@@ -22,20 +22,23 @@ namespace Zeni::Rete::PEG {
   void Action<Constant_Float>::apply(const Input &input, Data &data) {
     const double d = std::stod(input.string());
     //std::cerr << "Constant_Float: " << d << std::endl;
-    data.symbols.emplace_back(input.string(), std::make_shared<Symbol_Constant_Float>(d));
+    const auto symbol = std::make_shared<Symbol_Constant_Float>(d);
+    data.symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
   void Action<Constant_Int>::apply(const Input &input, Data &data) {
     const int64_t i = std::stoll(input.string());
     //std::cerr << "Constant_Int: " << i << std::endl;
-    data.symbols.emplace_back(input.string(), std::make_shared<Symbol_Constant_Int>(i));
+    const auto symbol = std::make_shared<Symbol_Constant_Int>(i);
+    data.symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
   void Action<Constant_String>::apply(const Input &input, Data &data) {
     //std::cerr << "Constant_String: " << input.string() << std::endl;
-    data.symbols.emplace_back(input.string(), std::make_shared<Symbol_Constant_String>(input.string()));
+    const auto symbol = std::make_shared<Symbol_Constant_String>(input.string());
+    data.symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
@@ -43,13 +46,15 @@ namespace Zeni::Rete::PEG {
     //std::cerr << "Quoted_Constant_String: " << input.string() << std::endl;
     assert(input.string().size() > 2);
     const auto substr = input.string().substr(1, input.string().size() - 2);
-    data.symbols.emplace_back(substr, std::make_shared<Symbol_Constant_String>(substr));
+    const auto symbol = std::make_shared<Symbol_Constant_String>(substr);
+    data.symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
   void Action<CRLF>::apply(const Input &input, Data &data) {
     //std::cerr << "CRLF: " << input.string() << std::endl;
-    data.symbols.emplace_back("\r\n", std::make_shared<Symbol_Constant_String>("\r\n"));
+    const auto symbol = std::make_shared<Symbol_Constant_String>("\r\n");
+    data.symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
@@ -57,13 +62,15 @@ namespace Zeni::Rete::PEG {
     //std::cerr << "Constant_Variable: " << input.string() << std::endl;
     assert(input.string().size() > 2);
     const auto substr = input.string().substr(1, input.string().size() - 2);
-    data.symbols.emplace_back(substr, nullptr);
+    const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
+    data.symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
   }
 
   template<typename Input>
   void Action<Unnamed_Variable>::apply(const Input &input, Data &data) {
     //std::cerr << "Unnamed_Variable: " << input.string() << std::endl;
-    data.symbols.emplace_back("", nullptr);
+    const auto symbol = std::make_shared<Symbol_Variable>("");
+    data.symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
   }
 
   /// Conditions and WMEs
@@ -80,57 +87,63 @@ namespace Zeni::Rete::PEG {
     //std::cerr << "Condition_Attr_Value: " << input.string() << std::endl;
 
     assert(data.symbols.size() == 3);
-    const auto third = data.symbols.back();
+    const auto gen_third = data.symbols.back();
+    const auto third = gen_third->generate(data.productions.top()->substitutions);
+    const auto third_var = std::dynamic_pointer_cast<const Symbol_Variable>(third);
     data.symbols.pop_back();
-    const auto second = data.symbols.back();
+    const auto gen_second = data.symbols.back();
+    const auto second = gen_second->generate(data.productions.top()->substitutions);
+    const auto second_var = std::dynamic_pointer_cast<const Symbol_Variable>(second);
     data.symbols.pop_back();
-    const auto first = data.symbols.back();
+    const auto gen_first = data.symbols.back();
+    const auto first = gen_first->generate(data.productions.top()->substitutions);
+    const auto first_var = std::dynamic_pointer_cast<const Symbol_Variable>(first);
     // Deliberately leave the first symbol on the stack
 
     std::shared_ptr<Zeni::Rete::Node> node = data.network;
     auto variable_indices = Variable_Indices::Create();
 
     std::shared_ptr<const Node_Key> key;
-    if (first.second)
-      key = Node_Key_Symbol::Create(first.second);
-    else {
+    if (first_var) {
       key = Node_Key_Null::Create();
-      if (!first.first.empty())
-        variable_indices->insert(first.first, Token_Index(0, 0, Symbol_Variable::First));
+      if (strlen(first_var->get_value()) != 0)
+        variable_indices->insert(first_var->get_value(), Token_Index(0, 0, 0));
     }
+    else
+      key = Node_Key_Symbol::Create(first);
 
-    if (second.second) {
-      node = Node_Filter_1::Create(data.network, data.job_queue, key);
-      key = Node_Key_Symbol::Create(second.second);
-    }
-    else {
-      if (!second.first.empty()) {
-        if (!first.second && first.first == second.first) {
+    if (second_var) {
+      if (strlen(second_var->get_value()) != 0) {
+        if (first_var && *first_var == *second_var) {
           node = Node_Filter_1::Create(data.network, data.job_queue, key);
           key = Node_Key_01::Create();
         }
         else
-          variable_indices->insert(second.first, Token_Index(0, 0, Symbol_Variable::Second));
+          variable_indices->insert(second_var->get_value(), Token_Index(0, 0, 1));
       }
     }
-
-    if (third.second) {
-      node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
-      key = Node_Key_Symbol::Create(third.second);
-    }
     else {
-      if (!third.first.empty()) {
-        if (!first.second && first.first == third.first) {
+      node = Node_Filter_1::Create(data.network, data.job_queue, key);
+      key = Node_Key_Symbol::Create(second);
+    }
+
+    if (third_var) {
+      if (strlen(third_var->get_value()) != 0) {
+        if (first_var && *first_var == *third_var) {
           node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
           key = Node_Key_02::Create();
         }
-        else if (!second.second && second.first == third.first) {
+        else if (second_var && *second_var == *third_var) {
           node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
           key = Node_Key_12::Create();
         }
         else
-          variable_indices->insert(third.first, Token_Index(0, 0, Symbol_Variable::Third));
+          variable_indices->insert(third_var->get_value(), Token_Index(0, 0, 2));
       }
+    }
+    else {
+      node = Node_Filter_2::Create(data.network, data.job_queue, key, node);
+      key = Node_Key_Symbol::Create(third);
     }
 
     data.productions.top()->lhs.top().emplace(std::make_pair(node, key), variable_indices);
@@ -195,8 +208,10 @@ namespace Zeni::Rete::PEG {
   /// Right-Hand Side / RHS
 
   template<typename Input>
-  void Action<Exit>::apply(const Input &, Data &) {
-    throw Parser::Exit();
+  void Action<Exit>::apply(const Input &, Data &data) {
+    data.productions.top()->actions_or_retractions->push_back([](const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token>) {
+      network->request_exit();
+    });
   }
 
   template<typename Input>
@@ -236,20 +251,21 @@ namespace Zeni::Rete::PEG {
       const Token_Index m_token_index;
     };
 
-    const auto to_Get_Symbol = [&input, &data](const auto &varname_symbol) {
+    const auto to_Get_Symbol = [&input, &data](const auto &gen_symbol) {
       std::shared_ptr<const Get_Symbol> get_symbol;
-      if (varname_symbol.second)
-        get_symbol = std::make_shared<Get_Constant>(varname_symbol.second);
-      else {
-        if (varname_symbol.first.empty())
+      const auto symbol = gen_symbol->generate(data.productions.top()->substitutions);
+      if (const auto variable = std::dynamic_pointer_cast<const Symbol_Variable>(symbol)) {
+        if (strlen(variable->get_value()) == 0)
           throw parse_error("Parser error: cannot print the contents of an unnamed variable", input);
 
-        const auto index = data.productions.top()->lhs.top().top().second->find_index(varname_symbol.first);
+        const auto index = data.productions.top()->lhs.top().top().second->find_index(variable->get_value());
         if (index == Token_Index())
           throw parse_error("Parser error: variable used in the RHS not found in the LHS", input);
 
         get_symbol = std::make_shared<Get_Variable>(index);
       }
+      else
+        get_symbol = std::make_shared<Get_Constant>(symbol);
       return get_symbol;
     };
 
@@ -316,24 +332,25 @@ namespace Zeni::Rete::PEG {
 
     std::vector<std::shared_ptr<Write_Base>> writes;
     std::ostringstream oss;
-    for (const auto symbol : data.symbols) {
-      if (!symbol.second) {
+    for (const auto gen_symbol : data.symbols) {
+      const auto symbol = gen_symbol->generate(data.productions.top()->substitutions);
+      if (const auto variable = std::dynamic_pointer_cast<const Symbol_Variable>(symbol)) {
         if (!oss.str().empty()) {
           writes.push_back(std::make_shared<Write_String>(oss.str()));
           oss.str("");
         }
 
-        if (symbol.first.empty())
+        if (strlen(variable->get_value()) == 0)
           throw parse_error("Parser error: cannot print the contents of an unnamed variable", input);
 
-        const auto index = data.productions.top()->lhs.top().top().second->find_index(symbol.first);
+        const auto index = data.productions.top()->lhs.top().top().second->find_index(variable->get_value());
         if (index == Token_Index())
           throw parse_error("Parser error: variable used in the RHS not found in the LHS", input);
 
         writes.push_back(std::make_shared<Write_Variable>(index));
       }
       else
-        symbol.second->print_contents(oss);
+        symbol->print_contents(oss);
     }
     if (!oss.str().empty()) {
       writes.push_back(std::make_shared<Write_String>(oss.str()));

@@ -9,7 +9,7 @@ namespace Zeni::Rete {
   {
   }
 
-  Token_Index::Token_Index(const int64_t rete_row_, const int64_t token_row_, const int8_t column_)
+  Token_Index::Token_Index(const int64_t rete_row_, const int64_t token_row_, const int64_t column_)
     : rete_row(rete_row_), token_row(token_row_), column(column_)
   {
   }

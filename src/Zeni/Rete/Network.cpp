@@ -153,6 +153,14 @@ namespace Zeni::Rete {
     m_rule_name_index.store(rule_name_index_);
   }
 
+  bool Network::is_exit_requested() const {
+    return m_exit_requested.load();
+  }
+
+  void Network::request_exit() {
+    m_exit_requested.store(true);
+  }
+
   Network::Printed_Output Network::get_Printed_Output() const {
     return m_printed_output;
   }

@@ -21,24 +21,25 @@ int main(int argc, char **argv)
   const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::Normal, nullptr);
   const auto parser = Zeni::Rete::Parser::Create();
 
-  try {
-    while (std::cin) {
-      std::cout << "ConcRete$ ";
-      std::string command;
-      std::getline(std::cin, command);
+  while (!network->get()->is_exit_requested() && std::cin) {
+    std::cout << "ConcRete$ ";
+    std::string command;
+    std::getline(std::cin, command);
 
-      std::cerr << "Processing: " << command << std::endl;
+    std::cerr << "Processing: " << command << std::endl;
 
-      network->get()->set_worker_threads(Zeni::Concurrency::Worker_Threads::Create());
+    network->get()->set_worker_threads(Zeni::Concurrency::Worker_Threads::Create());
 
-      parser->parse_string(network->get(), network->get()->get_Worker_Threads()->get_main_Job_Queue(), command, true);
+    parser->parse_string(network->get(), network->get()->get_Worker_Threads()->get_main_Job_Queue(), command, true);
 
-      (*network)->finish_jobs_and_destroy_worker_threads();
-    }
+    (*network)->finish_jobs_and_destroy_worker_threads();
   }
-  catch (const Zeni::Rete::Parser::Exit &)
-  {
-  }
+
+  network->get()->set_worker_threads(Zeni::Concurrency::Worker_Threads::Create());
+
+  /// Extra pass needed for now to ensure that extra handles stored interally get cleared
+  network->get()->excise_all(network->get()->get_Worker_Threads()->get_main_Job_Queue(), false);
+  network->get()->finish_jobs();
 
   return 0;
 }

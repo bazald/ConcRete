@@ -12,10 +12,10 @@
 
 namespace Zeni::Concurrency {
 
-  template <bool RELAXED = false>
-  class Atomic_int64_t {
-    Atomic_int64_t(const Atomic_int64_t &rhs) = delete;
-    Atomic_int64_t & operator=(const Atomic_int64_t &rhs) = delete;
+  template <typename TYPE, bool RELAXED = false>
+  class Atomic {
+    Atomic(const Atomic<TYPE> &rhs) = delete;
+    Atomic & operator=(const Atomic<TYPE> &rhs) = delete;
 
 #if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     static const std::memory_order m_order_both = RELAXED ? std::memory_order_relaxed : std::memory_order_acq_rel;
@@ -24,12 +24,14 @@ namespace Zeni::Concurrency {
 #endif
 
   public:
-    Atomic_int64_t(const int64_t value = 0)
+    typedef TYPE Type;
+
+    Atomic(const Type value = Type())
       : m_value(value)
     {
     }
 
-    bool compare_exchange_strong(int64_t &expected, const int64_t desired) {
+    bool compare_exchange_strong(Type &expected, const Type desired) {
 #if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
       if (m_value == expected) {
         m_value = desired;
@@ -44,7 +46,7 @@ namespace Zeni::Concurrency {
 #endif
     }
 
-    bool compare_exchange_weak(int64_t &expected, const int64_t desired) {
+    bool compare_exchange_weak(Type &expected, const Type desired) {
 #if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
       if (m_value == expected) {
         m_value = desired;
@@ -59,9 +61,9 @@ namespace Zeni::Concurrency {
 #endif
     }
 
-    int64_t fetch_add(const int64_t amount = 1) {
+    Type fetch_add(const Type amount = Type(1)) {
 #if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
-      const int64_t prev = m_value;
+      const Type prev = m_value;
       m_value += amount;
       return prev;
 #else
@@ -69,9 +71,9 @@ namespace Zeni::Concurrency {
 #endif
     }
 
-    int64_t fetch_sub(const int64_t amount = 1) {
+    Type fetch_sub(const Type amount = Type(1)) {
 #if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
-      const int64_t prev = m_value;
+      const Type prev = m_value;
       m_value -= amount;
       return prev;
 #else
@@ -79,7 +81,7 @@ namespace Zeni::Concurrency {
 #endif
     }
 
-    int64_t load() const {
+    Type load() const {
 #if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
       return m_value;
 #else
@@ -87,7 +89,7 @@ namespace Zeni::Concurrency {
 #endif
     }
 
-    void store(const int64_t value) {
+    void store(const Type value) {
 #if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
       m_value = value;
 #else
@@ -97,9 +99,9 @@ namespace Zeni::Concurrency {
 
   private:
 #if ZENI_CONCURRENCY == ZENI_CONCURRENCY_NONE
-    int64_t m_value;
+    Type m_value;
 #else
-    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_value;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Type> m_value;
 #endif
   };
 

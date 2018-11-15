@@ -82,11 +82,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual bool operator==(const char *) const;
 
     ZENI_RETE_LINKAGE virtual size_t hash() const = 0;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const = 0;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices> indices) const = 0;
 
+    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const = 0;
     ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os) const = 0;
-    ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices> indices) const = 0;
   };
 
   class Symbol_Constant : public Symbol {
@@ -137,11 +135,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator==(const double value_) const override;
 
     ZENI_RETE_LINKAGE size_t hash() const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const override;
 
+    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
     ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os) const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const override;
 
     const double value;
   };
@@ -186,11 +182,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator==(const int64_t value_) const override;
 
     ZENI_RETE_LINKAGE size_t hash() const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const override;
 
+    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
     ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os) const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const override;
 
     const int64_t value;
   };
@@ -233,11 +227,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator==(const char * value_) const override;
 
     ZENI_RETE_LINKAGE size_t hash() const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const override;
 
+    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
     ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os) const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const override;
 
   private:
     const std::string m_value;
@@ -280,11 +272,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator==(const char * value_) const override;
 
     ZENI_RETE_LINKAGE size_t hash() const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const override;
 
+    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
     ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os) const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const override;
 
   private:
     const std::string m_value;
@@ -295,9 +285,9 @@ namespace Zeni::Rete {
     Symbol_Variable & operator=(const Symbol_Variable &) = delete;
 
   public:
-    enum Variable { First, Second, Third };
+    ZENI_RETE_LINKAGE Symbol_Variable(const char * value_);
 
-    ZENI_RETE_LINKAGE Symbol_Variable(const Variable &value_);
+    ZENI_RETE_LINKAGE const char * get_value() const;
 
     ZENI_RETE_LINKAGE Symbol_Variable * clone() const override;
 
@@ -324,14 +314,15 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator>(const Symbol_Identifier &) const override;
     ZENI_RETE_LINKAGE bool operator>=(const Symbol_Identifier &) const override;
 
+    ZENI_RETE_LINKAGE bool operator==(const char * value_) const override;
+
     ZENI_RETE_LINKAGE size_t hash() const override;
+
     ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os, const std::shared_ptr<const Variable_Indices> indices) const override;
-
     ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os) const override;
-    ZENI_RETE_LINKAGE virtual std::ostream & print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const override;
 
-    const Variable value;
+  private:
+    const std::string m_value;
   };
 
 }
@@ -346,11 +337,6 @@ namespace std {
   template <> struct hash<Zeni::Rete::Symbol> {
     size_t operator()(const Zeni::Rete::Symbol &symbol) const {
       return symbol.hash();
-    }
-  };
-  template <> struct hash<Zeni::Rete::Symbol_Variable::Variable> {
-    size_t operator()(const Zeni::Rete::Symbol_Variable::Variable &variable) const {
-      return std::hash<size_t>()(variable);
     }
   };
 }

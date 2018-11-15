@@ -19,6 +19,39 @@ namespace Zeni::Rete {
 
 namespace Zeni::Rete::PEG {
 
+  typedef std::unordered_map<std::shared_ptr<const Symbol_Variable>, std::shared_ptr<const Symbol>> Symbol_Substitutions;
+
+  class Symbol_Generator : public std::enable_shared_from_this<Symbol_Generator> {
+  public:
+    virtual ~Symbol_Generator() {}
+
+    virtual std::shared_ptr<const Symbol_Generator> clone(const Symbol_Substitutions &substitutions) const = 0;
+
+    virtual std::shared_ptr<const Symbol> generate(const Symbol_Substitutions &substitutions) const = 0;
+  };
+
+  class Symbol_Constant_Generator : public Symbol_Generator {
+  public:
+    Symbol_Constant_Generator(const std::shared_ptr<const Symbol> symbol);
+
+    std::shared_ptr<const Symbol_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::shared_ptr<const Symbol> generate(const Symbol_Substitutions &substitutions) const override;
+
+    const std::shared_ptr<const Symbol> m_symbol;
+  };
+
+  class Symbol_Variable_Generator : public Symbol_Generator {
+  public:
+    Symbol_Variable_Generator(const std::shared_ptr<const Symbol_Variable> symbol);
+
+    std::shared_ptr<const Symbol_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::shared_ptr<const Symbol> generate(const Symbol_Substitutions &substitutions) const override;
+
+    const std::shared_ptr<const Symbol_Variable> m_symbol;
+  };
+
   struct Data {
     class Production {
       Production(const Production &) = delete;
@@ -41,6 +74,8 @@ namespace Zeni::Rete::PEG {
       std::list<NAA> actions;
       std::list<NAA> retractions;
       std::list<NAA> * actions_or_retractions = &actions;
+
+      Symbol_Substitutions substitutions;
     };
 
     Data(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command);
@@ -68,7 +103,7 @@ namespace Zeni::Rete::PEG {
     const std::shared_ptr<Network> network;
     const std::shared_ptr<Concurrency::Job_Queue> job_queue;
 
-    std::list<std::pair<std::string, std::shared_ptr<const Rete::Symbol>>> symbols;
+    std::list<std::shared_ptr<const Symbol_Generator>> symbols;
     std::stack<std::shared_ptr<Production>> productions;
   };
 

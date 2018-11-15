@@ -20,11 +20,11 @@ namespace Zeni::Rete {
     Token_Index find_index(const std::string &name) const override;
 
     std::string_view find_name(const Token_Index &index) const override;
-    std::string_view find_name_rete(const int64_t rete_row, const int8_t column) const override;
-    std::string_view find_name_token(const int64_t token_row, const int8_t column) const override;
+    std::string_view find_name_rete(const int64_t rete_row, const int64_t column) const override;
+    std::string_view find_name_token(const int64_t token_row, const int64_t column) const override;
 
-    std::pair<std::string_view, Token_Index> find_both_rete(const int64_t rete_row, const int8_t column) const override;
-    std::pair<std::string_view, Token_Index> find_both_token(const int64_t token_row, const int8_t column) const override;
+    std::pair<std::string_view, Token_Index> find_both_rete(const int64_t rete_row, const int64_t column) const override;
+    std::pair<std::string_view, Token_Index> find_both_token(const int64_t token_row, const int64_t column) const override;
 
     void insert(const std::string_view name, const Token_Index &index) override;
 

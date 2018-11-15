@@ -96,15 +96,7 @@ namespace Zeni::Rete {
     return os << Zeni::to_string(value);
   }
 
-  std::ostream & Symbol_Constant_Float::print(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
-    return os << Zeni::to_string(value);
-  }
-
   std::ostream & Symbol_Constant_Float::print_contents(std::ostream &os) const {
-    return os << Zeni::to_string(value);
-  }
-
-  std::ostream & Symbol_Constant_Float::print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
     return os << Zeni::to_string(value);
   }
 
@@ -151,15 +143,7 @@ namespace Zeni::Rete {
     return os << value;
   }
 
-  std::ostream & Symbol_Constant_Int::print(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
-    return os << value;
-  }
-
   std::ostream & Symbol_Constant_Int::print_contents(std::ostream &os) const {
-    return os << value;
-  }
-
-  std::ostream & Symbol_Constant_Int::print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
     return os << value;
   }
 
@@ -207,16 +191,8 @@ namespace Zeni::Rete {
       return os << '|' << m_value << '|';
   }
 
-  std::ostream & Symbol_Constant_String::print(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
-    return print(os);
-  }
-
   std::ostream & Symbol_Constant_String::print_contents(std::ostream &os) const {
     return os << m_value;
-  }
-
-  std::ostream & Symbol_Constant_String::print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
-    return print_contents(os);
   }
 
 
@@ -259,22 +235,16 @@ namespace Zeni::Rete {
     return os << m_value;
   }
 
-  std::ostream & Symbol_Identifier::print(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
-    return os << m_value;
-  }
-
   std::ostream & Symbol_Identifier::print_contents(std::ostream &os) const {
     return os << m_value;
   }
 
-  std::ostream & Symbol_Identifier::print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices>) const {
-    return os << m_value;
-  }
 
+  Symbol_Variable::Symbol_Variable(const char * value_) : m_value(value_) {}
 
-  Symbol_Variable::Symbol_Variable(const Variable &value_) : value(value_) {}
+  const char * Symbol_Variable::get_value() const { return m_value.c_str(); }
 
-  Symbol_Variable * Symbol_Variable::clone() const { return new Symbol_Variable(value); }
+  Symbol_Variable * Symbol_Variable::clone() const { return new Symbol_Variable(m_value.c_str()); }
 
   bool Symbol_Variable::operator==(const Symbol &rhs) const { return rhs == *this; }
   bool Symbol_Variable::operator!=(const Symbol &rhs) const { return rhs != *this; }
@@ -283,12 +253,12 @@ namespace Zeni::Rete {
   bool Symbol_Variable::operator<(const Symbol &rhs) const { return rhs > *this; }
   bool Symbol_Variable::operator<=(const Symbol &rhs) const { return rhs >= *this; }
 
-  bool Symbol_Variable::operator==(const Symbol_Variable &rhs) const { return value == rhs.value; }
-  bool Symbol_Variable::operator!=(const Symbol_Variable &rhs) const { return value != rhs.value; }
-  bool Symbol_Variable::operator<(const Symbol_Variable &rhs) const { return value < rhs.value; }
-  bool Symbol_Variable::operator<=(const Symbol_Variable &rhs) const { return value <= rhs.value; }
-  bool Symbol_Variable::operator>(const Symbol_Variable &rhs) const { return value > rhs.value; }
-  bool Symbol_Variable::operator>=(const Symbol_Variable &rhs) const { return value >= rhs.value; }
+  bool Symbol_Variable::operator==(const Symbol_Variable &rhs) const { return m_value == rhs.m_value; }
+  bool Symbol_Variable::operator!=(const Symbol_Variable &rhs) const { return m_value != rhs.m_value; }
+  bool Symbol_Variable::operator<(const Symbol_Variable &rhs) const { return m_value < rhs.m_value; }
+  bool Symbol_Variable::operator<=(const Symbol_Variable &rhs) const { return m_value <= rhs.m_value; }
+  bool Symbol_Variable::operator>(const Symbol_Variable &rhs) const { return m_value > rhs.m_value; }
+  bool Symbol_Variable::operator>=(const Symbol_Variable &rhs) const { return m_value >= rhs.m_value; }
 
   bool Symbol_Variable::operator>(const Symbol_Constant_Float &) const { return true; }
   bool Symbol_Variable::operator>=(const Symbol_Constant_Float &) const { return true; }
@@ -299,37 +269,21 @@ namespace Zeni::Rete {
   bool Symbol_Variable::operator>(const Symbol_Identifier &) const { return true; }
   bool Symbol_Variable::operator>=(const Symbol_Identifier &) const { return true; }
 
+  bool Symbol_Variable::operator==(const char * value_) const { return value_ == m_value; }
+
   size_t Symbol_Variable::hash() const {
-    return std::hash<size_t>()(value);
+    return std::hash<std::string>()(m_value);
   }
 
   std::ostream & Symbol_Variable::print(std::ostream &os) const {
     os.put('<');
-    os << value;
+    os << m_value;
     os.put('>');
-    return os;
-  }
-
-  std::ostream & Symbol_Variable::print(std::ostream &os, const std::shared_ptr<const Variable_Indices> indices) const {
-    const auto found = indices->find_name_token(0, value);
-    if (!found.empty())
-      os << '<' << found << '>';
-    else
-      os << "{}";
     return os;
   }
 
   std::ostream & Symbol_Variable::print_contents(std::ostream &) const {
     abort();
-  }
-
-  std::ostream & Symbol_Variable::print_contents(std::ostream &os, const std::shared_ptr<const Variable_Indices> indices) const {
-    const auto found = indices->find_name_token(0, value);
-    if (!found.empty())
-      os << '<' << found << '>';
-    else
-      os << "{}";
-    return os;
   }
 
 }

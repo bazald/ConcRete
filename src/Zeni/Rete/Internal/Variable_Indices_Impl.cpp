@@ -43,28 +43,28 @@ namespace Zeni::Rete {
     return std::string();
   }
 
-  std::string_view Variable_Indices_Impl::find_name_rete(const int64_t rete_row, const int8_t column) const {
+  std::string_view Variable_Indices_Impl::find_name_rete(const int64_t rete_row, const int64_t column) const {
     const auto found = rrc_to_both.find(std::make_pair(rete_row, column));
     if (found != rrc_to_both.cend())
       return found->second.first;
     return std::string();
   }
 
-  std::string_view Variable_Indices_Impl::find_name_token(const int64_t token_row, const int8_t column) const {
+  std::string_view Variable_Indices_Impl::find_name_token(const int64_t token_row, const int64_t column) const {
     const auto found = trc_to_both.find(std::make_pair(token_row, column));
     if (found != trc_to_both.cend())
       return found->second.first;
     return std::string();
   }
 
-  std::pair<std::string_view, Token_Index> Variable_Indices_Impl::find_both_rete(const int64_t rete_row, const int8_t column) const {
+  std::pair<std::string_view, Token_Index> Variable_Indices_Impl::find_both_rete(const int64_t rete_row, const int64_t column) const {
     const auto found = rrc_to_both.find(std::make_pair(rete_row, column));
     if (found != rrc_to_both.cend())
       return found->second;
     return std::pair<std::string, Token_Index>();
   }
 
-  std::pair<std::string_view, Token_Index> Variable_Indices_Impl::find_both_token(const int64_t token_row, const int8_t column) const {
+  std::pair<std::string_view, Token_Index> Variable_Indices_Impl::find_both_token(const int64_t token_row, const int64_t column) const {
     const auto found = trc_to_both.find(std::make_pair(token_row, column));
     if (found != trc_to_both.cend())
       return found->second;
