@@ -97,6 +97,15 @@ namespace Zeni::Rete::PEG {
     // Deliberately leave the first symbol on the stack
 
     data.productions.top()->lhs.top().push(std::make_shared<Node_Filter_Generator>(first, second, third));
+
+    if (data.productions.top()->lhs.top().size() == 2) {
+      const auto right = data.productions.top()->lhs.top().top();
+      data.productions.top()->lhs.top().pop();
+      const auto left = data.productions.top()->lhs.top().top();
+      data.productions.top()->lhs.top().pop();
+
+      data.productions.top()->lhs.top().push(std::make_shared<Node_Join_Generator>(left, right));
+    }
   }
 
   template<typename Input>
@@ -139,6 +148,7 @@ namespace Zeni::Rete::PEG {
     const auto right = data.productions.top()->lhs.top().top();
     data.productions.top()->lhs.top().pop();
     const auto left = data.productions.top()->lhs.top().top();
+    data.productions.top()->lhs.top().pop();
 
     data.productions.top()->lhs.top().push(std::make_shared<Node_Join_Generator>(left, right));
   }
@@ -151,6 +161,7 @@ namespace Zeni::Rete::PEG {
     const auto right = data.productions.top()->lhs.top().top();
     data.productions.top()->lhs.top().pop();
     const auto left = data.productions.top()->lhs.top().top();
+    data.productions.top()->lhs.top().pop();
 
     data.productions.top()->lhs.top().push(std::make_shared<Node_Join_Existential_Generator>(left, right));
   }
@@ -163,6 +174,7 @@ namespace Zeni::Rete::PEG {
     const auto right = data.productions.top()->lhs.top().top();
     data.productions.top()->lhs.top().pop();
     const auto left = data.productions.top()->lhs.top().top();
+    data.productions.top()->lhs.top().pop();
 
     data.productions.top()->lhs.top().push(std::make_shared<Node_Join_Negation_Generator>(left, right));
   }
