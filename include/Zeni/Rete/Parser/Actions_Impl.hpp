@@ -81,7 +81,7 @@ namespace Zeni::Rete::PEG {
   void Action<Condition_Begin>::apply(const Input &input, Data &data) {
     //std::cerr << "Condition_Begin: " << input.string() << std::endl;
 
-    data.productions.top()->lhs.emplace(decltype(data.productions.top()->lhs)::value_type());
+    data.productions.top()->lhs.emplace(typename decltype(data.productions.top()->lhs)::value_type());
   }
 
   template<typename Input>
@@ -118,7 +118,7 @@ namespace Zeni::Rete::PEG {
   void Action<Inner_Scope_Begin>::apply(const Input &input, Data &data) {
     //std::cerr << "Inner_Scope_Begin: " << input.string() << std::endl;
 
-    data.productions.top()->lhs.emplace(decltype(data.productions.top()->lhs)::value_type());
+    data.productions.top()->lhs.emplace(typename decltype(data.productions.top()->lhs)::value_type());
   }
 
   template<typename Input>
