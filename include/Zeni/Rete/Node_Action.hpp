@@ -12,7 +12,30 @@ namespace Zeni::Rete {
     Node_Action & operator=(const Node_Action &) = delete;
 
   public:
-    typedef std::function<void(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token)> Action;
+    class Action : public std::enable_shared_from_this<Action> {
+      Action(const Action &) = delete;
+      Action & operator=(const Action &) = delete;
+
+    protected:
+      Action() {}
+
+    public:
+      virtual ~Action() {}
+
+      virtual void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const = 0;
+    };
+
+    class Null_Action : public Action {
+      Null_Action(const Null_Action &) = delete;
+      Null_Action & operator=(const Null_Action &) = delete;
+
+      Null_Action() {}
+
+    public:
+      static std::shared_ptr<const Null_Action> Create();
+
+      void operator()(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token>) const override {}
+    };
 
     struct Compare_By_Name_Eq {
       bool operator()(const std::shared_ptr<Node_Action> &lhs, const std::shared_ptr<Node_Action> &rhs) const noexcept {
@@ -59,12 +82,12 @@ namespace Zeni::Rete {
     };
 
   private:
-    Node_Action(const std::string_view name, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variable_indices, const Action &action_, const Action &retraction_);
+    Node_Action(const std::string_view name, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variable_indices, const std::shared_ptr<const Action> action, const std::shared_ptr<const Action> retraction);
 
   public:
     Node_Action(const std::string_view name);
 
-    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variable_indices, const Node_Action::Action action, const Node_Action::Action retraction = [](const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token>) {});
+    ZENI_RETE_LINKAGE static std::shared_ptr<Node_Action> Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variable_indices, const std::shared_ptr<const Action> action, const std::shared_ptr<const Action> retraction = Null_Action::Create());
 
     ZENI_RETE_LINKAGE ~Node_Action();
 
@@ -85,8 +108,8 @@ namespace Zeni::Rete {
   private:
     std::shared_ptr<const Variable_Indices> m_variable_indices;
     const std::string m_name;
-    Action m_action;
-    Action m_retraction;
+    std::shared_ptr<const Action> m_action;
+    std::shared_ptr<const Action> m_retraction;
 
     Token_Trie m_token_trie;
   };

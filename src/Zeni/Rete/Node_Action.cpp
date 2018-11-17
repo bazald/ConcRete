@@ -9,7 +9,18 @@
 
 namespace Zeni::Rete {
 
-  Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variable_indices, const Action &action_, const Action &retraction_)
+  std::shared_ptr<const Node_Action::Null_Action> Node_Action::Null_Action::Create() {
+    class Friendly_Null_Action : public Null_Action {
+    public:
+      Friendly_Null_Action() {}
+    };
+
+    static const auto null_action = std::make_shared<Friendly_Null_Action>();
+
+    return null_action;
+  }
+
+  Node_Action::Node_Action(const std::string_view name_, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variable_indices, const std::shared_ptr<const Action> action_, const std::shared_ptr<const Action> retraction_)
     : Node_Unary(input->get_height() + 1, input->get_size(), input->get_token_size(), Hash_By_Name()(name_), node_key, input),
     m_variable_indices(variable_indices),
     m_name(name_),
@@ -23,16 +34,16 @@ namespace Zeni::Rete {
     : Node_Unary(1, 0, 0, size_t(this), nullptr, nullptr),
     m_variable_indices(nullptr),
     m_name(name_),
-    m_action(Action()),
-    m_retraction(Action())
+    m_action(nullptr),
+    m_retraction(nullptr)
   {
     assert(!m_name.empty());
   }
 
-  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variable_indices, const Node_Action::Action action, const Node_Action::Action retraction) {
+  std::shared_ptr<Node_Action> Node_Action::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view name, const bool user_action, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Variable_Indices> variable_indices, const std::shared_ptr<const Action> action, const std::shared_ptr<const Action> retraction) {
     class Friendly_Node_Action : public Node_Action {
     public:
-      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<const Node_Key> node_key_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variable_indices, const Action &action_, const Action &retraction_) : Node_Action(name_, node_key_, input, variable_indices, action_, retraction_) {}
+      Friendly_Node_Action(const std::string_view name_, const std::shared_ptr<const Node_Key> node_key_, const std::shared_ptr<Node> &input, const std::shared_ptr<const Variable_Indices> &variable_indices, const std::shared_ptr<const Action> action, const std::shared_ptr<const Action> retraction) : Node_Action(name_, node_key_, input, variable_indices, action, retraction) {}
     };
 
     const auto action_fun = std::shared_ptr<Friendly_Node_Action>(new Friendly_Node_Action(name, node_key, input, variable_indices, action, retraction));
@@ -76,14 +87,14 @@ namespace Zeni::Rete {
     const auto[result, snapshot, value] = m_token_trie.insert(message.token);
 
     if (result == Token_Trie::Result::First_Insertion)
-      m_action(message.network, message.get_Job_Queue(), std::static_pointer_cast<Node_Action>(shared_from_this()), value);
+      (*m_action)(message.network, message.get_Job_Queue(), std::static_pointer_cast<Node_Action>(shared_from_this()), value);
   }
 
   void Node_Action::receive(const Message_Token_Remove &message) {
     const auto[result, snapshot, value] = m_token_trie.erase(message.token);
 
     if (result == Token_Trie::Result::Last_Removal)
-      m_retraction(message.network, message.get_Job_Queue(), std::static_pointer_cast<Node_Action>(shared_from_this()), value);
+      (*m_retraction)(message.network, message.get_Job_Queue(), std::static_pointer_cast<Node_Action>(shared_from_this()), value);
   }
 
   bool Node_Action::operator==(const Node &rhs) const {

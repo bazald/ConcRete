@@ -32,7 +32,7 @@ namespace Zeni::Rete::PEG {
   }
 
   std::shared_ptr<const Symbol_Generator> Symbol_Variable_Generator::clone(const Symbol_Substitutions &substitutions) const {
-    const auto found = substitutions.find(m_symbol);
+    const auto found = substitutions.find(m_symbol->get_value());
     if (found == substitutions.end())
       return shared_from_this();
     else
@@ -40,11 +40,358 @@ namespace Zeni::Rete::PEG {
   }
 
   std::shared_ptr<const Symbol> Symbol_Variable_Generator::generate(const Symbol_Substitutions &substitutions) const {
-    const auto found = substitutions.find(m_symbol);
+    const auto found = substitutions.find(m_symbol->get_value());
     return found == substitutions.end() ? m_symbol : found->second;
   }
 
-  Node_Action_Generator::Node_Action_Generator(const std::shared_ptr<const Symbol_Generator> name_, const std::shared_ptr<const Node_Generator> input_, const Node_Action::Action action_, const Node_Action::Action retraction_)
+  Actions_Generator::Actions_Generator(const std::vector<std::shared_ptr<const Action_Generator>> &actions)
+    : m_actions(actions)
+  {
+  }
+
+  std::shared_ptr<const Action_Generator> Actions_Generator::clone(const Symbol_Substitutions &substitutions) const {
+    std::vector<std::shared_ptr<const Action_Generator>> actions;
+    actions.reserve(m_actions.size());
+    for (const auto action : m_actions)
+      actions.push_back(action->clone(substitutions));
+    for (auto at = actions.cbegin(), mt = m_actions.cbegin(), aend = actions.cend(); at != aend; ++at, ++mt) {
+      if (*at != *mt)
+        return std::make_shared<Actions_Generator>(actions);
+    }
+    return shared_from_this();
+  }
+
+  std::shared_ptr<const Node_Action::Action> Actions_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const {
+    std::vector<std::shared_ptr<const Node_Action::Action>> actions;
+    actions.reserve(m_actions.size());
+    for (const auto action : m_actions)
+      actions.push_back(action->generate(network, job_queue, user_action, substitutions));
+    
+    class Actions : public Node_Action::Action {
+      Actions(const Actions &) = delete;
+      Actions & operator=(const Actions &) = delete;
+
+    public:
+      Actions(const std::vector<std::shared_ptr<const Node_Action::Action>> actions)
+        : m_actions(actions)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> node_action, const std::shared_ptr<const Token> token) const override {
+        for (const auto action : m_actions)
+          (*action)(network, job_queue, node_action, token);
+      }
+
+    private:
+      const std::vector<std::shared_ptr<const Node_Action::Action>> m_actions;
+    };
+
+    return std::make_shared<Actions>(actions);
+  }
+
+  std::shared_ptr<const Action_Exit_Generator> Action_Exit_Generator::Create() {
+    class Friendly_Action_Exit_Generator : public Action_Exit_Generator {
+    public:
+      Friendly_Action_Exit_Generator() {}
+    };
+
+    static const auto action_exit_generator = std::make_shared<Friendly_Action_Exit_Generator>();
+
+    return action_exit_generator;
+  }
+
+  std::shared_ptr<const Action_Generator> Action_Exit_Generator::clone(const Symbol_Substitutions &) const {
+    return shared_from_this();
+  }
+
+  std::shared_ptr<const Node_Action::Action> Action_Exit_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const {
+    class Action_Exit : public Node_Action::Action {
+      Action_Exit(const Action_Exit &) = delete;
+      Action_Exit & operator=(const Action_Exit &) = delete;
+
+      Action_Exit() {}
+
+    public:
+      static std::shared_ptr<const Action_Exit> Create() {
+        class Friendly_Action_Exit : public Action_Exit {
+        public:
+          Friendly_Action_Exit() {}
+        };
+
+        static const auto action_exit = std::make_shared<Friendly_Action_Exit>();
+
+        return action_exit;
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token>) const override {
+        network->request_exit();
+      }
+    };
+
+    return Action_Exit::Create();
+  }
+
+  Action_Make_Generator::Action_Make_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols)
+    : m_symbols(symbols)
+  {
+  }
+
+  std::shared_ptr<const Action_Generator> Action_Make_Generator::clone(const Symbol_Substitutions &substitutions) const {
+    std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
+    symbols.reserve(m_symbols.size());
+    for (const auto symbol : m_symbols)
+      symbols.push_back(symbol->clone(substitutions));
+    for (auto st = symbols.cbegin(), mt = m_symbols.cbegin(), send = symbols.cend(); st != send; ++st, ++mt) {
+      if (*st != *mt)
+        return std::make_shared<Action_Make_Generator>(symbols);
+    }
+    return shared_from_this();
+  }
+
+  std::shared_ptr<const Node_Action::Action> Action_Make_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const {
+    class Get_Symbol : public std::enable_shared_from_this<Get_Symbol> {
+    public:
+      virtual ~Get_Symbol() {}
+
+      virtual std::shared_ptr<const Symbol_Constant> operator()(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const = 0;
+    };
+
+    class Get_Symbol_Constant : public Get_Symbol {
+    public:
+      Get_Symbol_Constant(const std::shared_ptr<const Symbol_Constant> symbol) : m_symbol(symbol) {}
+
+      std::shared_ptr<const Symbol_Constant> operator()(const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token>) const override {
+        return m_symbol;
+      }
+
+    private:
+      const std::shared_ptr<const Symbol_Constant> m_symbol;
+    };
+
+    class Get_Symbol_Variable : public Get_Symbol {
+    public:
+      Get_Symbol_Variable(const std::shared_ptr<const Symbol_Variable> variable) : m_variable(variable) {}
+
+      std::shared_ptr<const Symbol_Constant> operator()(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override {
+        assert(rete_action);
+        assert(token);
+        return std::dynamic_pointer_cast<const Symbol_Constant>((*token)[rete_action->get_variable_indices()->find_index(m_variable->get_value())]);
+      }
+
+    private:
+      const std::shared_ptr<const Symbol_Variable> m_variable;
+    };
+
+    std::vector<std::shared_ptr<const Get_Symbol>> symbols;
+    symbols.reserve(m_symbols.size());
+    for (const auto gen_symbol : m_symbols) {
+      const auto symbol = gen_symbol->generate(substitutions);
+      if (const auto variable = std::dynamic_pointer_cast<const Symbol_Variable>(symbol))
+        symbols.push_back(std::make_shared<Get_Symbol_Variable>(variable));
+      else
+        symbols.push_back(std::make_shared<Get_Symbol_Constant>(std::dynamic_pointer_cast<const Symbol_Constant>(symbol)));
+    }
+
+    class Action_Make : public Node_Action::Action {
+      Action_Make(const Action_Make &) = delete;
+      Action_Make & operator=(const Action_Make &) = delete;
+
+    public:
+      Action_Make(const std::vector<std::shared_ptr<const Get_Symbol>> &symbols)
+        : m_symbols(symbols)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override {
+        auto st = m_symbols.cbegin();
+        const auto send = m_symbols.cend();
+        const auto first = (**st)(rete_action, token);
+        ++st;
+        while (st != send) {
+          const auto second = (**st)(rete_action, token);
+          ++st;
+          assert(st != send);
+          const auto third = (**st)(rete_action, token);
+          ++st;
+
+          network->insert_wme(job_queue, std::make_shared<WME>(first, second, third));
+        }
+      }
+
+    private:
+      const std::vector<std::shared_ptr<const Get_Symbol>> m_symbols;
+    };
+
+    return std::make_shared<Action_Make>(symbols);
+  }
+
+  Action_Production_Generator::Action_Production_Generator(const std::shared_ptr<const Node_Action_Generator> action)
+    : m_action(action)
+  {
+  }
+
+  std::shared_ptr<const Action_Generator> Action_Production_Generator::clone(const Symbol_Substitutions &substitutions) const {
+    const auto action = m_action->clone(substitutions);
+    if (action == m_action)
+      return shared_from_this();
+    else
+      return std::make_shared<Action_Production_Generator>(std::dynamic_pointer_cast<const Node_Action_Generator>(action));
+  }
+
+  std::shared_ptr<const Node_Action::Action> Action_Production_Generator::generate(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const bool user_action, const Symbol_Substitutions &substitutions) const {
+    class Action_Production : public Node_Action::Action {
+      Action_Production(const Action_Production &) = delete;
+      Action_Production & operator=(const Action_Production &) = delete;
+
+    public:
+      Action_Production(const bool user_action, const std::shared_ptr<const Node_Action_Generator> action)
+        : m_user_action(user_action), m_action(action)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> node_action, const std::shared_ptr<const Token> token) const override {
+        Symbol_Substitutions substitutions;
+        if (token) {
+          for (const auto index : node_action->get_variable_indices()->get_indices())
+            substitutions[index.first] = (*token)[index.second];
+        }
+        m_action->generate(network, job_queue, m_user_action, substitutions);
+      }
+
+    private:
+      const bool m_user_action;
+      const std::shared_ptr<const Node_Action_Generator> m_action;
+    };
+
+    return std::make_shared<Action_Production>(user_action, std::dynamic_pointer_cast<const Node_Action_Generator>(m_action->clone(substitutions)));
+  }
+
+  Action_Write_Generator::Action_Write_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols) {
+    auto st = symbols.cbegin();
+    const auto send = symbols.cend();
+    while (st != send) {
+      if (std::dynamic_pointer_cast<const Symbol_Variable_Generator>(*st)) {
+        m_symbols.push_back(*st);
+        ++st;
+        continue;
+      }
+
+      auto s2 = std::next(st);
+      if (s2 == send) {
+        m_symbols.push_back(*st);
+        break;
+      }
+
+      if (std::dynamic_pointer_cast<const Symbol_Variable_Generator>(*s2)) {
+        m_symbols.push_back(*st);
+        m_symbols.push_back(*s2);
+        st = std::next(s2);
+        continue;
+      }
+
+      std::ostringstream oss;
+      (*st)->generate(Symbol_Substitutions())->print_contents(oss);
+      (*s2)->generate(Symbol_Substitutions())->print_contents(oss);
+      st = std::next(s2);
+      while (st != send && !std::dynamic_pointer_cast<const Symbol_Variable_Generator>(*st))
+        (*st)->generate(Symbol_Substitutions())->print_contents(oss);
+      m_symbols.push_back(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_String>(oss.str())));
+    }
+  }
+
+  std::shared_ptr<const Action_Generator> Action_Write_Generator::clone(const Symbol_Substitutions &substitutions) const {
+    std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
+    symbols.reserve(m_symbols.size());
+    for (const auto symbol : m_symbols)
+      symbols.push_back(symbol->clone(substitutions));
+    for (auto st = symbols.cbegin(), mt = m_symbols.cbegin(), send = symbols.cend(); st != send; ++st, ++mt) {
+      if (*st != *mt)
+        return std::make_shared<Action_Write_Generator>(symbols);
+    }
+    return shared_from_this();
+  }
+
+  std::shared_ptr<const Node_Action::Action> Action_Write_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const {
+    class Write : public std::enable_shared_from_this<Write> {
+    public:
+      virtual ~Write() {}
+
+      virtual void operator()(std::ostream &os, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const = 0;
+    };
+
+    class Write_String : public Write {
+    public:
+      Write_String(const std::string &string) : m_string(string) {}
+
+      void operator()(std::ostream &os, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token>) const override {
+        os << m_string;
+      }
+
+    private:
+      const std::string m_string;
+    };
+
+    class Write_Variable : public Write {
+    public:
+      Write_Variable(const std::string &variable_name) : m_variable_name(variable_name) {}
+
+      void operator()(std::ostream &os, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override {
+        assert(rete_action);
+        assert(token);
+        (*token)[rete_action->get_variable_indices()->find_index(m_variable_name)]->print_contents(os);
+      }
+
+    private:
+      const std::string m_variable_name;
+    };
+
+    std::vector<std::shared_ptr<const Write>> writes;
+    std::ostringstream oss;
+    for (const auto gen_symbol : m_symbols) {
+      const auto symbol = gen_symbol->generate(substitutions);
+      if (const auto variable = std::dynamic_pointer_cast<const Symbol_Variable>(symbol)) {
+        if (!oss.str().empty()) {
+          writes.push_back(std::make_shared<Write_String>(oss.str()));
+          oss.str("");
+        }
+
+        assert(strlen(variable->get_value()) != 0);
+
+        writes.push_back(std::make_shared<Write_Variable>(variable->get_value()));
+      }
+      else
+        symbol->print_contents(oss);
+    }
+    if (!oss.str().empty()) {
+      writes.push_back(std::make_shared<Write_String>(oss.str()));
+      oss.str("");
+    }
+
+    class Action_Write : public Node_Action::Action {
+      Action_Write(const Action_Write &) = delete;
+      Action_Write & operator=(const Action_Write &) = delete;
+
+    public:
+      Action_Write(const std::vector<std::shared_ptr<const Write>> &writes)
+        : m_writes(writes)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override {
+        std::ostringstream oss;
+        for (const auto write : m_writes)
+          (*write)(oss, rete_action, token);
+        std::cout << oss.str();
+      }
+
+    private:
+      const std::vector<std::shared_ptr<const Write>> m_writes;
+    };
+
+    return std::make_shared<Action_Write>(writes);
+  }
+
+  Node_Action_Generator::Node_Action_Generator(const std::shared_ptr<const Symbol_Generator> name_, const std::shared_ptr<const Node_Generator> input_, const std::shared_ptr<const Action_Generator> action_, const std::shared_ptr<const Action_Generator> retraction_)
     : name(name_), input(input_), action(action_), retraction(retraction_)
   {
   }
@@ -52,10 +399,12 @@ namespace Zeni::Rete::PEG {
   std::shared_ptr<const Node_Generator> Node_Action_Generator::clone(const Symbol_Substitutions &substitutions) const {
     const auto name0 = name->clone(substitutions);
     const auto input0 = input->clone(substitutions);
-    if (name0 == name && input0 == input)
+    const auto action0 = action->clone(substitutions);
+    const auto retraction0 = retraction->clone(substitutions);
+    if (name0 == name && input0 == input && action0 == action && retraction0 == retraction)
       return shared_from_this();
     else
-      return std::make_shared<Node_Action_Generator>(name0, input0, action, retraction);
+      return std::make_shared<Node_Action_Generator>(name0, input0, action0, retraction0);
   }
 
   std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>>
@@ -67,7 +416,10 @@ namespace Zeni::Rete::PEG {
     std::ostringstream oss;
     name0->print(oss);
 
-    const auto node = Node_Action::Create(network, job_queue, oss.str(), user_action, key0, input0, variable_indices0, action, retraction);
+    const auto action0 = action->generate(network, job_queue, user_action, substitutions);
+    const auto retraction0 = retraction->generate(network, job_queue, user_action, substitutions);
+
+    const auto node = Node_Action::Create(network, job_queue, oss.str(), user_action, key0, input0, variable_indices0, action0, retraction0);
 
     return std::make_tuple(node, Node_Key_Null::Create(), dynamic_cast<const Node_Action *>(node.get())->get_variable_indices());
   }
@@ -246,16 +598,17 @@ namespace Zeni::Rete::PEG {
     return std::make_tuple(node, Node_Key_Null::Create(), variable_indices);
   }
 
-  Data::Production::Production(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_)
-    : network(network_), job_queue(job_queue_)
+  Data::Production::Production(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const std::shared_ptr<std::unordered_set<std::string>> outer_variables_)
+    : network(network_), job_queue(job_queue_), outer_variables(outer_variables_), inner_variables(std::make_shared<decltype(inner_variables)::element_type>())
   {
     lhs.push(decltype(lhs)::value_type());
   }
 
-  Data::Data(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_command_)
-    : network(network_), job_queue(job_queue_), user_command(user_command_)
+  Data::Data(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_action_)
+    : network(network_), job_queue(job_queue_), user_action(user_action_)
   {
-    productions.push(std::make_shared<Production>(network_, job_queue_, user_command_));
+    productions.push(std::make_shared<Production>(network_, job_queue_, std::make_shared<decltype(Production::outer_variables)::element_type>()));
+    productions.top()->phase = Production::Phase::PHASE_ACTIONS;
   }
 
 }

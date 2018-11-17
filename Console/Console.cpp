@@ -37,9 +37,5 @@ int main(int argc, char **argv)
 
   network->get()->set_worker_threads(Zeni::Concurrency::Worker_Threads::Create());
 
-  /// Extra pass needed for now to ensure that extra handles stored interally get cleared
-  network->get()->excise_all(network->get()->get_Worker_Threads()->get_main_Job_Queue(), false);
-  network->get()->finish_jobs();
-
   return 0;
 }

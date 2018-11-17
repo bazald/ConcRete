@@ -19,7 +19,9 @@ namespace Zeni::Rete {
 
 namespace Zeni::Rete::PEG {
 
-  typedef std::unordered_map<std::shared_ptr<const Symbol_Variable>, std::shared_ptr<const Symbol>> Symbol_Substitutions;
+  class Node_Action_Generator;
+
+  typedef std::unordered_map<std::string, std::shared_ptr<const Symbol>> Symbol_Substitutions;
 
   class Symbol_Generator : public std::enable_shared_from_this<Symbol_Generator> {
     Symbol_Generator(const Symbol_Generator &) = delete;
@@ -46,6 +48,7 @@ namespace Zeni::Rete::PEG {
 
     std::shared_ptr<const Symbol> generate(const Symbol_Substitutions &substitutions) const override;
 
+  private:
     const std::shared_ptr<const Symbol> m_symbol;
   };
 
@@ -60,7 +63,98 @@ namespace Zeni::Rete::PEG {
 
     std::shared_ptr<const Symbol> generate(const Symbol_Substitutions &substitutions) const override;
 
+  private:
     const std::shared_ptr<const Symbol_Variable> m_symbol;
+  };
+
+  class Action_Generator : public std::enable_shared_from_this<Action_Generator> {
+    Action_Generator(const Action_Generator &) = delete;
+    Action_Generator & operator=(const Action_Generator &) = delete;
+
+  protected:
+    Action_Generator() {}
+
+  public:
+    virtual ~Action_Generator() {}
+
+    virtual std::shared_ptr<const Action_Generator> clone(const Symbol_Substitutions &substitutions) const = 0;
+
+    virtual std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const = 0;
+  };
+
+  class Actions_Generator : public Action_Generator {
+    Actions_Generator(const Actions_Generator &) = delete;
+    Actions_Generator & operator=(const Actions_Generator &) = delete;
+
+  public:
+    Actions_Generator(const std::vector<std::shared_ptr<const Action_Generator>> &actions);
+
+    std::shared_ptr<const Action_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const override;
+
+  private:
+    const std::vector<std::shared_ptr<const Action_Generator>> m_actions;
+  };
+
+  class Action_Exit_Generator : public Action_Generator {
+    Action_Exit_Generator(const Action_Exit_Generator &) = delete;
+    Action_Exit_Generator & operator=(const Action_Exit_Generator &) = delete;
+
+  protected:
+    Action_Exit_Generator() {}
+
+  public:
+    static std::shared_ptr<const Action_Exit_Generator> Create();
+
+    std::shared_ptr<const Action_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const override;
+  };
+
+  class Action_Make_Generator : public Action_Generator {
+    Action_Make_Generator(const Action_Make_Generator &) = delete;
+    Action_Make_Generator & operator=(const Action_Make_Generator &) = delete;
+
+  public:
+    Action_Make_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols);
+
+    std::shared_ptr<const Action_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const override;
+
+  private:
+    const std::vector<std::shared_ptr<const Symbol_Generator>> m_symbols;
+  };
+
+  class Action_Production_Generator : public Action_Generator {
+    Action_Production_Generator(const Action_Production_Generator &) = delete;
+    Action_Production_Generator & operator=(const Action_Production_Generator &) = delete;
+
+  public:
+    Action_Production_Generator(const std::shared_ptr<const Node_Action_Generator> action);
+
+    std::shared_ptr<const Action_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const override;
+
+  private:
+    const std::shared_ptr<const Node_Action_Generator> m_action;
+  };
+
+  class Action_Write_Generator : public Action_Generator {
+    Action_Write_Generator(const Action_Write_Generator &) = delete;
+    Action_Write_Generator & operator=(const Action_Write_Generator &) = delete;
+
+  public:
+    Action_Write_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols);
+
+    std::shared_ptr<const Action_Generator> clone(const Symbol_Substitutions &substitutions) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const Symbol_Substitutions &substitutions) const override;
+
+  private:
+    std::vector<std::shared_ptr<const Symbol_Generator>> m_symbols;
   };
 
   class Node_Generator : public std::enable_shared_from_this<Node_Generator> {
@@ -82,7 +176,7 @@ namespace Zeni::Rete::PEG {
     Node_Action_Generator & operator=(const Node_Action_Generator &) = delete;
 
   public:
-    Node_Action_Generator(const std::shared_ptr<const Symbol_Generator> name, const std::shared_ptr<const Node_Generator> input, const Node_Action::Action action, const Node_Action::Action retraction);
+    Node_Action_Generator(const std::shared_ptr<const Symbol_Generator> name, const std::shared_ptr<const Node_Generator> input, const std::shared_ptr<const Action_Generator> action, const std::shared_ptr<const Action_Generator> retraction);
 
     std::shared_ptr<const Node_Generator> clone(const Symbol_Substitutions &substitutions) const override;
 
@@ -91,8 +185,8 @@ namespace Zeni::Rete::PEG {
     const std::shared_ptr<const Symbol_Generator> name;
     const std::shared_ptr<const Node_Generator> input;
 
-    const Node_Action::Action action;
-    const Node_Action::Action retraction;
+    const std::shared_ptr<const Action_Generator> action;
+    const std::shared_ptr<const Action_Generator> retraction;
   };
 
   class Node_Filter_Generator : public Node_Generator {
@@ -162,29 +256,33 @@ namespace Zeni::Rete::PEG {
       Production & operator=(const Production &) = delete;
 
     public:
-      Production(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue);
+      Production(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<std::unordered_set<std::string>> outer_variables);
 
       const std::shared_ptr<Network> network;
       const std::shared_ptr<Concurrency::Job_Queue> job_queue;
 
+      enum class Phase {PHASE_LHS, PHASE_ACTIONS, PHASE_RETRACTIONS};
+
+      Phase phase = Phase::PHASE_LHS;
+      std::shared_ptr<std::unordered_set<std::string>> outer_variables;
+      std::shared_ptr<std::unordered_set<std::string>> inner_variables;
+
       std::string rule_name;
       std::stack<std::stack<std::shared_ptr<Node_Generator>>> lhs;
 
-      std::list<Node_Action::Action> actions;
-      std::list<Node_Action::Action> retractions;
-      std::list<Node_Action::Action> * actions_or_retractions = &actions;
-
-      Symbol_Substitutions substitutions;
+      std::vector<std::shared_ptr<const Action_Generator>> actions;
+      std::vector<std::shared_ptr<const Action_Generator>> retractions;
+      std::vector<std::shared_ptr<const Action_Generator>> * actions_or_retractions = &actions;
     };
 
-    Data(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command);
+    Data(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action);
 
     const std::shared_ptr<Network> network;
     const std::shared_ptr<Concurrency::Job_Queue> job_queue;
 
-    const bool user_command;
+    const bool user_action;
 
-    std::list<std::shared_ptr<const Symbol_Generator>> symbols;
+    std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
     std::stack<std::shared_ptr<Production>> productions;
   };
 
