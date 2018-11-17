@@ -63,7 +63,9 @@ namespace Zeni::Rete::PEG {
     assert(input.string().size() > 2);
     const auto substr = input.string().substr(1, input.string().size() - 2);
     if (data.productions.top()->phase == Data::Production::Phase::PHASE_LHS)
-      data.productions.top()->inner_variables->insert(substr);
+      data.productions.top()->lhs_variables.insert(substr);
+    else if (data.productions.top()->lhs_variables.find(substr) == data.productions.top()->lhs_variables.end())
+      throw parse_error("Parser error: variable used in the RHS not found in the LHS", input);
     const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
     data.symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
   }
@@ -227,10 +229,7 @@ namespace Zeni::Rete::PEG {
 
   template<typename Input>
   void Action<Begin_Production>::apply(const Input &, Data &data) {
-    const auto variables = data.productions.top()->outer_variables;
-    for (const auto inner_var : *data.productions.top()->inner_variables)
-      variables->insert(inner_var);
-    data.productions.push(std::make_shared<Data::Production>(data.network, data.job_queue, variables));
+    data.productions.push(std::make_shared<Data::Production>(data.network, data.job_queue, false, data.productions.top()->lhs_variables));
   }
 
   template<typename Input>
@@ -260,7 +259,7 @@ namespace Zeni::Rete::PEG {
   template<typename Input>
   void Action<Command>::apply(const Input &input, Data &data) {
     assert(data.productions.top()->actions.size() == 1);
-    const auto action = data.productions.top()->actions.back()->generate(data.network, data.job_queue, data.user_action, Symbol_Substitutions());
+    const auto action = data.productions.top()->actions.back()->generate(data.network, data.job_queue, data.productions.top()->user_action, nullptr, nullptr);
     data.productions.top()->actions.pop_back();
     (*action)(data.network, data.job_queue, nullptr, nullptr);
   }
