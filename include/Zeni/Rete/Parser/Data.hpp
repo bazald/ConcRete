@@ -46,8 +46,7 @@ namespace Zeni::Rete::PEG {
 
     std::shared_ptr<const Symbol> generate(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override;
 
-  private:
-    const std::shared_ptr<const Symbol> m_symbol;
+    const std::shared_ptr<const Symbol> symbol;
   };
 
   class Symbol_Variable_Generator : public Symbol_Generator {
@@ -61,8 +60,7 @@ namespace Zeni::Rete::PEG {
 
     std::shared_ptr<const Symbol> generate(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override;
 
-  private:
-    const std::shared_ptr<const Symbol_Variable> m_symbol;
+    const std::shared_ptr<const Symbol_Variable> symbol;
   };
 
   class Action_Generator : public std::enable_shared_from_this<Action_Generator> {
@@ -93,6 +91,21 @@ namespace Zeni::Rete::PEG {
 
   private:
     const std::vector<std::shared_ptr<const Action_Generator>> m_actions;
+  };
+
+  class Action_Excise_Generator : public Action_Generator {
+    Action_Excise_Generator(const Action_Excise_Generator &) = delete;
+    Action_Excise_Generator & operator=(const Action_Excise_Generator &) = delete;
+
+  public:
+    Action_Excise_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols);
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override;
+
+  private:
+    const std::vector<std::shared_ptr<const Symbol_Generator>> m_symbols;
   };
 
   class Action_Exit_Generator : public Action_Generator {
@@ -261,12 +274,12 @@ namespace Zeni::Rete::PEG {
 
       bool user_action;
 
-      enum class Phase {PHASE_LHS, PHASE_ACTIONS, PHASE_RETRACTIONS};
+      enum class Phase {PHASE_INIT, PHASE_LHS, PHASE_ACTIONS, PHASE_RETRACTIONS};
 
-      Phase phase = Phase::PHASE_LHS;
+      Phase phase = Phase::PHASE_INIT;
       std::unordered_set<std::string> lhs_variables;
 
-      std::string rule_name;
+      std::shared_ptr<const Symbol_Generator> rule_name;
       std::stack<std::stack<std::shared_ptr<Node_Generator>>> lhs;
 
       std::vector<std::shared_ptr<const Action_Generator>> actions;

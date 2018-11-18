@@ -692,7 +692,8 @@ namespace Zeni::Concurrency {
             new_lnode->decrement_refs();
             return std::make_tuple(result, new_lnode->snode, new_snode);
           }
-          return std::make_tuple(result, new_lnode, new_snode);
+          else
+            return std::make_tuple(result, new_lnode, new_snode);
         }
       }
       else if (auto snode = dynamic_cast<const SNode *>(mnode)) {

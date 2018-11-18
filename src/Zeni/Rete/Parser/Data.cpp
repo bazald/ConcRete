@@ -8,14 +8,15 @@
 #include "Zeni/Rete/Node_Join_Negation.hpp"
 #include "Zeni/Rete/Variable_Indices.hpp"
 
+#include <algorithm>
 #include <sstream>
 
 namespace Zeni::Rete::PEG {
 
-  Symbol_Constant_Generator::Symbol_Constant_Generator(const std::shared_ptr<const Symbol> symbol)
-    : m_symbol(symbol)
+  Symbol_Constant_Generator::Symbol_Constant_Generator(const std::shared_ptr<const Symbol> symbol_)
+    : symbol(symbol_)
   {
-    assert(!dynamic_cast<const Symbol_Variable *>(m_symbol.get()));
+    assert(!dynamic_cast<const Symbol_Variable *>(symbol.get()));
   }
 
   std::shared_ptr<const Symbol_Generator> Symbol_Constant_Generator::clone(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const {
@@ -23,11 +24,11 @@ namespace Zeni::Rete::PEG {
   }
 
   std::shared_ptr<const Symbol> Symbol_Constant_Generator::generate(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const {
-    return m_symbol;
+    return symbol;
   }
 
-  Symbol_Variable_Generator::Symbol_Variable_Generator(const std::shared_ptr<const Symbol_Variable> symbol)
-    : m_symbol(symbol)
+  Symbol_Variable_Generator::Symbol_Variable_Generator(const std::shared_ptr<const Symbol_Variable> symbol_)
+    : symbol(symbol_)
   {
   }
 
@@ -39,7 +40,7 @@ namespace Zeni::Rete::PEG {
     else
       assert(token);
 
-    const auto found = rete_action->get_variable_indices()->find_index(m_symbol->get_value());
+    const auto found = rete_action->get_variable_indices()->find_index(symbol->get_value());
     if (found != Token_Index())
       return std::make_shared<Symbol_Constant_Generator>((*token)[found]);
     else
@@ -49,16 +50,16 @@ namespace Zeni::Rete::PEG {
   std::shared_ptr<const Symbol> Symbol_Variable_Generator::generate(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const {
     if (!rete_action) {
       assert(!token);
-      return m_symbol;
+      return symbol;
     }
     else
       assert(token);
 
-    const auto found = rete_action->get_variable_indices()->find_index(m_symbol->get_value());
+    const auto found = rete_action->get_variable_indices()->find_index(symbol->get_value());
     if (found != Token_Index())
       return (*token)[found];
     else
-      return m_symbol;
+      return symbol;
   }
 
   Actions_Generator::Actions_Generator(const std::vector<std::shared_ptr<const Action_Generator>> &actions)
@@ -104,6 +105,102 @@ namespace Zeni::Rete::PEG {
     };
 
     return std::make_shared<Actions>(actions);
+  }
+
+  Action_Excise_Generator::Action_Excise_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols)
+    : m_symbols(symbols)
+  {
+  }
+
+  std::shared_ptr<const Action_Generator> Action_Excise_Generator::clone(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const {
+    std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
+    symbols.reserve(m_symbols.size());
+    for (const auto symbol : m_symbols)
+      symbols.push_back(symbol->clone(rete_action, token));
+    for (auto st = symbols.cbegin(), mt = m_symbols.cbegin(), send = symbols.cend(); st != send; ++st, ++mt) {
+      if (*st != *mt)
+        return std::make_shared<Action_Excise_Generator>(symbols);
+    }
+    return shared_from_this();
+  }
+
+  std::shared_ptr<const Node_Action::Action> Action_Excise_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const {
+    class Get_Symbol : public std::enable_shared_from_this<Get_Symbol> {
+    public:
+      virtual ~Get_Symbol() {}
+
+      virtual std::shared_ptr<const Symbol_Constant> operator()(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const = 0;
+    };
+
+    class Get_Symbol_Constant : public Get_Symbol {
+    public:
+      Get_Symbol_Constant(const std::shared_ptr<const Symbol_Constant> symbol_) : symbol(symbol_) {}
+
+      std::shared_ptr<const Symbol_Constant> operator()(const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token>) const override {
+        return symbol;
+      }
+
+      const std::shared_ptr<const Symbol_Constant> symbol;
+    };
+
+    class Get_Symbol_Variable : public Get_Symbol {
+    public:
+      Get_Symbol_Variable(const std::shared_ptr<const Symbol_Variable> variable_) : variable(variable_) {}
+
+      std::shared_ptr<const Symbol_Constant> operator()(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override {
+        assert(rete_action);
+        assert(token);
+        return std::dynamic_pointer_cast<const Symbol_Constant>((*token)[rete_action->get_variable_indices()->find_index(variable->get_value())]);
+      }
+
+      const std::shared_ptr<const Symbol_Variable> variable;
+    };
+
+    std::vector<std::shared_ptr<const Get_Symbol>> symbols;
+    symbols.reserve(m_symbols.size());
+    for (const auto gen_symbol : m_symbols) {
+      const auto symbol = gen_symbol->generate(rete_action, token);
+      if (const auto variable = std::dynamic_pointer_cast<const Symbol_Variable>(symbol))
+        symbols.push_back(std::make_shared<Get_Symbol_Variable>(variable));
+      else
+        symbols.push_back(std::make_shared<Get_Symbol_Constant>(std::dynamic_pointer_cast<const Symbol_Constant>(symbol)));
+    }
+
+    class Action_Excise : public Node_Action::Action {
+      Action_Excise(const Action_Excise &) = delete;
+      Action_Excise & operator=(const Action_Excise &) = delete;
+
+    public:
+      Action_Excise(const std::vector<std::shared_ptr<const Get_Symbol>> &symbols, const bool user_action)
+        : m_symbols(symbols), m_user_action(user_action)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override {
+        if (m_symbols.size() == 1) {
+          if (const auto constant = std::dynamic_pointer_cast<const Get_Symbol_Constant>(m_symbols.back())) {
+            if (const auto str = std::dynamic_pointer_cast<const Symbol_Constant_String>(constant->symbol)) {
+              if (*str == "*") {
+                network->excise_all(job_queue, m_user_action);
+                return;
+              }
+            }
+          }
+        }
+
+        for (const auto symbol : m_symbols) {
+          std::ostringstream oss;
+          oss << *(*symbol)(rete_action, token);
+          network->excise_rule(job_queue, oss.str(), m_user_action);
+        }
+      }
+
+    private:
+      const std::vector<std::shared_ptr<const Get_Symbol>> m_symbols;
+      const bool m_user_action;
+    };
+
+    return std::make_shared<Action_Excise>(symbols, user_action);
   }
 
   std::shared_ptr<const Action_Exit_Generator> Action_Exit_Generator::Create() {
@@ -422,16 +519,19 @@ namespace Zeni::Rete::PEG {
   std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>>
     Node_Action_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const
   {
-    const auto name0 = name->generate(rete_action, token);
+    const auto name_gen0 = name->generate(rete_action, token);
     const auto [input0, key0, variable_indices0] = input->generate(network, job_queue, user_action, rete_action, token);
 
     std::ostringstream oss;
-    name0->print(oss);
+    name_gen0->print_contents(oss);
+
+    std::string name0 = oss.str();
+    name0.erase(std::remove_if(name0.begin(), name0.end(), [](const char c) { return c == '\r' || c == '\n' || c == '|'; }), name0.end());
 
     const auto action0 = action->generate(network, job_queue, user_action, rete_action, token);
     const auto retraction0 = retraction->generate(network, job_queue, user_action, rete_action, token);
 
-    const auto node = Node_Action::Create(network, job_queue, oss.str(), user_action, key0, input0, variable_indices0, action0, retraction0);
+    const auto node = Node_Action::Create(network, job_queue, name0, user_action, key0, input0, variable_indices0, action0, retraction0);
 
     return std::make_tuple(node, Node_Key_Null::Create(), dynamic_cast<const Node_Action *>(node.get())->get_variable_indices());
   }

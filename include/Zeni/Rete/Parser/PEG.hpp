@@ -58,22 +58,36 @@ namespace Zeni::Rete::PEG {
 
   /// Symbols
 
-  struct Unquoted_String : seq<plus<alpha>, star<sor<alnum, one<'-', '_', '*'>>>> {};
+  struct Unquoted_String : plus<not_one<' ', '\t', '\r', '\n', '|', '<', '>', '(', ')'>> {};
 
   struct Constant_Float : if_then_else<plus_minus, must<sor<decimal, inf, nan>>, sor<decimal, inf, nan>> {};
   template<> inline const char * Error<sor<decimal, inf, nan>>::error_message() { return "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol"; }
   struct Constant_Int : if_then_else<plus_minus, must<plus<digit>>, plus<digit>> {};
   template<> inline const char * Error<plus<digit>>::error_message() { return "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol"; }
   struct Constant_String : Unquoted_String {};
-  struct Quoted_Constant_String : if_must<one<'|'>, seq<plus<not_one<'|'>>, one<'|'>>> {};
-  template<> inline const char * Error<seq<plus<not_one<'|'>>, one<'|'>>>::error_message() { return "Parser error: quoted string constant not closed (mismatched '|'s?)"; }
+  struct Quoted_Constant_String : if_must<one<'|'>, seq<star<not_one<'\r', '\n', '|'>>, one<'|'>>> {};
+  template<> inline const char * Error<seq<star<not_one<'\r', '\n', '|'>>, one<'|'>>>::error_message() { return "Parser error: quoted string constant not closed (mismatched '|'s?)"; }
   struct CRLF : seq<one<'('>, star<space_comment>, string<'c', 'r', 'l', 'f'>, star<space_comment>, one<')'>> {};
   struct Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
   template<> inline const char * Error<seq<Unquoted_String, one<'>'>>>::error_message() { return "Parser error: variable not closed (mismatched '<>'s?)"; }
   struct Unnamed_Variable : seq<one<'{'>, star<space_comment>, one<'}'>> {};
 
-  struct Symbol_w_Var : sor<seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>, Constant_Int, Constant_String, Quoted_Constant_String, CRLF, Variable, Unnamed_Variable> {};
-  struct Symbol_wo_Var : sor<seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>, Constant_Int, Constant_String, Quoted_Constant_String, CRLF> {};
+  struct Symbol_w_Var : sor<
+    seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
+    Constant_Int,
+    minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
+    Quoted_Constant_String,
+    CRLF,
+    Variable,
+    Unnamed_Variable> {};
+  struct Symbol_wo_Var : sor<
+    seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
+    Constant_Int,
+    minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
+    Quoted_Constant_String,
+    CRLF> {};
+
+  struct Rule_Name : Symbol_w_Var {};
 
   /// Conditions and WMEs
 
@@ -117,6 +131,10 @@ namespace Zeni::Rete::PEG {
 
   /// Right-Hand Side / RHS
 
+  struct Inner_Excise : seq<plus<plus<space_comment>, Symbol_w_Var>> {};
+  struct Excise : if_must<string<'e', 'x', 'c', 'i', 's', 'e'>, Inner_Excise> {};
+  template<> inline const char * Error<Inner_Excise>::error_message() { return "Parser error: 'excise' must be followed by one or more rule names"; }
+
   struct Exit : string<'e', 'x', 'i', 't'> {};
 
   struct Inner_Make : seq<plus<plus<space_comment>, WMEs>> {};
@@ -136,7 +154,8 @@ namespace Zeni::Rete::PEG {
 
   /// Production Rules
 
-  struct Inner_Action : sor<Exit, Make, Production, Write> {};
+  struct Inner_Action : sor<Excise, Exit, Make, Production, Write> {};
+
   struct Enclosed_Action : seq<one<'('>, star<space_comment>, Inner_Action, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Action_List : plus<Enclosed_Action> {};
   struct Inner_Actions : seq<string<'-', '-', '>'>, star<space_comment>, Action_List> {};
@@ -145,7 +164,6 @@ namespace Zeni::Rete::PEG {
   struct Inner_Retractions : seq<string<'<', '-', '-'>, star<space_comment>, Action_List> {};
   struct Begin_Retractions : at<Inner_Retractions> {};
   struct Retractions : seq<Begin_Retractions, Inner_Retractions> {};
-  struct Rule_Name : Unquoted_String {};
   struct Inner_Production_Body :
     seq<Rule_Name, star<space_comment>,
     Inner_Scope, star<space_comment>,

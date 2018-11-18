@@ -185,7 +185,7 @@ namespace Zeni::Rete {
   }
 
   std::ostream & Symbol_Constant_String::print(std::ostream &os) const {
-    if (m_value.find_first_of(" \t\r\n") == std::string::npos)
+    if (!m_value.empty() && m_value.find_first_of(" \t<>") == std::string::npos)
       return os << m_value;
     else
       return os << '|' << m_value << '|';

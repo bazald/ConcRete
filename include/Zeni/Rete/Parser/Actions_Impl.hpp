@@ -184,6 +184,16 @@ namespace Zeni::Rete::PEG {
   /// Right-Hand Side / RHS
 
   template<typename Input>
+  void Action<Excise>::apply(const Input &input, Data &data) {
+    //std::cerr << "Excise: " << input.string() << std::endl;
+
+    const auto excise = std::make_shared<Action_Excise_Generator>(data.symbols);
+    data.symbols.clear();
+
+    data.productions.top()->actions_or_retractions->push_back(excise);
+  }
+
+  template<typename Input>
   void Action<Exit>::apply(const Input &, Data &data) {
     data.productions.top()->actions_or_retractions->push_back(Action_Exit_Generator::Create());
   }
@@ -223,8 +233,12 @@ namespace Zeni::Rete::PEG {
   }
 
   template<typename Input>
-  void Action<Rule_Name>::apply(const Input &input, Data &data) {
-    data.productions.top()->rule_name = input.string();
+  void Action<Rule_Name>::apply(const Input &, Data &data) {
+    assert(data.symbols.size() == 1);
+    data.productions.top()->rule_name = data.symbols.back();
+    data.symbols.pop_back();
+
+    data.productions.top()->phase = Data::Production::Phase::PHASE_LHS;
   }
 
   template<typename Input>
@@ -241,8 +255,7 @@ namespace Zeni::Rete::PEG {
     const auto node = data.productions.top()->lhs.top().top();
     data.productions.top()->lhs.top().pop();
 
-    /// TODO
-    auto rule_name = std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_String>(data.productions.top()->rule_name));
+    auto rule_name = data.productions.top()->rule_name;
 
     const auto action = std::make_shared<Actions_Generator>(data.productions.top()->actions);
     const auto retraction = std::make_shared<Actions_Generator>(data.productions.top()->retractions);

@@ -672,9 +672,8 @@ namespace Zeni::Concurrency {
             const SNode * const new_snode = new SNode(key);
             return std::make_tuple(Result::First_Insertion, CNode::Create(new_snode, hash_value, lnode, lnode_hash, level), new_snode, nullptr);
           }
-          else {
+          else
             return std::make_tuple(Result::Failed_Removal, lnode, nullptr, nullptr);
-          }
         }
         else {
           const auto[result, new_lnode, new_snode, replaced_snode] = lnode->updated(key, insertion);
@@ -683,7 +682,8 @@ namespace Zeni::Concurrency {
             new_lnode->decrement_refs();
             return std::make_tuple(result, new_lnode->snode, new_snode, replaced_snode);
           }
-          return std::make_tuple(result, new_lnode, new_snode, replaced_snode);
+          else
+            return std::make_tuple(result, new_lnode, new_snode, replaced_snode);
         }
       }
       else if (auto snode = dynamic_cast<const SNode *>(mnode)) {

@@ -871,7 +871,8 @@ namespace Zeni::Concurrency {
             std::get<1>(tuple_value)->decrement_refs();
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)->snode));
           }
-          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+          else
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
         }
       }
       else if (auto snode = dynamic_cast<const SNode *>(mnode)) {

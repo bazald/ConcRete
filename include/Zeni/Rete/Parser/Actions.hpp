@@ -104,6 +104,12 @@ namespace Zeni::Rete::PEG {
   /// Right-Hand Side / RHS
 
   template <>
+  struct Action<Excise> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
   struct Action<Exit> {
     template<typename Input>
     static void apply(const Input &input, Data &data);
