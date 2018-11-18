@@ -20,7 +20,7 @@ namespace Zeni::Rete {
   class Symbol_Constant_Float;
   class Symbol_Constant_Int;
   class Symbol_Constant_String;
-  class Symbol_Identifier;
+  class Symbol_Constant_Identifier;
   class Symbol_Variable;
   class Variable_Indices;
 
@@ -63,12 +63,12 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual bool operator>(const Symbol_Constant_String &) const;
     ZENI_RETE_LINKAGE virtual bool operator>=(const Symbol_Constant_String &) const;
 
-    ZENI_RETE_LINKAGE virtual bool operator==(const Symbol_Identifier &) const;
-    ZENI_RETE_LINKAGE virtual bool operator!=(const Symbol_Identifier &) const;
-    ZENI_RETE_LINKAGE virtual bool operator<(const Symbol_Identifier &) const;
-    ZENI_RETE_LINKAGE virtual bool operator<=(const Symbol_Identifier &) const;
-    ZENI_RETE_LINKAGE virtual bool operator>(const Symbol_Identifier &) const;
-    ZENI_RETE_LINKAGE virtual bool operator>=(const Symbol_Identifier &) const;
+    ZENI_RETE_LINKAGE virtual bool operator==(const Symbol_Constant_Identifier &) const;
+    ZENI_RETE_LINKAGE virtual bool operator!=(const Symbol_Constant_Identifier &) const;
+    ZENI_RETE_LINKAGE virtual bool operator<(const Symbol_Constant_Identifier &) const;
+    ZENI_RETE_LINKAGE virtual bool operator<=(const Symbol_Constant_Identifier &) const;
+    ZENI_RETE_LINKAGE virtual bool operator>(const Symbol_Constant_Identifier &) const;
+    ZENI_RETE_LINKAGE virtual bool operator>=(const Symbol_Constant_Identifier &) const;
 
     ZENI_RETE_LINKAGE virtual bool operator==(const Symbol_Variable &) const;
     ZENI_RETE_LINKAGE virtual bool operator!=(const Symbol_Variable &) const;
@@ -127,8 +127,8 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE bool operator<(const Symbol_Constant_String &) const override;
     ZENI_RETE_LINKAGE bool operator<=(const Symbol_Constant_String &) const override;
-    ZENI_RETE_LINKAGE bool operator<(const Symbol_Identifier &) const override;
-    ZENI_RETE_LINKAGE bool operator<=(const Symbol_Identifier &) const override;
+    ZENI_RETE_LINKAGE bool operator<(const Symbol_Constant_Identifier &) const override;
+    ZENI_RETE_LINKAGE bool operator<=(const Symbol_Constant_Identifier &) const override;
     ZENI_RETE_LINKAGE bool operator<(const Symbol_Variable &) const override;
     ZENI_RETE_LINKAGE bool operator<=(const Symbol_Variable &) const override;
 
@@ -174,8 +174,8 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE bool operator<(const Symbol_Constant_String &) const override;
     ZENI_RETE_LINKAGE bool operator<=(const Symbol_Constant_String &) const override;
-    ZENI_RETE_LINKAGE bool operator<(const Symbol_Identifier &) const override;
-    ZENI_RETE_LINKAGE bool operator<=(const Symbol_Identifier &) const override;
+    ZENI_RETE_LINKAGE bool operator<(const Symbol_Constant_Identifier &) const override;
+    ZENI_RETE_LINKAGE bool operator<=(const Symbol_Constant_Identifier &) const override;
     ZENI_RETE_LINKAGE bool operator<(const Symbol_Variable &) const override;
     ZENI_RETE_LINKAGE bool operator<=(const Symbol_Variable &) const override;
 
@@ -219,8 +219,8 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator>=(const Symbol_Constant_Float &) const override;
     ZENI_RETE_LINKAGE bool operator>(const Symbol_Constant_Int &) const override;
     ZENI_RETE_LINKAGE bool operator>=(const Symbol_Constant_Int &) const override;
-    ZENI_RETE_LINKAGE bool operator<(const Symbol_Identifier &) const override;
-    ZENI_RETE_LINKAGE bool operator<=(const Symbol_Identifier &) const override;
+    ZENI_RETE_LINKAGE bool operator<(const Symbol_Constant_Identifier &) const override;
+    ZENI_RETE_LINKAGE bool operator<=(const Symbol_Constant_Identifier &) const override;
     ZENI_RETE_LINKAGE bool operator<(const Symbol_Variable &) const override;
     ZENI_RETE_LINKAGE bool operator<=(const Symbol_Variable &) const override;
 
@@ -235,16 +235,17 @@ namespace Zeni::Rete {
     const std::string m_value;
   };
 
-  class Symbol_Identifier : public Symbol {
-    Symbol_Identifier(const Symbol_Identifier &) = delete;
-    Symbol_Identifier & operator=(const Symbol_Identifier &) = delete;
+  class Symbol_Constant_Identifier : public Symbol_Constant {
+    Symbol_Constant_Identifier(const Symbol_Constant_Identifier &) = delete;
+    Symbol_Constant_Identifier & operator=(const Symbol_Constant_Identifier &) = delete;
 
   public:
-    ZENI_RETE_LINKAGE Symbol_Identifier(const char * value_);
+    ZENI_RETE_LINKAGE Symbol_Constant_Identifier(const std::string &value_);
+    ZENI_RETE_LINKAGE Symbol_Constant_Identifier(std::string &&value_);
 
     ZENI_RETE_LINKAGE const char * get_value() const;
 
-    ZENI_RETE_LINKAGE Symbol_Identifier * clone() const override;
+    ZENI_RETE_LINKAGE Symbol_Constant_Identifier * clone() const override;
 
     ZENI_RETE_LINKAGE bool operator==(const Symbol &rhs) const override;
     ZENI_RETE_LINKAGE bool operator!=(const Symbol &rhs) const override;
@@ -253,12 +254,12 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator<(const Symbol &rhs) const override;
     ZENI_RETE_LINKAGE bool operator<=(const Symbol &rhs) const override;
 
-    ZENI_RETE_LINKAGE bool operator==(const Symbol_Identifier &rhs) const override;
-    ZENI_RETE_LINKAGE bool operator!=(const Symbol_Identifier &rhs) const override;
-    ZENI_RETE_LINKAGE bool operator<(const Symbol_Identifier &rhs) const override;
-    ZENI_RETE_LINKAGE bool operator<=(const Symbol_Identifier &rhs) const override;
-    ZENI_RETE_LINKAGE bool operator>(const Symbol_Identifier &rhs) const override;
-    ZENI_RETE_LINKAGE bool operator>=(const Symbol_Identifier &rhs) const override;
+    ZENI_RETE_LINKAGE bool operator==(const Symbol_Constant_Identifier &rhs) const override;
+    ZENI_RETE_LINKAGE bool operator!=(const Symbol_Constant_Identifier &rhs) const override;
+    ZENI_RETE_LINKAGE bool operator<(const Symbol_Constant_Identifier &rhs) const override;
+    ZENI_RETE_LINKAGE bool operator<=(const Symbol_Constant_Identifier &rhs) const override;
+    ZENI_RETE_LINKAGE bool operator>(const Symbol_Constant_Identifier &rhs) const override;
+    ZENI_RETE_LINKAGE bool operator>=(const Symbol_Constant_Identifier &rhs) const override;
 
     ZENI_RETE_LINKAGE bool operator>(const Symbol_Constant_Float &) const override;
     ZENI_RETE_LINKAGE bool operator>=(const Symbol_Constant_Float &) const override;
@@ -311,8 +312,8 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator>=(const Symbol_Constant_Int &) const override;
     ZENI_RETE_LINKAGE bool operator>(const Symbol_Constant_String &) const override;
     ZENI_RETE_LINKAGE bool operator>=(const Symbol_Constant_String &) const override;
-    ZENI_RETE_LINKAGE bool operator>(const Symbol_Identifier &) const override;
-    ZENI_RETE_LINKAGE bool operator>=(const Symbol_Identifier &) const override;
+    ZENI_RETE_LINKAGE bool operator>(const Symbol_Constant_Identifier &) const override;
+    ZENI_RETE_LINKAGE bool operator>=(const Symbol_Constant_Identifier &) const override;
 
     ZENI_RETE_LINKAGE bool operator==(const char * value_) const override;
 

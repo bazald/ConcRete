@@ -38,6 +38,12 @@ namespace Zeni::Rete::PEG {
   };
 
   template <>
+  struct Action<Constant_Identifier> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
   struct Action<Variable> {
     template<typename Input>
     static void apply(const Input &input, Data &data);

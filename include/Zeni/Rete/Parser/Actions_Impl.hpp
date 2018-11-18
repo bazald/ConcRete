@@ -58,6 +58,15 @@ namespace Zeni::Rete::PEG {
   }
 
   template<typename Input>
+  void Action<Constant_Identifier>::apply(const Input &input, Data &data) {
+    //std::cerr << "Identifier: " << input.string() << std::endl;
+    assert(input.string().size() > 1);
+    const auto substr = input.string().substr(1, input.string().size() - 1);
+    const auto symbol = std::make_shared<Symbol_Constant_Identifier>(substr);
+    data.symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
+  }
+
+  template<typename Input>
   void Action<Variable>::apply(const Input &input, Data &data) {
     //std::cerr << "Constant_Variable: " << input.string() << std::endl;
     assert(input.string().size() > 2);

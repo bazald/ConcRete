@@ -646,24 +646,24 @@ void test_Parser(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worke
   (*network)->get_Worker_Threads()->finish_jobs();
 
   (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(
-    std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
+    std::make_shared<Zeni::Rete::Symbol_Constant_Identifier>("S1"),
     std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
     std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
 
   (*network)->insert_wme(job_queue, std::make_shared<Zeni::Rete::WME>(
-    std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
+    std::make_shared<Zeni::Rete::Symbol_Constant_Identifier>("S1"),
     std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
     std::make_shared<Zeni::Rete::Symbol_Constant_Float>(3.14159)));
 
   (*network)->get_Worker_Threads()->finish_jobs();
 
   (*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(
-    std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
+    std::make_shared<Zeni::Rete::Symbol_Constant_Identifier>("S1"),
     std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
     std::make_shared<Zeni::Rete::Symbol_Constant_Int>(42)));
 
   (*network)->remove_wme(job_queue, std::make_shared<Zeni::Rete::WME>(
-    std::make_shared<Zeni::Rete::Symbol_Identifier>("S1"),
+    std::make_shared<Zeni::Rete::Symbol_Constant_Identifier>("S1"),
     std::make_shared<Zeni::Rete::Symbol_Constant_String>("attr"),
     std::make_shared<Zeni::Rete::Symbol_Constant_Float>(3.14159)));
 

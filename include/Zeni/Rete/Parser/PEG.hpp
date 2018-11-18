@@ -58,7 +58,7 @@ namespace Zeni::Rete::PEG {
 
   /// Symbols
 
-  struct Unquoted_String : plus<not_one<' ', '\t', '\r', '\n', '|', '<', '>', '(', ')'>> {};
+  struct Unquoted_String : plus<not_one<' ', '\t', '\r', '\n', '|', '<', '>', '@', '(', ')'>> {};
 
   struct Constant_Float : if_then_else<plus_minus, must<sor<decimal, inf, nan>>, sor<decimal, inf, nan>> {};
   template<> inline const char * Error<sor<decimal, inf, nan>>::error_message() { return "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol"; }
@@ -68,6 +68,9 @@ namespace Zeni::Rete::PEG {
   struct Quoted_Constant_String : if_must<one<'|'>, seq<star<not_one<'\r', '\n', '|'>>, one<'|'>>> {};
   template<> inline const char * Error<seq<star<not_one<'\r', '\n', '|'>>, one<'|'>>>::error_message() { return "Parser error: quoted string constant not closed (mismatched '|'s?)"; }
   struct CRLF : seq<one<'('>, star<space_comment>, string<'c', 'r', 'l', 'f'>, star<space_comment>, one<')'>> {};
+  struct Identifier_Name : Unquoted_String {};
+  struct Constant_Identifier : if_must<one<'@'>, Identifier_Name> {};
+  template<> inline const char * Error<Identifier_Name>::error_message() { return "Parser error: '@' must be followed immediately by an identifier name"; }
   struct Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
   template<> inline const char * Error<seq<Unquoted_String, one<'>'>>>::error_message() { return "Parser error: variable not closed (mismatched '<>'s?)"; }
   struct Unnamed_Variable : seq<one<'{'>, star<space_comment>, one<'}'>> {};
@@ -78,6 +81,7 @@ namespace Zeni::Rete::PEG {
     minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
     Quoted_Constant_String,
     CRLF,
+    Constant_Identifier,
     Variable,
     Unnamed_Variable> {};
   struct Symbol_wo_Var : sor<
@@ -85,7 +89,8 @@ namespace Zeni::Rete::PEG {
     Constant_Int,
     minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
     Quoted_Constant_String,
-    CRLF> {};
+    CRLF,
+    Constant_Identifier> {};
 
   struct Rule_Name : Symbol_w_Var {};
 

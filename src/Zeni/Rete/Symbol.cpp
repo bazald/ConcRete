@@ -32,12 +32,12 @@ namespace Zeni::Rete {
   bool Symbol::operator>(const Symbol_Constant_String &) const { return false; }
   bool Symbol::operator>=(const Symbol_Constant_String &) const { return false; }
 
-  bool Symbol::operator==(const Symbol_Identifier &) const { return false; }
-  bool Symbol::operator!=(const Symbol_Identifier &) const { return true; }
-  bool Symbol::operator<(const Symbol_Identifier &) const { return false; }
-  bool Symbol::operator<=(const Symbol_Identifier &) const { return false; }
-  bool Symbol::operator>(const Symbol_Identifier &) const { return false; }
-  bool Symbol::operator>=(const Symbol_Identifier &) const { return false; }
+  bool Symbol::operator==(const Symbol_Constant_Identifier &) const { return false; }
+  bool Symbol::operator!=(const Symbol_Constant_Identifier &) const { return true; }
+  bool Symbol::operator<(const Symbol_Constant_Identifier &) const { return false; }
+  bool Symbol::operator<=(const Symbol_Constant_Identifier &) const { return false; }
+  bool Symbol::operator>(const Symbol_Constant_Identifier &) const { return false; }
+  bool Symbol::operator>=(const Symbol_Constant_Identifier &) const { return false; }
 
   bool Symbol::operator==(const Symbol_Variable &) const { return false; }
   bool Symbol::operator!=(const Symbol_Variable &) const { return true; }
@@ -81,8 +81,8 @@ namespace Zeni::Rete {
 
   bool Symbol_Constant_Float::operator<(const Symbol_Constant_String &) const { return true; }
   bool Symbol_Constant_Float::operator<=(const Symbol_Constant_String &) const { return true; }
-  bool Symbol_Constant_Float::operator<(const Symbol_Identifier &) const { return true; }
-  bool Symbol_Constant_Float::operator<=(const Symbol_Identifier &) const { return true; }
+  bool Symbol_Constant_Float::operator<(const Symbol_Constant_Identifier &) const { return true; }
+  bool Symbol_Constant_Float::operator<=(const Symbol_Constant_Identifier &) const { return true; }
   bool Symbol_Constant_Float::operator<(const Symbol_Variable &) const { return true; }
   bool Symbol_Constant_Float::operator<=(const Symbol_Variable &) const { return true; }
 
@@ -128,8 +128,8 @@ namespace Zeni::Rete {
 
   bool Symbol_Constant_Int::operator<(const Symbol_Constant_String &) const { return true; }
   bool Symbol_Constant_Int::operator<=(const Symbol_Constant_String &) const { return true; }
-  bool Symbol_Constant_Int::operator<(const Symbol_Identifier &) const { return true; }
-  bool Symbol_Constant_Int::operator<=(const Symbol_Identifier &) const { return true; }
+  bool Symbol_Constant_Int::operator<(const Symbol_Constant_Identifier &) const { return true; }
+  bool Symbol_Constant_Int::operator<=(const Symbol_Constant_Identifier &) const { return true; }
   bool Symbol_Constant_Int::operator<(const Symbol_Variable &) const { return true; }
   bool Symbol_Constant_Int::operator<=(const Symbol_Variable &) const { return true; }
 
@@ -173,8 +173,8 @@ namespace Zeni::Rete {
   bool Symbol_Constant_String::operator>=(const Symbol_Constant_Float &) const { return true; }
   bool Symbol_Constant_String::operator>(const Symbol_Constant_Int &) const { return true; }
   bool Symbol_Constant_String::operator>=(const Symbol_Constant_Int &) const { return true; }
-  bool Symbol_Constant_String::operator<(const Symbol_Identifier &) const { return true; }
-  bool Symbol_Constant_String::operator<=(const Symbol_Identifier &) const { return true; }
+  bool Symbol_Constant_String::operator<(const Symbol_Constant_Identifier &) const { return true; }
+  bool Symbol_Constant_String::operator<=(const Symbol_Constant_Identifier &) const { return true; }
   bool Symbol_Constant_String::operator<(const Symbol_Variable &) const { return true; }
   bool Symbol_Constant_String::operator<=(const Symbol_Variable &) const { return true; }
 
@@ -185,7 +185,7 @@ namespace Zeni::Rete {
   }
 
   std::ostream & Symbol_Constant_String::print(std::ostream &os) const {
-    if (!m_value.empty() && m_value.find_first_of(" \t<>") == std::string::npos)
+    if (!m_value.empty() && m_value.find_first_of(" \t<>@()") == std::string::npos)
       return os << m_value;
     else
       return os << '|' << m_value << '|';
@@ -196,47 +196,48 @@ namespace Zeni::Rete {
   }
 
 
-  Symbol_Identifier::Symbol_Identifier(const char * value_) : m_value(value_) {}
+  Symbol_Constant_Identifier::Symbol_Constant_Identifier(const std::string &value_) : m_value(value_) {}
+  Symbol_Constant_Identifier::Symbol_Constant_Identifier(std::string &&value_) : m_value(std::move(value_)) {}
 
-  const char * Symbol_Identifier::get_value() const { return m_value.c_str(); }
+  const char * Symbol_Constant_Identifier::get_value() const { return m_value.c_str(); }
 
-  Symbol_Identifier * Symbol_Identifier::clone() const { return new Symbol_Identifier(get_value()); }
+  Symbol_Constant_Identifier * Symbol_Constant_Identifier::clone() const { return new Symbol_Constant_Identifier(get_value()); }
 
-  bool Symbol_Identifier::operator==(const Symbol &rhs) const { return rhs == *this; }
-  bool Symbol_Identifier::operator!=(const Symbol &rhs) const { return rhs != *this; }
-  bool Symbol_Identifier::operator>(const Symbol &rhs) const { return rhs < *this; }
-  bool Symbol_Identifier::operator>=(const Symbol &rhs) const { return rhs <= *this; }
-  bool Symbol_Identifier::operator<(const Symbol &rhs) const { return rhs > *this; }
-  bool Symbol_Identifier::operator<=(const Symbol &rhs) const { return rhs >= *this; }
+  bool Symbol_Constant_Identifier::operator==(const Symbol &rhs) const { return rhs == *this; }
+  bool Symbol_Constant_Identifier::operator!=(const Symbol &rhs) const { return rhs != *this; }
+  bool Symbol_Constant_Identifier::operator>(const Symbol &rhs) const { return rhs < *this; }
+  bool Symbol_Constant_Identifier::operator>=(const Symbol &rhs) const { return rhs <= *this; }
+  bool Symbol_Constant_Identifier::operator<(const Symbol &rhs) const { return rhs > *this; }
+  bool Symbol_Constant_Identifier::operator<=(const Symbol &rhs) const { return rhs >= *this; }
 
-  bool Symbol_Identifier::operator==(const Symbol_Identifier &rhs) const { return m_value == rhs.m_value; }
-  bool Symbol_Identifier::operator!=(const Symbol_Identifier &rhs) const { return m_value != rhs.m_value; }
-  bool Symbol_Identifier::operator<(const Symbol_Identifier &rhs) const { return m_value < rhs.m_value; }
-  bool Symbol_Identifier::operator<=(const Symbol_Identifier &rhs) const { return m_value <= rhs.m_value; }
-  bool Symbol_Identifier::operator>(const Symbol_Identifier &rhs) const { return m_value > rhs.m_value; }
-  bool Symbol_Identifier::operator>=(const Symbol_Identifier &rhs) const { return m_value >= rhs.m_value; }
+  bool Symbol_Constant_Identifier::operator==(const Symbol_Constant_Identifier &rhs) const { return m_value == rhs.m_value; }
+  bool Symbol_Constant_Identifier::operator!=(const Symbol_Constant_Identifier &rhs) const { return m_value != rhs.m_value; }
+  bool Symbol_Constant_Identifier::operator<(const Symbol_Constant_Identifier &rhs) const { return m_value < rhs.m_value; }
+  bool Symbol_Constant_Identifier::operator<=(const Symbol_Constant_Identifier &rhs) const { return m_value <= rhs.m_value; }
+  bool Symbol_Constant_Identifier::operator>(const Symbol_Constant_Identifier &rhs) const { return m_value > rhs.m_value; }
+  bool Symbol_Constant_Identifier::operator>=(const Symbol_Constant_Identifier &rhs) const { return m_value >= rhs.m_value; }
 
-  bool Symbol_Identifier::operator>(const Symbol_Constant_Float &) const { return true; }
-  bool Symbol_Identifier::operator>=(const Symbol_Constant_Float &) const { return true; }
-  bool Symbol_Identifier::operator>(const Symbol_Constant_Int &) const { return true; }
-  bool Symbol_Identifier::operator>=(const Symbol_Constant_Int &) const { return true; }
-  bool Symbol_Identifier::operator>(const Symbol_Constant_String &) const { return true; }
-  bool Symbol_Identifier::operator>=(const Symbol_Constant_String &) const { return true; }
-  bool Symbol_Identifier::operator<(const Symbol_Variable &) const { return true; }
-  bool Symbol_Identifier::operator<=(const Symbol_Variable &) const { return true; }
+  bool Symbol_Constant_Identifier::operator>(const Symbol_Constant_Float &) const { return true; }
+  bool Symbol_Constant_Identifier::operator>=(const Symbol_Constant_Float &) const { return true; }
+  bool Symbol_Constant_Identifier::operator>(const Symbol_Constant_Int &) const { return true; }
+  bool Symbol_Constant_Identifier::operator>=(const Symbol_Constant_Int &) const { return true; }
+  bool Symbol_Constant_Identifier::operator>(const Symbol_Constant_String &) const { return true; }
+  bool Symbol_Constant_Identifier::operator>=(const Symbol_Constant_String &) const { return true; }
+  bool Symbol_Constant_Identifier::operator<(const Symbol_Variable &) const { return true; }
+  bool Symbol_Constant_Identifier::operator<=(const Symbol_Variable &) const { return true; }
 
-  bool Symbol_Identifier::operator==(const char * value_) const { return value_ == m_value; }
+  bool Symbol_Constant_Identifier::operator==(const char * value_) const { return value_ == m_value; }
 
-  size_t Symbol_Identifier::hash() const {
+  size_t Symbol_Constant_Identifier::hash() const {
     return std::hash<std::string>()(m_value);
   }
 
-  std::ostream & Symbol_Identifier::print(std::ostream &os) const {
-    return os << m_value;
+  std::ostream & Symbol_Constant_Identifier::print(std::ostream &os) const {
+    return os << '@' << m_value;
   }
 
-  std::ostream & Symbol_Identifier::print_contents(std::ostream &os) const {
-    return os << m_value;
+  std::ostream & Symbol_Constant_Identifier::print_contents(std::ostream &os) const {
+    return os << '@' << m_value;
   }
 
 
@@ -266,8 +267,8 @@ namespace Zeni::Rete {
   bool Symbol_Variable::operator>=(const Symbol_Constant_Int &) const { return true; }
   bool Symbol_Variable::operator>(const Symbol_Constant_String &) const { return true; }
   bool Symbol_Variable::operator>=(const Symbol_Constant_String &) const { return true; }
-  bool Symbol_Variable::operator>(const Symbol_Identifier &) const { return true; }
-  bool Symbol_Variable::operator>=(const Symbol_Identifier &) const { return true; }
+  bool Symbol_Variable::operator>(const Symbol_Constant_Identifier &) const { return true; }
+  bool Symbol_Variable::operator>=(const Symbol_Constant_Identifier &) const { return true; }
 
   bool Symbol_Variable::operator==(const char * value_) const { return value_ == m_value; }
 
