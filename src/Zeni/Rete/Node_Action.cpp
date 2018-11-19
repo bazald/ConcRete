@@ -84,17 +84,23 @@ namespace Zeni::Rete {
   }
 
   void Node_Action::receive(const Message_Token_Insert &message) {
-    const auto[result, snapshot, value] = m_token_trie.insert(message.token);
+    const auto[result, snapshot, value] = m_action_trie.insert(std::make_shared<Data>(m_variable_indices, message.token));
 
-    if (result == Token_Trie::Result::First_Insertion)
+    if (result == Action_Trie::Result::First_Insertion) {
       (*m_action)(message.network, message.get_Job_Queue(), std::static_pointer_cast<Node_Action>(shared_from_this()), value);
+
+      if (value->state.fetch_add(1, std::memory_order_release) == Data::State::STATE_INTERMEDIATE)
+        (*m_retraction)(message.network, message.get_Job_Queue(), std::static_pointer_cast<Node_Action>(shared_from_this()), value);
+    }
   }
 
   void Node_Action::receive(const Message_Token_Remove &message) {
-    const auto[result, snapshot, value] = m_token_trie.erase(message.token);
+    const auto[result, snapshot, value] = m_action_trie.erase(std::make_shared<Data>(m_variable_indices, message.token));
 
-    if (result == Token_Trie::Result::Last_Removal)
-      (*m_retraction)(message.network, message.get_Job_Queue(), std::static_pointer_cast<Node_Action>(shared_from_this()), value);
+    if (result == Action_Trie::Result::Last_Removal) {
+      if (value->state.fetch_add(1, std::memory_order_acquire) == Data::State::STATE_INTERMEDIATE)
+        (*m_retraction)(message.network, message.get_Job_Queue(), std::static_pointer_cast<Node_Action>(shared_from_this()), value);
+    }
   }
 
   bool Node_Action::operator==(const Node &rhs) const {

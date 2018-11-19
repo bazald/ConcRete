@@ -67,7 +67,7 @@ namespace Zeni::Rete::PEG {
   }
 
   template<typename Input>
-  void Action<Variable>::apply(const Input &input, Data &data) {
+  void Action<Constant_Variable>::apply(const Input &input, Data &data) {
     //std::cerr << "Constant_Variable: " << input.string() << std::endl;
     assert(input.string().size() > 2);
     const auto substr = input.string().substr(1, input.string().size() - 2);
@@ -83,6 +83,18 @@ namespace Zeni::Rete::PEG {
   void Action<Unnamed_Variable>::apply(const Input &input, Data &data) {
     //std::cerr << "Unnamed_Variable: " << input.string() << std::endl;
     const auto symbol = std::make_shared<Symbol_Variable>("");
+    data.symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
+  }
+
+  template<typename Input>
+  void Action<RHS_Constant_Variable>::apply(const Input &input, Data &data) {
+    //std::cerr << "RHS Constant_Variable: " << input.string() << std::endl;
+    assert(input.string().size() > 2);
+    const auto substr = input.string().substr(1, input.string().size() - 2);
+    if (data.productions.top()->lhs_variables.find(substr) != data.productions.top()->lhs_variables.end())
+      throw parse_error("Parser error: variable bound in the RHS previously used", input);
+    data.productions.top()->lhs_variables.insert(substr);
+    const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
     data.symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
   }
 
@@ -193,6 +205,17 @@ namespace Zeni::Rete::PEG {
   /// Right-Hand Side / RHS
 
   template<typename Input>
+  void Action<Cbind>::apply(const Input &input, Data &data) {
+    //std::cerr << "Cbind: " << input.string() << std::endl;
+
+    assert(data.symbols.size() == 1);
+    const auto cbind = std::make_shared<Action_Cbind_Generator>(std::dynamic_pointer_cast<const Symbol_Variable_Generator>(data.symbols.back())->symbol);
+    data.symbols.clear();
+
+    data.productions.top()->actions_or_retractions->push_back(cbind);
+  }
+
+  template<typename Input>
   void Action<Excise>::apply(const Input &input, Data &data) {
     //std::cerr << "Excise: " << input.string() << std::endl;
 
@@ -286,7 +309,7 @@ namespace Zeni::Rete::PEG {
   template<typename Input>
   void Action<Command>::apply(const Input &input, Data &data) {
     assert(data.productions.top()->actions.size() == 1);
-    const auto action = data.productions.top()->actions.back()->generate(data.network, data.job_queue, data.productions.top()->user_action, nullptr, nullptr);
+    const auto action = data.productions.top()->actions.back()->generate(data.network, data.job_queue, data.productions.top()->user_action, nullptr);
     data.productions.top()->actions.pop_back();
     (*action)(data.network, data.job_queue, nullptr, nullptr);
   }

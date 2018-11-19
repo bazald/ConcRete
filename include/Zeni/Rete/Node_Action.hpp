@@ -12,6 +12,38 @@ namespace Zeni::Rete {
     Node_Action & operator=(const Node_Action &) = delete;
 
   public:
+    class Data {
+      Data(const Data &) = delete;
+      Data & operator=(const Data &) = delete;
+
+    public:
+      class Hash {
+      public:
+        size_t operator()(const Data &data) const { return std::hash<Token>()(*data.input_token); }
+        size_t operator()(const std::shared_ptr<const Data> data) const { return std::hash<Token>()(*data->input_token); }
+      };
+
+      Data(const std::shared_ptr<const Variable_Indices> variable_indices_, const std::shared_ptr<const Token> input_token_) : variable_indices(variable_indices_), input_token(input_token_) {}
+
+      bool operator==(const Data &rhs) const { return *input_token == *rhs.input_token; }
+
+      /// Key
+
+      const std::shared_ptr<const Token> input_token;
+
+      /// Data
+
+      enum State : uint8_t {STATE_UNFIRED = 0, STATE_INTERMEDIATE = 1, STATE_MUST_RETRACT = 2};
+
+      struct ZENI_CONCURRENCY_CACHE_ALIGN {
+        mutable std::atomic_uint8_t state = STATE_UNFIRED;
+      };
+
+      mutable std::shared_ptr<const Symbol> result;
+      mutable std::shared_ptr<const Variable_Indices> variable_indices;
+      mutable std::shared_ptr<const Token> token = input_token;
+    };
+
     class Action : public std::enable_shared_from_this<Action> {
       Action(const Action &) = delete;
       Action & operator=(const Action &) = delete;
@@ -22,7 +54,7 @@ namespace Zeni::Rete {
     public:
       virtual ~Action() {}
 
-      virtual void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const = 0;
+      virtual void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Data> action_data) const = 0;
     };
 
     class Null_Action : public Action {
@@ -34,7 +66,7 @@ namespace Zeni::Rete {
     public:
       static std::shared_ptr<const Null_Action> Create();
 
-      void operator()(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token>) const override {}
+      void operator()(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Data>) const override {}
     };
 
     struct Compare_By_Name_Eq {
@@ -106,12 +138,14 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator==(const Node &) const override;
 
   private:
+    typedef Concurrency::Antiable_Hash_Trie<std::shared_ptr<const Data>, Data::Hash, compare_deref_eq> Action_Trie;
+
     std::shared_ptr<const Variable_Indices> m_variable_indices;
     const std::string m_name;
     std::shared_ptr<const Action> m_action;
     std::shared_ptr<const Action> m_retraction;
 
-    Token_Trie m_token_trie;
+    Action_Trie m_action_trie;
   };
 
 }

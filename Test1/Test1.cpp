@@ -541,7 +541,7 @@ public:
   {
   }
 
-  void operator()(const std::shared_ptr<Zeni::Rete::Network>, const std::shared_ptr<Zeni::Concurrency::Job_Queue>, const std::shared_ptr<Zeni::Rete::Node_Action>, const std::shared_ptr<const Zeni::Rete::Token>) const override {
+  void operator()(const std::shared_ptr<Zeni::Rete::Network>, const std::shared_ptr<Zeni::Concurrency::Job_Queue>, const std::shared_ptr<Zeni::Rete::Node_Action>, const std::shared_ptr<const Zeni::Rete::Node_Action::Data>) const override {
     std::cout << c << std::flush;
   }
 

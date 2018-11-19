@@ -26,7 +26,7 @@ int main(int argc, char **argv)
     std::string command;
     std::getline(std::cin, command);
 
-    std::cerr << "Processing: " << command << std::endl;
+    //std::cerr << "Processing: " << command << std::endl;
 
     network->get()->set_worker_threads(Zeni::Concurrency::Worker_Threads::Create());
 

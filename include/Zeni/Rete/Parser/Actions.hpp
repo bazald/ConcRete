@@ -44,13 +44,19 @@ namespace Zeni::Rete::PEG {
   };
 
   template <>
-  struct Action<Variable> {
+  struct Action<Constant_Variable> {
     template<typename Input>
     static void apply(const Input &input, Data &data);
   };
 
   template <>
   struct Action<Unnamed_Variable> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<RHS_Constant_Variable> {
     template<typename Input>
     static void apply(const Input &input, Data &data);
   };
@@ -108,6 +114,12 @@ namespace Zeni::Rete::PEG {
   };
 
   /// Right-Hand Side / RHS
+
+  template <>
+  struct Action<Cbind> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
 
   template <>
   struct Action<Excise> {

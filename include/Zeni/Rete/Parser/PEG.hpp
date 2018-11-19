@@ -71,9 +71,10 @@ namespace Zeni::Rete::PEG {
   struct Identifier_Name : Unquoted_String {};
   struct Constant_Identifier : if_must<one<'@'>, Identifier_Name> {};
   template<> inline const char * Error<Identifier_Name>::error_message() { return "Parser error: '@' must be followed immediately by an identifier name"; }
-  struct Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
+  struct Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
   template<> inline const char * Error<seq<Unquoted_String, one<'>'>>>::error_message() { return "Parser error: variable not closed (mismatched '<>'s?)"; }
   struct Unnamed_Variable : seq<one<'{'>, star<space_comment>, one<'}'>> {};
+  struct RHS_Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
 
   struct Symbol_w_Var : sor<
     seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
@@ -82,7 +83,7 @@ namespace Zeni::Rete::PEG {
     Quoted_Constant_String,
     CRLF,
     Constant_Identifier,
-    Variable,
+    Constant_Variable,
     Unnamed_Variable> {};
   struct Symbol_wo_Var : sor<
     seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
@@ -136,6 +137,10 @@ namespace Zeni::Rete::PEG {
 
   /// Right-Hand Side / RHS
 
+  struct Inner_Cbind : seq<plus<space_comment>, RHS_Constant_Variable> {};
+  struct Cbind : if_must<string<'c', 'b', 'i', 'n', 'd'>, Inner_Cbind> {};
+  template<> inline const char * Error<Inner_Cbind>::error_message() { return "Parser error: 'cbind' must be followed by an unbound variable"; }
+
   struct Inner_Excise : seq<plus<plus<space_comment>, Symbol_w_Var>> {};
   struct Excise : if_must<string<'e', 'x', 'c', 'i', 's', 'e'>, Inner_Excise> {};
   template<> inline const char * Error<Inner_Excise>::error_message() { return "Parser error: 'excise' must be followed by one or more rule names"; }
@@ -161,7 +166,7 @@ namespace Zeni::Rete::PEG {
 
   /// Production Rules
 
-  struct Inner_Action : sor<Excise, Exit, Genatom, Make, Production, Write> {};
+  struct Inner_Action : sor<Cbind, Excise, Exit, Genatom, Make, Production, Write> {};
 
   struct Enclosed_Action : seq<one<'('>, star<space_comment>, Inner_Action, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Action_List : plus<Enclosed_Action> {};
@@ -179,7 +184,10 @@ namespace Zeni::Rete::PEG {
 
   /// Overarching grammar
 
-  struct Command : Enclosed_Action {};
+  struct Inner_Top_Level_Action : sor<Excise, Exit, Make, Production, Write> {};
+  struct Enclosed_Top_Level_Action : seq<one<'('>, star<space_comment>, must<Inner_Top_Level_Action>, star<space_comment>, one<')'>, star<space_comment>> {};
+  template<> inline const char * Error<Inner_Top_Level_Action>::error_message() { return "Parser error: invalid top level action"; }
+  struct Command : Enclosed_Top_Level_Action {};
 
   struct ConcRete_Grammar : seq<star<space_comment>, star<seq<Command, star<space_comment>>>, eof> {};
 
