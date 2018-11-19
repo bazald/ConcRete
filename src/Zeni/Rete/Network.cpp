@@ -290,6 +290,8 @@ namespace Zeni::Rete {
       ? m_filter_layer_0_trie.erase_2<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS>(key_symbol->symbol, message.child)
       : m_filter_layer_0_trie.erase<FILTER_LAYER_0_VARIABLE_OUTPUTS>(message.child);
 
+    assert(result != Node_Trie::Result::Failed_Removal);
+
     if (result != Node_Trie::Result::Last_Removal)
       return;
 

@@ -176,6 +176,8 @@ namespace Zeni::Rete {
       ? m_filter_layer_2_trie.erase<FILTER_LAYER_2_VARIABLE_OUTPUTS_02>(message.child)
       : m_filter_layer_2_trie.erase<FILTER_LAYER_2_VARIABLE_OUTPUTS_12>(message.child);
 
+    assert(result != Node_Trie::Result::Failed_Removal);
+
     if (result != Node_Trie::Result::Last_Removal)
       return;
 

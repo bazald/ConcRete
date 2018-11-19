@@ -259,12 +259,13 @@ namespace Zeni::Concurrency {
 
     public:
       enum class Result {
-        First_Insertion,    ///< Count increases to 1 and object inserted into trie
-        Last_Removal,       ///< Count decrements to 0 and object removed from trie
-        Extra_Insertion,    ///< Count increases past 1
-        Canceling_Removal,  ///< Count decreases to a natural number
-        Extra_Removal,      ///< Count decreases into negatives
-        Canceling_Insertion ///< Count increases to a non-positive number
+        First_Insertion,          ///< Count increases to 1 and object inserted into trie
+        Last_Removal,             ///< Count decrements to 0 and object removed from trie
+        Extra_Insertion,          ///< Count increases past 1
+        Canceling_Removal,        ///< Count decreases to a natural number
+        Extra_Removal,            ///< Count decreases into negatives
+        Last_Canceling_Insertion, ///< Count increases to 0
+        Canceling_Insertion       ///< Count increases to a negative number
       };
 
       List_Node(const Singleton_Node<KEY> * const snode_, List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
@@ -320,7 +321,7 @@ namespace Zeni::Concurrency {
               result = insertion ? Result::Canceling_Insertion : Result::Extra_Removal;
           }
           else
-            result = insertion ? Result::Canceling_Insertion : Result::Last_Removal;
+            result = insertion ? Result::Last_Canceling_Insertion : Result::Last_Removal;
           return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode ? new_snode : found);
         }
         else {
@@ -713,7 +714,7 @@ namespace Zeni::Concurrency {
               result = insertion ? Result::Canceling_Insertion : Result::Extra_Removal;
           }
           else
-            result = insertion ? Result::Canceling_Insertion : Result::Last_Removal;
+            result = insertion ? Result::Last_Canceling_Insertion : Result::Last_Removal;
           return std::make_tuple(result, new_snode, new_snode ? new_snode : snode);
         }
         else {

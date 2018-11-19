@@ -201,6 +201,9 @@ namespace Zeni::Rete {
     assert(std::dynamic_pointer_cast<const Node_Key_Null>(message.key));
 
     const auto[result, snapshot, value] = m_join_layer_trie.erase<JOIN_LAYER_OUTPUTS>(message.child);
+
+    assert(result != Node_Trie::Result::Failed_Removal);
+
     if (result != Node_Trie::Result::Last_Removal)
       return;
 
