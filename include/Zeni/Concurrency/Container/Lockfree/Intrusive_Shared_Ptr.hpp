@@ -11,7 +11,6 @@ namespace Zeni::Concurrency {
   template <typename TYPE>
   class Intrusive_Shared_Ptr;
 
-  template <typename TYPE>
   class ZENI_CONCURRENCY_CACHE_ALIGN Enable_Intrusive_Sharing : Reclamation_Stack::Node {
     Enable_Intrusive_Sharing(const Enable_Intrusive_Sharing &) = delete;
     Enable_Intrusive_Sharing & operator=(const Enable_Intrusive_Sharing &) = delete;

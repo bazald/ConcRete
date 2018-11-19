@@ -76,6 +76,21 @@ namespace Zeni::Rete {
     enum class ZENI_RETE_LINKAGE Printed_Output { Normal, None };
 
   private:
+    class Genatom : public Concurrency::Enable_Intrusive_Sharing {
+      Genatom(const Genatom &) = delete;
+      Genatom & operator=(const Genatom &) = delete;
+
+    public:
+      Genatom(const std::string &str = "0") : m_str(str) {}
+
+      Concurrency::Intrusive_Shared_Ptr<Genatom>::Lock next() const;
+
+      std::string_view str() const;
+
+    private:
+      const std::string m_str;
+    };
+
     Network(const Printed_Output printed_output);
     Network(const Printed_Output printed_output, const std::shared_ptr<Concurrency::Worker_Threads> &worker_threads);
 
@@ -93,8 +108,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::shared_ptr<Concurrency::Worker_Threads> get_Worker_Threads() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> get_rule(const std::string &name) const;
     ZENI_RETE_LINKAGE std::set<std::string> get_rule_names() const;
-    ZENI_RETE_LINKAGE int64_t get_rule_name_index() const;
-    ZENI_RETE_LINKAGE void set_rule_name_index(const int64_t rule_name_index_);
+    ZENI_RETE_LINKAGE void init_genatom(const std::string &str);
+    ZENI_RETE_LINKAGE std::string get_genatom() const;
+    ZENI_RETE_LINKAGE std::string genatom();
     ZENI_RETE_LINKAGE bool is_exit_requested() const;
     ZENI_RETE_LINKAGE void request_exit();
     ZENI_RETE_LINKAGE Printed_Output get_Printed_Output() const;
@@ -112,11 +128,11 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE void receive(const Message_Connect_Filter_0 &message) override;
     ZENI_RETE_LINKAGE void receive(const Message_Disconnect_Output &message) override;
 
-    ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_command);
-    ZENI_RETE_LINKAGE void excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command);
-    ZENI_RETE_LINKAGE void excise_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &name, const bool user_command);
+    ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_action);
+    ZENI_RETE_LINKAGE void excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action);
+    ZENI_RETE_LINKAGE void excise_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &name, const bool user_action);
     ZENI_RETE_LINKAGE std::string next_rule_name(const std::string_view prefix);
-    ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> unname_rule(const std::string &name, const bool user_command);
+    ZENI_RETE_LINKAGE std::shared_ptr<Node_Action> unname_rule(const std::string &name, const bool user_action);
 
     ZENI_RETE_LINKAGE void insert_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme);
     ZENI_RETE_LINKAGE void remove_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme);
@@ -132,7 +148,8 @@ namespace Zeni::Rete {
     typedef Concurrency::Hash_Trie<std::shared_ptr<Node_Action>, Node_Action::Hash_By_Name, Node_Action::Compare_By_Name_Eq> Rule_Trie;
     Rule_Trie m_rules;
 
-    Concurrency::Atomic<int64_t> m_rule_name_index = 0;
+    Concurrency::Intrusive_Shared_Ptr<Genatom> m_genatom = new Genatom();
+
     Concurrency::Atomic<bool> m_exit_requested = false;
 
     // Options

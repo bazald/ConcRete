@@ -208,6 +208,11 @@ namespace Zeni::Rete::PEG {
   }
 
   template<typename Input>
+  void Action<Genatom>::apply(const Input &, Data &data) {
+    data.productions.top()->actions_or_retractions->push_back(Action_Genatom_Generator::Create());
+  }
+
+  template<typename Input>
   void Action<Make>::apply(const Input &input, Data &data) {
     //std::cerr << "Make: " << input.string() << std::endl;
 

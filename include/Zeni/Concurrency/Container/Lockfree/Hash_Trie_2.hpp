@@ -54,7 +54,7 @@ namespace Zeni::Concurrency {
       return value > 0x1 ? 1 + log2(value >> 1) : 0;
     }
 
-    struct Main_Node : public Enable_Intrusive_Sharing<Main_Node> {
+    struct Main_Node : public Enable_Intrusive_Sharing {
     private:
       Main_Node(const Main_Node &) = delete;
       Main_Node & operator=(const Main_Node &) = delete;
@@ -761,7 +761,8 @@ namespace Zeni::Concurrency {
             std::get<1>(tuple_value)->decrement_refs();
             return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)->snode));
           }
-          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+          else
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
         }
       }
       else if (auto snode = dynamic_cast<const SNode *>(mnode)) {

@@ -142,6 +142,8 @@ namespace Zeni::Rete::PEG {
 
   struct Exit : string<'e', 'x', 'i', 't'> {};
 
+  struct Genatom : string<'g', 'e', 'n', 'a', 't', 'o', 'm'> {};
+
   struct Inner_Make : seq<plus<plus<space_comment>, WMEs>> {};
   struct Make : if_must<string<'m', 'a', 'k', 'e'>, Inner_Make> {};
   template<> inline const char * Error<Inner_Make>::error_message() { return "Parser error: 'make' must be followed by a valid WME"; }
@@ -159,7 +161,7 @@ namespace Zeni::Rete::PEG {
 
   /// Production Rules
 
-  struct Inner_Action : sor<Excise, Exit, Make, Production, Write> {};
+  struct Inner_Action : sor<Excise, Exit, Genatom, Make, Production, Write> {};
 
   struct Enclosed_Action : seq<one<'('>, star<space_comment>, Inner_Action, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Action_List : plus<Enclosed_Action> {};

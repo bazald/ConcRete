@@ -123,6 +123,21 @@ namespace Zeni::Rete::PEG {
     std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override;
   };
 
+  class Action_Genatom_Generator : public Action_Generator {
+    Action_Genatom_Generator(const Action_Genatom_Generator &) = delete;
+    Action_Genatom_Generator & operator=(const Action_Genatom_Generator &) = delete;
+
+  protected:
+    Action_Genatom_Generator() {}
+
+  public:
+    static std::shared_ptr<const Action_Genatom_Generator> Create();
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const override;
+  };
+
   class Action_Make_Generator : public Action_Generator {
     Action_Make_Generator(const Action_Make_Generator &) = delete;
     Action_Make_Generator & operator=(const Action_Make_Generator &) = delete;

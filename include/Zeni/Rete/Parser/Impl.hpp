@@ -27,8 +27,8 @@ namespace Zeni::Rete {
     Parser_Impl & operator=(const Parser_Impl &) = delete;
 
     template <typename Input>
-    void parse(Input &input, const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command) {
-      PEG::Data data(network, job_queue, user_command);
+    void parse(Input &input, const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action) {
+      PEG::Data data(network, job_queue, user_action);
 
       try {
         PEG::parse<PEG::ConcRete, PEG::Action, PEG::Error>(input, data);
@@ -55,7 +55,7 @@ namespace Zeni::Rete {
       return std::make_shared<Friendly_Parser_Impl>();
     }
 
-    void parse_file(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &filename, const bool user_command) override {
+    void parse_file(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &filename, const bool user_action) override {
 #ifdef _MSC_VER
       FILE * in_file;
       fopen_s(&in_file, filename.c_str(), "r");
@@ -64,15 +64,15 @@ namespace Zeni::Rete {
 #endif
       PEG::read_input<PEG::tracking_mode::lazy> input(in_file, filename);
 
-      parse(input, network, job_queue, user_command);
+      parse(input, network, job_queue, user_action);
 
       std::fclose(in_file);
     }
 
-    void parse_string(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view str, const bool user_command) override {
+    void parse_string(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view str, const bool user_action) override {
       PEG::memory_input<PEG::tracking_mode::lazy> input(str.data(), str.data() + str.length(), "Zeni::Parser::parse_string(const std::shared_ptr<Network> &, const std::string_view )");
 
-      parse(input, network, job_queue, user_command);
+      parse(input, network, job_queue, user_action);
     }
   };
 

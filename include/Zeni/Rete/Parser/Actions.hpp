@@ -122,6 +122,12 @@ namespace Zeni::Rete::PEG {
   };
 
   template <>
+  struct Action<Genatom> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
   struct Action<Make> {
     template<typename Input>
     static void apply(const Input &input, Data &data);

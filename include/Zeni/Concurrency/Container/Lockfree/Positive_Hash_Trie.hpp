@@ -35,7 +35,7 @@ namespace Zeni::Concurrency {
       return value > 0x1 ? 1 + log2(value >> 1) : 0;
     }
 
-    struct Main_Node : public Enable_Intrusive_Sharing<Main_Node> {
+    struct Main_Node : public Enable_Intrusive_Sharing {
     private:
       Main_Node(const Main_Node &) = delete;
       Main_Node & operator=(const Main_Node &) = delete;

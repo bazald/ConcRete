@@ -70,6 +70,30 @@ namespace Zeni::Rete {
     return m_network.get();
   }
 
+  Concurrency::Intrusive_Shared_Ptr<Network::Genatom>::Lock Network::Genatom::next() const {
+    std::string str = m_str;
+    std::string::iterator st = str.begin(), send = str.end();
+    do {
+      switch (*st) {
+      case 'z': *st = '0';
+        continue;
+      case 'Z': *st = 'a';
+        return new Genatom(str);
+      case '9': *st = 'A';
+        return new Genatom(str);
+      default:
+        ++*st;
+        return new Genatom(str);
+      }
+    } while(++st != send);
+    str += '0';
+    return new Genatom(str);
+  }
+
+  std::string_view Network::Genatom::str() const {
+    return m_str;
+  }
+
   Network::Network(const Network::Printed_Output printed_output)
     : Node(0, 0, 1, 0),
     m_worker_threads(Concurrency::Worker_Threads::Create()),
@@ -145,12 +169,21 @@ namespace Zeni::Rete {
     return rv;
   }
 
-  int64_t Network::get_rule_name_index() const {
-    return m_rule_name_index.load();
+  void Network::init_genatom(const std::string &str) {
+    m_genatom.store(new Genatom(str), std::memory_order_release);
   }
 
-  void Network::set_rule_name_index(const int64_t rule_name_index_) {
-    m_rule_name_index.store(rule_name_index_);
+  std::string Network::get_genatom() const {
+    const auto genatom = m_genatom.load(std::memory_order_acquire);
+    return std::string(genatom->str());
+  }
+
+  std::string Network::genatom() {
+    auto current = m_genatom.load();
+    auto next = current->next();
+    while (!m_genatom.compare_exchange_strong(current, next, std::memory_order_release, std::memory_order_acquire))
+      next = current->next();
+    return std::string(current->str());
   }
 
   bool Network::is_exit_requested() const {
@@ -180,9 +213,9 @@ namespace Zeni::Rete {
     m_worker_threads = worker_threads;
   }
 
-  void Network::excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_command) {
+  void Network::excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action) {
     for (auto rule : m_rules.snapshot())
-      excise_rule(job_queue, rule->get_name(), user_command);
+      excise_rule(job_queue, rule->get_name(), user_action);
   }
 
   std::pair<Node::Node_Trie::Result, std::shared_ptr<Node>> Network::connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
@@ -276,8 +309,8 @@ namespace Zeni::Rete {
     message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
-  void Network::excise_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &name, const bool user_command) {
-    auto erased = unname_rule(name, user_command);
+  void Network::excise_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &name, const bool user_action) {
+    auto erased = unname_rule(name, user_action);
 
     if(erased)
       erased->Destroy(shared_from_this(), job_queue);
@@ -287,7 +320,7 @@ namespace Zeni::Rete {
     std::ostringstream oss;
     for(;;) {
       oss.str("");
-      oss << prefix << m_rule_name_index.fetch_add() + 1;
+      oss << prefix << genatom();
       const auto [found, snapshot] = m_rules.lookup(oss.str());
       if (!found)
         break;
@@ -295,13 +328,13 @@ namespace Zeni::Rete {
     return oss.str();
   }
 
-  std::shared_ptr<Node_Action> Network::unname_rule(const std::string &name, const bool user_command) {
+  std::shared_ptr<Node_Action> Network::unname_rule(const std::string &name, const bool user_action) {
     const auto[result, snapshot, erased] = m_rules.erase(std::make_shared<Node_Action>(name));
 
     if (result == Rule_Trie::Result::Failed_Removal)
       return nullptr;
 
-    if (user_command && m_printed_output != Printed_Output::None)
+    if (user_action && m_printed_output != Printed_Output::None)
       std::cerr << '#';
 
     return erased;
@@ -352,10 +385,10 @@ namespace Zeni::Rete {
     }
   }
 
-  void Network::source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_command) {
+  void Network::source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_action) {
     const auto[result, snapshot, inserted, replaced] = m_rules.insert(action);
 
-    if (user_command && m_printed_output != Printed_Output::None) {
+    if (user_action && m_printed_output != Printed_Output::None) {
       if (replaced)
         std::cerr << '#';
       std::cerr << '*';

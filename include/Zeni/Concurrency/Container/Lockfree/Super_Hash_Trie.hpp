@@ -56,7 +56,7 @@ namespace Zeni::Concurrency {
     typedef std::tuple<TYPES...> Types;
 
   private:
-    class Hash_Trie_Super_Node : public Enable_Intrusive_Sharing<Hash_Trie_Super_Node> {
+    class Hash_Trie_Super_Node : public Enable_Intrusive_Sharing {
       Hash_Trie_Super_Node & operator=(const Hash_Trie_Super_Node &rhs) = delete;
 
     public:

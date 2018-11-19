@@ -203,6 +203,48 @@ namespace Zeni::Rete::PEG {
     return std::make_shared<Action_Excise>(symbols, user_action);
   }
 
+  std::shared_ptr<const Action_Genatom_Generator> Action_Genatom_Generator::Create() {
+    class Friendly_Action_Genatom_Generator : public Action_Genatom_Generator {
+    public:
+      Friendly_Action_Genatom_Generator() {}
+    };
+
+    static const auto action_exit_generator = std::make_shared<Friendly_Action_Genatom_Generator>();
+
+    return action_exit_generator;
+  }
+
+  std::shared_ptr<const Action_Generator> Action_Genatom_Generator::clone(const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const {
+    return shared_from_this();
+  }
+
+  std::shared_ptr<const Node_Action::Action> Action_Genatom_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Token> token) const {
+    class Action_Genatom : public Node_Action::Action {
+      Action_Genatom(const Action_Genatom &) = delete;
+      Action_Genatom & operator=(const Action_Genatom &) = delete;
+
+      Action_Genatom() {}
+
+    public:
+      static std::shared_ptr<const Action_Genatom> Create() {
+        class Friendly_Action_Genatom : public Action_Genatom {
+        public:
+          Friendly_Action_Genatom() {}
+        };
+
+        static const auto action_genatom = std::make_shared<Friendly_Action_Genatom>();
+
+        return action_genatom;
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Token>) const override {
+        network->genatom();
+      }
+    };
+
+    return Action_Genatom::Create();
+  }
+
   std::shared_ptr<const Action_Exit_Generator> Action_Exit_Generator::Create() {
     class Friendly_Action_Exit_Generator : public Action_Exit_Generator {
     public:
