@@ -23,7 +23,7 @@ namespace Zeni::Rete {
         size_t operator()(const std::shared_ptr<const Data> data) const { return std::hash<Token>()(*data->input_token); }
       };
 
-      Data(const std::shared_ptr<const Variable_Indices> variable_indices_, const std::shared_ptr<const Token> input_token_) : variable_indices(variable_indices_), input_token(input_token_) {}
+      Data(const std::shared_ptr<const Variable_Indices> variable_indices_, const std::shared_ptr<const Token> input_token_) : input_token(input_token_), variable_indices(variable_indices_) {}
 
       bool operator==(const Data &rhs) const { return *input_token == *rhs.input_token; }
 
@@ -35,9 +35,9 @@ namespace Zeni::Rete {
 
       enum State : uint8_t {STATE_UNFIRED = 0, STATE_INTERMEDIATE = 1, STATE_MUST_RETRACT = 2};
 
-      struct ZENI_CONCURRENCY_CACHE_ALIGN {
+      struct ZENI_CONCURRENCY_CACHE_ALIGN State_Aligner {
         mutable std::atomic_uint8_t state = STATE_UNFIRED;
-      };
+      } state;
 
       mutable std::shared_ptr<const Symbol> result;
       mutable std::shared_ptr<const Variable_Indices> variable_indices;

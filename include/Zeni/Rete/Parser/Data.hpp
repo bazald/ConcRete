@@ -71,7 +71,15 @@ namespace Zeni::Rete::PEG {
     Action_Generator() {}
 
   public:
+    enum Result : uint8_t {
+      RESULT_UNTOUCHED = 0x0,
+      RESULT_PROVIDED = 0x1,
+      RESULT_CONSUMED = 0x2,
+      RESULT_CONSUMED_AND_PROVIDED = 0x3};
+
     virtual ~Action_Generator() {}
+
+    virtual Result result() const { return Result::RESULT_UNTOUCHED; }
 
     virtual std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const = 0;
 
@@ -84,6 +92,8 @@ namespace Zeni::Rete::PEG {
 
   public:
     Actions_Generator(const std::vector<std::shared_ptr<const Action_Generator>> &actions);
+
+    Result result() const override;
 
     std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
 
@@ -99,6 +109,8 @@ namespace Zeni::Rete::PEG {
 
   public:
     Action_Cbind_Generator(const std::shared_ptr<const Symbol_Variable> variable);
+
+    Result result() const { return Result::RESULT_CONSUMED; }
 
     std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
 
@@ -147,6 +159,8 @@ namespace Zeni::Rete::PEG {
 
   public:
     static std::shared_ptr<const Action_Genatom_Generator> Create();
+
+    Result result() const { return Result::RESULT_PROVIDED; }
 
     std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
 
@@ -307,10 +321,11 @@ namespace Zeni::Rete::PEG {
       enum class Phase {PHASE_INIT, PHASE_LHS, PHASE_ACTIONS, PHASE_RETRACTIONS};
 
       Phase phase = Phase::PHASE_INIT;
-      std::unordered_set<std::string> lhs_variables;
+      bool result_available = false;
 
       std::shared_ptr<const Symbol_Generator> rule_name;
       std::stack<std::stack<std::shared_ptr<Node_Generator>>> lhs;
+      std::unordered_set<std::string> lhs_variables;
 
       std::vector<std::shared_ptr<const Action_Generator>> actions;
       std::vector<std::shared_ptr<const Action_Generator>> retractions;

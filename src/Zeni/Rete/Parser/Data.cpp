@@ -61,6 +61,30 @@ namespace Zeni::Rete::PEG {
   {
   }
 
+  Action_Generator::Result Actions_Generator::result() const {
+    uint8_t rv = Result::RESULT_UNTOUCHED;
+
+    for (auto at = m_actions.cbegin(), aend = m_actions.cend(); at != aend; ++at) {
+      const auto irv = (*at)->result();
+      if (irv == Result::RESULT_UNTOUCHED)
+        continue;
+      if (irv & Result::RESULT_CONSUMED)
+        rv |= Result::RESULT_CONSUMED;
+      break;
+    }
+
+    for (auto at = m_actions.crbegin(), aend = m_actions.crend(); at != aend; ++at) {
+      const auto irv = (*at)->result();
+      if (irv == Result::RESULT_UNTOUCHED)
+        continue;
+      if (irv & Result::RESULT_PROVIDED)
+        rv |= Result::RESULT_PROVIDED;
+      break;
+    }
+
+    return Result(rv);
+  }
+
   std::shared_ptr<const Action_Generator> Actions_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
     std::vector<std::shared_ptr<const Action_Generator>> actions;
     actions.reserve(m_actions.size());

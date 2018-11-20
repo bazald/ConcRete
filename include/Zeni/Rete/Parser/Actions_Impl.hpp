@@ -255,6 +255,20 @@ namespace Zeni::Rete::PEG {
     data.productions.top()->actions_or_retractions->push_back(write);
   }
 
+  template<typename Input>
+  void Action<Inner_Action>::apply(const Input &input, Data &data) {
+    //std::cerr << "Inner_Action: " << input.string() << std::endl;
+
+    const auto result = data.productions.top()->actions_or_retractions->back()->result();
+    if (result & Action_Generator::Result::RESULT_CONSUMED) {
+      if (!data.productions.top()->result_available)
+        throw parse_error("Parser error: no result available for action to consume", input);
+      data.productions.top()->result_available = result & Action_Generator::Result::RESULT_PROVIDED;
+    }
+    else
+      data.productions.top()->result_available |= result & Action_Generator::Result::RESULT_PROVIDED;
+  }
+
   /// Production Rules
 
   template<typename Input>
@@ -266,6 +280,7 @@ namespace Zeni::Rete::PEG {
   template<typename Input>
   void Action<Begin_Retractions>::apply(const Input &input, Data &data) {
     data.productions.top()->phase = Data::Production::Phase::PHASE_RETRACTIONS;
+    data.productions.top()->result_available = false;
     data.productions.top()->actions_or_retractions = &data.productions.top()->retractions;
   }
 
