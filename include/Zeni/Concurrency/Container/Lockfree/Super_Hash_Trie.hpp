@@ -162,17 +162,20 @@ namespace Zeni::Concurrency {
 
       template <size_t index1, size_t index2, typename Key>
       auto moved(const Key &key) const {
-        typedef std::remove_cv_t<std::remove_reference_t<decltype(std::get<index1>(m_hash_tries))>> Hash_Trie_Type;
+        typedef std::remove_const_t<std::remove_reference_t<decltype(std::get<index1>(m_hash_tries))>> Hash_Trie_Type;
 
         const auto snode_index = new typename Hash_Trie_Type::SNode(key);
         Hash_Trie_Super_Node * const updated_node = new Hash_Trie_Super_Node(*this);
 
         const auto[result1, snapshot1, snode1] = std::get<index1>(m_hash_tries).erased(snode_index);
-        if (result1 == Hash_Trie_Type::LNode::Result::Failed_Removal)
+        if (result1 == Hash_Trie_Type::LNode::Result::Failed_Removal) {
+          snode_index->decrement_refs();
           return std::make_tuple(result1, updated_node, Key());
+        }
 
         const auto[result2, snapshot2, snode2] = std::get<index2>(m_hash_tries).inserted(snode_index);
-        if (result1 == Hash_Trie_Type::LNode::Result::Failed_Insertion)
+        snode_index->decrement_refs();
+        if (result2 == Hash_Trie_Type::LNode::Result::Failed_Insertion)
           return std::make_tuple(result2, updated_node, Key());
 
         std::get<index1>(updated_node->m_hash_tries) = snapshot1;
