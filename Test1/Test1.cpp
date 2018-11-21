@@ -61,26 +61,32 @@ int main(int argc, char **argv)
     g_num_cores = std::thread::hardware_concurrency();
 
   //{
-  //  Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int64_t>, Zeni::Concurrency::Positive_Hash_Trie<int64_t>> tries;
+  //  Zeni::Concurrency::Super_Hash_Trie<
+  //    Zeni::Concurrency::Hash_Trie_S2<int64_t, Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int64_t>, Zeni::Concurrency::Positive_Hash_Trie<int64_t>>>,
+  //    Zeni::Concurrency::Positive_Hash_Trie<int64_t>> tries;
   //
   //  {
-  //    const auto result = tries.insert<0>(int64_t(42));
+  //    const auto result = tries.move_2<0, 0, 1>(13, int64_t(42));
   //  }
   //
   //  {
-  //    const auto result = tries.move<0, 1>(int64_t(42));
+  //    const auto result = tries.insert_2<0, 0>(13, 42);
   //  }
   //
   //  {
-  //    const auto result = tries.move<0, 1>(int64_t(42));
+  //    const auto result = tries.move_2<0, 0, 1>(13, int64_t(42));
   //  }
   //
   //  {
-  //    const auto result = tries.insert<0>(int64_t(42));
+  //    const auto result = tries.move_2<0, 0, 1>(13, int64_t(42));
   //  }
   //
   //  {
-  //    const auto result = tries.move<0, 1>(int64_t(42));
+  //    const auto result = tries.insert_2<0, 0>(13, int64_t(42));
+  //  }
+  //
+  //  {
+  //    const auto result = tries.move_2<0, 0, 1>(13, int64_t(42));
   //  }
   //}
 
