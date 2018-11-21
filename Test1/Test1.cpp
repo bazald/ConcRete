@@ -60,6 +60,16 @@ int main(int argc, char **argv)
   else
     g_num_cores = std::thread::hardware_concurrency();
 
+  //Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int64_t>, Zeni::Concurrency::Positive_Hash_Trie<int64_t>> tries;
+
+  //{
+  //  const auto result = tries.insert<0>(int64_t(42));
+  //}
+
+  //{
+  //  const auto result = tries.move<0, 1>(int64_t(42));
+  //}
+
   const auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(g_num_cores);
   const auto job_queue = worker_threads->get_main_Job_Queue();
 

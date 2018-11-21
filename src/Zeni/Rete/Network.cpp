@@ -252,6 +252,23 @@ namespace Zeni::Rete {
     return result;
   }
 
+  bool Network::has_tokens(const std::shared_ptr<const Node_Key> key) const {
+    if (const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key)) {
+      const auto tokens = m_filter_layer_0_trie.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(key_symbol->symbol);
+      return !tokens.size_zero();
+    }
+    else {
+      assert(dynamic_cast<const Node_Key_Null *>(key.get()));
+
+      const auto snapshot = m_filter_layer_0_trie.snapshot();
+      for (const auto tokens : snapshot.snapshot<FILTER_LAYER_0_SYMBOL>()) {
+        if (!tokens.second.size_zero<FILTER_LAYER_0_SYMBOL_TOKENS>())
+          return true;
+      }
+      return false;
+    }
+  }
+
   void Network::receive(const Message_Token_Insert &) {
     abort();
   }

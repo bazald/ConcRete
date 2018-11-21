@@ -98,6 +98,13 @@ namespace Zeni::Rete {
     return result;
   }
 
+  bool Node_Join_Existential::has_tokens([[maybe_unused]] const std::shared_ptr<const Node_Key> key) const {
+    assert(dynamic_cast<const Node_Key_Null *>(key.get()));
+
+    const auto tokens = m_join_layer_trie.snapshot<JOIN_LAYER_OUTPUT_TOKENS>();
+    return !tokens.size_zero();
+  }
+
   void Node_Join_Existential::receive(const Message_Token_Insert &message) {
     const auto sft = shared_from_this();
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;

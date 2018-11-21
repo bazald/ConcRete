@@ -635,6 +635,10 @@ namespace Zeni::Concurrency {
       return false;
     }
 
+    bool size_zero() const {
+      return cbegin() == cend();
+    }
+
     template <size_t index, typename Comparable1, typename Comparable2, typename CHash1 = Hash, typename CPred1 = Pred, typename CHash2 = typename std::tuple_element<index, typename Subtrie::Types>::type::Hash, typename CPred2 = typename std::tuple_element<index, typename Subtrie::Types>::type::Pred>
     auto lookup(const Comparable1 &key, const Comparable2 &value) const {
       const Hash_Value hash_value = CHash1()(key);

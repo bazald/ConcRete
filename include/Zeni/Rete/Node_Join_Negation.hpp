@@ -13,12 +13,13 @@ namespace Zeni::Rete {
     Node_Join_Negation(const std::shared_ptr<const Node_Key> node_key_left, const std::shared_ptr<const Node_Key> node_key_right, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, Variable_Bindings &&variable_bindings);
 
   public:
-    typedef Concurrency::Super_Hash_Trie<Symbols_Trie, Output_Token_Trie, Node_Trie> Join_Layer_Trie;
+    typedef Concurrency::Super_Hash_Trie<Symbols_Trie, Output_Token_Trie, Node_Trie, Node_Trie> Join_Layer_Trie;
     typedef Join_Layer_Trie::Snapshot Join_Layer_Snapshot;
     enum Join_Layer {
       JOIN_LAYER_SYMBOLS = 0,
       JOIN_LAYER_OUTPUT_TOKENS = 1,
-      JOIN_LAYER_OUTPUTS = 2
+      JOIN_LAYER_OUTPUTS = 2,
+      JOIN_LAYER_OUTPUTS_UNLINKED = 3
     };
     enum Join_Layer_Symbol {
       JOIN_LAYER_SYMBOLS_TOKENS_LEFT = 0,
@@ -30,6 +31,8 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) override;
     ZENI_RETE_LINKAGE Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) override;
+
+    ZENI_RETE_LINKAGE bool has_tokens(const std::shared_ptr<const Node_Key> key) const override;
 
     ZENI_RETE_LINKAGE void receive(const Message_Token_Insert &message) override;
     ZENI_RETE_LINKAGE void receive(const Message_Token_Remove &message) override;

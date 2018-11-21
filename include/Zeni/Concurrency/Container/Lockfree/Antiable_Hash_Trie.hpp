@@ -526,6 +526,10 @@ namespace Zeni::Concurrency {
       return false;
     }
 
+    bool size_zero() const {
+      return cbegin() == cend();
+    }
+
     template <typename Comparable, typename CHash = Hash, typename CPred = Pred>
     std::pair<Key, Snapshot> lookup(const Comparable &key) const {
       const Hash_Value hash_value = CHash()(key);

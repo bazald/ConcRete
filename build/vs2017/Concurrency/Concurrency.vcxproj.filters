@@ -13,228 +13,222 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\Zeni">
-      <UniqueIdentifier>{2c04aa9a-e3e1-4603-9f5c-25c92dd8a3f9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Zeni">
-      <UniqueIdentifier>{c409d3d0-f63a-493b-b1e9-c8a207160c4d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Zeni\Internal">
-      <UniqueIdentifier>{3b8845cb-19df-4d5f-9263-fd7119040aa3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Zeni\Internal">
-      <UniqueIdentifier>{98f37c7b-e5ac-4fea-8e4b-4bfa7cc7e9da}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Zeni\Container">
+    <Filter Include="Header Files\Container">
       <UniqueIdentifier>{8d1b85eb-0261-422b-b3ac-0a21334fdea1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Zeni\Container\None">
+    <Filter Include="Header Files\Container\None">
       <UniqueIdentifier>{2b99160f-4b38-4af4-8380-7f169990b911}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Zeni\Container\Locking">
+    <Filter Include="Header Files\Container\Locking">
       <UniqueIdentifier>{0d15e3b7-47ca-40b1-ac43-fd600285c3a9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Zeni\Container\Lockfree">
+    <Filter Include="Header Files\Container\Lockfree">
       <UniqueIdentifier>{af192850-a550-4cad-a2d0-d9e1b93675b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Internal">
+      <UniqueIdentifier>{3b8845cb-19df-4d5f-9263-fd7119040aa3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Internal">
+      <UniqueIdentifier>{98f37c7b-e5ac-4fea-8e4b-4bfa7cc7e9da}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\Zeni\Utility.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Message.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Mutex.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Recipient.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Worker_Threads.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Atomic.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\IJob.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Job.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Job_Queue.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Linkage.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Mallocator.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Worker_Threads_Impl.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Job_Queue_Impl.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Reclamation_Stack.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Reclamation_Stacks_Impl.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Reclamation_Stacks.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Queue.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Stack.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Unordered_List.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ordered_List.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Queue.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Queue.hpp">
-      <Filter>Header Files\Zeni\Container\Locking</Filter>
+      <Filter>Header Files\Container\Locking</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Queue.hpp">
-      <Filter>Header Files\Zeni\Container\None</Filter>
+      <Filter>Header Files\Container\None</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Stack.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Stack.hpp">
-      <Filter>Header Files\Zeni\Container\Locking</Filter>
+      <Filter>Header Files\Container\Locking</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Stack.hpp">
-      <Filter>Header Files\Zeni\Container\None</Filter>
+      <Filter>Header Files\Container\None</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Ordered_List.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Unordered_List.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Ordered_List.hpp">
-      <Filter>Header Files\Zeni\Container\Locking</Filter>
+      <Filter>Header Files\Container\Locking</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Unordered_List.hpp">
-      <Filter>Header Files\Zeni\Container\Locking</Filter>
+      <Filter>Header Files\Container\Locking</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Ordered_List.hpp">
-      <Filter>Header Files\Zeni\Container\None</Filter>
+      <Filter>Header Files\Container\None</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Unordered_List.hpp">
-      <Filter>Header Files\Zeni\Container\None</Filter>
+      <Filter>Header Files\Container\None</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Concurrency.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Shared_Ptr.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Shared_Ptr.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Smart_Queue.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Smart_Queue.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Shared_Ptr.hpp">
-      <Filter>Header Files\Zeni\Container\Locking</Filter>
+      <Filter>Header Files\Container\Locking</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Shared_Ptr.hpp">
-      <Filter>Header Files\Zeni\Container\None</Filter>
+      <Filter>Header Files\Container\None</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Intrusive_Shared_Ptr.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Intrusive_Shared_Ptr.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Locking\Intrusive_Shared_Ptr.hpp">
-      <Filter>Header Files\Zeni\Container\Locking</Filter>
+      <Filter>Header Files\Container\Locking</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\None\Intrusive_Shared_Ptr.hpp">
-      <Filter>Header Files\Zeni\Container\None</Filter>
+      <Filter>Header Files\Container\None</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Hash_Trie.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Hash_Trie.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Antiable_Hash_Trie.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Antiable_Hash_Trie.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Super_Hash_Trie.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Super_Hash_Trie.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Positive_Hash_Trie.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Positive_Hash_Trie.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Hash_Trie_2.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Hash_Trie_2.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Hash_Trie_S2.hpp">
-      <Filter>Header Files\Zeni\Container</Filter>
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Hash_Trie_S2.hpp">
-      <Filter>Header Files\Zeni\Container\Lockfree</Filter>
+      <Filter>Header Files\Container\Lockfree</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Atomic.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\IJob.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Job.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Job_Queue.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Message.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Mutex.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Recipient.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Utility.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Worker_Threads.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job_Queue.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Message.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Mutex.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Worker_Threads.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Utility.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Job_Queue_Impl.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Worker_Threads_Impl.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Reclamation_Stacks_Impl.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Reclamation_Stacks.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job_Queue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Message.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Mutex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Worker_Threads.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

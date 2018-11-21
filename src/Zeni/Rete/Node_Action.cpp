@@ -83,6 +83,10 @@ namespace Zeni::Rete {
     abort();
   }
 
+  bool Node_Action::has_tokens(const std::shared_ptr<const Node_Key>) const {
+    abort();
+  }
+
   void Node_Action::receive(const Message_Token_Insert &message) {
     const auto[result, snapshot, value] = m_action_trie.insert(std::make_shared<Data>(m_variable_indices, message.token));
 

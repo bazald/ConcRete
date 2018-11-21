@@ -261,7 +261,9 @@ namespace Zeni::Concurrency {
         Last_Removal,      ///< Count decrements to 0 and object removed from trie
         Extra_Insertion,   ///< Count increases past 1
         Canceling_Removal, ///< Count decreases to a natural number,
-        Failed_Removal     ///< Object was not present in the trie and could not be removed
+        Failed_Removal,    ///< Object was not present in the trie and could not be removed
+        Successful_Move,   ///< Snode was successfully moved from one trie to the other
+        Failed_Insertion   ///< Snode could not be moved into the trie due to preexisting Snode with the same key
       };
 
       List_Node(const Singleton_Node<KEY> * const snode_, List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
@@ -316,6 +318,51 @@ namespace Zeni::Concurrency {
           if (insertion) {
             const auto new_snode = new Singleton_Node<KEY>(key);
             return std::make_tuple(Result::First_Insertion, new List_Node(new_snode, new_head), new_snode);
+          }
+          else
+            return std::make_tuple(Result::Failed_Removal, new_head, nullptr);
+        }
+      }
+
+      std::tuple<Result, List_Node *, const Singleton_Node<KEY> *> updated(const Singleton_Node<KEY> * const external_snode, const bool insertion) const {
+        const Singleton_Node<KEY> * found = nullptr;
+        List_Node * new_head = nullptr;
+        List_Node * new_tail = nullptr;
+        List_Node * old_head = const_cast<List_Node *>(this);
+        for (; old_head; old_head = old_head->next) {
+          if (PRED()(old_head->snode->key, external_snode->key)) {
+            found = old_head->snode;
+            if (old_head->next) {
+              old_head->next->increment_refs();
+              if (new_head)
+                new_tail->next = old_head->next;
+              else {
+                new_head = old_head->next;
+                new_tail = new_head;
+              }
+              break;
+            }
+          }
+          else {
+            old_head->snode->increment_refs();
+            if (new_head)
+              new_head = new List_Node(old_head->snode, new_head);
+            else {
+              new_head = new List_Node(old_head->snode, nullptr);
+              new_tail = new_head;
+            }
+          }
+        }
+        if (found) {
+          if (insertion)
+            return std::make_tuple(Result::Failed_Insertion, new_head, nullptr);
+          else
+            return std::make_tuple(Result::Last_Removal, new_head, found);
+        }
+        else {
+          if (insertion) {
+            external_snode->increment_refs();
+            return std::make_tuple(Result::First_Insertion, new List_Node(external_snode, new_head), external_snode);
           }
           else
             return std::make_tuple(Result::Failed_Removal, new_head, nullptr);
@@ -510,6 +557,10 @@ namespace Zeni::Concurrency {
       return false;
     }
 
+    bool size_zero() const {
+      return cbegin() == cend();
+    }
+
     template <typename Comparable, typename CHash = Hash, typename CPred = Pred>
     std::pair<Key, Snapshot> lookup(const Comparable &key) const {
       const Hash_Value hash_value = CHash()(key);
@@ -540,12 +591,20 @@ namespace Zeni::Concurrency {
       return inserted_or_erased(key, true);
     }
 
+    std::tuple<Result, Snapshot, const SNode *> inserted(const SNode * const external_snode) const {
+      return inserted_or_erased(external_snode, true);
+    }
+
     std::tuple<Result, Snapshot, Key> erase(const Key &key) {
       return insert_or_erase(key, false);
     }
 
     std::tuple<Result, Snapshot, Key> erased(const Key &key) const {
       return inserted_or_erased(key, false);
+    }
+
+    std::tuple<Result, Snapshot, const SNode *> erased(const SNode * const external_snode) const {
+      return inserted_or_erased(external_snode, false);
     }
 
     Snapshot snapshot() const {
@@ -577,6 +636,13 @@ namespace Zeni::Concurrency {
       const MNode * const root = m_root.load(std::memory_order_acquire);
       const auto[result, new_root, inserted] = iinsert(root, key, hash_value, insertion, 0);
       return std::make_tuple(result, Snapshot(new_root), inserted ? inserted->key : Key());
+    }
+
+    std::tuple<Result, Snapshot, const SNode *> inserted_or_erased(const SNode * const external_snode, const bool insertion) const {
+      const Hash_Value hash_value = Hash()(external_snode->key);
+      const MNode * const root = m_root.load(std::memory_order_acquire);
+      const auto[result, new_root, inserted] = iinsert(root, external_snode, hash_value, insertion, 0);
+      return std::make_tuple(result, Snapshot(new_root), inserted);
     }
 
     Positive_Hash_Trie(const MNode * const mnode)
@@ -721,6 +787,109 @@ namespace Zeni::Concurrency {
         if (insertion) {
           const SNode * const new_snode = new SNode(key);
           return std::make_tuple(Result::First_Insertion, new_snode, new_snode);
+        }
+        else
+          return std::make_tuple(Result::Failed_Removal, nullptr, nullptr);
+      }
+    }
+
+    std::tuple<Result, const MNode *, const SNode *> iinsert(
+      const MNode * const mnode,
+      const SNode * const external_snode,
+      const Hash_Value &hash_value,
+      const bool insertion,
+      const size_t level) const
+    {
+      if (const auto cnode = dynamic_cast<const CNode *>(mnode)) {
+        const auto[flag, pos] = cnode->flagpos(hash_value, level);
+        const MNode * const next = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+        if (!next) {
+          if (insertion) {
+            external_snode->increment_refs();
+            return std::make_tuple(Result::First_Insertion, cnode->inserted(pos, flag, external_snode), external_snode);
+          }
+          else {
+            cnode->increment_refs();
+            return std::make_tuple(Result::Failed_Removal, cnode, nullptr);
+          }
+        }
+        const auto[result, new_next, new_snode] = iinsert(next, external_snode, hash_value, insertion, level + CNode::W);
+        if (!new_next) {
+          const auto new_cnode = cnode->erased(pos, flag);
+          if (!new_cnode)
+            return std::make_tuple(result, nullptr, new_snode);
+          else if (new_cnode->get_hamming_value() != 1)
+            return std::make_tuple(result, new_cnode, new_snode);
+          else {
+            const auto new_mnode = new_cnode->at(0);
+            if (dynamic_cast<const CNode *>(new_mnode))
+              return std::make_tuple(result, new_cnode, new_snode);
+            else {
+              new_mnode->increment_refs();
+              delete new_cnode;
+              return std::make_tuple(result, new_mnode, new_snode);
+            }
+          }
+        }
+        else
+          return std::make_tuple(result, cnode->updated(pos, flag, new_next), new_snode);
+      }
+      else if (auto lnode = dynamic_cast<const LNode *>(mnode)) {
+        const Hash_Value lnode_hash = Hash()(lnode->snode->key);
+        if (lnode_hash != hash_value) {
+          lnode->increment_refs();
+          if (insertion) {
+            external_snode->increment_refs();
+            return std::make_tuple(Result::First_Insertion, CNode::Create(external_snode, hash_value, lnode, lnode_hash, level), external_snode);
+          }
+          else
+            return std::make_tuple(Result::Failed_Removal, lnode, nullptr);
+        }
+        else {
+          const auto[result, new_lnode, new_snode] = lnode->updated(external_snode, insertion);
+          if (!new_lnode->next) {
+            new_lnode->snode->increment_refs();
+            new_lnode->decrement_refs();
+            return std::make_tuple(result, new_lnode->snode, new_snode);
+          }
+          else
+            return std::make_tuple(result, new_lnode, new_snode);
+        }
+      }
+      else if (auto snode = dynamic_cast<const SNode *>(mnode)) {
+        const Hash_Value snode_hash = Hash()(snode->key);
+        if (snode_hash != hash_value) {
+          snode->increment_refs();
+          if (insertion) {
+            external_snode->increment_refs();
+            return std::make_tuple(Result::First_Insertion, CNode::Create(external_snode, hash_value, snode, snode_hash, level), external_snode);
+          }
+          else
+            return std::make_tuple(Result::Failed_Removal, snode, nullptr);
+        }
+        else if (Pred()(snode->key, external_snode->key)) {
+          if (insertion) {
+            snode->increment_refs();
+            return std::make_tuple(Result::Failed_Insertion, snode, nullptr);
+          }
+          else {
+            return std::make_tuple(Result::Last_Removal, nullptr, snode);
+          }
+        }
+        else {
+          snode->increment_refs();
+          if (insertion) {
+            external_snode->increment_refs();
+            return std::make_tuple(Result::First_Insertion, new LNode(external_snode, new LNode(snode)), external_snode);
+          }
+          else
+            return std::make_tuple(Result::Failed_Removal, snode, nullptr);
+        }
+      }
+      else {
+        if (insertion) {
+          external_snode->increment_refs();
+          return std::make_tuple(Result::First_Insertion, external_snode, external_snode);
         }
         else
           return std::make_tuple(Result::Failed_Removal, nullptr, nullptr);

@@ -67,6 +67,23 @@ namespace Zeni::Rete {
     return result;
   }
 
+  bool Node_Filter_1::has_tokens(const std::shared_ptr<const Node_Key> key) const {
+    if (const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key)) {
+      const auto tokens = m_filter_layer_1_trie.lookup_snapshot<FILTER_LAYER_1_SYMBOL, FILTER_LAYER_1_SYMBOL_TOKENS>(key_symbol->symbol);
+      return !tokens.size_zero();
+    }
+    else {
+      assert(dynamic_cast<const Node_Key_01 *>(key.get()));
+
+      const auto snapshot = m_filter_layer_1_trie.snapshot();
+      for (const auto tokens : snapshot.snapshot<FILTER_LAYER_1_SYMBOL>()) {
+        if (!tokens.second.size_zero<FILTER_LAYER_1_SYMBOL_TOKENS>())
+          return true;
+      }
+      return false;
+    }
+  }
+
   void Node_Filter_1::receive(const Message_Token_Insert &message) {
     const auto &wme = *std::dynamic_pointer_cast<const Token_Alpha>(message.token)->get_wme();
     const auto &symbols = wme.get_symbols();

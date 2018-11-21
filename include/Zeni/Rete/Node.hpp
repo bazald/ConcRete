@@ -55,6 +55,8 @@ namespace Zeni::Rete {
     /// Initiate reconnection of an existing gate.
     ZENI_RETE_LINKAGE virtual Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) = 0;
 
+    ZENI_RETE_LINKAGE virtual bool has_tokens(const std::shared_ptr<const Node_Key> key) const = 0;
+
     ZENI_RETE_LINKAGE void receive(const std::shared_ptr<const Concurrency::Message> message) noexcept override;
     ZENI_RETE_LINKAGE virtual void receive(const Message_Token_Insert &message) = 0;
     ZENI_RETE_LINKAGE virtual void receive(const Message_Token_Remove &message) = 0;

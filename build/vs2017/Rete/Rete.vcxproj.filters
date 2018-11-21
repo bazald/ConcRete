@@ -13,243 +13,237 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\Zeni">
-      <UniqueIdentifier>{076ea605-9b1d-455d-87b8-8058a22b7787}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Zeni">
-      <UniqueIdentifier>{9366535d-f754-428c-8ace-3acf376c924e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Zeni\Internal">
+    <Filter Include="Header Files\Internal">
       <UniqueIdentifier>{99d6f46a-4379-43d1-b53b-eaf18a74896f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Zeni\Internal">
-      <UniqueIdentifier>{56f9f170-b86c-4c6e-9578-7144ac0c2fd4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Zeni\Parser">
+    <Filter Include="Header Files\Parser">
       <UniqueIdentifier>{4edd5bc5-12f5-437e-ab03-bf2f021cb2ec}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Zeni\Parser">
+    <Filter Include="Source Files\Internal">
+      <UniqueIdentifier>{56f9f170-b86c-4c6e-9578-7144ac0c2fd4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Parser">
       <UniqueIdentifier>{e66d16e6-7c4b-493c-842d-63d3c6bbc580}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\Zeni\Utility.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Parser.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Symbol.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Token.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Token_Index.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Variable_Binding.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Variable_Indices.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\WME.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Custom_Data.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Network.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Action.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Token_Alpha.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Token_Beta.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Variable_Indices_Impl.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Insert.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Token_Remove.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join.cpp">
-      <Filter>Source Files\Zeni</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Binary.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Unary.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Sequential_Pair.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Disconnect_Output.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_1.cpp">
-      <Filter>Source Files\Zeni</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_1.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_0.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_2.cpp">
-      <Filter>Source Files\Zeni</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_2.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Join.cpp">
-      <Filter>Source Files\Zeni\Internal</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Key.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join_Negation.cpp">
-      <Filter>Source Files\Zeni</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join_Existential.cpp">
-      <Filter>Source Files\Zeni</Filter>
+      <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Parser\Data.cpp">
-      <Filter>Source Files\Zeni\Parser</Filter>
+      <Filter>Source Files\Parser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\WME.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Custom_Data.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Network.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Action.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Filter_2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join_Existential.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Join_Negation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Key.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Symbol.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Token.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Token_Index.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Variable_Binding.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Variable_Indices.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\Zeni\Utility.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Predicate.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Parser.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Symbol.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Token.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Token_Index.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Variable_Binding.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Variable_Indices.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\WME.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Custom_Data.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Network.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Action.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Existential.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Negation.hpp">
-      <Filter>Header Files\Zeni</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Linkage.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Token_Insert.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Token_Remove.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Token_Alpha.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Token_Beta.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Variable_Indices_Impl.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Unary.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Binary.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Sequential_Pair.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Disconnect_Output.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter_1.hpp">
-      <Filter>Header Files\Zeni</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_1.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_0.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter_2.hpp">
-      <Filter>Header Files\Zeni</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_2.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Join.hpp">
-      <Filter>Header Files\Zeni\Internal</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Key.hpp">
-      <Filter>Header Files\Zeni</Filter>
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\PEG.hpp">
-      <Filter>Header Files\Zeni\Parser</Filter>
+      <Filter>Header Files\Parser</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\Data.hpp">
-      <Filter>Header Files\Zeni\Parser</Filter>
+      <Filter>Header Files\Parser</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\Impl.hpp">
-      <Filter>Header Files\Zeni\Parser</Filter>
+      <Filter>Header Files\Parser</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\Actions.hpp">
-      <Filter>Header Files\Zeni\Parser</Filter>
+      <Filter>Header Files\Parser</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\Actions_Impl.hpp">
-      <Filter>Header Files\Zeni\Parser</Filter>
+      <Filter>Header Files\Parser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Custom_Data.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Network.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Action.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter_1.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Filter_2.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Existential.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Join_Negation.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Key.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Node_Predicate.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Parser.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Symbol.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Token.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Token_Index.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Utility.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Variable_Binding.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Variable_Indices.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\WME.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
