@@ -257,14 +257,17 @@ namespace Zeni::Concurrency {
 
     public:
       enum class Result {
-        First_Insertion,   ///< Count increases to 1 and object inserted into trie
-        Last_Removal,      ///< Count decrements to 0 and object removed from trie
-        Extra_Insertion,   ///< Count increases past 1
-        Canceling_Removal, ///< Count decreases to a natural number,
-        Failed_Removal,    ///< Object was not present in the trie and could not be removed
-        Successful_Move,   ///< Snode was successfully moved from one trie to the other
-        Failed_Insertion,  ///< Snode could not be moved into the trie due to preexisting Snode with the same key
-        Not_Present        ///< Object was not present in the trie and update was impossible
+        First_Insertion,      ///< Count increases to 1 and object inserted into trie
+        Last_Removal,         ///< Count decrements to 0 and object removed from trie
+        Extra_Insertion,      ///< Count increases past 1
+        Canceling_Removal,    ///< Count decreases to a natural number,
+        Failed_Removal,       ///< Object was not present in the trie and could not be removed
+        Successful_Move,      ///< Snode was successfully moved from one trie to the other
+        Failed_Insertion,     ///< Snode could not be moved into the trie due to preexisting Snode with the same key
+        Not_Present,          ///< Object was not present in the trie and update was impossible
+        Last_Removal_IP,      ///< If-present removal succeeded and decrements to 0
+        Extra_Insertion_IP,   ///< If-present insertion succeeded and increments past 1
+        Canceling_Removal_IP  ///< If-present removal succeeded and decrements to a natural number
       };
 
       List_Node(const Singleton_Node<KEY> * const snode_, List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
@@ -356,7 +359,7 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           const auto new_snode = found->updated_count(insertion);
-          const Result result = !new_snode ? Result::Last_Removal : insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
+          const Result result = !new_snode ? Result::Last_Removal_IP : insertion ? Result::Extra_Insertion_IP : Result::Canceling_Removal_IP;
           return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode ? new_snode : found);
         }
         else

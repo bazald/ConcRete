@@ -702,7 +702,7 @@ namespace Zeni::Concurrency {
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
         }
         else
-          return std::make_tuple(std::tuple_element_t<src, typename SUBTRIE::Types>::Result::Failed_Removal, new_head, KEY());
+          return std::make_tuple(std::tuple_element_t<src, typename SUBTRIE::Types>::Result::Failed_Removal, new_head, typename std::tuple_element_t<src, typename SUBTRIE::Types>::Key());
       }
 
     public:
@@ -1738,7 +1738,7 @@ namespace Zeni::Concurrency {
         const MNode * const next = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
         if (!next) {
           cnode->increment_refs();
-          return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Failed_Removal, static_cast<const MNode *>(cnode), Key());
+          return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Failed_Removal, static_cast<const MNode *>(cnode), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
         }
         auto tuple_value = imove<src, dest>(next, key, value, hash_value, level + CNode::W);
         if (!std::get<1>(tuple_value)) {
@@ -1765,7 +1765,7 @@ namespace Zeni::Concurrency {
         const Hash_Value lnode_hash = Hash()(lnode->snode->key);
         if (lnode_hash != hash_value) {
           lnode->increment_refs();
-          return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Failed_Removal, static_cast<const MNode *>(lnode), Key());
+          return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Failed_Removal, static_cast<const MNode *>(lnode), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
         }
         else {
           auto tuple_value = lnode->template moved<src, dest>(key, value);
@@ -1776,7 +1776,7 @@ namespace Zeni::Concurrency {
         const Hash_Value snode_hash = Hash()(snode->key);
         if (snode_hash != hash_value) {
           snode->increment_refs();
-          return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Failed_Removal, static_cast<const MNode *>(snode), Key());
+          return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Failed_Removal, static_cast<const MNode *>(snode), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
         }
         else if (Pred()(snode->key, key)) {
           auto tuple_value = snode->template moved<src, dest>(key, value);
@@ -1784,11 +1784,11 @@ namespace Zeni::Concurrency {
         }
         else {
           snode->increment_refs();
-          return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Failed_Removal, static_cast<const MNode *>(snode), Key());
+          return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Failed_Removal, static_cast<const MNode *>(snode), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
         }
       }
       else
-        return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Failed_Removal, static_cast<const MNode *>(nullptr), Key());
+        return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Failed_Removal, static_cast<const MNode *>(nullptr), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
     }
 
     template <typename VALUE_TYPE, typename DESIRED>

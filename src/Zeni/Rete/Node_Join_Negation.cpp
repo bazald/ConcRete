@@ -75,7 +75,7 @@ namespace Zeni::Rete {
 
     assert(dynamic_cast<const Node_Key_Null *>(key.get()));
 
-    const auto[result, snapshot, value] = m_join_layer_trie.insert<JOIN_LAYER_OUTPUTS>(child);
+    const auto[result, snapshot, value] = m_join_layer_trie.insert_ip_xp<JOIN_LAYER_OUTPUTS_UNLINKED, JOIN_LAYER_OUTPUTS>(child);
 
     if (result == Node_Trie::Result::First_Insertion)
       job_queue->give_one(std::make_shared<Message_Connect_Join>(sft, network, std::move(snapshot), key, value));
@@ -88,12 +88,52 @@ namespace Zeni::Rete {
 
     assert(dynamic_cast<const Node_Key_Null *>(key.get()));
 
-    const auto[result, snapshot, value] = m_join_layer_trie.insert<JOIN_LAYER_OUTPUTS>(child);
+    const auto[result, snapshot, value] = m_join_layer_trie.insert_ip_xp<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(child);
 
     assert(value == child);
 
-    if (result == Node_Trie::Result::First_Insertion)
-      job_queue->give_one(std::make_shared<Message_Connect_Join>(sft, network, std::move(snapshot), key, value));
+    //if (result == Node_Trie::Result::First_Insertion_IP)
+    //  job_queue->give_one(std::make_shared<Message_Connect_Join>(sft, network, std::move(snapshot), key, value));
+
+    return result;
+  }
+
+  Node::Node_Trie::Result Node_Join_Negation::link_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
+    const auto sft = shared_from_this();
+
+    assert(std::dynamic_pointer_cast<const Node_Key_Null>(key));
+
+    const auto[result, snapshot, value] = m_join_layer_trie.move<JOIN_LAYER_OUTPUTS_UNLINKED, JOIN_LAYER_OUTPUTS>(child);
+
+    if (result != Node_Trie::Result::Successful_Move)
+      return result;
+
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
+
+    for (const auto &token : snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())
+      jobs.emplace_back(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_Null::Create(), token));
+
+    job_queue->give_many(std::move(jobs));
+
+    return result;
+  }
+
+  Node::Node_Trie::Result Node_Join_Negation::unlink_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
+    const auto sft = shared_from_this();
+
+    assert(std::dynamic_pointer_cast<const Node_Key_Null>(key));
+
+    const auto[result, snapshot, value] = m_join_layer_trie.move<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(child);
+
+    if (result != Node_Trie::Result::Successful_Move)
+      return result;
+
+    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
+
+    for (const auto &token : snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())
+      jobs.emplace_back(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_Null::Create(), token));
+
+    job_queue->give_many(std::move(jobs));
 
     return result;
   }
@@ -114,6 +154,8 @@ namespace Zeni::Rete {
 
       const auto[result, snapshot, value] = m_join_layer_trie.insert_2<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_LEFT>(symbols, message.token);
       if (result == Token_Trie::Result::First_Insertion) {
+        get_input_right()->link_output(message.network, message.get_Job_Queue(), get_key_right(), sft); ///< Temporary bludgeon
+
         const auto tokens_right = snapshot.lookup_snapshot<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_RIGHT>(symbols);
         if (tokens_right.cbegin() == tokens_right.cend()) {
           const auto[oresult, osnapshot, ovalue] = m_join_layer_trie.insert<JOIN_LAYER_OUTPUT_TOKENS>(message.token);
@@ -207,14 +249,17 @@ namespace Zeni::Rete {
 
     assert(std::dynamic_pointer_cast<const Node_Key_Null>(message.key));
 
-    const auto[result, snapshot, value] = m_join_layer_trie.erase<JOIN_LAYER_OUTPUTS>(message.child);
+    const auto[result, snapshot, value] = m_join_layer_trie.erase_ip_xp<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(message.child);
 
     assert(result != Node_Trie::Result::Failed_Removal);
 
-    if (result != Node_Trie::Result::Last_Removal)
+    if (result != Node_Trie::Result::Last_Removal_IP && result != Node_Trie::Result::Last_Removal)
       return;
 
     send_disconnect_from_parents(message.network, message.get_Job_Queue());
+
+    if (result != Node_Trie::Result::Last_Removal_IP)
+      return;
 
     std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
 

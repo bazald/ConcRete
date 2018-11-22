@@ -79,6 +79,14 @@ namespace Zeni::Rete {
     abort();
   }
 
+  Node::Node_Trie::Result Node_Action::link_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<const Node_Key>, const std::shared_ptr<Node>) {
+    abort();
+  }
+
+  Node::Node_Trie::Result Node_Action::unlink_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<const Node_Key>, const std::shared_ptr<Node>) {
+    abort();
+  }
+
   void Node_Action::receive(const Message_Disconnect_Output &) {
     abort();
   }
