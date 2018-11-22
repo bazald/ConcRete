@@ -90,6 +90,48 @@ int main(int argc, char **argv)
   //  }
   //}
 
+  //{
+  //    Zeni::Concurrency::Super_Hash_Trie<
+  //      Zeni::Concurrency::Hash_Trie_S2<int64_t, Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int64_t>, Zeni::Concurrency::Positive_Hash_Trie<int64_t>>>,
+  //      Zeni::Concurrency::Positive_Hash_Trie<int64_t>> tries;
+  //  
+  //  {
+  //    const auto result = tries.insert_2_ip_xp<0, 0, 1>(13, 42);
+  //  }
+  //
+  //  {
+  //    const auto result = tries.move_2<0, 1, 0>(13, int64_t(42));
+  //  }
+  //
+  //  {
+  //    const auto result = tries.insert_2_ip_xp<0, 0, 1>(13, 42);
+  //  }
+  //
+  //  {
+  //    const auto result = tries.insert_2_ip_xp<0, 1, 0>(13, 42);
+  //  }
+  //
+  //  {
+  //    const auto result = tries.erase_2_ip_xp<0, 0, 1>(13, 42);
+  //  }
+  //
+  //  {
+  //    const auto result = tries.move_2<0, 0, 1>(13, int64_t(42));
+  //  }
+  //
+  //  {
+  //    const auto result = tries.erase_2_ip_xp<0, 1, 0>(13, 42);
+  //  }
+  //
+  //  {
+  //    const auto result = tries.erase_2_ip_xp<0, 0, 1>(13, 42);
+  //  }
+  //
+  //  {
+  //    const auto result = tries.erase_2_ip_xp<0, 1, 0>(13, 42);
+  //  }
+  //}
+
   const auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(g_num_cores);
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
