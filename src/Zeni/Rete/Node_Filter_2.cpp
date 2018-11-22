@@ -90,11 +90,9 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Successful_Move)
       return result;
 
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
-
     if (key_symbol) {
       for (const auto &token : snapshot.lookup_snapshot<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_TOKENS>(key_symbol->symbol))
-        jobs.emplace_back(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
+        job_queue->give_one(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
     }
     else if (dynamic_cast<const Node_Key_02 *>(key_node.get())) {
       for (const auto tokens : snapshot.snapshot<FILTER_LAYER_2_SYMBOL>()) {
@@ -102,7 +100,7 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<0>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_02::Create(), token));
+            job_queue->give_one(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_02::Create(), token));
         }
       }
     }
@@ -112,19 +110,15 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<1>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_12::Create(), token));
+            job_queue->give_one(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_12::Create(), token));
         }
       }
     }
-
-    job_queue->give_many(std::move(jobs));
 
     return result;
   }
 
   Node::Node_Trie::Result Node_Filter_2::unlink_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
-    const auto sft = shared_from_this();
-
     const auto key_node = key;
     const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key_node);
     assert(key_symbol || std::dynamic_pointer_cast<const Node_Key_02>(key_node) || std::dynamic_pointer_cast<const Node_Key_12>(key_node));
@@ -138,11 +132,11 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Successful_Move)
       return result;
 
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
+    const auto sft = shared_from_this();
 
     if (key_symbol) {
       for (const auto &token : snapshot.lookup_snapshot<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_TOKENS>(key_symbol->symbol))
-        jobs.emplace_back(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
+        job_queue->give_one(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
     }
     else if (dynamic_cast<const Node_Key_02 *>(key_node.get())) {
       for (const auto tokens : snapshot.snapshot<FILTER_LAYER_2_SYMBOL>()) {
@@ -150,7 +144,7 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<0>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_02::Create(), token));
+            job_queue->give_one(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_02::Create(), token));
         }
       }
     }
@@ -160,12 +154,10 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<1>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_12::Create(), token));
+            job_queue->give_one(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_12::Create(), token));
         }
       }
     }
-
-    job_queue->give_many(std::move(jobs));
 
     return result;
   }
@@ -197,20 +189,18 @@ namespace Zeni::Rete {
       return;
 
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
+    const auto &job_queue = message.get_Job_Queue();
 
     for (auto &output : snapshot.lookup_snapshot<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_OUTPUTS>(symbol))
-      jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_Symbol::Create(symbol), message.token));
+      job_queue->give_one(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_Symbol::Create(symbol), message.token));
     if (*std::get<0>(symbols) == *std::get<2>(symbols)) {
       for (auto &output : snapshot.snapshot<FILTER_LAYER_2_VARIABLE_OUTPUTS_02>())
-        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_02::Create(), message.token));
+        job_queue->give_one(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_02::Create(), message.token));
     }
     if (*std::get<1>(symbols) == *std::get<2>(symbols)) {
       for (auto &output : snapshot.snapshot<FILTER_LAYER_2_VARIABLE_OUTPUTS_12>())
-        jobs.emplace_back(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_12::Create(), message.token));
+        job_queue->give_one(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_12::Create(), message.token));
     }
-
-    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   void Node_Filter_2::receive(const Message_Token_Remove &message) {
@@ -223,34 +213,31 @@ namespace Zeni::Rete {
       return;
 
     const auto sft = shared_from_this();
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
+    const auto &job_queue = message.get_Job_Queue();
 
     for (auto &output : snapshot.lookup_snapshot<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_OUTPUTS>(symbol))
-      jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_Symbol::Create(symbol), message.token));
+      job_queue->give_one(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_Symbol::Create(symbol), message.token));
     if (*std::get<0>(symbols) == *std::get<2>(symbols)) {
       for (auto &output : snapshot.snapshot<FILTER_LAYER_2_VARIABLE_OUTPUTS_02>())
-        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_02::Create(), message.token));
+        job_queue->give_one(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_02::Create(), message.token));
     }
     if (*std::get<1>(symbols) == *std::get<2>(symbols)) {
       for (auto &output : snapshot.snapshot<FILTER_LAYER_2_VARIABLE_OUTPUTS_12>())
-        jobs.emplace_back(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_12::Create(), message.token));
+        job_queue->give_one(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_12::Create(), message.token));
     }
-
-    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   void Node_Filter_2::receive(const Message_Connect_Filter_2 &message) {
     const auto sft = shared_from_this();
+    const auto &job_queue = message.get_Job_Queue();
 
     const auto key_node = message.key;
     const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key_node);
     assert(key_symbol || std::dynamic_pointer_cast<const Node_Key_02>(key_node) || std::dynamic_pointer_cast<const Node_Key_12>(key_node));
 
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
-
     if (key_symbol) {
       for (const auto &token : message.snapshot.lookup_snapshot<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_TOKENS>(key_symbol->symbol))
-        jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
+        job_queue->give_one(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
     }
     else if (dynamic_cast<const Node_Key_02 *>(key_node.get())) {
       for (const auto tokens : message.snapshot.snapshot<FILTER_LAYER_2_SYMBOL>()) {
@@ -258,7 +245,7 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<0>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_02::Create(), token));
+            job_queue->give_one(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_02::Create(), token));
         }
       }
     }
@@ -268,17 +255,13 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<1>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_12::Create(), token));
+            job_queue->give_one(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_12::Create(), token));
         }
       }
     }
-
-    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   void Node_Filter_2::receive(const Message_Disconnect_Output &message) {
-    const auto sft = shared_from_this();
-
     const auto key_node = message.key;
     const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key_node);
     assert(key_symbol || std::dynamic_pointer_cast<const Node_Key_02>(key_node) || std::dynamic_pointer_cast<const Node_Key_12>(key_node));
@@ -299,11 +282,12 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Last_Removal_IP)
       return;
 
-    std::vector<std::shared_ptr<Concurrency::IJob>> jobs;
+    const auto sft = shared_from_this();
+    const auto &job_queue = message.get_Job_Queue();
 
     if (key_symbol) {
       for (const auto &token : snapshot.lookup_snapshot<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_TOKENS>(key_symbol->symbol))
-        jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
+        job_queue->give_one(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
     }
     else if (dynamic_cast<const Node_Key_02 *>(key_node.get())) {
       for (const auto tokens : snapshot.snapshot<FILTER_LAYER_2_SYMBOL>()) {
@@ -311,7 +295,7 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<0>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_02::Create(), token));
+            job_queue->give_one(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_02::Create(), token));
         }
       }
     }
@@ -321,12 +305,10 @@ namespace Zeni::Rete {
           const auto token_alpha = std::dynamic_pointer_cast<const Token_Alpha>(token);
           const auto &symbols = token_alpha->get_wme()->get_symbols();
           if (*std::get<1>(symbols) == *std::get<2>(symbols))
-            jobs.emplace_back(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_12::Create(), token));
+            job_queue->give_one(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_12::Create(), token));
         }
       }
     }
-
-    message.get_Job_Queue()->give_many(std::move(jobs));
   }
 
   bool Node_Filter_2::operator==(const Node &rhs) const {
