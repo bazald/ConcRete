@@ -108,8 +108,7 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Successful_Move)
       return result;
 
-    for (const auto &token : snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())
-      job_queue->give_one(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_Null::Create(), token));
+    insert_tokens(network, job_queue, key, child, snapshot);
 
     return result;
   }
@@ -124,8 +123,7 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Successful_Move)
       return result;
 
-    for (const auto &token : snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())
-      job_queue->give_one(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_Null::Create(), token));
+    remove_tokens(network, job_queue, key, child, snapshot);
 
     return result;
   }
@@ -222,19 +220,10 @@ namespace Zeni::Rete {
   }
 
   void Node_Join::receive(const Message_Connect_Join &message) {
-    const auto sft = shared_from_this();
-    const auto &job_queue = message.get_Job_Queue();
-
-    assert(std::dynamic_pointer_cast<const Node_Key_Null>(message.key));
-
-    for (const auto &token : message.snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())
-      job_queue->give_one(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_Null::Create(), token));
+    insert_tokens(message.network, message.get_Job_Queue(), message.key, message.child, message.snapshot);
   }
 
   void Node_Join::receive(const Message_Disconnect_Output &message) {
-    const auto sft = shared_from_this();
-    const auto &job_queue = message.get_Job_Queue();
-
     assert(std::dynamic_pointer_cast<const Node_Key_Null>(message.key));
 
     const auto[result, snapshot, value] = m_join_layer_trie.erase_ip_xp<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(message.child);
@@ -249,8 +238,23 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Last_Removal_IP)
       return;
 
+    remove_tokens(message.network, message.get_Job_Queue(), message.key, message.child, snapshot);
+  }
+
+  void Node_Join::insert_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot) {
+    const auto sft = shared_from_this();
+
+    assert(std::dynamic_pointer_cast<const Node_Key_Null>(key));
+
     for (const auto &token : snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())
-      job_queue->give_one(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_Null::Create(), token));
+      job_queue->give_one(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_Null::Create(), token));
+  }
+
+  void Node_Join::remove_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot) {
+    const auto sft = shared_from_this();
+
+    for (const auto &token : snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())
+      job_queue->give_one(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_Null::Create(), token));
   }
 
   std::shared_ptr<Symbols> Node_Join::bind_variables_left(const std::shared_ptr<const Token> token_left) const {

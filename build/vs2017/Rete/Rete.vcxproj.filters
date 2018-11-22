@@ -51,22 +51,7 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Node_Unary.cpp">
       <Filter>Source Files\Internal</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Sequential_Pair.cpp">
-      <Filter>Source Files\Internal</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Disconnect_Output.cpp">
-      <Filter>Source Files\Internal</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_1.cpp">
-      <Filter>Source Files\Internal</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_0.cpp">
-      <Filter>Source Files\Internal</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_2.cpp">
-      <Filter>Source Files\Internal</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Join.cpp">
       <Filter>Source Files\Internal</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Rete\Parser\Data.cpp">
@@ -126,6 +111,21 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Variable_Indices.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_0.cpp">
+      <Filter>Source Files\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_1.cpp">
+      <Filter>Source Files\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Filter_2.cpp">
+      <Filter>Source Files\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Join.cpp">
+      <Filter>Source Files\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Job_Sequential_Messages.cpp">
+      <Filter>Source Files\Internal</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Linkage.hpp">
@@ -155,22 +155,7 @@
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Node_Binary.hpp">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Sequential_Pair.hpp">
-      <Filter>Header Files\Internal</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Disconnect_Output.hpp">
-      <Filter>Header Files\Internal</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_1.hpp">
-      <Filter>Header Files\Internal</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_0.hpp">
-      <Filter>Header Files\Internal</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_2.hpp">
-      <Filter>Header Files\Internal</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Join.hpp">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Parser\PEG.hpp">
@@ -244,6 +229,21 @@
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\WME.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_0.hpp">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_1.hpp">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Filter_2.hpp">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Join.hpp">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Job_Sequential_Messages.hpp">
+      <Filter>Header Files\Internal</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

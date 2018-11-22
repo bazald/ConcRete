@@ -148,6 +148,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
 
   private:
+    ZENI_RETE_LINKAGE void insert_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_0_Snapshot snapshot);
+    ZENI_RETE_LINKAGE void remove_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_0_Snapshot snapshot);
+
     std::shared_ptr<Concurrency::Worker_Threads> m_worker_threads;
 
     Filter_Layer_0_Trie m_filter_layer_0_trie;

@@ -264,16 +264,7 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Successful_Move)
       return result;
 
-    if (key_symbol) {
-      for (const auto &token : snapshot.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(key_symbol->symbol))
-        job_queue->give_one(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
-    }
-    else {
-      for (const auto tokens : snapshot.snapshot<FILTER_LAYER_0_SYMBOL>()) {
-        for (const auto &token : tokens.second.snapshot<FILTER_LAYER_0_SYMBOL_TOKENS>())
-          job_queue->give_one(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_Null::Create(), token));
-      }
-    }
+    insert_tokens(job_queue, key, child, snapshot);
 
     return result;
   }
@@ -290,16 +281,7 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Successful_Move)
       return result;
 
-    if (key_symbol) {
-      for (const auto &token : snapshot.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(key_symbol->symbol))
-        job_queue->give_one(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
-    }
-    else {
-      for (const auto tokens : snapshot.snapshot<FILTER_LAYER_0_SYMBOL>()) {
-        for (const auto &token : tokens.second.snapshot<FILTER_LAYER_0_SYMBOL_TOKENS>())
-          job_queue->give_one(std::make_shared<Message_Token_Remove>(child, network, sft, Node_Key_Null::Create(), token));
-      }
-    }
+    remove_tokens(job_queue, key, child, snapshot);
 
     return result;
   }
@@ -330,26 +312,10 @@ namespace Zeni::Rete {
   }
 
   void Network::receive(const Message_Connect_Filter_0 &message) {
-    const auto sft = shared_from_this();
-    const auto &job_queue = message.get_Job_Queue();
-
-    const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(message.key);
-
-    if (key_symbol) {
-      for (const auto &token : message.snapshot.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(key_symbol->symbol))
-        job_queue->give_one(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
-    }
-    else {
-      for (const auto tokens : message.snapshot.snapshot<FILTER_LAYER_0_SYMBOL>()) {
-        for (const auto &token : tokens.second.snapshot<FILTER_LAYER_0_SYMBOL_TOKENS>())
-          job_queue->give_one(std::make_shared<Message_Token_Insert>(message.child, message.network, sft, Node_Key_Null::Create(), token));
-      }
-    }
+    insert_tokens(message.get_Job_Queue(), message.key, message.child, message.snapshot);
   }
 
   void Network::receive(const Message_Disconnect_Output &message) {
-    const auto sft = shared_from_this();
-
     const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(message.key);
 
     const auto[result, snapshot, value] = key_symbol
@@ -361,16 +327,39 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Last_Removal_IP)
       return;
 
-    const auto &job_queue = message.get_Job_Queue();
+    remove_tokens(message.get_Job_Queue(), message.key, message.child, snapshot);
+  }
+
+  void Network::insert_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_0_Snapshot snapshot) {
+    const auto sft = shared_from_this();
+
+    const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
 
     if (key_symbol) {
       for (const auto &token : snapshot.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(key_symbol->symbol))
-        job_queue->give_one(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
+        job_queue->give_one(std::make_shared<Message_Token_Insert>(child, sft, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
     }
     else {
       for (const auto tokens : snapshot.snapshot<FILTER_LAYER_0_SYMBOL>()) {
         for (const auto &token : tokens.second.snapshot<FILTER_LAYER_0_SYMBOL_TOKENS>())
-          job_queue->give_one(std::make_shared<Message_Token_Remove>(message.child, message.network, sft, Node_Key_Null::Create(), token));
+          job_queue->give_one(std::make_shared<Message_Token_Insert>(child, sft, sft, Node_Key_Null::Create(), token));
+      }
+    }
+  }
+
+  void Network::remove_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_0_Snapshot snapshot) {
+    const auto sft = shared_from_this();
+
+    const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
+
+    if (key_symbol) {
+      for (const auto &token : snapshot.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(key_symbol->symbol))
+        job_queue->give_one(std::make_shared<Message_Token_Remove>(child, sft, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
+    }
+    else {
+      for (const auto tokens : snapshot.snapshot<FILTER_LAYER_0_SYMBOL>()) {
+        for (const auto &token : tokens.second.snapshot<FILTER_LAYER_0_SYMBOL_TOKENS>())
+          job_queue->give_one(std::make_shared<Message_Token_Remove>(child, sft, sft, Node_Key_Null::Create(), token));
       }
     }
   }

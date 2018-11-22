@@ -49,6 +49,9 @@ namespace Zeni::Rete {
     std::shared_ptr<Symbols> bind_variables_left(const std::shared_ptr<const Token> token_left) const;
     std::shared_ptr<Symbols> bind_variables_right(const std::shared_ptr<const Token> token_right) const;
 
+    void insert_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot);
+    void remove_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot);
+
     Join_Layer_Trie m_join_layer_trie;
 
     const Variable_Bindings m_variable_bindings;

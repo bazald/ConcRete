@@ -1,8 +1,8 @@
 #include "Zeni/Rete/Internal/Node_Binary.hpp"
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
+#include "Zeni/Rete/Internal/Job_Sequential_Messages.hpp"
 #include "Zeni/Rete/Internal/Message_Disconnect_Output.hpp"
-#include "Zeni/Rete/Internal/Message_Sequential_Pair.hpp"
 #include "Zeni/Rete/Network.hpp"
 
 #include <cassert>
@@ -30,7 +30,7 @@ namespace Zeni::Rete {
     const auto sft = shared_from_this();
 
     if (m_input_left != m_input_right || *m_key_left != *m_key_right) {
-      job_queue->give_one(std::make_shared<Message_Sequential_Pair>(network, std::make_pair(
+      job_queue->give_one(std::make_shared<Job_Sequential_Messages>(network, std::make_pair(
         std::make_shared<Message_Disconnect_Output>(m_input_right, network, m_key_right, sft),
         std::make_shared<Message_Disconnect_Output>(m_input_left, network, m_key_left, sft)
       )));
