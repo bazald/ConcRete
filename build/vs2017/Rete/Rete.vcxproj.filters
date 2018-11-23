@@ -126,6 +126,9 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Job_Sequential_Messages.cpp">
       <Filter>Source Files\Internal</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Relink_Output.cpp">
+      <Filter>Source Files\Internal</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Linkage.hpp">
@@ -243,6 +246,9 @@
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Job_Sequential_Messages.hpp">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Relink_Output.hpp">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
   </ItemGroup>

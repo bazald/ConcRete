@@ -364,6 +364,10 @@ namespace Zeni::Rete {
     }
   }
 
+  bool Network::is_linked(const std::shared_ptr<Node>, const std::shared_ptr<const Node_Key>) {
+    abort();
+  }
+
   void Network::excise_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &name, const bool user_action) {
     auto erased = unname_rule(name, user_action);
 

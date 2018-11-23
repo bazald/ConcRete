@@ -2,6 +2,7 @@
 
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Internal/Message_Disconnect_Output.hpp"
+#include "Zeni/Rete/Internal/Message_Relink_Output.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Insert.hpp"
 #include "Zeni/Rete/Internal/Message_Token_Remove.hpp"
 #include "Zeni/Rete/Network.hpp"
@@ -58,6 +59,13 @@ namespace Zeni::Rete {
 
   void Node::receive(const std::shared_ptr<const Concurrency::Message> message) noexcept {
     std::dynamic_pointer_cast<const Rete::Message>(message)->receive();
+  }
+
+  void Node::receive(const Message_Relink_Output &message) {
+    if (message.child->is_linked(shared_from_this(), message.key))
+      link_output(message.network, message.get_Job_Queue(), message.key, message.child);
+    else
+      unlink_output(message.network, message.get_Job_Queue(), message.key, message.child);
   }
 
   size_t Node::get_hash() const {

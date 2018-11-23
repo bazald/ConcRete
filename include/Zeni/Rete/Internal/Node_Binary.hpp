@@ -23,11 +23,31 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::shared_ptr<const Node> get_input_right() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Node> get_input_right();
 
+    ZENI_RETE_LINKAGE bool is_linked(const std::shared_ptr<Node> input, const std::shared_ptr<const Node_Key> key) override;
+
   private:
     const std::shared_ptr<const Node_Key> m_key_left;
     const std::shared_ptr<const Node_Key> m_key_right;
     const std::shared_ptr<Node> m_input_left;
     const std::shared_ptr<Node> m_input_right;
+
+  protected:
+    enum class Link_Status { BOTH_LINKED, LEFT_UNLINKED, RIGHT_UNLINKED };
+    class Link_Data : public Concurrency::Enable_Intrusive_Sharing {
+      Link_Data(const Link_Data &) = delete;
+      Link_Data & operator=(const Link_Data &) = delete;
+
+    public:
+      Link_Data() {}
+
+      Link_Data(const int64_t tokens_left_, const int64_t tokens_right_, const Link_Status link_status_) : tokens_left(tokens_left_), tokens_right(tokens_right_), link_status(link_status_) {}
+
+      const int64_t tokens_left = 0;
+      const int64_t tokens_right = 0;
+      const Link_Status link_status = Link_Status::RIGHT_UNLINKED;
+    };
+
+    Concurrency::Intrusive_Shared_Ptr<Link_Data> m_link_data = new Link_Data();
   };
 
 }

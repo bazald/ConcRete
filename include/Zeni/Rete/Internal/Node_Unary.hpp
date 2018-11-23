@@ -20,6 +20,8 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE std::shared_ptr<const Node> get_input() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Node> get_input();
 
+    ZENI_RETE_LINKAGE bool is_linked(const std::shared_ptr<Node> input, const std::shared_ptr<const Node_Key> key) override;
+
   private:
     const std::shared_ptr<const Node_Key> m_key;
     const std::shared_ptr<Node> m_input;

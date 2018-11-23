@@ -135,6 +135,8 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE void receive(const Message_Connect_Filter_0 &message) override;
     ZENI_RETE_LINKAGE void receive(const Message_Disconnect_Output &message) override;
 
+    ZENI_RETE_LINKAGE bool is_linked(const std::shared_ptr<Node> input, const std::shared_ptr<const Node_Key> key) override;
+
     ZENI_RETE_LINKAGE void source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_action);
     ZENI_RETE_LINKAGE void excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action);
     ZENI_RETE_LINKAGE void excise_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &name, const bool user_action);

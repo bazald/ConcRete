@@ -35,4 +35,8 @@ namespace Zeni::Rete {
     return m_input;
   }
 
+  bool Node_Unary::is_linked(const std::shared_ptr<Node>, const std::shared_ptr<const Node_Key>) {
+    abort();
+  }
+
 }
