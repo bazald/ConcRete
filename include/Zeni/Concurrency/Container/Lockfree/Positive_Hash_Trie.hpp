@@ -937,7 +937,7 @@ namespace Zeni::Concurrency {
         }
         else if (Pred()(snode->key, key)) {
           const auto new_snode = snode->updated_count(insertion);
-          const Result result = !new_snode ? Result::Last_Removal : insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
+          const Result result = !new_snode ? Result::Last_Removal_IP : insertion ? Result::Extra_Insertion_IP : Result::Canceling_Removal_IP;
           return std::make_tuple(result, new_snode, new_snode ? new_snode : snode);
         }
         else {
