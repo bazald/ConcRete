@@ -67,8 +67,8 @@ namespace Zeni::Rete {
     const Concurrency::Intrusive_Shared_Ptr<Link_Data>::Lock link_data = m_link_data.load(std::memory_order_acquire);
     return link_data->link_status == Link_Status::BOTH_LINKED ||
       (link_data->link_status == Link_Status::LEFT_UNLINKED ?
-      (input == get_input_right() && *key == *get_key_right()) :
-        (input == get_input_left() && *key == *get_key_left()));
+      ((input == get_input_right() && *key == *get_key_right()) || get_input_left()->has_tokens(get_key_left())) :
+        ((input == get_input_left() && *key == *get_key_left()) || get_input_right()->has_tokens(get_key_right())));
   }
 
 }

@@ -101,13 +101,15 @@ namespace Zeni::Concurrency {
       }
 
       explicit Lock(const Intrusive_Shared_Ptr<TYPE> &rhs) {
-        TYPE * const rhs_ptr = rhs.m_ptr.load(std::memory_order_seq_cst);
-        m_ptr = rhs_ptr && rhs_ptr->increment_refs() ? rhs_ptr : nullptr;
+        do {
+          m_ptr = rhs.m_ptr.load(std::memory_order_seq_cst);
+        } while (m_ptr && !m_ptr->increment_refs());
       }
 
       explicit Lock(const Intrusive_Shared_Ptr<TYPE> &rhs, const std::memory_order order) {
-        TYPE * const rhs_ptr = rhs.m_ptr.load(order);
-        m_ptr = rhs_ptr && rhs_ptr->increment_refs() ? rhs_ptr : nullptr;
+        do {
+          m_ptr = rhs.m_ptr.load(order);
+        } while (m_ptr && !m_ptr->increment_refs());
       }
 
       Lock(TYPE * const ptr)
