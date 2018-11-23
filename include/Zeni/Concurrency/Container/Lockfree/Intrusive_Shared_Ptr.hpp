@@ -302,8 +302,10 @@ namespace Zeni::Concurrency {
         desired.m_ptr->increment_refs();
       bool success = m_ptr.compare_exchange_strong(expected.m_ptr, desired.m_ptr, succ, fail);
       if (!success) {
-        if (expected.m_ptr && !expected.m_ptr->increment_refs())
+        if (expected.m_ptr && !expected.m_ptr->increment_refs()) {
           expected.m_ptr = nullptr;
+          expected = load(fail);
+        }
         if (desired.m_ptr)
           desired.m_ptr->decrement_refs();
       }
