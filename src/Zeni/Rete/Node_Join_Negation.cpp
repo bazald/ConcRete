@@ -248,7 +248,6 @@ namespace Zeni::Rete {
 
   void Node_Join_Negation::receive(const Message_Disconnect_Output &message) {
     const auto sft = shared_from_this();
-    const auto &job_queue = message.get_Job_Queue();
 
     assert(std::dynamic_pointer_cast<const Node_Key_Null>(message.key));
 
