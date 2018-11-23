@@ -22,6 +22,10 @@ namespace Zeni::Rete {
     return false;
   }
 
+  bool Node_Key::operator==(const Node_Key_Multisym &) const {
+    return false;
+  }
+
   Node_Key_Symbol::Node_Key_Symbol(const std::shared_ptr<const Symbol> symbol_)
     : symbol(symbol_)
   {
@@ -150,6 +154,46 @@ namespace Zeni::Rete {
 
   bool Node_Key_12::operator==(const Node_Key_12 &) const {
     return true;
+  }
+
+  Node_Key_Multisym::Node_Key_Multisym(const std::vector<std::shared_ptr<const Node_Key_Symbol>> &symbols_)
+    : symbols(symbols_)
+  {
+  }
+
+  Node_Key_Multisym::Node_Key_Multisym(std::vector<std::shared_ptr<const Node_Key_Symbol>> &&symbols_)
+    : symbols(std::move(symbols_))
+  {
+  }
+
+  std::shared_ptr<const Node_Key_Multisym> Node_Key_Multisym::Create(const std::vector<std::shared_ptr<const Node_Key_Symbol>> symbols) {
+    class Friendly_Node_Key_Multisym : public Node_Key_Multisym {
+    public:
+      Friendly_Node_Key_Multisym(const std::vector<std::shared_ptr<const Node_Key_Symbol>> symbols) : Node_Key_Multisym(symbols) {}
+    };
+
+    return std::make_shared<Friendly_Node_Key_Multisym>(symbols);
+  }
+
+  std::shared_ptr<const Node_Key_Multisym> Node_Key_Multisym::Create(std::vector<std::shared_ptr<const Node_Key_Symbol>> &&symbols) {
+    class Friendly_Node_Key_Multisym : public Node_Key_Multisym {
+    public:
+      Friendly_Node_Key_Multisym(std::vector<std::shared_ptr<const Node_Key_Symbol>> &&symbols) : Node_Key_Multisym(std::move(symbols)) {}
+    };
+
+    return std::make_shared<Friendly_Node_Key_Multisym>(std::move(symbols));
+  }
+
+  size_t Node_Key_Multisym::hash() const {
+    return hash_container_deref<Node_Key_Symbol>()(symbols);
+  }
+
+  bool Node_Key_Multisym::operator==(const Node_Key &rhs) const {
+    return rhs == *this;
+  }
+
+  bool Node_Key_Multisym::operator==(const Node_Key_Multisym &rhs) const {
+    return compare_container_deref_eq()(symbols, rhs.symbols);
   }
 
 }

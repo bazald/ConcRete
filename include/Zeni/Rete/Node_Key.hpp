@@ -6,15 +6,22 @@
 
 namespace Zeni::Rete {
   class Node_Key;
+  class Node_Key_Symbol;
+  class Node_Key_Multisym;
 }
 
 namespace std {
   template class ZENI_RETE_LINKAGE std::weak_ptr<Zeni::Rete::Node_Key>;
+#ifdef _MSC_VER
+  struct ZENI_RETE_LINKAGE std::_Container_base12;
+  template class ZENI_RETE_LINKAGE std::_Vector_val<std::_Simple_types<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>>;
+  template class ZENI_RETE_LINKAGE std::_Compressed_pair<std::allocator<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>, std::_Vector_val<std::_Simple_types<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>>, true>;
+  template class ZENI_RETE_LINKAGE std::vector<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>;
+#endif
 }
 
 namespace Zeni::Rete {
 
-  class Node_Key_Symbol;
   class Node_Key_Null;
   class Node_Key_01;
   class Node_Key_02;
@@ -39,6 +46,7 @@ namespace Zeni::Rete {
     virtual bool operator==(const Node_Key_01 &rhs) const;
     virtual bool operator==(const Node_Key_02 &rhs) const;
     virtual bool operator==(const Node_Key_12 &rhs) const;
+    virtual bool operator==(const Node_Key_Multisym &rhs) const;
   };
 
   class ZENI_RETE_LINKAGE Node_Key_Symbol : public Node_Key {
@@ -113,11 +121,35 @@ namespace Zeni::Rete {
     bool operator==(const Node_Key_12 &rhs) const override;
   };
 
+  class ZENI_RETE_LINKAGE Node_Key_Multisym : public Node_Key {
+    Node_Key_Multisym(const Node_Key_Multisym &) = delete;
+    Node_Key_Multisym & operator=(const Node_Key_Multisym &) = delete;
+
+    Node_Key_Multisym(const std::vector<std::shared_ptr<const Node_Key_Symbol>> &symbols);
+    Node_Key_Multisym(std::vector<std::shared_ptr<const Node_Key_Symbol>> &&symbols);
+
+  public:
+    static std::shared_ptr<const Node_Key_Multisym> Create(const std::vector<std::shared_ptr<const Node_Key_Symbol>> symbols);
+    static std::shared_ptr<const Node_Key_Multisym> Create(std::vector<std::shared_ptr<const Node_Key_Symbol>> &&symbols);
+
+    size_t hash() const override;
+    bool operator==(const Node_Key &rhs) const override;
+    bool operator==(const Node_Key_Multisym &rhs) const override;
+
+    const std::vector<std::shared_ptr<const Node_Key_Symbol>> symbols;
+  };
+
 }
 
 namespace std {
   template <> struct hash<Zeni::Rete::Node_Key> {
     size_t operator()(const Zeni::Rete::Node_Key &node_key) const {
+      return node_key.hash();
+    }
+  };
+
+  template <> struct hash<Zeni::Rete::Node_Key_Symbol> {
+    size_t operator()(const Zeni::Rete::Node_Key_Symbol &node_key) const {
       return node_key.hash();
     }
   };
