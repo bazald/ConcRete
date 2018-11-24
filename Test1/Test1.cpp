@@ -172,7 +172,7 @@ int main(int argc, char **argv)
   ////}
 
   std::cerr << "Test: ";
-  for (int i = 1; i != 1001; ++i) {
+  for (int i = 1; i != 11; ++i) {
     std::cerr << ' ' << i;
     test_Rete_Network(worker_threads, job_queue);
   }
@@ -623,7 +623,7 @@ public:
 void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
   const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::None, worker_threads);
 
-  for (int i = 1; i != 501; ++i) {
+  for (int i = 1; i != 101; ++i) {
     std::array<std::shared_ptr<const Zeni::Rete::Symbol>, 5> symbols = {
       {
         std::make_shared<Zeni::Rete::Symbol_Constant_Int>(1),

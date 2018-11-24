@@ -54,7 +54,7 @@ namespace Zeni::Rete {
     /// Finds an existing equivalent to output and return it, or returns the new output if no equivalent exists; prefers to start linked
     ZENI_RETE_LINKAGE virtual std::pair<Node_Trie::Result, std::shared_ptr<Node>> connect_new_or_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) = 0;
     /// Finds an existing equivalent to output and return it; prefers to start unlinked
-    ZENI_RETE_LINKAGE virtual Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) = 0;
+    ZENI_RETE_LINKAGE virtual Node_Trie::Result connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const bool unlinked) = 0;
 
     ZENI_RETE_LINKAGE virtual Node_Trie::Result link_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) = 0;
     ZENI_RETE_LINKAGE virtual Node_Trie::Result unlink_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) = 0;

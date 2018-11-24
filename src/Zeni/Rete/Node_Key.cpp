@@ -1,5 +1,7 @@
 #include "Zeni/Rete/Node_Key.hpp"
 
+#include <cassert>
+
 namespace Zeni::Rete {
 
   bool Node_Key::operator==(const Node_Key_Symbol &) const {
@@ -23,6 +25,30 @@ namespace Zeni::Rete {
   }
 
   bool Node_Key::operator==(const Node_Key_Multisym &) const {
+    return false;
+  }
+
+  bool Node_Key::contains(const Node_Key_Symbol &) const {
+    return false;
+  }
+
+  bool Node_Key::contains(const Node_Key_Null &) const {
+    return false;
+  }
+
+  bool Node_Key::contains(const Node_Key_01 &) const {
+    return false;
+  }
+
+  bool Node_Key::contains(const Node_Key_02 &) const {
+    return false;
+  }
+
+  bool Node_Key::contains(const Node_Key_12 &) const {
+    return false;
+  }
+
+  bool Node_Key::contains(const Node_Key_Multisym &) const {
     return false;
   }
 
@@ -52,6 +78,14 @@ namespace Zeni::Rete {
     return *symbol == *rhs.symbol;
   }
 
+  bool Node_Key_Symbol::is_contained_by(const Node_Key &rhs) const {
+    return rhs.contains(*this);
+  }
+
+  bool Node_Key_Symbol::contains(const Node_Key_Symbol &rhs) const {
+    return *symbol == *rhs.symbol;
+  }
+
   Node_Key_Null::Node_Key_Null()
   {
   }
@@ -70,11 +104,19 @@ namespace Zeni::Rete {
     return std::hash<size_t>()(1);
   }
 
-  bool Node_Key_Null::operator==(const Node_Key &) const {
-    return true;
+  bool Node_Key_Null::operator==(const Node_Key &rhs) const {
+    return rhs == *this;
   }
 
   bool Node_Key_Null::operator==(const Node_Key_Null &) const {
+    return true;
+  }
+
+  bool Node_Key_Null::is_contained_by(const Node_Key &rhs) const {
+    return rhs.contains(*this);
+  }
+
+  bool Node_Key_Null::contains(const Node_Key_Null &) const {
     return true;
   }
 
@@ -96,11 +138,19 @@ namespace Zeni::Rete {
     return std::hash<size_t>()(2);
   }
 
-  bool Node_Key_01::operator==(const Node_Key &) const {
-    return true;
+  bool Node_Key_01::operator==(const Node_Key &rhs) const {
+    return rhs == *this;
   }
 
   bool Node_Key_01::operator==(const Node_Key_01 &) const {
+    return true;
+  }
+
+  bool Node_Key_01::is_contained_by(const Node_Key &rhs) const {
+    return rhs.contains(*this);
+  }
+
+  bool Node_Key_01::contains(const Node_Key_01 &) const {
     return true;
   }
 
@@ -122,11 +172,19 @@ namespace Zeni::Rete {
     return std::hash<size_t>()(3);
   }
 
-  bool Node_Key_02::operator==(const Node_Key &) const {
-    return true;
+  bool Node_Key_02::operator==(const Node_Key &rhs) const {
+    return rhs == *this;
   }
 
   bool Node_Key_02::operator==(const Node_Key_02 &) const {
+    return true;
+  }
+
+  bool Node_Key_02::is_contained_by(const Node_Key &rhs) const {
+    return rhs.contains(*this);
+  }
+
+  bool Node_Key_02::contains(const Node_Key_02 &) const {
     return true;
   }
 
@@ -148,37 +206,47 @@ namespace Zeni::Rete {
     return std::hash<size_t>()(4);
   }
 
-  bool Node_Key_12::operator==(const Node_Key &) const {
-    return true;
+  bool Node_Key_12::operator==(const Node_Key &rhs) const {
+    return rhs == *this;
   }
 
   bool Node_Key_12::operator==(const Node_Key_12 &) const {
     return true;
   }
 
-  Node_Key_Multisym::Node_Key_Multisym(const std::vector<std::shared_ptr<const Node_Key_Symbol>> &symbols_)
+  bool Node_Key_12::is_contained_by(const Node_Key &rhs) const {
+    return rhs.contains(*this);
+  }
+
+  bool Node_Key_12::contains(const Node_Key_12 &) const {
+    return true;
+  }
+
+  Node_Key_Multisym::Node_Key_Multisym(const Node_Key_Symbol_Trie &symbols_)
     : symbols(symbols_)
   {
+    assert(symbols.size() > 1);
   }
 
-  Node_Key_Multisym::Node_Key_Multisym(std::vector<std::shared_ptr<const Node_Key_Symbol>> &&symbols_)
+  Node_Key_Multisym::Node_Key_Multisym(Node_Key_Symbol_Trie &&symbols_)
     : symbols(std::move(symbols_))
   {
+    assert(symbols.size() > 1);
   }
 
-  std::shared_ptr<const Node_Key_Multisym> Node_Key_Multisym::Create(const std::vector<std::shared_ptr<const Node_Key_Symbol>> symbols) {
+  std::shared_ptr<const Node_Key_Multisym> Node_Key_Multisym::Create(const Node_Key_Symbol_Trie symbols) {
     class Friendly_Node_Key_Multisym : public Node_Key_Multisym {
     public:
-      Friendly_Node_Key_Multisym(const std::vector<std::shared_ptr<const Node_Key_Symbol>> symbols) : Node_Key_Multisym(symbols) {}
+      Friendly_Node_Key_Multisym(const Node_Key_Symbol_Trie symbols) : Node_Key_Multisym(symbols) {}
     };
 
     return std::make_shared<Friendly_Node_Key_Multisym>(symbols);
   }
 
-  std::shared_ptr<const Node_Key_Multisym> Node_Key_Multisym::Create(std::vector<std::shared_ptr<const Node_Key_Symbol>> &&symbols) {
+  std::shared_ptr<const Node_Key_Multisym> Node_Key_Multisym::Create(Node_Key_Symbol_Trie &&symbols) {
     class Friendly_Node_Key_Multisym : public Node_Key_Multisym {
     public:
-      Friendly_Node_Key_Multisym(std::vector<std::shared_ptr<const Node_Key_Symbol>> &&symbols) : Node_Key_Multisym(std::move(symbols)) {}
+      Friendly_Node_Key_Multisym(Node_Key_Symbol_Trie &&symbols) : Node_Key_Multisym(std::move(symbols)) {}
     };
 
     return std::make_shared<Friendly_Node_Key_Multisym>(std::move(symbols));
@@ -194,6 +262,15 @@ namespace Zeni::Rete {
 
   bool Node_Key_Multisym::operator==(const Node_Key_Multisym &rhs) const {
     return compare_container_deref_eq()(symbols, rhs.symbols);
+  }
+
+  bool Node_Key_Multisym::is_contained_by(const Node_Key &) const {
+    return false;
+  }
+
+  bool Node_Key_Multisym::contains(const Node_Key_Symbol &rhs) const {
+    const auto [result, snapshot] = symbols.lookup(&rhs);
+    return result != nullptr;
   }
 
 }

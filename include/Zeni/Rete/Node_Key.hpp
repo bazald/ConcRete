@@ -1,6 +1,7 @@
 #ifndef ZENI_RETE_NODE_KEY_HPP
 #define ZENI_RETE_NODE_KEY_HPP
 
+#include "Zeni/Concurrency/Container/Hash_Trie.hpp"
 #include "Symbol.hpp"
 #include "Variable_Binding.hpp"
 
@@ -10,13 +11,17 @@ namespace Zeni::Rete {
   class Node_Key_Multisym;
 }
 
+namespace Zeni::Concurrency {
+  template class ZENI_RETE_LINKAGE Hash_Trie<std::shared_ptr<const Rete::Node_Key_Symbol>, hash_deref<Rete::Node_Key_Symbol>, compare_deref_eq>;
+}
+
 namespace std {
-  template class ZENI_RETE_LINKAGE std::weak_ptr<Zeni::Rete::Node_Key>;
+  template class ZENI_RETE_LINKAGE weak_ptr<Zeni::Rete::Node_Key>;
 #ifdef _MSC_VER
-  struct ZENI_RETE_LINKAGE std::_Container_base12;
-  template class ZENI_RETE_LINKAGE std::_Vector_val<std::_Simple_types<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>>;
-  template class ZENI_RETE_LINKAGE std::_Compressed_pair<std::allocator<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>, std::_Vector_val<std::_Simple_types<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>>, true>;
-  template class ZENI_RETE_LINKAGE std::vector<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>;
+  struct ZENI_RETE_LINKAGE _Container_base12;
+  template class ZENI_RETE_LINKAGE _Vector_val<std::_Simple_types<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>>;
+  template class ZENI_RETE_LINKAGE _Compressed_pair<std::allocator<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>, std::_Vector_val<std::_Simple_types<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>>, true>;
+  template class ZENI_RETE_LINKAGE vector<std::shared_ptr<const Zeni::Rete::Node_Key_Symbol>>;
 #endif
 }
 
@@ -47,6 +52,15 @@ namespace Zeni::Rete {
     virtual bool operator==(const Node_Key_02 &rhs) const;
     virtual bool operator==(const Node_Key_12 &rhs) const;
     virtual bool operator==(const Node_Key_Multisym &rhs) const;
+
+    virtual bool is_contained_by(const Node_Key &rhs) const = 0;
+
+    virtual bool contains(const Node_Key_Symbol &rhs) const;
+    virtual bool contains(const Node_Key_Null &rhs) const;
+    virtual bool contains(const Node_Key_01 &rhs) const;
+    virtual bool contains(const Node_Key_02 &rhs) const;
+    virtual bool contains(const Node_Key_12 &rhs) const;
+    virtual bool contains(const Node_Key_Multisym &rhs) const;
   };
 
   class ZENI_RETE_LINKAGE Node_Key_Symbol : public Node_Key {
@@ -59,8 +73,12 @@ namespace Zeni::Rete {
     static std::shared_ptr<const Node_Key_Symbol> Create(const std::shared_ptr<const Symbol> symbol);
 
     size_t hash() const override;
+
     bool operator==(const Node_Key &rhs) const override;
     bool operator==(const Node_Key_Symbol &rhs) const override;
+
+    bool is_contained_by(const Node_Key &rhs) const override;
+    bool contains(const Node_Key_Symbol &rhs) const override;
 
     const std::shared_ptr<const Symbol> symbol;
   };
@@ -75,8 +93,12 @@ namespace Zeni::Rete {
     static std::shared_ptr<const Node_Key_Null> Create();
 
     size_t hash() const override;
+
     bool operator==(const Node_Key &rhs) const override;
     bool operator==(const Node_Key_Null &rhs) const override;
+
+    bool is_contained_by(const Node_Key &rhs) const override;
+    bool contains(const Node_Key_Null &rhs) const override;
   };
 
   class ZENI_RETE_LINKAGE Node_Key_01 : public Node_Key {
@@ -89,8 +111,12 @@ namespace Zeni::Rete {
     static std::shared_ptr<const Node_Key_01> Create();
 
     size_t hash() const override;
+
     bool operator==(const Node_Key &rhs) const override;
     bool operator==(const Node_Key_01 &rhs) const override;
+
+    bool is_contained_by(const Node_Key &rhs) const override;
+    bool contains(const Node_Key_01 &rhs) const override;
   };
 
   class ZENI_RETE_LINKAGE Node_Key_02 : public Node_Key {
@@ -103,8 +129,12 @@ namespace Zeni::Rete {
     static std::shared_ptr<const Node_Key_02> Create();
 
     size_t hash() const override;
+
     bool operator==(const Node_Key &rhs) const override;
     bool operator==(const Node_Key_02 &rhs) const override;
+
+    bool is_contained_by(const Node_Key &rhs) const override;
+    bool contains(const Node_Key_02 &rhs) const override;
   };
 
   class ZENI_RETE_LINKAGE Node_Key_12 : public Node_Key {
@@ -117,26 +147,38 @@ namespace Zeni::Rete {
     static std::shared_ptr<const Node_Key_12> Create();
 
     size_t hash() const override;
+
     bool operator==(const Node_Key &rhs) const override;
     bool operator==(const Node_Key_12 &rhs) const override;
+
+    bool is_contained_by(const Node_Key &rhs) const override;
+    bool contains(const Node_Key_12 &rhs) const override;
   };
 
   class ZENI_RETE_LINKAGE Node_Key_Multisym : public Node_Key {
     Node_Key_Multisym(const Node_Key_Multisym &) = delete;
     Node_Key_Multisym & operator=(const Node_Key_Multisym &) = delete;
 
-    Node_Key_Multisym(const std::vector<std::shared_ptr<const Node_Key_Symbol>> &symbols);
-    Node_Key_Multisym(std::vector<std::shared_ptr<const Node_Key_Symbol>> &&symbols);
+  public:
+    typedef Concurrency::Hash_Trie<std::shared_ptr<const Node_Key_Symbol>, hash_deref<Node_Key_Symbol>, compare_deref_eq> Node_Key_Symbol_Trie;
+
+  private:
+    Node_Key_Multisym(const Node_Key_Symbol_Trie &symbols);
+    Node_Key_Multisym(Node_Key_Symbol_Trie &&symbols);
 
   public:
-    static std::shared_ptr<const Node_Key_Multisym> Create(const std::vector<std::shared_ptr<const Node_Key_Symbol>> symbols);
-    static std::shared_ptr<const Node_Key_Multisym> Create(std::vector<std::shared_ptr<const Node_Key_Symbol>> &&symbols);
+    static std::shared_ptr<const Node_Key_Multisym> Create(const Node_Key_Symbol_Trie symbols);
+    static std::shared_ptr<const Node_Key_Multisym> Create(Node_Key_Symbol_Trie &&symbols);
 
     size_t hash() const override;
+
     bool operator==(const Node_Key &rhs) const override;
     bool operator==(const Node_Key_Multisym &rhs) const override;
 
-    const std::vector<std::shared_ptr<const Node_Key_Symbol>> symbols;
+    bool is_contained_by(const Node_Key &rhs) const override;
+    bool contains(const Node_Key_Symbol &rhs) const override;
+
+    const Node_Key_Symbol_Trie symbols;
   };
 
 }

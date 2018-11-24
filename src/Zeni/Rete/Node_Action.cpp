@@ -50,7 +50,12 @@ namespace Zeni::Rete {
 
     network->source_rule(job_queue, action_fun, user_action);
 
-    input->connect_new_or_existing_output(network, job_queue, node_key, action_fun);
+    if (const auto multisym = std::dynamic_pointer_cast<const Node_Key_Multisym>(node_key)) {
+      for (const auto sym : multisym->symbols)
+        [[maybe_unused]] const auto rv = input->connect_new_or_existing_output(network, job_queue, sym, action_fun);
+    }
+    else
+      [[maybe_unused]] const auto rv = input->connect_new_or_existing_output(network, job_queue, node_key, action_fun);
 
     return action_fun;
   }
@@ -75,7 +80,7 @@ namespace Zeni::Rete {
     abort();
   }
 
-  Node::Node_Trie::Result Node_Action::connect_existing_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<const Node_Key>, const std::shared_ptr<Node>) {
+  Node::Node_Trie::Result Node_Action::connect_existing_output(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<const Node_Key>, const std::shared_ptr<Node>, const bool) {
     abort();
   }
 

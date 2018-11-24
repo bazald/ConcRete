@@ -62,6 +62,8 @@ namespace Zeni::Rete {
   }
 
   void Node::receive(const Message_Relink_Output &message) {
+    assert(!dynamic_cast<const Node_Key_Multisym *>(message.key.get()));
+
     if (message.child->is_linked(shared_from_this(), message.key))
       link_output(message.network, message.get_Job_Queue(), message.key, message.child);
     else

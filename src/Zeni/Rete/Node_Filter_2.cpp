@@ -18,7 +18,8 @@ namespace Zeni::Rete {
     : Node_Unary(1, 1, 1, hash_combine(std::hash<int>()(2), node_key->hash()), node_key, input)
   {
     assert(dynamic_cast<const Node_Key_Symbol *>(node_key.get())
-      || dynamic_cast<const Node_Key_01 *>(node_key.get()));
+      || dynamic_cast<const Node_Key_01 *>(node_key.get())
+      || dynamic_cast<const Node_Key_Multisym *>(node_key.get()));
   }
 
   std::shared_ptr<Node_Filter_2> Node_Filter_2::Create(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input) {
@@ -28,10 +29,21 @@ namespace Zeni::Rete {
     };
 
     const auto created = std::shared_ptr<Friendly_Node_Filter_2>(new Friendly_Node_Filter_2(network, node_key, input));
-    const auto [result, connected] = input->connect_new_or_existing_output(network, job_queue, node_key, created);
 
+    const auto multisym = std::dynamic_pointer_cast<const Node_Key_Multisym>(node_key);
+    auto mt = multisym ? multisym->symbols.cbegin() : Node_Key_Multisym::Node_Key_Symbol_Trie::const_iterator();
+
+    const auto [result, connected] = input->connect_new_or_existing_output(network, job_queue, multisym ? *mt++ : node_key, created);
     if (result != Node_Trie::Result::First_Insertion)
       input->send_disconnect_from_parents(network, job_queue);
+
+    if (multisym) {
+      for (const auto mend = multisym->symbols.cend(); mt != mend; ++mt) {
+        const auto result2 = input->connect_existing_output(network, job_queue, *mt, connected, false);
+        if (result2 == Node_Trie::Result::First_Insertion)
+          input->connect_to_parents_again(network, job_queue);
+      }
+    }
 
     return std::static_pointer_cast<Node_Filter_2>(connected);
   }
@@ -54,22 +66,28 @@ namespace Zeni::Rete {
     return std::make_pair(result, value);
   }
 
-  Node::Node_Trie::Result Node_Filter_2::connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
+  Node::Node_Trie::Result Node_Filter_2::connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const bool unlinked) {
     const auto sft = shared_from_this();
 
     const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
     assert(key_symbol || dynamic_cast<const Node_Key_02 *>(key.get()) || dynamic_cast<const Node_Key_12 *>(key.get()));
 
-    const auto[result, snapshot, value] = key_symbol
-      ? m_filter_layer_2_trie.insert_2_ip_xp<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_OUTPUTS, FILTER_LAYER_2_SYMBOL_OUTPUTS_UNLINKED>(key_symbol->symbol, child)
-      : dynamic_cast<const Node_Key_02 *>(key.get())
-      ? m_filter_layer_2_trie.insert_ip_xp<FILTER_LAYER_2_VARIABLE_OUTPUTS_02, FILTER_LAYER_2_VARIABLE_OUTPUTS_02_UNLINKED>(child)
-      : m_filter_layer_2_trie.insert_ip_xp<FILTER_LAYER_2_VARIABLE_OUTPUTS_12, FILTER_LAYER_2_VARIABLE_OUTPUTS_12_UNLINKED>(child);
+    const auto[result, snapshot, value] = unlinked
+      ? (key_symbol
+        ? m_filter_layer_2_trie.insert_2_ip_xp<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_OUTPUTS, FILTER_LAYER_2_SYMBOL_OUTPUTS_UNLINKED>(key_symbol->symbol, child)
+        : dynamic_cast<const Node_Key_02 *>(key.get())
+        ? m_filter_layer_2_trie.insert_ip_xp<FILTER_LAYER_2_VARIABLE_OUTPUTS_02, FILTER_LAYER_2_VARIABLE_OUTPUTS_02_UNLINKED>(child)
+        : m_filter_layer_2_trie.insert_ip_xp<FILTER_LAYER_2_VARIABLE_OUTPUTS_12, FILTER_LAYER_2_VARIABLE_OUTPUTS_12_UNLINKED>(child))
+      : (key_symbol
+        ? m_filter_layer_2_trie.insert_2_ip_xp<FILTER_LAYER_2_SYMBOL, FILTER_LAYER_2_SYMBOL_OUTPUTS_UNLINKED, FILTER_LAYER_2_SYMBOL_OUTPUTS>(key_symbol->symbol, child)
+        : dynamic_cast<const Node_Key_02 *>(key.get())
+        ? m_filter_layer_2_trie.insert_ip_xp<FILTER_LAYER_2_VARIABLE_OUTPUTS_02_UNLINKED, FILTER_LAYER_2_VARIABLE_OUTPUTS_02>(child)
+        : m_filter_layer_2_trie.insert_ip_xp<FILTER_LAYER_2_VARIABLE_OUTPUTS_12_UNLINKED, FILTER_LAYER_2_VARIABLE_OUTPUTS_12>(child));
 
     assert(value == child);
 
-    //if (result == Node_Trie::Result::First_Insertion_IP)
-    //  job_queue->give_one(std::make_shared<Message_Connect_Filter_2>(sft, network, std::move(snapshot), key, value));
+    if (!unlinked && result == Node_Trie::Result::First_Insertion)
+      job_queue->give_one(std::make_shared<Message_Connect_Filter_2>(sft, network, std::move(snapshot), key, value));
 
     return result;
   }

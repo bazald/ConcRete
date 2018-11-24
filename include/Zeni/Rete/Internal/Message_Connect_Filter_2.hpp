@@ -2,8 +2,8 @@
 #define ZENI_RETE_MESSAGE_CONNECT_FILTER_2_HPP
 
 #include "Message.hpp"
-#include "../Node_Filter_2.hpp"
 #include "../Node_Key.hpp"
+#include "../Node_Filter_2.hpp"
 
 namespace Zeni::Rete {
 

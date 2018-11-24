@@ -1,6 +1,7 @@
 #ifndef ZENI_RETE_NODE_UNARY_HPP
 #define ZENI_RETE_NODE_UNARY_HPP
 
+#include "Zeni/Rete/Node_Key.hpp"
 #include "Zeni/Rete/Node.hpp"
 
 namespace Zeni::Rete {

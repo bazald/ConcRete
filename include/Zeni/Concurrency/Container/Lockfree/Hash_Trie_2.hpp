@@ -8,6 +8,14 @@
 #include <functional>
 #include <stack>
 
+namespace Zeni::Concurrency::Hash_Trie_2_Internal {
+  struct Main_Node;
+}
+
+namespace std {
+  template struct ZENI_CONCURRENCY_LINKAGE atomic<const Zeni::Concurrency::Hash_Trie_2_Internal::Main_Node *>;
+}
+
 namespace Zeni::Concurrency {
 
   namespace Hash_Trie_2_Internal {

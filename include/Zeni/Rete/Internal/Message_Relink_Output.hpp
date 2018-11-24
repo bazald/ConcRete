@@ -2,8 +2,8 @@
 #define ZENI_RETE_MESSAGE_RELINK_OUTPUT_HPP
 
 #include "Message.hpp"
-#include "../Node.hpp"
 #include "../Node_Key.hpp"
+#include "../Node.hpp"
 
 namespace Zeni::Rete {
 

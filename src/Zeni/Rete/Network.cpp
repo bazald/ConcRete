@@ -234,20 +234,24 @@ namespace Zeni::Rete {
     return std::make_pair(result, value);
   }
 
-  Node::Node_Trie::Result Network::connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
+  Node::Node_Trie::Result Network::connect_existing_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const bool unlinked) {
     const auto sft = shared_from_this();
     assert(sft == network);
 
     const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
 
-    const auto[result, snapshot, value] = key_symbol
-      ? m_filter_layer_0_trie.insert_2_ip_xp<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS, FILTER_LAYER_0_SYMBOL_OUTPUTS_UNLINKED>(key_symbol->symbol, child)
-      : m_filter_layer_0_trie.insert_ip_xp<FILTER_LAYER_0_VARIABLE_OUTPUTS, FILTER_LAYER_0_VARIABLE_OUTPUTS_UNLINKED>(child);
+    const auto[result, snapshot, value] = unlinked
+      ? (key_symbol
+        ? m_filter_layer_0_trie.insert_2_ip_xp<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS, FILTER_LAYER_0_SYMBOL_OUTPUTS_UNLINKED>(key_symbol->symbol, child)
+        : m_filter_layer_0_trie.insert_ip_xp<FILTER_LAYER_0_VARIABLE_OUTPUTS, FILTER_LAYER_0_VARIABLE_OUTPUTS_UNLINKED>(child))
+      : (key_symbol
+        ? m_filter_layer_0_trie.insert_2_ip_xp<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS_UNLINKED, FILTER_LAYER_0_SYMBOL_OUTPUTS>(key_symbol->symbol, child)
+        : m_filter_layer_0_trie.insert_ip_xp<FILTER_LAYER_0_VARIABLE_OUTPUTS_UNLINKED, FILTER_LAYER_0_VARIABLE_OUTPUTS>(child));
 
     assert(value == child);
 
-    //if (result == Node_Trie::Result::First_Insertion_IP)
-    //  job_queue->give_one(std::make_shared<Message_Connect_Filter_0>(sft, network, std::move(snapshot), key, value));
+    if (!unlinked && result == Node_Trie::Result::First_Insertion)
+      job_queue->give_one(std::make_shared<Message_Connect_Filter_0>(sft, network, std::move(snapshot), key, value));
 
     return result;
   }
