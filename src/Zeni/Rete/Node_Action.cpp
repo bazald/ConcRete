@@ -50,12 +50,20 @@ namespace Zeni::Rete {
 
     network->source_rule(job_queue, action_fun, user_action);
 
-    if (const auto multisym = std::dynamic_pointer_cast<const Node_Key_Multisym>(node_key)) {
-      for (const auto sym : multisym->symbols)
-        [[maybe_unused]] const auto rv = input->connect_new_or_existing_output(network, job_queue, sym, action_fun);
+    const auto multisym = std::dynamic_pointer_cast<const Node_Key_Multisym>(node_key);
+    auto mt = multisym ? multisym->symbols.cbegin() : Node_Key_Multisym::Node_Key_Symbol_Trie::const_iterator();
+
+    const auto[result, connected] = input->connect_new_or_existing_output(network, job_queue, multisym ? *mt++ : node_key, action_fun);
+    if (result != Node_Trie::Result::First_Insertion)
+      input->send_disconnect_from_parents(network, job_queue);
+
+    if (multisym) {
+      for (const auto mend = multisym->symbols.cend(); mt != mend; ++mt) {
+        const auto result2 = input->connect_existing_output(network, job_queue, *mt, connected, false);
+        if (result2 == Node_Trie::Result::First_Insertion)
+          input->connect_to_parents_again(network, job_queue);
+      }
     }
-    else
-      [[maybe_unused]] const auto rv = input->connect_new_or_existing_output(network, job_queue, node_key, action_fun);
 
     return action_fun;
   }
