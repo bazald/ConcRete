@@ -167,7 +167,7 @@ namespace Zeni::Rete {
     Node_Key_Multisym(Node_Key_Symbol_Trie &&symbols);
 
   public:
-    static std::shared_ptr<const Node_Key_Multisym> Create(const Node_Key_Symbol_Trie symbols);
+    static std::shared_ptr<const Node_Key_Multisym> Create(const Node_Key_Symbol_Trie &symbols);
     static std::shared_ptr<const Node_Key_Multisym> Create(Node_Key_Symbol_Trie &&symbols);
 
     size_t hash() const override;

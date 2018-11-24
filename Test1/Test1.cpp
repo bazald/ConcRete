@@ -659,9 +659,15 @@ void test_Rete_Network(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> 
     //(*network)->get_Worker_Threads()->finish_jobs();
 
     {
+      Zeni::Rete::Node_Key_Multisym::Node_Key_Symbol_Trie multisyms;
+      multisyms.insert(Zeni::Rete::Node_Key_Symbol::Create(symbols[0]));
+      multisyms.insert(Zeni::Rete::Node_Key_Symbol::Create(symbols[1]));
+      multisyms.insert(Zeni::Rete::Node_Key_Symbol::Create(symbols[2]));
+      const auto multikey = Zeni::Rete::Node_Key_Multisym::Create(std::move(multisyms));
+
       auto filter11a = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]));
-      auto filter12a = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]), filter11a);
-      auto filter11b = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]));
+      auto filter12a = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, multikey, filter11a);
+      auto filter11b = Zeni::Rete::Node_Filter_1::Create(network->get(), job_queue, multikey);
       auto filter12b = Zeni::Rete::Node_Filter_2::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]), filter11b);
       auto join1 = Zeni::Rete::Node_Join::Create(network->get(), job_queue, Zeni::Rete::Node_Key_Symbol::Create(symbols[0]), Zeni::Rete::Node_Key_Symbol::Create(symbols[1]), filter12a, filter12b, { Zeni::Rete::Variable_Binding(Zeni::Rete::Token_Index(0, 0, 0), Zeni::Rete::Token_Index(0, 0, 0)) });
       auto action1 = Zeni::Rete::Node_Action::Create(network->get(), job_queue, "gday-world", false, Zeni::Rete::Node_Key_Null::Create(), join1, Zeni::Rete::Variable_Indices::Create(),

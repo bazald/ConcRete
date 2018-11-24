@@ -234,7 +234,7 @@ namespace Zeni::Rete {
     assert(symbols.size() > 1);
   }
 
-  std::shared_ptr<const Node_Key_Multisym> Node_Key_Multisym::Create(const Node_Key_Symbol_Trie symbols) {
+  std::shared_ptr<const Node_Key_Multisym> Node_Key_Multisym::Create(const Node_Key_Symbol_Trie &symbols) {
     class Friendly_Node_Key_Multisym : public Node_Key_Multisym {
     public:
       Friendly_Node_Key_Multisym(const Node_Key_Symbol_Trie symbols) : Node_Key_Multisym(symbols) {}
