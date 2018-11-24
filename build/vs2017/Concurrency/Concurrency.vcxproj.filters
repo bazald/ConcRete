@@ -31,6 +31,9 @@
     <Filter Include="Source Files\Internal">
       <UniqueIdentifier>{98f37c7b-e5ac-4fea-8e4b-4bfa7cc7e9da}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Container">
+      <UniqueIdentifier>{085aca2a-0c83-467e-9158-396a4900c40e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Linkage.hpp">
@@ -229,6 +232,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Worker_Threads.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Container\Exports.cpp">
+      <Filter>Source Files\Container</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

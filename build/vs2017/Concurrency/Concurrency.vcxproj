@@ -76,6 +76,7 @@
     <ClInclude Include="..\..\..\include\Zeni\Utility.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Container\Exports.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Job_Queue_Impl.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Reclamation_Stacks.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Reclamation_Stacks_Impl.cpp" />
