@@ -64,6 +64,12 @@ namespace Zeni::Rete::PEG {
   /// Conditions and WMEs
 
   template <>
+  struct Action<Condition_Value_Begin> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
   struct Action<Condition_Begin> {
     template<typename Input>
     static void apply(const Input &input, Data &data);

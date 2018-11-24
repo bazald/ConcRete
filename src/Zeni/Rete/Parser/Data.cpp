@@ -56,11 +56,6 @@ namespace Zeni::Rete::PEG {
       return symbol;
   }
 
-  Actions_Generator::Actions_Generator(const std::vector<std::shared_ptr<const Action_Generator>> &actions)
-    : m_actions(actions)
-  {
-  }
-
   Action_Generator::Result Actions_Generator::result() const {
     uint8_t rv = Result::RESULT_UNTOUCHED;
 
@@ -162,11 +157,6 @@ namespace Zeni::Rete::PEG {
     return std::make_shared<Action_Cbind>(m_variable);
   }
 
-  Action_Excise_Generator::Action_Excise_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols)
-    : m_symbols(symbols)
-  {
-  }
-
   std::shared_ptr<const Action_Generator> Action_Excise_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
     std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
     symbols.reserve(m_symbols.size());
@@ -227,6 +217,11 @@ namespace Zeni::Rete::PEG {
     public:
       Action_Excise(const std::vector<std::shared_ptr<const Get_Symbol>> &symbols, const bool user_action)
         : m_symbols(symbols), m_user_action(user_action)
+      {
+      }
+
+      Action_Excise(std::vector<std::shared_ptr<const Get_Symbol>> &&symbols, const bool user_action)
+        : m_symbols(std::move(symbols)), m_user_action(user_action)
       {
       }
 
@@ -339,11 +334,6 @@ namespace Zeni::Rete::PEG {
     };
 
     return Action_Exit::Create();
-  }
-
-  Action_Make_Generator::Action_Make_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols)
-    : m_symbols(symbols)
-  {
   }
 
   std::shared_ptr<const Action_Generator> Action_Make_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
@@ -630,31 +620,56 @@ namespace Zeni::Rete::PEG {
     return std::make_tuple(node, Node_Key_Null::Create(), dynamic_cast<const Node_Action *>(node.get())->get_variable_indices());
   }
 
-  Node_Filter_Generator::Node_Filter_Generator(const std::shared_ptr<const Symbol_Generator> first_, const std::shared_ptr<const Symbol_Generator> second_, const std::shared_ptr<const Symbol_Generator> third_)
-    : first(first_), second(second_), third(third_)
-  {
-  }
-
   std::shared_ptr<const Node_Generator> Node_Filter_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
-    const auto symbol0 = first->clone(action_data);
-    const auto symbol1 = second->clone(action_data);
-    const auto symbol2 = third->clone(action_data);
-    if (symbol0 == first && symbol1 == second && symbol2 == third)
+    std::vector<std::shared_ptr<const Symbol_Generator>> symbols0, symbols1, symbols2;
+    symbols0.reserve(first.size());
+    for (const auto gen : first)
+      symbols0.push_back(gen->clone(action_data));
+    symbols1.reserve(second.size());
+    for (const auto gen : second)
+      symbols1.push_back(gen->clone(action_data));
+    symbols2.reserve(third.size());
+    for (const auto gen : third)
+      symbols2.push_back(gen->clone(action_data));
+    if (first == symbols0 && second == symbols1 && third == symbols2)
       return shared_from_this();
     else
-      return std::make_shared<Node_Filter_Generator>(symbol0, symbol1, symbol2);
+      return std::make_shared<Node_Filter_Generator>(symbols0, symbols1, symbols2);
   }
 
   std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>>
     Node_Filter_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool, const std::shared_ptr<const Node_Action::Data> action_data) const
   {
-    const auto symbol0 = first->generate(action_data);
-    const auto symbol1 = second->generate(action_data);
-    const auto symbol2 = third->generate(action_data);
+    Node_Key_Multisym::Node_Key_Symbol_Trie symbols0, symbols1, symbols2;
+    std::shared_ptr<const Symbol> symbol0, symbol1, symbol2;
+    std::shared_ptr<const Symbol_Variable> var0, var1, var2;
 
-    const auto var0 = std::dynamic_pointer_cast<const Symbol_Variable>(symbol0);
-    const auto var1 = std::dynamic_pointer_cast<const Symbol_Variable>(symbol1);
-    const auto var2 = std::dynamic_pointer_cast<const Symbol_Variable>(symbol2);
+    if (first.size() > 1) {
+      for (const auto gen : first)
+        symbols0.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
+    }
+    else {
+      symbol0 = first.front()->generate(action_data);
+      var0 = std::dynamic_pointer_cast<const Symbol_Variable>(symbol0);
+    }
+
+    if (second.size() > 1) {
+      for (const auto gen : second)
+        symbols1.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
+    }
+    else {
+      symbol1 = second.front()->generate(action_data);
+      var1 = std::dynamic_pointer_cast<const Symbol_Variable>(symbol1);
+    }
+
+    if (third.size() > 1) {
+      for (const auto gen : third)
+        symbols2.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
+    }
+    else {
+      symbol2 = third.front()->generate(action_data);
+      var2 = std::dynamic_pointer_cast<const Symbol_Variable>(symbol2);
+    }
 
     std::shared_ptr<Zeni::Rete::Node> node = network;
     auto variable_indices = Variable_Indices::Create();
@@ -665,6 +680,8 @@ namespace Zeni::Rete::PEG {
       if (strlen(var0->get_value()) != 0)
         variable_indices->insert(var0->get_value(), Token_Index(0, 0, 0));
     }
+    else if (symbols0.size() > 1)
+      key = Node_Key_Multisym::Create(symbols0);
     else
       key = Node_Key_Symbol::Create(symbol0);
 
@@ -680,7 +697,10 @@ namespace Zeni::Rete::PEG {
     }
     else {
       node = Node_Filter_1::Create(network, job_queue, key);
-      key = Node_Key_Symbol::Create(symbol1);
+      if (symbols1.size() > 1)
+        key = Node_Key_Multisym::Create(symbols1);
+      else
+        key = Node_Key_Symbol::Create(symbol1);
     }
 
     if (var2) {
@@ -699,7 +719,10 @@ namespace Zeni::Rete::PEG {
     }
     else {
       node = Node_Filter_2::Create(network, job_queue, key, node);
-      key = Node_Key_Symbol::Create(symbol2);
+      if (symbols2.size() > 1)
+        key = Node_Key_Multisym::Create(symbols2);
+      else
+        key = Node_Key_Symbol::Create(symbol2);
     }
 
     return std::make_tuple(node, key, variable_indices);
@@ -813,6 +836,7 @@ namespace Zeni::Rete::PEG {
   Data::Data(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_action_)
     : network(network_), job_queue(job_queue_)
   {
+    symbols.push(decltype(symbols)::value_type());
     productions.push(std::make_shared<Production>(network_, job_queue_, user_action_, decltype(Production::lhs_variables)()));
     productions.top()->phase = Production::Phase::PHASE_ACTIONS;
   }

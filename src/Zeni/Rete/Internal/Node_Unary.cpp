@@ -29,7 +29,7 @@ namespace Zeni::Rete {
 
   void Node_Unary::send_disconnect_from_parents(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
     if (const auto multisym = std::dynamic_pointer_cast<const Node_Key_Multisym>(m_key)) {
-      auto mt = multisym ? multisym->symbols.cbegin() : Node_Key_Multisym::Node_Key_Symbol_Trie::const_iterator();
+      auto mt = multisym->symbols.cbegin();
       const auto last_message = std::make_shared<Message_Disconnect_Output>(m_input, network, *mt++, shared_from_this());
       const auto counter = std::make_shared<std::atomic_int64_t>(int64_t(multisym->symbols.size()) - 1);
       for (const auto mend = multisym->symbols.cend(); mt != mend; ++mt) {

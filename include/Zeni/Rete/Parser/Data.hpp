@@ -91,7 +91,8 @@ namespace Zeni::Rete::PEG {
     Actions_Generator & operator=(const Actions_Generator &) = delete;
 
   public:
-    Actions_Generator(const std::vector<std::shared_ptr<const Action_Generator>> &actions);
+    template <typename Actions>
+    Actions_Generator(Actions &&actions) : m_actions(std::forward<Actions>(actions)) {};
 
     Result result() const override;
 
@@ -125,7 +126,8 @@ namespace Zeni::Rete::PEG {
     Action_Excise_Generator & operator=(const Action_Excise_Generator &) = delete;
 
   public:
-    Action_Excise_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols);
+    template <typename Symbols>
+    Action_Excise_Generator(Symbols &&symbols) : m_symbols(std::forward<Symbols>(symbols)) {};
 
     std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
 
@@ -172,7 +174,8 @@ namespace Zeni::Rete::PEG {
     Action_Make_Generator & operator=(const Action_Make_Generator &) = delete;
 
   public:
-    Action_Make_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols);
+    template <typename Symbols>
+    Action_Make_Generator(Symbols &&symbols) : m_symbols(std::forward<Symbols>(symbols)) {};
 
     std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
 
@@ -249,15 +252,16 @@ namespace Zeni::Rete::PEG {
     Node_Filter_Generator & operator=(const Node_Filter_Generator &) = delete;
 
   public:
-    Node_Filter_Generator(const std::shared_ptr<const Symbol_Generator> first, const std::shared_ptr<const Symbol_Generator> second, const std::shared_ptr<const Symbol_Generator> third);
+    template <typename First, typename Second, typename Third>
+    Node_Filter_Generator(First &&first_, Second &&second_, Third &&third_) : first(std::forward<First>(first_)), second(std::forward<Second>(second_)), third(std::forward<Third>(third_)) {}
 
     std::shared_ptr<const Node_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
 
     std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
 
-    const std::shared_ptr<const Symbol_Generator> first;
-    const std::shared_ptr<const Symbol_Generator> second;
-    const std::shared_ptr<const Symbol_Generator> third;
+    const std::vector<std::shared_ptr<const Symbol_Generator>> first;
+    const std::vector<std::shared_ptr<const Symbol_Generator>> second;
+    const std::vector<std::shared_ptr<const Symbol_Generator>> third;
   };
 
   class Node_Join_Generator : public Node_Generator {
@@ -337,7 +341,7 @@ namespace Zeni::Rete::PEG {
     const std::shared_ptr<Network> network;
     const std::shared_ptr<Concurrency::Job_Queue> job_queue;
 
-    std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
+    std::stack<std::vector<std::shared_ptr<const Symbol_Generator>>> symbols;
     std::stack<std::shared_ptr<Production>> productions;
   };
 

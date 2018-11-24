@@ -269,8 +269,7 @@ namespace Zeni::Rete {
   }
 
   bool Node_Key_Multisym::contains(const Node_Key_Symbol &rhs) const {
-    const auto [result, snapshot] = symbols.lookup(&rhs);
-    return result != nullptr;
+    return symbols.looked_up(&rhs) != nullptr;
   }
 
 }

@@ -58,7 +58,7 @@ namespace Zeni::Rete::PEG {
 
   /// Symbols
 
-  struct Unquoted_String : plus<not_one<' ', '\t', '\r', '\n', '|', '<', '>', '@', '(', ')'>> {};
+  struct Unquoted_String : plus<not_one<' ', '\t', '\r', '\n', '|', '<', '>', '@', '(', ')', '{', '}'>> {};
 
   struct Constant_Float : if_then_else<plus_minus, must<sor<decimal, inf, nan>>, sor<decimal, inf, nan>> {};
   template<> inline const char * Error<sor<decimal, inf, nan>>::error_message() { return "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol"; }
@@ -85,29 +85,33 @@ namespace Zeni::Rete::PEG {
     Constant_Identifier,
     Constant_Variable,
     Unnamed_Variable> {};
-  struct Symbol_wo_Var : sor<
-    seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
-    Constant_Int,
-    minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
-    Quoted_Constant_String,
-    CRLF,
-    Constant_Identifier> {};
 
   struct Rule_Name : Symbol_w_Var {};
 
   /// Conditions and WMEs
 
-  struct Condition_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Symbol_w_Var, plus<space_comment>, Symbol_w_Var> {};
-  struct WME_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Symbol_wo_Var, plus<space_comment>, Symbol_wo_Var> {};
+  struct Disjunction_Value_2 : seq<plus<space_comment>, Symbol_w_Var> {};
+  struct Inner_Disjunction : seq<star<space_comment>, Symbol_w_Var, star<Disjunction_Value_2>, star<space_comment>, string<'>', '>'>> {};
+  struct Disjunction_End : if_must<string<'<', '<'>, Inner_Disjunction> {};
+  template<> inline const char * Error<Inner_Disjunction>::error_message() { return "Parser error: invalid disjunction syntax (mismatched '<<>>'s?)"; }
+  struct Disjunction_Begin : at<Disjunction_End> {};
+  struct Disjunction : seq<Disjunction_Begin, Disjunction_End> {};
 
-  struct Inner_Condition : seq<star<space_comment>, Symbol_w_Var, plus<Condition_Attr_Value>> {};
+  struct Condition_Value_End : sor<Disjunction, Symbol_w_Var> {};
+  struct Condition_Value_Begin : at<Condition_Value_End> {};
+  struct Condition_Value : seq<Condition_Value_Begin, Condition_Value_End> {};
+
+  struct Condition_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Condition_Value, plus<space_comment>, Condition_Value> {};
+  struct WME_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Symbol_w_Var, plus<space_comment>, Symbol_w_Var> {};
+
+  struct Inner_Condition : seq<star<space_comment>, Condition_Value, plus<Condition_Attr_Value>> {};
   struct Condition_Body : seq<star<space_comment>, Inner_Condition, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Condition_End : if_must<one<'('>, Condition_Body> {};
   template<> inline const char * Error<Condition_Body>::error_message() { return "Parser error: invalid condition syntax (mismatched '()'s?)"; }
   struct Condition_Begin : at<Condition_End> {};
   struct Condition : seq<Condition_Begin, Condition_End> {};
 
-  struct WMEs : seq<star<space_comment>, Symbol_wo_Var, plus<WME_Attr_Value>> {};
+  struct WMEs : seq<star<space_comment>, Symbol_w_Var, plus<WME_Attr_Value>> {};
 
   /// Left-Hand Side / LHS
 
