@@ -104,7 +104,7 @@ namespace Zeni::Rete::PEG {
   void Action<Condition_Value_Begin>::apply(const Input &input, Data &data) {
     //std::cerr << "Condition_Value_Begin: " << input.string() << std::endl;
 
-    data.symbols.push(decltype(data.symbols)::value_type());
+    data.symbols.push(typename decltype(data.symbols)::value_type());
   }
 
   template<typename Input>
