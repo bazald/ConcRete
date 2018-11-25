@@ -50,6 +50,11 @@ namespace Zeni::Rete {
   bool Symbol::operator==(const int64_t) const { return false; }
   bool Symbol::operator==(const char *) const { return false; }
 
+  bool Symbol::is_same_type_as(const Symbol_Constant_Float &rhs) const { return false; }
+  bool Symbol::is_same_type_as(const Symbol_Constant_Int &rhs) const { return false; }
+  bool Symbol::is_same_type_as(const Symbol_Constant_String &rhs) const { return false; }
+  bool Symbol::is_same_type_as(const Symbol_Constant_Identifier &rhs) const { return false; }
+  bool Symbol::is_same_type_as(const Symbol_Variable &rhs) const { return false; }
 
   Symbol_Constant::Symbol_Constant() {}
 
@@ -87,6 +92,9 @@ namespace Zeni::Rete {
   bool Symbol_Constant_Float::operator<=(const Symbol_Variable &) const { return true; }
 
   bool Symbol_Constant_Float::operator==(const double value_) const { return value_ == value; }
+
+  bool Symbol_Constant_Float::is_same_type_as(const Symbol &rhs) const { return rhs.is_same_type_as(*this); }
+  bool Symbol_Constant_Float::is_same_type_as(const Symbol_Constant_Float &) const { return true; }
 
   size_t Symbol_Constant_Float::hash() const {
     return std::hash<double>()(value);
@@ -135,6 +143,9 @@ namespace Zeni::Rete {
 
   bool Symbol_Constant_Int::operator==(const int64_t value_) const { return value_ == value; }
 
+  bool Symbol_Constant_Int::is_same_type_as(const Symbol &rhs) const { return rhs.is_same_type_as(*this); }
+  bool Symbol_Constant_Int::is_same_type_as(const Symbol_Constant_Int &) const { return true; }
+
   size_t Symbol_Constant_Int::hash() const {
     return std::hash<int64_t>()(value);
   }
@@ -179,6 +190,9 @@ namespace Zeni::Rete {
   bool Symbol_Constant_String::operator<=(const Symbol_Variable &) const { return true; }
 
   bool Symbol_Constant_String::operator==(const char * value_) const { return value_ == m_value; }
+
+  bool Symbol_Constant_String::is_same_type_as(const Symbol &rhs) const { return rhs.is_same_type_as(*this); }
+  bool Symbol_Constant_String::is_same_type_as(const Symbol_Constant_String &) const { return true; }
 
   size_t Symbol_Constant_String::hash() const {
     return std::hash<std::string>()(m_value);
@@ -228,6 +242,9 @@ namespace Zeni::Rete {
 
   bool Symbol_Constant_Identifier::operator==(const char * value_) const { return value_ == m_value; }
 
+  bool Symbol_Constant_Identifier::is_same_type_as(const Symbol &rhs) const { return rhs.is_same_type_as(*this); }
+  bool Symbol_Constant_Identifier::is_same_type_as(const Symbol_Constant_Identifier &) const { return true; }
+
   size_t Symbol_Constant_Identifier::hash() const {
     return std::hash<std::string>()(m_value);
   }
@@ -271,6 +288,9 @@ namespace Zeni::Rete {
   bool Symbol_Variable::operator>=(const Symbol_Constant_Identifier &) const { return true; }
 
   bool Symbol_Variable::operator==(const char * value_) const { return value_ == m_value; }
+
+  bool Symbol_Variable::is_same_type_as(const Symbol &rhs) const { return rhs.is_same_type_as(*this); }
+  bool Symbol_Variable::is_same_type_as(const Symbol_Variable &) const { return true; }
 
   size_t Symbol_Variable::hash() const {
     return std::hash<std::string>()(m_value);

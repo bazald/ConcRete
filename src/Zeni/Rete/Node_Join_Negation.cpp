@@ -11,8 +11,6 @@
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Key.hpp"
 
-#include <cassert>
-
 namespace Zeni::Rete {
 
   Node_Join_Negation::Node_Join_Negation(const std::shared_ptr<const Node_Key> node_key_left, const std::shared_ptr<const Node_Key> node_key_right, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, const Variable_Bindings &variable_bindings)

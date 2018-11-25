@@ -129,6 +129,12 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Relink_Output.cpp">
       <Filter>Source Files\Internal</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Node_Predicate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Predicate.cpp">
+      <Filter>Source Files\Internal</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Linkage.hpp">
@@ -249,6 +255,9 @@
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Relink_Output.hpp">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Message_Connect_Predicate.hpp">
       <Filter>Header Files\Internal</Filter>
     </ClInclude>
   </ItemGroup>

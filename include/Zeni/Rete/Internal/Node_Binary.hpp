@@ -51,8 +51,8 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool is_linked(const std::shared_ptr<Node> input, const std::shared_ptr<const Node_Key> key) override;
 
   private:
-    void insert_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot);
-    void remove_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot);
+    void insert_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot);
+    void remove_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot);
 
     const std::shared_ptr<const Node_Key> m_key_left;
     const std::shared_ptr<const Node_Key> m_key_right;

@@ -81,6 +81,13 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual bool operator==(const int64_t) const;
     ZENI_RETE_LINKAGE virtual bool operator==(const char *) const;
 
+    ZENI_RETE_LINKAGE virtual bool is_same_type_as(const Symbol &rhs) const = 0;
+    ZENI_RETE_LINKAGE virtual bool is_same_type_as(const Symbol_Constant_Float &rhs) const;
+    ZENI_RETE_LINKAGE virtual bool is_same_type_as(const Symbol_Constant_Int &rhs) const;
+    ZENI_RETE_LINKAGE virtual bool is_same_type_as(const Symbol_Constant_String &rhs) const;
+    ZENI_RETE_LINKAGE virtual bool is_same_type_as(const Symbol_Constant_Identifier &rhs) const;
+    ZENI_RETE_LINKAGE virtual bool is_same_type_as(const Symbol_Variable &rhs) const;
+
     ZENI_RETE_LINKAGE virtual size_t hash() const = 0;
 
     ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const = 0;
@@ -134,6 +141,9 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE bool operator==(const double value_) const override;
 
+    ZENI_RETE_LINKAGE bool is_same_type_as(const Symbol &rhs) const override;
+    ZENI_RETE_LINKAGE bool is_same_type_as(const Symbol_Constant_Float &rhs) const override;
+
     ZENI_RETE_LINKAGE size_t hash() const override;
 
     ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
@@ -181,6 +191,9 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE bool operator==(const int64_t value_) const override;
 
+    ZENI_RETE_LINKAGE bool is_same_type_as(const Symbol &rhs) const override;
+    ZENI_RETE_LINKAGE bool is_same_type_as(const Symbol_Constant_Int &rhs) const override;
+
     ZENI_RETE_LINKAGE size_t hash() const override;
 
     ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
@@ -225,6 +238,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator<=(const Symbol_Variable &) const override;
 
     ZENI_RETE_LINKAGE bool operator==(const char * value_) const override;
+
+    ZENI_RETE_LINKAGE bool is_same_type_as(const Symbol &rhs) const override;
+    ZENI_RETE_LINKAGE bool is_same_type_as(const Symbol_Constant_String &rhs) const override;
 
     ZENI_RETE_LINKAGE size_t hash() const override;
 
@@ -272,6 +288,9 @@ namespace Zeni::Rete {
 
     ZENI_RETE_LINKAGE bool operator==(const char * value_) const override;
 
+    ZENI_RETE_LINKAGE bool is_same_type_as(const Symbol &rhs) const override;
+    ZENI_RETE_LINKAGE bool is_same_type_as(const Symbol_Constant_Identifier &rhs) const override;
+
     ZENI_RETE_LINKAGE size_t hash() const override;
 
     ZENI_RETE_LINKAGE virtual std::ostream & print(std::ostream &os) const override;
@@ -316,6 +335,9 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator>=(const Symbol_Constant_Identifier &) const override;
 
     ZENI_RETE_LINKAGE bool operator==(const char * value_) const override;
+
+    ZENI_RETE_LINKAGE bool is_same_type_as(const Symbol &rhs) const override;
+    ZENI_RETE_LINKAGE bool is_same_type_as(const Symbol_Variable &rhs) const override;
 
     ZENI_RETE_LINKAGE size_t hash() const override;
 

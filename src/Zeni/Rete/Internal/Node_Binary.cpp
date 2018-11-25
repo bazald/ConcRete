@@ -145,7 +145,7 @@ namespace Zeni::Rete {
     const auto[result, snapshot, value] = m_join_layer_trie.insert_ip_xp<JOIN_LAYER_OUTPUTS_UNLINKED, JOIN_LAYER_OUTPUTS>(child);
 
     if (result == Node_Trie::Result::First_Insertion)
-      job_queue->give_one(std::make_shared<Message_Connect_Join>(sft, network, std::move(snapshot), key, value));
+      job_queue->give_one(std::make_shared<Message_Connect_Join>(sft, network, std::move(snapshot), value));
 
     return std::make_pair(result, value);
   }
@@ -162,7 +162,7 @@ namespace Zeni::Rete {
     assert(value == child);
 
     if (!unlinked && result == Node_Trie::Result::First_Insertion)
-      job_queue->give_one(std::make_shared<Message_Connect_Join>(sft, network, std::move(snapshot), key, value));
+      job_queue->give_one(std::make_shared<Message_Connect_Join>(sft, network, std::move(snapshot), value));
 
     return result;
   }
@@ -209,8 +209,6 @@ namespace Zeni::Rete {
   }
 
   Node::Node_Trie::Result Node_Binary::link_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
-    const auto sft = shared_from_this();
-
     assert(std::dynamic_pointer_cast<const Node_Key_Null>(key));
 
     const auto[result, snapshot, value] = m_join_layer_trie.move<JOIN_LAYER_OUTPUTS_UNLINKED, JOIN_LAYER_OUTPUTS>(child);
@@ -218,14 +216,12 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Successful_Move)
       return result;
 
-    insert_tokens(network, job_queue, key, child, snapshot);
+    insert_tokens(network, job_queue, child, snapshot);
 
     return result;
   }
 
   Node::Node_Trie::Result Node_Binary::unlink_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
-    const auto sft = shared_from_this();
-
     assert(std::dynamic_pointer_cast<const Node_Key_Null>(key));
 
     const auto[result, snapshot, value] = m_join_layer_trie.move<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(child);
@@ -233,7 +229,7 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Successful_Move)
       return result;
 
-    remove_tokens(network, job_queue, key, child, snapshot);
+    remove_tokens(network, job_queue, child, snapshot);
 
     return result;
   }
@@ -246,7 +242,7 @@ namespace Zeni::Rete {
   }
 
   void Node_Binary::receive(const Message_Connect_Join &message) {
-    insert_tokens(message.network, message.get_Job_Queue(), message.key, message.child, message.snapshot);
+    insert_tokens(message.network, message.get_Job_Queue(), message.child, message.snapshot);
   }
 
   void Node_Binary::receive(const Message_Disconnect_Output &message) {
@@ -264,19 +260,17 @@ namespace Zeni::Rete {
     if (result != Node_Trie::Result::Last_Removal_IP)
       return;
 
-    remove_tokens(message.network, message.get_Job_Queue(), message.key, message.child, snapshot);
+    remove_tokens(message.network, message.get_Job_Queue(), message.child, snapshot);
   }
 
-  void Node_Binary::insert_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot) {
+  void Node_Binary::insert_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot) {
     const auto sft = shared_from_this();
-
-    assert(std::dynamic_pointer_cast<const Node_Key_Null>(key));
 
     for (const auto &token : snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())
       job_queue->give_one(std::make_shared<Message_Token_Insert>(child, network, sft, Node_Key_Null::Create(), token));
   }
 
-  void Node_Binary::remove_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot) {
+  void Node_Binary::remove_tokens(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node> child, const Join_Layer_Snapshot snapshot) {
     const auto sft = shared_from_this();
 
     for (const auto &token : snapshot.snapshot<JOIN_LAYER_OUTPUT_TOKENS>())

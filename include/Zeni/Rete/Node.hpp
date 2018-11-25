@@ -19,6 +19,7 @@ namespace Zeni::Rete {
   class Message_Connect_Filter_1;
   class Message_Connect_Filter_2;
   class Message_Connect_Join;
+  class Message_Connect_Predicate;
   class Message_Disconnect_Output;
   class Message_Relink_Output;
   class Message_Token_Insert;
@@ -68,6 +69,7 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Filter_1 &message);
     ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Filter_2 &message);
     ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Join &message);
+    ZENI_RETE_LINKAGE virtual void receive(const Message_Connect_Predicate &message);
     ZENI_RETE_LINKAGE virtual void receive(const Message_Disconnect_Output &message) = 0;
     ZENI_RETE_LINKAGE void receive(const Message_Relink_Output &message);
 
