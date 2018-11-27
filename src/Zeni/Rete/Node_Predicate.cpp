@@ -14,14 +14,6 @@
 
 namespace Zeni::Rete {
 
-  std::shared_ptr<const Symbol> Node_Predicate::Get_Symbol_Constant::get_symbol(const std::shared_ptr<const Token>) const {
-    return symbol;
-  }
-
-  std::shared_ptr<const Symbol> Node_Predicate::Get_Symbol_Variable::get_symbol(const std::shared_ptr<const Token> token) const {
-    return (*token)[index];
-  }
-
   std::shared_ptr<const Node_Predicate::Predicate_E> Node_Predicate::Predicate_E::Create() {
     class Friendly_Predicate_E : public Predicate_E {
     public:
@@ -34,6 +26,10 @@ namespace Zeni::Rete {
 
   bool Node_Predicate::Predicate_E::operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const {
     return *lhs == *rhs;
+  }
+
+  size_t Node_Predicate::Predicate_E::hash() const {
+    return 1;
   }
 
   std::shared_ptr<const Node_Predicate::Predicate_NE> Node_Predicate::Predicate_NE::Create() {
@@ -50,6 +46,10 @@ namespace Zeni::Rete {
     return *lhs != *rhs;
   }
 
+  size_t Node_Predicate::Predicate_NE::hash() const {
+    return 2;
+  }
+
   std::shared_ptr<const Node_Predicate::Predicate_GT> Node_Predicate::Predicate_GT::Create() {
     class Friendly_Predicate_GT : public Predicate_GT {
     public:
@@ -62,6 +62,10 @@ namespace Zeni::Rete {
 
   bool Node_Predicate::Predicate_GT::operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const {
     return *lhs > *rhs;
+  }
+
+  size_t Node_Predicate::Predicate_GT::hash() const {
+    return 3;
   }
 
   std::shared_ptr<const Node_Predicate::Predicate_GTE> Node_Predicate::Predicate_GTE::Create() {
@@ -78,6 +82,10 @@ namespace Zeni::Rete {
     return *lhs >= *rhs;
   }
 
+  size_t Node_Predicate::Predicate_GTE::hash() const {
+    return 4;
+  }
+
   std::shared_ptr<const Node_Predicate::Predicate_LT> Node_Predicate::Predicate_LT::Create() {
     class Friendly_Predicate_LT : public Predicate_LT {
     public:
@@ -90,6 +98,10 @@ namespace Zeni::Rete {
 
   bool Node_Predicate::Predicate_LT::operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const {
     return *lhs < *rhs;
+  }
+
+  size_t Node_Predicate::Predicate_LT::hash() const {
+    return 5;
   }
 
   std::shared_ptr<const Node_Predicate::Predicate_LTE> Node_Predicate::Predicate_LTE::Create() {
@@ -106,6 +118,10 @@ namespace Zeni::Rete {
     return *lhs <= *rhs;
   }
 
+  size_t Node_Predicate::Predicate_LTE::hash() const {
+    return 6;
+  }
+
   std::shared_ptr<const Node_Predicate::Predicate_STA> Node_Predicate::Predicate_STA::Create() {
     class Friendly_Predicate_STA : public Predicate_STA {
     public:
@@ -120,8 +136,64 @@ namespace Zeni::Rete {
     return lhs->is_same_type_as(*rhs);
   }
 
+  size_t Node_Predicate::Predicate_STA::hash() const {
+    return 7;
+  }
+
+  bool Node_Predicate::Get_Symbol::operator==(const Get_Symbol_Constant &) const {
+    return false;
+  }
+
+  bool Node_Predicate::Get_Symbol::operator==(const Get_Symbol_Variable &) const {
+    return false;
+  }
+
+  size_t Node_Predicate::Get_Symbol_Constant::hash() const {
+    return symbol->hash();
+  }
+
+  bool Node_Predicate::Get_Symbol_Constant::operator==(const Get_Symbol &rhs) const {
+    return rhs == *this;
+  }
+
+  bool Node_Predicate::Get_Symbol_Constant::operator==(const Get_Symbol_Constant &rhs) const {
+    return *symbol == *rhs.symbol;
+  }
+
+  size_t Node_Predicate::Get_Symbol_Variable::hash() const {
+    return std::hash<Token_Index>()(index);
+  }
+
+  bool Node_Predicate::Get_Symbol_Variable::operator==(const Get_Symbol &rhs) const {
+    return rhs == *this;
+  }
+
+  bool Node_Predicate::Get_Symbol_Variable::operator==(const Get_Symbol_Variable &rhs) const {
+    return index == rhs.index;
+  }
+
+  Node_Predicate::Get_Symbol_Constant::Get_Symbol_Constant(const std::shared_ptr<const Symbol> symbol_)
+    : symbol(symbol_)
+  {
+    assert(symbol_);
+  }
+
+  Node_Predicate::Get_Symbol_Variable::Get_Symbol_Variable(const Token_Index index_)
+    : index(index_)
+  {
+    assert(index_ != Token_Index());
+  }
+
+  std::shared_ptr<const Symbol> Node_Predicate::Get_Symbol_Constant::get_symbol(const std::shared_ptr<const Token>) const {
+    return symbol;
+  }
+
+  std::shared_ptr<const Symbol> Node_Predicate::Get_Symbol_Variable::get_symbol(const std::shared_ptr<const Token> token) const {
+    return (*token)[index];
+  }
+
   Node_Predicate::Node_Predicate(const std::shared_ptr<Network> network, const std::shared_ptr<const Node_Key> node_key, const std::shared_ptr<Node> input, const std::shared_ptr<const Predicate> predicate, const Token_Index &lhs, const std::shared_ptr<const Get_Symbol> rhs)
-    : Node_Unary(1, 1, 1, hash_combine(std::hash<int>()(2), node_key->hash()), node_key, input),
+    : Node_Unary(1, 1, 1, hash_combine(hash_combine(hash_combine(hash_combine(std::hash<int>()(6), node_key->hash()), predicate->hash()), std::hash<Token_Index>()(lhs)), rhs->hash()), node_key, input),
     m_predicate(predicate),
     m_lhs_index(lhs),
     m_rhs(rhs)
@@ -287,7 +359,8 @@ namespace Zeni::Rete {
     //return this == &rhs;
 
     if (auto predicate = dynamic_cast<const Node_Predicate *>(&rhs)) {
-      return *get_key() == *predicate->get_key() && get_input() == predicate->get_input();
+      return *get_key() == *predicate->get_key() && get_input() == predicate->get_input()
+        && m_predicate == predicate->m_predicate && m_lhs_index == predicate->m_lhs_index && *m_rhs == *predicate->m_rhs;
     }
 
     return false;

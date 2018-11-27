@@ -14,12 +14,12 @@
 namespace Zeni::Rete {
 
   Node_Join::Node_Join(const std::shared_ptr<const Node_Key> node_key_left, const std::shared_ptr<const Node_Key> node_key_right, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, const Variable_Bindings &variable_bindings)
-    : Node_Binary(std::max(input_left->get_height(), input_right->get_height()) + 1, input_left->get_size() + input_right->get_size() + 1, input_left->get_token_size() + input_right->get_token_size(), hash_combine(hash_combine(std::hash<int>()(2), node_key_left->hash()), node_key_right->hash()), node_key_left, node_key_right, input_left, input_right, variable_bindings)
+    : Node_Binary(std::max(input_left->get_height(), input_right->get_height()) + 1, input_left->get_size() + input_right->get_size() + 1, input_left->get_token_size() + input_right->get_token_size(), hash_combine(hash_combine(std::hash<int>()(3), node_key_left->hash()), node_key_right->hash()), node_key_left, node_key_right, input_left, input_right, variable_bindings)
   {
   }
 
   Node_Join::Node_Join(const std::shared_ptr<const Node_Key> node_key_left, const std::shared_ptr<const Node_Key> node_key_right, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, Variable_Bindings &&variable_bindings)
-    : Node_Binary(std::max(input_left->get_height(), input_right->get_height()) + 1, input_left->get_size() + input_right->get_size() + 1, input_left->get_token_size() + input_right->get_token_size(), hash_combine(hash_combine(std::hash<int>()(2), node_key_left->hash()), node_key_right->hash()), node_key_left, node_key_right, input_left, input_right, std::move(variable_bindings))
+    : Node_Binary(std::max(input_left->get_height(), input_right->get_height()) + 1, input_left->get_size() + input_right->get_size() + 1, input_left->get_token_size() + input_right->get_token_size(), hash_combine(hash_combine(std::hash<int>()(3), node_key_left->hash()), node_key_right->hash()), node_key_left, node_key_right, input_left, input_right, std::move(variable_bindings))
   {
   }
 

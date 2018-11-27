@@ -620,109 +620,167 @@ namespace Zeni::Rete::PEG {
     return std::make_tuple(node, Node_Key_Null::Create(), dynamic_cast<const Node_Action *>(node.get())->get_variable_indices());
   }
 
+  Node_Filter_Generator::Node_Filter_Generator(const std::shared_ptr<const Symbols> first_, const std::shared_ptr<const Symbols> second_, const std::shared_ptr<const Symbols> third_)
+    : first(first_), second(second_), third(third_)
+  {
+  }
+
   std::shared_ptr<const Node_Generator> Node_Filter_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
-    std::vector<std::shared_ptr<const Symbol_Generator>> symbols0, symbols1, symbols2;
-    symbols0.reserve(first.size());
-    for (const auto gen : first)
-      symbols0.push_back(gen->clone(action_data));
-    symbols1.reserve(second.size());
-    for (const auto gen : second)
-      symbols1.push_back(gen->clone(action_data));
-    symbols2.reserve(third.size());
-    for (const auto gen : third)
-      symbols2.push_back(gen->clone(action_data));
-    if (first == symbols0 && second == symbols1 && third == symbols2)
-      return shared_from_this();
-    else
-      return std::make_shared<Node_Filter_Generator>(symbols0, symbols1, symbols2);
+    bool different = false;
+
+    std::shared_ptr<Symbols> symbols0 = std::make_shared<Symbols>(*first);
+    for (auto &gen : symbols0->symbols) {
+      const auto newgen = gen->clone(action_data);
+      if (gen != newgen) {
+        different = true;
+        gen = newgen;
+      }
+    }
+    for (auto &pred : symbols0->predicates) {
+      const auto newgen = pred.second->clone(action_data);
+      if (pred.second != newgen) {
+        different = true;
+        pred.second = newgen;
+      }
+    }
+
+    std::shared_ptr<Symbols> symbols1 = std::make_shared<Symbols>(*second);
+    for (auto &gen : symbols1->symbols) {
+      const auto newgen = gen->clone(action_data);
+      if (gen != newgen) {
+        different = true;
+        gen = newgen;
+      }
+    }
+    for (auto &pred : symbols1->predicates) {
+      const auto newgen = pred.second->clone(action_data);
+      if (pred.second != newgen) {
+        different = true;
+        pred.second = newgen;
+      }
+    }
+
+    std::shared_ptr<Symbols> symbols2 = std::make_shared<Symbols>(*third);
+    for (auto &gen : symbols2->symbols) {
+      const auto newgen = gen->clone(action_data);
+      if (gen != newgen) {
+        different = true;
+        gen = newgen;
+      }
+    }
+    for (auto &pred : symbols2->predicates) {
+      const auto newgen = pred.second->clone(action_data);
+      if (pred.second != newgen) {
+        different = true;
+        pred.second = newgen;
+      }
+    }
+    
+    return different ? std::make_shared<Node_Filter_Generator>(symbols0, symbols1, symbols2) : shared_from_this();
   }
 
   std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>>
     Node_Filter_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool, const std::shared_ptr<const Node_Action::Data> action_data) const
   {
-    Node_Key_Multisym::Node_Key_Symbol_Trie symbols0, symbols1, symbols2;
-    std::shared_ptr<const Symbol> symbol0, symbol1, symbol2;
-    std::shared_ptr<const Symbol_Variable> var0, var1, var2;
-
-    if (first.size() > 1) {
-      for (const auto gen : first)
-        symbols0.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
-    }
-    else {
-      symbol0 = first.front()->generate(action_data);
-      var0 = std::dynamic_pointer_cast<const Symbol_Variable>(symbol0);
-    }
-
-    if (second.size() > 1) {
-      for (const auto gen : second)
-        symbols1.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
-    }
-    else {
-      symbol1 = second.front()->generate(action_data);
-      var1 = std::dynamic_pointer_cast<const Symbol_Variable>(symbol1);
-    }
-
-    if (third.size() > 1) {
-      for (const auto gen : third)
-        symbols2.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
-    }
-    else {
-      symbol2 = third.front()->generate(action_data);
-      var2 = std::dynamic_pointer_cast<const Symbol_Variable>(symbol2);
-    }
-
     std::shared_ptr<Zeni::Rete::Node> node = network;
+    std::shared_ptr<const Node_Key> key;
     auto variable_indices = Variable_Indices::Create();
 
-    std::shared_ptr<const Node_Key> key;
-    if (var0) {
-      key = Node_Key_Null::Create();
-      if (strlen(var0->get_value()) != 0)
-        variable_indices->insert(var0->get_value(), Token_Index(0, 0, 0));
+    if (first->symbols.size() > 1) {
+      Node_Key_Multisym::Node_Key_Symbol_Trie symbol_trie;
+      for (const auto gen : first->symbols)
+        symbol_trie.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
+      key = Node_Key_Multisym::Create(symbol_trie);
     }
-    else if (symbols0.size() > 1)
-      key = Node_Key_Multisym::Create(symbols0);
+    else if (!first->symbols.empty())
+      key = Node_Key_Symbol::Create(first->symbols.front()->generate(action_data));
     else
-      key = Node_Key_Symbol::Create(symbol0);
+      key = Node_Key_Null::Create();
 
-    if (var1) {
-      if (strlen(var1->get_value()) != 0) {
-        if (var0 && *var0 == *var1) {
-          node = Node_Filter_1::Create(network, job_queue, key);
-          key = Node_Key_01::Create();
-        }
-        else
-          variable_indices->insert(var1->get_value(), Token_Index(0, 0, 1));
+    if (first->variable)
+      variable_indices->insert(first->variable->get_value(), Token_Index(0, 0, 0));
+
+    for (const auto pred : first->predicates) {
+      const auto sym_right = pred.second->generate(action_data);
+      std::shared_ptr<const Node_Predicate::Get_Symbol> rhs;
+      if (const auto var = std::dynamic_pointer_cast<const Symbol_Variable>(sym_right)) {
+        const auto index_right = action_data->variable_indices->find_index(var->get_value());
+        rhs = std::make_shared<Node_Predicate::Get_Symbol_Variable>(index_right); ///< TODO: Defer if referring to a variable in a different 
       }
+      else
+        rhs = std::make_shared<Node_Predicate::Get_Symbol_Constant>(sym_right);
+      node = Node_Predicate::Create(network, job_queue, key, node, pred.first, Token_Index(0, 0, 0), rhs);
+      key = Node_Key_Null::Create();
     }
-    else {
+
+
+    if (second->symbols.size() > 1) {
       node = Node_Filter_1::Create(network, job_queue, key);
-      if (symbols1.size() > 1)
-        key = Node_Key_Multisym::Create(symbols1);
-      else
-        key = Node_Key_Symbol::Create(symbol1);
+      Node_Key_Multisym::Node_Key_Symbol_Trie symbol_trie;
+      for (const auto gen : second->symbols)
+        symbol_trie.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
+      key = Node_Key_Multisym::Create(symbol_trie);
+    }
+    else if (!second->symbols.empty()) {
+      node = Node_Filter_1::Create(network, job_queue, key);
+      key = Node_Key_Symbol::Create(second->symbols.front()->generate(action_data));
+    }
+    else if (second->variable && first->variable && *second->variable == *first->variable) {
+      node = Node_Filter_1::Create(network, job_queue, key);
+      key = Node_Key_01::Create();
     }
 
-    if (var2) {
-      if (strlen(var2->get_value()) != 0) {
-        if (var0 && *var0 == *var2) {
-          node = Node_Filter_2::Create(network, job_queue, key, node);
-          key = Node_Key_02::Create();
-        }
-        else if (var1 && *var1 == *var2) {
-          node = Node_Filter_2::Create(network, job_queue, key, node);
-          key = Node_Key_12::Create();
-        }
-        else
-          variable_indices->insert(var2->get_value(), Token_Index(0, 0, 2));
+    if (second->variable)
+      variable_indices->insert(second->variable->get_value(), Token_Index(0, 0, 1));
+
+    for (const auto pred : second->predicates) {
+      const auto sym_right = pred.second->generate(action_data);
+      std::shared_ptr<const Node_Predicate::Get_Symbol> rhs;
+      if (const auto var = std::dynamic_pointer_cast<const Symbol_Variable>(sym_right)) {
+        const auto index_right = action_data->variable_indices->find_index(var->get_value());
+        rhs = std::make_shared<Node_Predicate::Get_Symbol_Variable>(index_right); ///< TODO: Defer if referring to a variable in a different 
       }
-    }
-    else {
-      node = Node_Filter_2::Create(network, job_queue, key, node);
-      if (symbols2.size() > 1)
-        key = Node_Key_Multisym::Create(symbols2);
       else
-        key = Node_Key_Symbol::Create(symbol2);
+        rhs = std::make_shared<Node_Predicate::Get_Symbol_Constant>(sym_right);
+      node = Node_Predicate::Create(network, job_queue, key, node, pred.first, Token_Index(0, 0, 1), rhs);
+      key = Node_Key_Null::Create();
+    }
+
+
+    if (third->symbols.size() > 1) {
+      node = Node_Filter_2::Create(network, job_queue, key, node);
+      Node_Key_Multisym::Node_Key_Symbol_Trie symbol_trie;
+      for (const auto gen : third->symbols)
+        symbol_trie.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
+      key = Node_Key_Multisym::Create(symbol_trie);
+    }
+    else if (!third->symbols.empty()) {
+      node = Node_Filter_2::Create(network, job_queue, key, node);
+      key = Node_Key_Symbol::Create(third->symbols.front()->generate(action_data));
+    }
+    else if (third->variable && first->variable && *third->variable == *first->variable) {
+      node = Node_Filter_2::Create(network, job_queue, key, node);
+      key = Node_Key_02::Create();
+    }
+    else if (third->variable && second->variable && *third->variable == *second->variable) {
+      node = Node_Filter_2::Create(network, job_queue, key, node);
+      key = Node_Key_12::Create();
+    }
+
+    if (third->variable)
+      variable_indices->insert(third->variable->get_value(), Token_Index(0, 0, 2));
+
+    for (const auto pred : third->predicates) {
+      const auto sym_right = pred.second->generate(action_data);
+      std::shared_ptr<const Node_Predicate::Get_Symbol> rhs;
+      if (const auto var = std::dynamic_pointer_cast<const Symbol_Variable>(sym_right)) {
+        const auto index_right = action_data->variable_indices->find_index(var->get_value());
+        rhs = std::make_shared<Node_Predicate::Get_Symbol_Variable>(index_right); ///< TODO: Defer if referring to a variable in a different 
+      }
+      else
+        rhs = std::make_shared<Node_Predicate::Get_Symbol_Constant>(sym_right);
+      node = Node_Predicate::Create(network, job_queue, key, node, pred.first, Token_Index(0, 0, 2), rhs);
+      key = Node_Key_Null::Create();
     }
 
     return std::make_tuple(node, key, variable_indices);
@@ -836,9 +894,9 @@ namespace Zeni::Rete::PEG {
   Data::Data(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_action_)
     : network(network_), job_queue(job_queue_)
   {
-    symbols.push(decltype(symbols)::value_type());
     productions.push(std::make_shared<Production>(network_, job_queue_, user_action_, decltype(Production::lhs_variables)()));
     productions.top()->phase = Production::Phase::PHASE_ACTIONS;
+    symbols.emplace(std::make_shared<Symbols>());
   }
 
 }

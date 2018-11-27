@@ -23,7 +23,7 @@ namespace Zeni::Rete::PEG {
     const double d = std::stod(input.string());
     //std::cerr << "Constant_Float: " << d << std::endl;
     const auto symbol = std::make_shared<Symbol_Constant_Float>(d);
-    data.symbols.top().emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
+    data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
@@ -31,14 +31,14 @@ namespace Zeni::Rete::PEG {
     const int64_t i = std::stoll(input.string());
     //std::cerr << "Constant_Int: " << i << std::endl;
     const auto symbol = std::make_shared<Symbol_Constant_Int>(i);
-    data.symbols.top().emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
+    data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
   void Action<Constant_String>::apply(const Input &input, Data &data) {
     //std::cerr << "Constant_String: " << input.string() << std::endl;
     const auto symbol = std::make_shared<Symbol_Constant_String>(input.string());
-    data.symbols.top().emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
+    data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
@@ -47,14 +47,14 @@ namespace Zeni::Rete::PEG {
     assert(input.string().size() > 2);
     const auto substr = input.string().substr(1, input.string().size() - 2);
     const auto symbol = std::make_shared<Symbol_Constant_String>(substr);
-    data.symbols.top().emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
+    data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
   void Action<CRLF>::apply(const Input &input, Data &data) {
     //std::cerr << "CRLF: " << input.string() << std::endl;
     const auto symbol = std::make_shared<Symbol_Constant_String>("\r\n");
-    data.symbols.top().emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
+    data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
@@ -63,7 +63,7 @@ namespace Zeni::Rete::PEG {
     assert(input.string().size() > 1);
     const auto substr = input.string().substr(1, input.string().size() - 1);
     const auto symbol = std::make_shared<Symbol_Constant_Identifier>(substr);
-    data.symbols.top().emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
+    data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Constant_Generator>(symbol));
   }
 
   template<typename Input>
@@ -71,31 +71,90 @@ namespace Zeni::Rete::PEG {
     //std::cerr << "Constant_Variable: " << input.string() << std::endl;
     assert(input.string().size() > 2);
     const auto substr = input.string().substr(1, input.string().size() - 2);
-    if (data.productions.top()->phase == Data::Production::Phase::PHASE_LHS)
-      data.productions.top()->lhs_variables.insert(substr);
-    else if (data.productions.top()->lhs_variables.find(substr) == data.productions.top()->lhs_variables.end())
-      throw parse_error("Parser error: variable used in the RHS not found in the LHS", input);
     const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
-    data.symbols.top().emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
+    if (data.productions.top()->lhs_variables.find(substr) != data.productions.top()->lhs_variables.end()) {
+      /// Treat as bound
+      data.productions.top()->lhs_variables.insert(substr);
+      data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
+    }
+    else {
+      /// Treat as new binding
+      data.symbols.top()->variable = symbol;
+    }
+  }
+
+  template<typename Input>
+  void Action<Bound_Constant_Variable>::apply(const Input &input, Data &data) {
+    //std::cerr << "Bound_Constant_Variable: " << input.string() << std::endl;
+    assert(input.string().size() > 2);
+    const auto substr = input.string().substr(1, input.string().size() - 2);
+    if (data.productions.top()->lhs_variables.find(substr) == data.productions.top()->lhs_variables.end())
+      throw parse_error("Parser error: use of unbound variable", input);
+    data.productions.top()->lhs_variables.insert(substr);
+    const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
+    data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
+  }
+
+  template<typename Input>
+  void Action<Unbound_Constant_Variable>::apply(const Input &input, Data &data) {
+    //std::cerr << "Unbound_Constant_Variable: " << input.string() << std::endl;
+    assert(input.string().size() > 2);
+    const auto substr = input.string().substr(1, input.string().size() - 2);
+    if (data.productions.top()->lhs_variables.find(substr) != data.productions.top()->lhs_variables.end())
+      throw parse_error("Parser error: variable previously bound", input);
+    data.productions.top()->lhs_variables.insert(substr);
+    const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
+    data.symbols.top()->variable = symbol;
   }
 
   template<typename Input>
   void Action<Unnamed_Variable>::apply(const Input &input, Data &data) {
     //std::cerr << "Unnamed_Variable: " << input.string() << std::endl;
     const auto symbol = std::make_shared<Symbol_Variable>("");
-    data.symbols.top().emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
+    data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
+  }
+
+  /// Predicates
+
+  template<typename Input>
+  void Action<Predicate_E>::apply(const Input &input, Data &data) {
+    data.symbols.top()->predicates.emplace_back(Node_Predicate::Predicate_E::Create(), nullptr);
   }
 
   template<typename Input>
-  void Action<RHS_Constant_Variable>::apply(const Input &input, Data &data) {
-    //std::cerr << "RHS Constant_Variable: " << input.string() << std::endl;
-    assert(input.string().size() > 2);
-    const auto substr = input.string().substr(1, input.string().size() - 2);
-    if (data.productions.top()->lhs_variables.find(substr) != data.productions.top()->lhs_variables.end())
-      throw parse_error("Parser error: variable bound in the RHS previously used", input);
-    data.productions.top()->lhs_variables.insert(substr);
-    const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
-    data.symbols.top().emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
+  void Action<Predicate_NE>::apply(const Input &input, Data &data) {
+    data.symbols.top()->predicates.emplace_back(Node_Predicate::Predicate_NE::Create(), nullptr);
+  }
+
+  template<typename Input>
+  void Action<Predicate_LT>::apply(const Input &input, Data &data) {
+    data.symbols.top()->predicates.emplace_back(Node_Predicate::Predicate_LT::Create(), nullptr);
+  }
+
+  template<typename Input>
+  void Action<Predicate_LTE>::apply(const Input &input, Data &data) {
+    data.symbols.top()->predicates.emplace_back(Node_Predicate::Predicate_LTE::Create(), nullptr);
+  }
+
+  template<typename Input>
+  void Action<Predicate_GT>::apply(const Input &input, Data &data) {
+    data.symbols.top()->predicates.emplace_back(Node_Predicate::Predicate_GT::Create(), nullptr);
+  }
+
+  template<typename Input>
+  void Action<Predicate_GTE>::apply(const Input &input, Data &data) {
+    data.symbols.top()->predicates.emplace_back(Node_Predicate::Predicate_GTE::Create(), nullptr);
+  }
+
+  template<typename Input>
+  void Action<Predicate_STA>::apply(const Input &input, Data &data) {
+    data.symbols.top()->predicates.emplace_back(Node_Predicate::Predicate_STA::Create(), nullptr);
+  }
+
+  template<typename Input>
+  void Action<Predicate_Symbol>::apply(const Input &input, Data &data) {
+    data.symbols.top()->predicates.back().second = std::move(data.symbols.top()->symbols.back());
+    data.symbols.top()->symbols.pop_back();
   }
 
   /// Conditions and WMEs
@@ -104,7 +163,7 @@ namespace Zeni::Rete::PEG {
   void Action<Condition_Value_Begin>::apply(const Input &input, Data &data) {
     //std::cerr << "Condition_Value_Begin: " << input.string() << std::endl;
 
-    data.symbols.push(typename decltype(data.symbols)::value_type());
+    data.symbols.push(std::make_shared<Symbols>());
   }
 
   template<typename Input>
@@ -119,13 +178,10 @@ namespace Zeni::Rete::PEG {
     //std::cerr << "Condition_Attr_Value: " << input.string() << std::endl;
 
     assert(data.symbols.size() == 4);
-    assert(!data.symbols.top().empty());
     const auto third = std::move(data.symbols.top());
     data.symbols.pop();
-    assert(!data.symbols.top().empty());
     const auto second = std::move(data.symbols.top());
     data.symbols.pop();
-    assert(!data.symbols.top().empty());
     const auto first = data.symbols.top();
     // Deliberately leave the first symbols on the stack
 
@@ -219,9 +275,9 @@ namespace Zeni::Rete::PEG {
     //std::cerr << "Cbind: " << input.string() << std::endl;
 
     assert(data.symbols.size() == 1);
-    assert(data.symbols.top().size() == 1);
-    const auto cbind = std::make_shared<Action_Cbind_Generator>(std::dynamic_pointer_cast<const Symbol_Variable_Generator>(data.symbols.top().back())->symbol);
-    data.symbols.top().clear();
+    assert(data.symbols.top()->variable);
+    const auto cbind = std::make_shared<Action_Cbind_Generator>(std::move(data.symbols.top()->variable));
+    data.symbols.top()->variable.reset();
 
     data.productions.top()->actions_or_retractions->push_back(cbind);
   }
@@ -230,9 +286,9 @@ namespace Zeni::Rete::PEG {
   void Action<Excise>::apply(const Input &input, Data &data) {
     //std::cerr << "Excise: " << input.string() << std::endl;
 
-    const auto excise = std::make_shared<Action_Excise_Generator>(data.symbols.top());
     assert(data.symbols.size() == 1);
-    data.symbols.top().clear();
+    const auto excise = std::make_shared<Action_Excise_Generator>(std::move(data.symbols.top()->symbols));
+    data.symbols.top()->symbols.clear();
 
     data.productions.top()->actions_or_retractions->push_back(excise);
   }
@@ -251,9 +307,9 @@ namespace Zeni::Rete::PEG {
   void Action<Make>::apply(const Input &input, Data &data) {
     //std::cerr << "Make: " << input.string() << std::endl;
 
-    const auto make = std::make_shared<Action_Make_Generator>(data.symbols.top());
     assert(data.symbols.size() == 1);
-    data.symbols.top().clear();
+    const auto make = std::make_shared<Action_Make_Generator>(std::move(data.symbols.top()->symbols));
+    data.symbols.top()->symbols.clear();
 
     data.productions.top()->actions_or_retractions->push_back(make);
   }
@@ -262,9 +318,9 @@ namespace Zeni::Rete::PEG {
   void Action<Write>::apply(const Input &input, Data &data) {
     //std::cerr << "Write: " << input.string() << std::endl;
 
-    const auto write = std::make_shared<Action_Write_Generator>(data.symbols.top());
     assert(data.symbols.size() == 1);
-    data.symbols.top().clear();
+    const auto write = std::make_shared<Action_Write_Generator>(std::move(data.symbols.top()->symbols));
+    data.symbols.top()->symbols.clear();
 
     data.productions.top()->actions_or_retractions->push_back(write);
   }
@@ -301,9 +357,9 @@ namespace Zeni::Rete::PEG {
   template<typename Input>
   void Action<Rule_Name>::apply(const Input &, Data &data) {
     assert(data.symbols.size() == 1);
-    assert(data.symbols.top().size() == 1);
-    data.productions.top()->rule_name = data.symbols.top().back();
-    data.symbols.top().pop_back();
+    assert(data.symbols.top()->symbols.size() == 1);
+    data.productions.top()->rule_name = data.symbols.top()->symbols.back();
+    data.symbols.top()->symbols.pop_back();
 
     data.productions.top()->phase = Data::Production::Phase::PHASE_LHS;
   }

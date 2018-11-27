@@ -50,13 +50,69 @@ namespace Zeni::Rete::PEG {
   };
 
   template <>
-  struct Action<Unnamed_Variable> {
+  struct Action<Bound_Constant_Variable> {
     template<typename Input>
     static void apply(const Input &input, Data &data);
   };
 
   template <>
-  struct Action<RHS_Constant_Variable> {
+  struct Action<Unbound_Constant_Variable> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Unnamed_Variable> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  /// Predicates
+
+  template <>
+  struct Action<Predicate_E> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Predicate_NE> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Predicate_LT> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Predicate_LTE> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Predicate_GT> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Predicate_GTE> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Predicate_STA> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Predicate_Symbol> {
     template<typename Input>
     static void apply(const Input &input, Data &data);
   };

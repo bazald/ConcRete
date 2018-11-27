@@ -71,38 +71,75 @@ namespace Zeni::Rete::PEG {
   struct Identifier_Name : Unquoted_String {};
   struct Constant_Identifier : if_must<one<'@'>, Identifier_Name> {};
   template<> inline const char * Error<Identifier_Name>::error_message() { return "Parser error: '@' must be followed immediately by an identifier name"; }
-  struct Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
   template<> inline const char * Error<seq<Unquoted_String, one<'>'>>>::error_message() { return "Parser error: variable not closed (mismatched '<>'s?)"; }
   struct Unnamed_Variable : seq<one<'{'>, star<space_comment>, one<'}'>> {};
-  struct RHS_Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
+  struct Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
+  struct Bound_Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
+  struct Unbound_Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
 
-  struct Symbol_w_Var : sor<
+  struct Constant_or_Variable : sor<
     seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
     Constant_Int,
     minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
     Quoted_Constant_String,
     CRLF,
     Constant_Identifier,
-    Constant_Variable,
+    Constant_Variable> {};
+
+  struct Constant_or_Bound : sor<
+    seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
+    Constant_Int,
+    minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
+    Quoted_Constant_String,
+    CRLF,
+    Constant_Identifier,
+    Bound_Constant_Variable> {};
+
+  struct Constant_or_Unbound : sor<
+    seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
+    Constant_Int,
+    minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
+    Quoted_Constant_String,
+    CRLF,
+    Constant_Identifier,
+    Unbound_Constant_Variable,
     Unnamed_Variable> {};
 
-  struct Rule_Name : Symbol_w_Var {};
+  struct Rule_Name : Constant_or_Bound {};
+
+  struct Predicate_E : string<'=', '='> {};
+  struct Predicate_NE : string<'!', '='> {};
+  struct Predicate_LT : one<'<'> {};
+  struct Predicate_LTE : string<'<', '='> {};
+  struct Predicate_GT : one<'>'> {};
+  struct Predicate_GTE : string<'>', '='> {};
+  struct Predicate_STA : string<'<', '=', '>'> {};
+  struct Predicate : sor<Predicate_STA, Predicate_E, Predicate_NE, Predicate_LTE, Predicate_GTE, Predicate_GT, Predicate_LT> {};
+  struct Predicate_Symbol : seq<star<space_comment>, Constant_or_Bound> {};
+  template<> inline const char * Error<Predicate_Symbol>::error_message() { return "Parser error: invalid predicate syntax (missing symbol?)"; }
+  struct Predicate_Alpha : if_must<Predicate, Predicate_Symbol> {};
 
   /// Conditions and WMEs
 
-  struct Disjunction_Value_2 : seq<plus<space_comment>, Symbol_w_Var> {};
-  struct Inner_Disjunction : seq<star<space_comment>, Symbol_w_Var, star<Disjunction_Value_2>, star<space_comment>, string<'>', '>'>> {};
+  struct Disjunction_Value_2 : seq<plus<space_comment>, Constant_or_Bound> {};
+  struct Inner_Disjunction : seq<star<space_comment>, Constant_or_Bound, star<Disjunction_Value_2>, star<space_comment>, string<'>', '>'>> {};
   struct Disjunction_End : if_must<string<'<', '<'>, Inner_Disjunction> {};
   template<> inline const char * Error<Inner_Disjunction>::error_message() { return "Parser error: invalid disjunction syntax (mismatched '<<>>'s?)"; }
   struct Disjunction_Begin : at<Disjunction_End> {};
   struct Disjunction : seq<Disjunction_Begin, Disjunction_End> {};
 
-  struct Condition_Value_End : sor<Disjunction, Symbol_w_Var> {};
+  struct Inner_Conjunction : seq<star<space_comment>, opt<sor<Disjunction, Constant_or_Bound>, star<space_comment>>, star<seq<not_at<try_catch<Unbound_Constant_Variable>>, Predicate_Alpha>, star<space_comment>>, opt<Unbound_Constant_Variable, star<space_comment>>, one<'}'>> {};
+  struct Conjunction_End : if_must<one<'{'>, Inner_Conjunction> {};
+  template<> inline const char * Error<Inner_Conjunction>::error_message() { return "Parser error: invalid conjunction syntax (mismatched '{}'s or misordered conjunction?)"; }
+  struct Conjunction_Begin : at<Conjunction_End> {};
+  struct Conjunction : seq<Conjunction_Begin, Conjunction_End> {};
+
+  struct Condition_Value_End : sor<Conjunction, Disjunction, Constant_or_Variable> {};
   struct Condition_Value_Begin : at<Condition_Value_End> {};
   struct Condition_Value : seq<Condition_Value_Begin, Condition_Value_End> {};
 
   struct Condition_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Condition_Value, plus<space_comment>, Condition_Value> {};
-  struct WME_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Symbol_w_Var, plus<space_comment>, Symbol_w_Var> {};
+  struct WME_Attr_Value : seq<plus<space_comment>, one<'^'>, star<space_comment>, Constant_or_Bound, plus<space_comment>, Constant_or_Bound> {};
 
   struct Inner_Condition : seq<star<space_comment>, Condition_Value, plus<Condition_Attr_Value>> {};
   struct Condition_Body : seq<star<space_comment>, Inner_Condition, star<space_comment>, one<')'>, star<space_comment>> {};
@@ -111,7 +148,7 @@ namespace Zeni::Rete::PEG {
   struct Condition_Begin : at<Condition_End> {};
   struct Condition : seq<Condition_Begin, Condition_End> {};
 
-  struct WMEs : seq<star<space_comment>, Symbol_w_Var, plus<WME_Attr_Value>> {};
+  struct WMEs : seq<star<space_comment>, Constant_or_Bound, plus<WME_Attr_Value>> {};
 
   /// Left-Hand Side / LHS
 
@@ -141,11 +178,11 @@ namespace Zeni::Rete::PEG {
 
   /// Right-Hand Side / RHS
 
-  struct Inner_Cbind : seq<plus<space_comment>, RHS_Constant_Variable> {};
+  struct Inner_Cbind : seq<plus<space_comment>, Unbound_Constant_Variable> {};
   struct Cbind : if_must<string<'c', 'b', 'i', 'n', 'd'>, Inner_Cbind> {};
   template<> inline const char * Error<Inner_Cbind>::error_message() { return "Parser error: 'cbind' must be followed by an unbound variable"; }
 
-  struct Inner_Excise : seq<plus<plus<space_comment>, Symbol_w_Var>> {};
+  struct Inner_Excise : seq<plus<plus<space_comment>, Constant_or_Bound>> {};
   struct Excise : if_must<string<'e', 'x', 'c', 'i', 's', 'e'>, Inner_Excise> {};
   template<> inline const char * Error<Inner_Excise>::error_message() { return "Parser error: 'excise' must be followed by one or more rule names"; }
 
@@ -164,7 +201,7 @@ namespace Zeni::Rete::PEG {
   struct Begin_Production : at<End_Production> {};
   struct Production : seq<Begin_Production, End_Production> {};
 
-  struct Inner_Write : plus<plus<space_comment>, Symbol_w_Var> {};
+  struct Inner_Write : plus<plus<space_comment>, Constant_or_Bound> {};
   struct Write : if_must<string<'w', 'r', 'i', 't', 'e'>, Inner_Write> {};
   template<> inline const char * Error<Inner_Write>::error_message() { return "Parser error: 'write' must be followed by valid Symbols"; }
 

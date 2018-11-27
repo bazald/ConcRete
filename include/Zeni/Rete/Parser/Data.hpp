@@ -4,6 +4,7 @@
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Rete/Node_Action.hpp"
 #include "Zeni/Rete/Node_Key.hpp"
+#include "Zeni/Rete/Node_Predicate.hpp"
 #include "Zeni/Rete/Variable_Indices.hpp"
 
 #include <functional>
@@ -247,21 +248,26 @@ namespace Zeni::Rete::PEG {
     const std::shared_ptr<const Action_Generator> retraction;
   };
 
+  struct Symbols {
+    std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
+    std::vector<std::pair<std::shared_ptr<const Zeni::Rete::Node_Predicate::Predicate>, std::shared_ptr<const Symbol_Generator>>> predicates;
+    std::shared_ptr<const Symbol_Variable> variable;
+  };
+
   class Node_Filter_Generator : public Node_Generator {
     Node_Filter_Generator(const Node_Filter_Generator &) = delete;
     Node_Filter_Generator & operator=(const Node_Filter_Generator &) = delete;
 
   public:
-    template <typename First, typename Second, typename Third>
-    Node_Filter_Generator(First &&first_, Second &&second_, Third &&third_) : first(std::forward<First>(first_)), second(std::forward<Second>(second_)), third(std::forward<Third>(third_)) {}
+    Node_Filter_Generator(const std::shared_ptr<const Symbols> first, const std::shared_ptr<const Symbols> second, const std::shared_ptr<const Symbols> third);
 
     std::shared_ptr<const Node_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
 
     std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
 
-    const std::vector<std::shared_ptr<const Symbol_Generator>> first;
-    const std::vector<std::shared_ptr<const Symbol_Generator>> second;
-    const std::vector<std::shared_ptr<const Symbol_Generator>> third;
+    const std::shared_ptr<const Symbols> first;
+    const std::shared_ptr<const Symbols> second;
+    const std::shared_ptr<const Symbols> third;
   };
 
   class Node_Join_Generator : public Node_Generator {
@@ -341,7 +347,7 @@ namespace Zeni::Rete::PEG {
     const std::shared_ptr<Network> network;
     const std::shared_ptr<Concurrency::Job_Queue> job_queue;
 
-    std::stack<std::vector<std::shared_ptr<const Symbol_Generator>>> symbols;
+    std::stack<std::shared_ptr<Symbols>> symbols;
     std::stack<std::shared_ptr<Production>> productions;
   };
 

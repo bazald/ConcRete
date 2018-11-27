@@ -29,6 +29,8 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE virtual ~Predicate() {}
 
       ZENI_RETE_LINKAGE virtual bool operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const = 0;
+
+      ZENI_RETE_LINKAGE virtual size_t hash() const = 0;
     };
 
     class Predicate_E : public Predicate {
@@ -41,6 +43,8 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE static std::shared_ptr<const Predicate_E> Create();
 
       ZENI_RETE_LINKAGE bool operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const;
+
+      ZENI_RETE_LINKAGE size_t hash() const override;
     };
 
     class Predicate_NE : public Predicate {
@@ -53,6 +57,8 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE static std::shared_ptr<const Predicate_NE> Create();
 
       ZENI_RETE_LINKAGE bool operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const;
+
+      ZENI_RETE_LINKAGE size_t hash() const override;
     };
 
     class Predicate_GT : public Predicate {
@@ -65,6 +71,8 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE static std::shared_ptr<const Predicate_GT> Create();
 
       ZENI_RETE_LINKAGE bool operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const;
+
+      ZENI_RETE_LINKAGE size_t hash() const override;
     };
 
     class Predicate_GTE : public Predicate {
@@ -77,6 +85,8 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE static std::shared_ptr<const Predicate_GTE> Create();
 
       ZENI_RETE_LINKAGE bool operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const;
+
+      ZENI_RETE_LINKAGE size_t hash() const override;
     };
 
     class Predicate_LT : public Predicate {
@@ -89,6 +99,8 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE static std::shared_ptr<const Predicate_LT> Create();
 
       ZENI_RETE_LINKAGE bool operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const;
+
+      ZENI_RETE_LINKAGE size_t hash() const override;
     };
 
     class Predicate_LTE : public Predicate {
@@ -101,6 +113,8 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE static std::shared_ptr<const Predicate_LTE> Create();
 
       ZENI_RETE_LINKAGE bool operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const;
+
+      ZENI_RETE_LINKAGE size_t hash() const override;
     };
 
     class Predicate_STA : public Predicate {
@@ -113,8 +127,12 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE static std::shared_ptr<const Predicate_STA> Create();
 
       ZENI_RETE_LINKAGE bool operator()(const std::shared_ptr<const Symbol> lhs, const std::shared_ptr<const Symbol> rhs) const;
+
+      ZENI_RETE_LINKAGE size_t hash() const override;
     };
 
+    class Get_Symbol_Constant;
+    class Get_Symbol_Variable;
     class Get_Symbol : std::enable_shared_from_this<Get_Symbol> {
       Get_Symbol(const Get_Symbol &) = delete;
       Get_Symbol & operator =(const Get_Symbol &) = delete;
@@ -126,6 +144,12 @@ namespace Zeni::Rete {
       ZENI_RETE_LINKAGE virtual ~Get_Symbol() {}
 
       ZENI_RETE_LINKAGE virtual std::shared_ptr<const Symbol> get_symbol(const std::shared_ptr<const Token> token) const = 0;
+
+      ZENI_RETE_LINKAGE virtual size_t hash() const = 0;
+
+      ZENI_RETE_LINKAGE virtual bool operator==(const Get_Symbol &rhs) const = 0;
+      ZENI_RETE_LINKAGE virtual bool operator==(const Get_Symbol_Constant &rhs) const;
+      ZENI_RETE_LINKAGE virtual bool operator==(const Get_Symbol_Variable &rhs) const;
     };
 
     class Get_Symbol_Constant : public Get_Symbol {
@@ -133,7 +157,12 @@ namespace Zeni::Rete {
       Get_Symbol_Constant & operator =(const Get_Symbol_Constant &) = delete;
 
     public:
-      ZENI_RETE_LINKAGE Get_Symbol_Constant(const std::shared_ptr<const Symbol> symbol_) : symbol(symbol_) {}
+      ZENI_RETE_LINKAGE Get_Symbol_Constant(const std::shared_ptr<const Symbol> symbol_);
+
+      ZENI_RETE_LINKAGE size_t hash() const override;
+
+      ZENI_RETE_LINKAGE bool operator==(const Get_Symbol &rhs) const override;
+      ZENI_RETE_LINKAGE bool operator==(const Get_Symbol_Constant &rhs) const override;
 
       ZENI_RETE_LINKAGE std::shared_ptr<const Symbol> get_symbol(const std::shared_ptr<const Token> token) const override;
 
@@ -145,7 +174,12 @@ namespace Zeni::Rete {
       Get_Symbol_Variable & operator =(const Get_Symbol_Variable &) = delete;
 
     public:
-      ZENI_RETE_LINKAGE Get_Symbol_Variable(const Token_Index index_) : index(index_) {}
+      ZENI_RETE_LINKAGE Get_Symbol_Variable(const Token_Index index_);
+
+      ZENI_RETE_LINKAGE size_t hash() const override;
+
+      ZENI_RETE_LINKAGE bool operator==(const Get_Symbol &rhs) const override;
+      ZENI_RETE_LINKAGE bool operator==(const Get_Symbol_Variable &rhs) const override;
 
       ZENI_RETE_LINKAGE std::shared_ptr<const Symbol> get_symbol(const std::shared_ptr<const Token> token) const override;
 
