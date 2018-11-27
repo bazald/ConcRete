@@ -58,7 +58,7 @@ namespace Zeni::Rete::PEG {
 
   /// Symbols
 
-  struct Unquoted_String : plus<not_one<' ', '\t', '\r', '\n', '|', '<', '>', '@', '(', ')', '{', '}'>> {};
+  struct Unquoted_String : plus<not_one<' ', '\t', '\r', '\n', '|', '<', '>', '@', '(', ')', '{', '}', '='>> {};
 
   struct Constant_Float : if_then_else<plus_minus, must<sor<decimal, inf, nan>>, sor<decimal, inf, nan>> {};
   template<> inline const char * Error<sor<decimal, inf, nan>>::error_message() { return "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol"; }
@@ -128,7 +128,7 @@ namespace Zeni::Rete::PEG {
   struct Disjunction_Begin : at<Disjunction_End> {};
   struct Disjunction : seq<Disjunction_Begin, Disjunction_End> {};
 
-  struct Inner_Conjunction : seq<star<space_comment>, opt<sor<Disjunction, Constant_or_Bound>, star<space_comment>>, star<seq<not_at<try_catch<Unbound_Constant_Variable>>, Predicate_Alpha>, star<space_comment>>, opt<Unbound_Constant_Variable, star<space_comment>>, one<'}'>> {};
+  struct Inner_Conjunction : seq<star<space_comment>, opt<sor<Disjunction, try_catch<Constant_or_Bound>>, star<space_comment>>, star<seq<not_at<try_catch<Unbound_Constant_Variable>>, Predicate_Alpha>, star<space_comment>>, opt<Unbound_Constant_Variable, star<space_comment>>, one<'}'>> {};
   struct Conjunction_End : if_must<one<'{'>, Inner_Conjunction> {};
   template<> inline const char * Error<Inner_Conjunction>::error_message() { return "Parser error: invalid conjunction syntax (mismatched '{}'s or misordered conjunction?)"; }
   struct Conjunction_Begin : at<Conjunction_End> {};

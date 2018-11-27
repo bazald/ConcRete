@@ -74,12 +74,12 @@ namespace Zeni::Rete::PEG {
     const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
     if (data.productions.top()->lhs_variables.find(substr) != data.productions.top()->lhs_variables.end()) {
       /// Treat as bound
-      data.productions.top()->lhs_variables.insert(substr);
       data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
     }
     else {
       /// Treat as new binding
       data.symbols.top()->variable = symbol;
+      data.productions.top()->lhs_variables.insert(substr);
     }
   }
 
