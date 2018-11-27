@@ -335,6 +335,17 @@ namespace Zeni::Rete::PEG {
   }
 
   template<typename Input>
+  void Action<Source>::apply(const Input &input, Data &data) {
+    //std::cerr << "Source: " << input.string() << std::endl;
+
+    assert(data.symbols.size() == 1);
+    const auto source = std::make_shared<Action_Source_Generator>(std::move(data.symbols.top()->symbols));
+    data.symbols.top()->symbols.clear();
+
+    data.productions.top()->actions_or_retractions->push_back(source);
+  }
+
+  template<typename Input>
   void Action<Write>::apply(const Input &input, Data &data) {
     //std::cerr << "Write: " << input.string() << std::endl;
 

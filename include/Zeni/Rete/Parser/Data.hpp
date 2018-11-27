@@ -232,6 +232,22 @@ namespace Zeni::Rete::PEG {
     const std::vector<std::shared_ptr<const Symbol_Generator>> m_symbols;
   };
 
+  class Action_Source_Generator : public Action_Generator {
+    Action_Source_Generator(const Action_Source_Generator &) = delete;
+    Action_Source_Generator & operator=(const Action_Source_Generator &) = delete;
+
+  public:
+    template <typename Symbols>
+    Action_Source_Generator(Symbols &&symbols) : m_symbols(std::forward<Symbols>(symbols)) {};
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+  private:
+    std::vector<std::shared_ptr<const Symbol_Generator>> m_symbols;
+  };
+
   class Action_Write_Generator : public Action_Generator {
     Action_Write_Generator(const Action_Write_Generator &) = delete;
     Action_Write_Generator & operator=(const Action_Write_Generator &) = delete;

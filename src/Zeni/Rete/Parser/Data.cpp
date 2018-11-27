@@ -8,6 +8,7 @@
 #include "Zeni/Rete/Node_Join.hpp"
 #include "Zeni/Rete/Node_Join_Existential.hpp"
 #include "Zeni/Rete/Node_Join_Negation.hpp"
+#include "Zeni/Rete/Parser.hpp"
 #include "Zeni/Rete/Variable_Indices.hpp"
 
 #include <algorithm>
@@ -572,6 +573,52 @@ namespace Zeni::Rete::PEG {
     };
 
     return std::make_shared<Action_Remove>(symbols);
+  }
+
+  std::shared_ptr<const Action_Generator> Action_Source_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
+    std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
+    symbols.reserve(m_symbols.size());
+    for (const auto symbol : m_symbols)
+      symbols.push_back(symbol->clone(action_data));
+    for (auto st = symbols.cbegin(), mt = m_symbols.cbegin(), send = symbols.cend(); st != send; ++st, ++mt) {
+      if (*st != *mt)
+        return std::make_shared<Action_Source_Generator>(symbols);
+    }
+    return shared_from_this();
+  }
+
+  std::shared_ptr<const Node_Action::Action> Action_Source_Generator::generate(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const {
+    std::vector<std::string> filenames;
+    filenames.reserve(m_symbols.size());
+    for (const auto gen_symbol : m_symbols) {
+      const auto symbol = gen_symbol->generate(action_data);
+      std::ostringstream oss;
+      symbol->print_contents(oss);
+      filenames.push_back(oss.str());
+    }
+
+    class Action_Source : public Node_Action::Action {
+      Action_Source(const Action_Source &) = delete;
+      Action_Source & operator=(const Action_Source &) = delete;
+
+    public:
+      Action_Source(std::vector<std::string> &&filenames, const bool user_action)
+        : m_filenames(std::move(filenames)), m_user_action(user_action)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        for (const auto filename : m_filenames)
+          parser->parse_file(network, job_queue, filename, true);
+      }
+
+    private:
+      const std::shared_ptr<Zeni::Rete::Parser> parser = Zeni::Rete::Parser::Create();
+      const std::vector<std::string> m_filenames;
+      const bool m_user_action;
+    };
+
+    return std::make_shared<Action_Source>(std::move(filenames), user_action);
   }
 
   Action_Write_Generator::Action_Write_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols) {

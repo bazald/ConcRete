@@ -56,17 +56,28 @@ namespace Zeni::Rete {
     }
 
     void parse_file(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &filename, const bool user_action) override {
-#ifdef _MSC_VER
-      FILE * in_file;
-      fopen_s(&in_file, filename.c_str(), "r");
-#else
-      FILE * in_file = std::fopen(filename.c_str(), "r");
-#endif
-      PEG::read_input<PEG::tracking_mode::lazy> input(in_file, filename);
+//#ifdef _MSC_VER
+//      FILE * in_file;
+//      fopen_s(&in_file, filename.c_str(), "r");
+//#else
+//      FILE * in_file = std::fopen(filename.c_str(), "r");
+//#endif
+//      if (!in_file) {
+//        std::cerr << "Parser error: could not open file '" << filename << '\'' << std::endl;
+//        return;
+//      }
 
-      parse(input, network, job_queue, user_action);
+      try {
+        PEG::read_input<PEG::tracking_mode::lazy> input(filename.c_str());
 
-      std::fclose(in_file);
+        parse(input, network, job_queue, user_action);
+      }
+      catch (const PEG::input_error &err) {
+        std::cerr << err.what() << std::endl;
+        throw err;
+      }
+
+      //std::fclose(in_file);
     }
 
     void parse_string(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string_view str, const bool user_action) override {

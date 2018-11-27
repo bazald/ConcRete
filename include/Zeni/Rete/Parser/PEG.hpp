@@ -192,7 +192,7 @@ namespace Zeni::Rete::PEG {
 
   struct Genatom : string<'g', 'e', 'n', 'a', 't', 'o', 'm'> {};
 
-  struct Inner_Make : seq<plus<plus<space_comment>, WMEs>> {};
+  struct Inner_Make : seq<star<space_comment>, WMEs> {};
   struct Make : if_must<string<'m', 'a', 'k', 'e'>, Inner_Make> {};
   template<> inline const char * Error<Inner_Make>::error_message() { return "Parser error: 'make' must be followed by a valid WME"; }
 
@@ -203,9 +203,13 @@ namespace Zeni::Rete::PEG {
   struct Begin_Production : at<End_Production> {};
   struct Production : seq<Begin_Production, End_Production> {};
 
-  struct Inner_Remove : seq<plus<plus<space_comment>, WMEs>> {};
+  struct Inner_Remove : seq<star<space_comment>, WMEs> {};
   struct Remove : if_must<string<'r', 'e', 'm', 'o', 'v', 'e'>, Inner_Remove> {};
   template<> inline const char * Error<Inner_Remove>::error_message() { return "Parser error: 'remove' must be followed by a valid WME"; }
+
+  struct Inner_Source : plus<plus<space_comment>, Constant_or_Bound> {};
+  struct Source : if_must<string<'s', 'o', 'u', 'r', 'c', 'e'>, Inner_Source> {};
+  template<> inline const char * Error<Inner_Source>::error_message() { return "Parser error: 'source' must be followed by one or more valid file names."; }
 
   struct Inner_Write : plus<plus<space_comment>, Constant_or_Bound> {};
   struct Write : if_must<string<'w', 'r', 'i', 't', 'e'>, Inner_Write> {};
@@ -213,7 +217,7 @@ namespace Zeni::Rete::PEG {
 
   /// Production Rules
 
-  struct Inner_Action : sor<Cbind, Excise_All, Excise, Exit, Genatom, Make, Production, Remove, Write> {};
+  struct Inner_Action : sor<Cbind, Excise_All, Excise, Exit, Genatom, Make, Production, Remove, Source, Write> {};
 
   struct Enclosed_Action : seq<one<'('>, star<space_comment>, Inner_Action, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Action_List : plus<Enclosed_Action> {};
@@ -231,7 +235,7 @@ namespace Zeni::Rete::PEG {
 
   /// Overarching grammar
 
-  struct Inner_Top_Level_Action : sor<Excise_All, Excise, Exit, Make, Production, Remove, Write> {};
+  struct Inner_Top_Level_Action : sor<Excise_All, Excise, Exit, Make, Production, Remove, Source, Write> {};
   struct Enclosed_Top_Level_Action : seq<one<'('>, star<space_comment>, must<Inner_Top_Level_Action>, star<space_comment>, one<')'>, star<space_comment>> {};
   template<> inline const char * Error<Inner_Top_Level_Action>::error_message() { return "Parser error: invalid top level action"; }
   struct Command : Enclosed_Top_Level_Action {};

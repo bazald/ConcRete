@@ -220,6 +220,12 @@ namespace Zeni::Rete::PEG {
   };
 
   template <>
+  struct Action<Source> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
   struct Action<Write> {
     template<typename Input>
     static void apply(const Input &input, Data &data);
