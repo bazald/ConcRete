@@ -226,17 +226,6 @@ namespace Zeni::Rete::PEG {
       }
 
       void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Node_Action::Data> action_data) const override {
-        if (m_symbols.size() == 1) {
-          if (const auto constant = std::dynamic_pointer_cast<const Get_Symbol_Constant>(m_symbols.back())) {
-            if (const auto str = std::dynamic_pointer_cast<const Symbol_Constant_String>(constant->symbol)) {
-              if (*str == "*") {
-                network->excise_all(job_queue, m_user_action);
-                return;
-              }
-            }
-          }
-        }
-
         for (const auto symbol : m_symbols) {
           std::ostringstream oss;
           oss << *(*symbol)(action_data);
@@ -250,6 +239,43 @@ namespace Zeni::Rete::PEG {
     };
 
     return std::make_shared<Action_Excise>(symbols, user_action);
+  }
+
+  std::shared_ptr<const Action_Excise_All_Generator> Action_Excise_All_Generator::Create() {
+    class Friendly_Action_Excise_All_Generator : public Action_Excise_All_Generator {
+    public:
+      Friendly_Action_Excise_All_Generator() {}
+    };
+
+    static const auto action_excise_all_generator = std::make_shared<Friendly_Action_Excise_All_Generator>();
+
+    return action_excise_all_generator;
+  }
+
+  std::shared_ptr<const Action_Generator> Action_Excise_All_Generator::clone(const std::shared_ptr<const Node_Action::Data>) const {
+    return shared_from_this();
+  }
+
+  std::shared_ptr<const Node_Action::Action> Action_Excise_All_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const {
+    class Action_All_Excise : public Node_Action::Action {
+      Action_All_Excise(const Action_All_Excise &) = delete;
+      Action_All_Excise & operator=(const Action_All_Excise &) = delete;
+
+    public:
+      Action_All_Excise(const bool user_action)
+        : m_user_action(user_action)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        network->excise_all(job_queue, m_user_action);
+      }
+
+    private:
+      const bool m_user_action;
+    };
+
+    return std::make_shared<Action_All_Excise>(user_action);
   }
 
   std::shared_ptr<const Action_Genatom_Generator> Action_Genatom_Generator::Create() {
@@ -458,6 +484,94 @@ namespace Zeni::Rete::PEG {
     };
 
     return std::make_shared<Action_Production>(user_action, std::dynamic_pointer_cast<const Node_Action_Generator>(m_action->clone(action_data)));
+  }
+
+  std::shared_ptr<const Action_Generator> Action_Remove_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
+    std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
+    symbols.reserve(m_symbols.size());
+    for (const auto symbol : m_symbols)
+      symbols.push_back(symbol->clone(action_data));
+    for (auto st = symbols.cbegin(), mt = m_symbols.cbegin(), send = symbols.cend(); st != send; ++st, ++mt) {
+      if (*st != *mt)
+        return std::make_shared<Action_Remove_Generator>(symbols);
+    }
+    return shared_from_this();
+  }
+
+  std::shared_ptr<const Node_Action::Action> Action_Remove_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool, const std::shared_ptr<const Node_Action::Data> action_data) const {
+    class Get_Symbol : public std::enable_shared_from_this<Get_Symbol> {
+    public:
+      virtual ~Get_Symbol() {}
+
+      virtual std::shared_ptr<const Symbol_Constant> operator()(const std::shared_ptr<const Node_Action::Data> action_data) const = 0;
+    };
+
+    class Get_Symbol_Constant : public Get_Symbol {
+    public:
+      Get_Symbol_Constant(const std::shared_ptr<const Symbol_Constant> symbol) : m_symbol(symbol) {}
+
+      std::shared_ptr<const Symbol_Constant> operator()(const std::shared_ptr<const Node_Action::Data>) const override {
+        return m_symbol;
+      }
+
+    private:
+      const std::shared_ptr<const Symbol_Constant> m_symbol;
+    };
+
+    class Get_Symbol_Variable : public Get_Symbol {
+    public:
+      Get_Symbol_Variable(const std::shared_ptr<const Symbol_Variable> variable) : m_variable(variable) {}
+
+      std::shared_ptr<const Symbol_Constant> operator()(const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        assert(action_data);
+        return std::dynamic_pointer_cast<const Symbol_Constant>((*action_data->token)[action_data->variable_indices->find_index(m_variable->get_value())]);
+      }
+
+    private:
+      const std::shared_ptr<const Symbol_Variable> m_variable;
+    };
+
+    std::vector<std::shared_ptr<const Get_Symbol>> symbols;
+    symbols.reserve(m_symbols.size());
+    for (const auto gen_symbol : m_symbols) {
+      const auto symbol = gen_symbol->generate(action_data);
+      if (const auto variable = std::dynamic_pointer_cast<const Symbol_Variable>(symbol))
+        symbols.push_back(std::make_shared<Get_Symbol_Variable>(variable));
+      else
+        symbols.push_back(std::make_shared<Get_Symbol_Constant>(std::dynamic_pointer_cast<const Symbol_Constant>(symbol)));
+    }
+
+    class Action_Remove : public Node_Action::Action {
+      Action_Remove(const Action_Remove &) = delete;
+      Action_Remove & operator=(const Action_Remove &) = delete;
+
+    public:
+      Action_Remove(const std::vector<std::shared_ptr<const Get_Symbol>> &symbols)
+        : m_symbols(symbols)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        auto st = m_symbols.cbegin();
+        const auto send = m_symbols.cend();
+        const auto first = (**st)(action_data);
+        ++st;
+        while (st != send) {
+          const auto second = (**st)(action_data);
+          ++st;
+          assert(st != send);
+          const auto third = (**st)(action_data);
+          ++st;
+
+          network->remove_wme(job_queue, std::make_shared<WME>(first, second, third));
+        }
+      }
+
+    private:
+      const std::vector<std::shared_ptr<const Get_Symbol>> m_symbols;
+    };
+
+    return std::make_shared<Action_Remove>(symbols);
   }
 
   Action_Write_Generator::Action_Write_Generator(const std::vector<std::shared_ptr<const Symbol_Generator>> &symbols) {

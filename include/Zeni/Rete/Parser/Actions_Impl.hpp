@@ -294,6 +294,15 @@ namespace Zeni::Rete::PEG {
   }
 
   template<typename Input>
+  void Action<Excise_All>::apply(const Input &input, Data &data) {
+    //std::cerr << "Excise_All: " << input.string() << std::endl;
+
+    const auto excise_all = Action_Excise_All_Generator::Create();
+
+    data.productions.top()->actions_or_retractions->push_back(excise_all);
+  }
+
+  template<typename Input>
   void Action<Exit>::apply(const Input &, Data &data) {
     data.productions.top()->actions_or_retractions->push_back(Action_Exit_Generator::Create());
   }
@@ -312,6 +321,17 @@ namespace Zeni::Rete::PEG {
     data.symbols.top()->symbols.clear();
 
     data.productions.top()->actions_or_retractions->push_back(make);
+  }
+
+  template<typename Input>
+  void Action<Remove>::apply(const Input &input, Data &data) {
+    //std::cerr << "Remove: " << input.string() << std::endl;
+
+    assert(data.symbols.size() == 1);
+    const auto remove = std::make_shared<Action_Remove_Generator>(std::move(data.symbols.top()->symbols));
+    data.symbols.top()->symbols.clear();
+
+    data.productions.top()->actions_or_retractions->push_back(remove);
   }
 
   template<typename Input>

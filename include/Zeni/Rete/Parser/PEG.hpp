@@ -186,6 +186,8 @@ namespace Zeni::Rete::PEG {
   struct Excise : if_must<string<'e', 'x', 'c', 'i', 's', 'e'>, Inner_Excise> {};
   template<> inline const char * Error<Inner_Excise>::error_message() { return "Parser error: 'excise' must be followed by one or more rule names"; }
 
+  struct Excise_All : string<'e', 'x', 'c', 'i', 's', 'e', '-', 'a', 'l', 'l'> {};
+
   struct Exit : string<'e', 'x', 'i', 't'> {};
 
   struct Genatom : string<'g', 'e', 'n', 'a', 't', 'o', 'm'> {};
@@ -201,13 +203,17 @@ namespace Zeni::Rete::PEG {
   struct Begin_Production : at<End_Production> {};
   struct Production : seq<Begin_Production, End_Production> {};
 
+  struct Inner_Remove : seq<plus<plus<space_comment>, WMEs>> {};
+  struct Remove : if_must<string<'r', 'e', 'm', 'o', 'v', 'e'>, Inner_Remove> {};
+  template<> inline const char * Error<Inner_Remove>::error_message() { return "Parser error: 'remove' must be followed by a valid WME"; }
+
   struct Inner_Write : plus<plus<space_comment>, Constant_or_Bound> {};
   struct Write : if_must<string<'w', 'r', 'i', 't', 'e'>, Inner_Write> {};
   template<> inline const char * Error<Inner_Write>::error_message() { return "Parser error: 'write' must be followed by valid Symbols"; }
 
   /// Production Rules
 
-  struct Inner_Action : sor<Cbind, Excise, Exit, Genatom, Make, Production, Write> {};
+  struct Inner_Action : sor<Cbind, Excise_All, Excise, Exit, Genatom, Make, Production, Remove, Write> {};
 
   struct Enclosed_Action : seq<one<'('>, star<space_comment>, Inner_Action, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Action_List : plus<Enclosed_Action> {};
@@ -225,7 +231,7 @@ namespace Zeni::Rete::PEG {
 
   /// Overarching grammar
 
-  struct Inner_Top_Level_Action : sor<Excise, Exit, Make, Production, Write> {};
+  struct Inner_Top_Level_Action : sor<Excise_All, Excise, Exit, Make, Production, Remove, Write> {};
   struct Enclosed_Top_Level_Action : seq<one<'('>, star<space_comment>, must<Inner_Top_Level_Action>, star<space_comment>, one<')'>, star<space_comment>> {};
   template<> inline const char * Error<Inner_Top_Level_Action>::error_message() { return "Parser error: invalid top level action"; }
   struct Command : Enclosed_Top_Level_Action {};

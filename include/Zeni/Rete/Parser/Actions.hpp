@@ -190,6 +190,12 @@ namespace Zeni::Rete::PEG {
   };
 
   template <>
+  struct Action<Excise_All> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
   struct Action<Exit> {
     template<typename Input>
     static void apply(const Input &input, Data &data);
@@ -203,6 +209,12 @@ namespace Zeni::Rete::PEG {
 
   template <>
   struct Action<Make> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Remove> {
     template<typename Input>
     static void apply(const Input &input, Data &data);
   };

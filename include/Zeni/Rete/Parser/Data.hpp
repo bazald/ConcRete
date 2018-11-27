@@ -138,6 +138,21 @@ namespace Zeni::Rete::PEG {
     const std::vector<std::shared_ptr<const Symbol_Generator>> m_symbols;
   };
 
+  class Action_Excise_All_Generator : public Action_Generator {
+    Action_Excise_All_Generator(const Action_Excise_All_Generator &) = delete;
+    Action_Excise_All_Generator & operator=(const Action_Excise_All_Generator &) = delete;
+
+  protected:
+    Action_Excise_All_Generator() {}
+
+  public:
+    static std::shared_ptr<const Action_Excise_All_Generator> Create();
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
+  };
+
   class Action_Exit_Generator : public Action_Generator {
     Action_Exit_Generator(const Action_Exit_Generator &) = delete;
     Action_Exit_Generator & operator=(const Action_Exit_Generator &) = delete;
@@ -199,6 +214,22 @@ namespace Zeni::Rete::PEG {
 
   private:
     const std::shared_ptr<const Node_Action_Generator> m_action;
+  };
+
+  class Action_Remove_Generator : public Action_Generator {
+    Action_Remove_Generator(const Action_Remove_Generator &) = delete;
+    Action_Remove_Generator & operator=(const Action_Remove_Generator &) = delete;
+
+  public:
+    template <typename Symbols>
+    Action_Remove_Generator(Symbols &&symbols) : m_symbols(std::forward<Symbols>(symbols)) {};
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+  private:
+    const std::vector<std::shared_ptr<const Symbol_Generator>> m_symbols;
   };
 
   class Action_Write_Generator : public Action_Generator {
