@@ -250,8 +250,14 @@ namespace Zeni::Rete {
 
     assert(value == child);
 
-    if (!unlinked && result == Node_Trie::Result::First_Insertion)
-      job_queue->give_one(std::make_shared<Message_Connect_Filter_0>(sft, network, std::move(snapshot), key, value));
+    if (result == Node_Trie::Result::First_Insertion) {
+      if (unlinked) {
+        if (child->is_linked(sft, key))
+          link_output(network, job_queue, key, child);
+      }
+      else
+        job_queue->give_one(std::make_shared<Message_Connect_Filter_0>(sft, network, std::move(snapshot), key, value));
+    }
 
     return result;
   }

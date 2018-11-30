@@ -95,15 +95,15 @@ namespace Zeni::Rete::PEG {
     Constant_Identifier,
     Bound_Constant_Variable> {};
 
-  struct Constant_or_Unbound : sor<
-    seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
-    Constant_Int,
-    minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
-    Quoted_Constant_String,
-    CRLF,
-    Constant_Identifier,
-    Unbound_Constant_Variable,
-    Unnamed_Variable> {};
+  //struct Constant_or_Unbound : sor<
+  //  seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
+  //  Constant_Int,
+  //  minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
+  //  Quoted_Constant_String,
+  //  CRLF,
+  //  Constant_Identifier,
+  //  Unbound_Constant_Variable,
+  //  Unnamed_Variable> {};
 
   struct Rule_Name : Constant_or_Bound {};
 
@@ -173,8 +173,14 @@ namespace Zeni::Rete::PEG {
   struct Join_Negation : if_must<seq<not_at<string<'-', '-', '>'>>, one<'-'>>, NScope> {};
   template<> inline const char * Error<NScope>::error_message() { return "Parser error: '-' must be immediately followed by a valid condition or scope"; }
 
+  struct Predicate_Node_Body : seq<plus<space_comment>, Constant_or_Bound, star<space_comment>, one<')'>, star<space_comment>> {};
+  struct Predicate_Node_End : if_must<seq<one<'('>, star<space_comment>, Bound_Constant_Variable, plus<space_comment>, Predicate>, Predicate_Node_Body> {};
+  template<> inline const char * Error<Predicate_Node_Body>::error_message() { return "Parser error: invalid predicate syntax (mismatched '()'s?)"; }
+  struct Predicate_Node_Begin : at<Predicate_Node_End> {};
+  struct Predicate_Node : seq<Predicate_Node_Begin, Predicate_Node_End> {};
+
   struct Subnode_First : Scope {};
-  struct Subnode_Rest : sor<Join, Join_Existential, Join_Negation> {};
+  struct Subnode_Rest : sor<Predicate_Node, Join, Join_Existential, Join_Negation> {};
 
   /// Right-Hand Side / RHS
 

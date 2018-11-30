@@ -374,6 +374,25 @@ namespace Zeni::Rete::PEG {
     const std::shared_ptr<const Node_Generator> right;
   };
 
+  class Node_Predicate_Generator : public Node_Generator {
+    Node_Predicate_Generator(const Node_Predicate_Generator &) = delete;
+    Node_Predicate_Generator & operator=(const Node_Predicate_Generator &) = delete;
+
+  public:
+    Node_Predicate_Generator(const std::shared_ptr<const Node_Generator> node, const std::shared_ptr<const Node_Predicate::Predicate> predicate, const std::shared_ptr<const Symbol_Variable_Generator> lhs, const std::shared_ptr<const Symbol_Generator> rhs);
+
+    std::shared_ptr<const Node_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>,
+      std::vector<std::tuple<Token_Index, std::shared_ptr<const Zeni::Rete::Node_Predicate::Predicate>, std::shared_ptr<const Symbol_Variable>>>>
+      generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    const std::shared_ptr<const Node_Generator> node;
+    const std::shared_ptr<const Node_Predicate::Predicate> predicate;
+    const std::shared_ptr<const Symbol_Variable_Generator> lhs;
+    const std::shared_ptr<const Symbol_Generator> rhs;
+  };
+
   struct Data {
     class Production {
       Production(const Production &) = delete;

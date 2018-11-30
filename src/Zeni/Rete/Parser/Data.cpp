@@ -1138,6 +1138,43 @@ namespace Zeni::Rete::PEG {
     return std::make_tuple(node, Node_Key_Null::Create(), variable_indices, predicates);
   }
 
+  Node_Predicate_Generator::Node_Predicate_Generator(const std::shared_ptr<const Node_Generator> node_, const std::shared_ptr<const Node_Predicate::Predicate> predicate_, const std::shared_ptr<const Symbol_Variable_Generator> lhs_, const std::shared_ptr<const Symbol_Generator> rhs_)
+    : node(node_), predicate(predicate_), lhs(lhs_), rhs(rhs_)
+  {
+  }
+
+  std::shared_ptr<const Node_Generator> Node_Predicate_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto node0 = node->clone(action_data);
+    const auto lhs0 = std::dynamic_pointer_cast<const Symbol_Variable_Generator>(lhs->clone(action_data));
+    assert(lhs0);
+    const auto rhs0 = rhs->clone(action_data);
+    if (node0 == node && lhs0 == lhs && rhs0 == rhs)
+      return shared_from_this();
+    else
+      return std::make_shared<Node_Predicate_Generator>(node0, predicate, lhs0, rhs0);
+  }
+
+  std::tuple<std::shared_ptr<Node>, std::shared_ptr<const Node_Key>, std::shared_ptr<const Variable_Indices>,
+    std::vector<std::tuple<Token_Index, std::shared_ptr<const Zeni::Rete::Node_Predicate::Predicate>, std::shared_ptr<const Symbol_Variable>>>>
+    Node_Predicate_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool, const std::shared_ptr<const Node_Action::Data> action_data) const
+  {
+    const auto[node0, key0, indices0, predicates0] = node->generate(network, job_queue, false, action_data);
+    const auto lhs0 = lhs->generate(action_data);
+    const auto rhs0 = rhs->generate(action_data);
+
+    const auto index_left = indices0->find_index(std::dynamic_pointer_cast<const Symbol_Variable>(lhs0)->get_value());
+
+    std::shared_ptr<Node_Predicate::Get_Symbol> get_right;
+    if (const auto var = std::dynamic_pointer_cast<const Symbol_Variable>(rhs0))
+      get_right = std::make_shared<Node_Predicate::Get_Symbol_Variable>(indices0->find_index(std::dynamic_pointer_cast<const Symbol_Variable>(lhs0)->get_value()));
+    else
+      get_right = std::make_shared<Node_Predicate::Get_Symbol_Constant>(rhs0);
+
+    const auto node = Node_Predicate::Create(network, job_queue, key0, node0, predicate, index_left, get_right);
+
+    return std::make_tuple(node, Node_Key_Null::Create(), indices0, predicates0);
+  }
+
   Data::Production::Production(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_action_, const std::unordered_set<std::string> &lhs_variables_)
     : network(network_), job_queue(job_queue_), user_action(user_action_), lhs_variables(lhs_variables_)
   {

@@ -268,6 +268,23 @@ namespace Zeni::Rete::PEG {
     data.productions.top()->lhs.top().push(std::make_shared<Node_Join_Negation_Generator>(left, right));
   }
 
+  template<typename Input>
+  void Action<Predicate_Node>::apply(const Input &input, Data &data) {
+    assert(data.symbols.top()->predicates.size() == 1);
+    assert(!data.symbols.top()->predicates.front().second);
+    assert(data.symbols.top()->symbols.size() == 2);
+    const auto pred = data.symbols.top()->predicates.front().first;
+    data.symbols.top()->predicates.clear();
+    const auto lhs = std::dynamic_pointer_cast<const Symbol_Variable_Generator>(data.symbols.top()->symbols.front());
+    assert(lhs);
+    const auto rhs = data.symbols.top()->symbols.back();
+    data.symbols.top()->symbols.clear();
+
+    const auto node = data.productions.top()->lhs.top().top();
+    data.productions.top()->lhs.top().pop();
+    data.productions.top()->lhs.top().push(std::make_shared<Node_Predicate_Generator>(node, pred, lhs, rhs));
+  }
+
   /// Right-Hand Side / RHS
 
   template<typename Input>

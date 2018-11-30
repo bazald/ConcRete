@@ -175,6 +175,12 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data);
   };
 
+  template <>
+  struct Action<Predicate_Node> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
   /// Right-Hand Side / RHS
 
   template <>
