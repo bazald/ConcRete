@@ -74,7 +74,7 @@ namespace Zeni::Rete::PEG {
       if (irv == Result::RESULT_UNTOUCHED)
         continue;
       if (irv & Result::RESULT_PROVIDED)
-        rv |= Result::RESULT_PROVIDED;
+        rv |= irv & (Result::RESULT_PROVIDED | Result::RESULT_PROVIDED_MUST_BE_CONSUMED);
       break;
     }
 

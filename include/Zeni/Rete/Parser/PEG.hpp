@@ -182,6 +182,32 @@ namespace Zeni::Rete::PEG {
   struct Subnode_First : Scope {};
   struct Subnode_Rest : sor<Predicate_Node, Join, Join_Existential, Join_Negation> {};
 
+  /// Math for RHS
+
+  struct Constant_Number_or_Bound : sor<
+    seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
+    Constant_Int,
+    Bound_Constant_Variable> {};
+
+  struct Math_Parenthesis;
+  struct Math_Atom : sor<Constant_Number_or_Bound, Math_Parenthesis> {};
+
+  struct Math_Operator_Product : one<'*'> {};
+  struct Math_Operator_Quotient : one<'/'> {};
+  struct Math_Operator_Remainder : one<'%'> {};
+  struct Math_Operator_Sum : one<'+'> {};
+  struct Math_Operator_Difference : one<'-'> {};
+  struct Math_Operator : sor<Math_Operator_Product, Math_Operator_Quotient, Math_Operator_Remainder, Math_Operator_Sum, Math_Operator_Difference> {};
+
+  struct Math_Expression_Extension_Body : seq<star<space_comment>, Math_Atom> {};
+  struct Math_Expression_Extension : if_must<seq<star<space_comment>, Math_Operator>, Math_Expression_Extension_Body> {};
+  template<> inline const char * Error<Math_Expression_Extension_Body>::error_message() { return "Parser error: a mathematial operator must be followed by another mathematical expression"; }
+  struct Math_Expression : seq<Math_Atom, star<Math_Expression_Extension>> {};
+
+  struct Math_Parenthesis_End : seq<one<'('>, star<space_comment>, Math_Expression, star<space_comment>, one<')'>> {};
+  struct Math_Parenthesis_Begin : at<Math_Parenthesis_End> {};
+  struct Math_Parenthesis : seq<Math_Parenthesis_Begin, Math_Parenthesis_End> {};
+
   /// Right-Hand Side / RHS
 
   struct Inner_Cbind : seq<plus<space_comment>, Unbound_Constant_Variable> {};
@@ -223,7 +249,7 @@ namespace Zeni::Rete::PEG {
 
   /// Production Rules
 
-  struct Inner_Action : sor<Cbind, Excise_All, Excise, Exit, Genatom, Make, Production, Remove, Source, Write> {};
+  struct Inner_Action : sor<Math_Expression, Cbind, Excise_All, Excise, Exit, Genatom, Make, Production, Remove, Source, Write> {};
 
   struct Enclosed_Action : seq<one<'('>, star<space_comment>, Inner_Action, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Action_List : plus<Enclosed_Action> {};
@@ -236,8 +262,8 @@ namespace Zeni::Rete::PEG {
   struct Inner_Production_Body :
     seq<Rule_Name, star<space_comment>,
     Inner_Scope, star<space_comment>,
-    Actions, star<space_comment>,
-    opt<seq<Retractions, star<space_comment>>>> {};
+    opt<Actions, star<space_comment>>,
+    opt<Retractions, star<space_comment>>> {};
 
   /// Overarching grammar
 

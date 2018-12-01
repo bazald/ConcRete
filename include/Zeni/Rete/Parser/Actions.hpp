@@ -246,6 +246,12 @@ namespace Zeni::Rete::PEG {
   /// Production Rules
 
   template <>
+  struct Action<Action_List> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
   struct Action<Begin_Actions> {
     template<typename Input>
     static void apply(const Input &input, Data &data);

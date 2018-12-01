@@ -76,7 +76,9 @@ namespace Zeni::Rete::PEG {
       RESULT_UNTOUCHED = 0x0,
       RESULT_PROVIDED = 0x1,
       RESULT_CONSUMED = 0x2,
-      RESULT_CONSUMED_AND_PROVIDED = 0x3};
+      RESULT_CONSUMED_AND_PROVIDED = 0x3,
+      RESULT_PROVIDED_MUST_BE_CONSUMED = 0x4 //< Should be true if and only if RESULT_PROVIDED
+    };
 
     virtual ~Action_Generator() {}
 
@@ -410,6 +412,7 @@ namespace Zeni::Rete::PEG {
 
       Phase phase = Phase::PHASE_INIT;
       bool result_available = false;
+      bool result_must_be_consumed = false;
 
       std::shared_ptr<const Symbol_Generator> rule_name;
       std::stack<std::stack<std::shared_ptr<Node_Generator>>> lhs;
