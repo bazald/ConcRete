@@ -12,6 +12,7 @@
 #include "Zeni/Rete/Variable_Indices.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <sstream>
 
 namespace Zeni::Rete::PEG {

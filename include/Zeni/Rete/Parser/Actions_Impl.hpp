@@ -342,7 +342,7 @@ namespace Zeni::Rete::PEG {
         data.symbols.top()->maths.push_back(Math_Quotient_Generator::Create(first, second));
         break;
 
-      case '%*':
+      case '%':
         data.symbols.top()->maths.push_back(Math_Remainder_Generator::Create(first, second));
         break;
 
@@ -371,7 +371,7 @@ namespace Zeni::Rete::PEG {
     auto value = *mt++;
 
     auto ot = data.symbols.top()->math_operators.cbegin();
-    const auto oend = data.symbols.top()->math_operators.cend();
+    //const auto oend = data.symbols.top()->math_operators.cend();
     
     while (mt != mend) {
       switch (*ot) {
