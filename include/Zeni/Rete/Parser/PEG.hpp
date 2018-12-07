@@ -58,7 +58,7 @@ namespace Zeni::Rete::PEG {
 
   /// Symbols
 
-  struct Unquoted_String : plus<not_one<' ', '\t', '\r', '\n', '|', '<', '>', '@', '(', ')', '{', '}', '='>> {};
+  struct Unquoted_String : plus<not_one<' ', '\t', '\r', '\n', '|', '<', '>', '@', '(', ')', '{', '}', '=', '!'>> {};
 
   struct Constant_Float : if_then_else<plus_minus, must<sor<decimal, inf, nan>>, sor<decimal, inf, nan>> {};
   template<> inline const char * Error<sor<decimal, inf, nan>>::error_message() { return "Parser error: '+'/'-' must be immediately followed by a numerical value to make a valid symbol"; }
