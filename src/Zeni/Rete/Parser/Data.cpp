@@ -74,7 +74,7 @@ namespace Zeni::Rete::PEG {
       if (irv == Result::RESULT_UNTOUCHED)
         continue;
       if (irv & Result::RESULT_PROVIDED)
-        rv |= irv & (Result::RESULT_PROVIDED | Result::RESULT_PROVIDED_MUST_BE_CONSUMED);
+        rv |= irv & (Result::RESULT_PROVIDED_AND_MUST_BE_CONSUMED);
       break;
     }
 
@@ -98,7 +98,7 @@ namespace Zeni::Rete::PEG {
     actions.reserve(m_actions.size());
     for (const auto action : m_actions)
       actions.push_back(action->generate(network, job_queue, false, action_data));
-    
+
     class Actions : public Node_Action::Action {
       Actions(const Actions &) = delete;
       Actions & operator=(const Actions &) = delete;
@@ -745,6 +745,676 @@ namespace Zeni::Rete::PEG {
     return std::make_shared<Action_Write>(writes);
   }
 
+  Math_Constant_Generator::Math_Constant_Generator(const std::shared_ptr<const Symbol_Generator> symbol_) {
+    if (const auto constant = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(symbol_)) {
+      if (dynamic_cast<const Symbol_Constant_Int *>(constant->symbol.get()) || dynamic_cast<const Symbol_Constant_Float *>(constant->symbol.get()))
+        symbol = symbol_;
+      else
+        symbol = std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>(std::numeric_limits<double>::quiet_NaN()));
+    }
+    else
+      symbol = symbol_;
+  }
+
+  std::shared_ptr<const Action_Generator> Math_Constant_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto symbol0 = symbol->clone(action_data);
+    return symbol0 == symbol ? shared_from_this() : std::make_shared<Math_Constant_Generator>(symbol0);
+  }
+
+  std::shared_ptr<const Node_Action::Action> Math_Constant_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool, const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto symbol0 = symbol->generate(action_data);
+
+    class Math_Constant_Generator_Action : public Node_Action::Action {
+      Math_Constant_Generator_Action(const Math_Constant_Generator_Action &) = delete;
+      Math_Constant_Generator_Action & operator=(const Math_Constant_Generator_Action &) = delete;
+
+    public:
+      Math_Constant_Generator_Action(const std::shared_ptr<const Symbol> symbol)
+        : m_symbol(symbol)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        action_data->result = m_symbol;
+      }
+
+    private:
+      const std::shared_ptr<const Symbol> m_symbol;
+    };
+
+    class Math_Variable_Generator_Action : public Node_Action::Action {
+      Math_Variable_Generator_Action(const Math_Variable_Generator_Action &) = delete;
+      Math_Variable_Generator_Action & operator=(const Math_Variable_Generator_Action &) = delete;
+
+    public:
+      Math_Variable_Generator_Action(const std::shared_ptr<const Symbol_Variable> variable)
+        : m_variable(variable)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network>, const std::shared_ptr<Concurrency::Job_Queue>, const std::shared_ptr<Node_Action>, const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        const auto symbol = (*action_data->token)[action_data->variable_indices->find_index(m_variable->get_value())];
+        if (dynamic_cast<const Symbol_Constant_Int *>(symbol.get()) || dynamic_cast<const Symbol_Constant_Float *>(symbol.get()))
+          action_data->result = symbol;
+        else
+          action_data->result = std::make_shared<Symbol_Constant_Float>(std::numeric_limits<double>::quiet_NaN());
+      }
+
+    private:
+      const std::shared_ptr<const Symbol_Variable> m_variable;
+    };
+
+    if (const auto variable = std::dynamic_pointer_cast<const Symbol_Variable>(symbol0))
+      return std::make_shared<Math_Variable_Generator_Action>(variable);
+    else
+      return std::make_shared<Math_Constant_Generator_Action>(symbol0);
+  }
+
+  Math_Product_Generator::Math_Product_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs)
+    : m_lhs(lhs), m_rhs(rhs)
+  {
+  }
+
+  std::shared_ptr<const Math_Generator> Math_Product_Generator::Create(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs) {
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) * (frhs ? frhs->value : irhs->value))));
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value * irhs->value)));
+        }
+      }
+    }
+    
+    class Friendly_Math_Product_Generator : public Math_Product_Generator {
+    public:
+      Friendly_Math_Product_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs)
+        : Math_Product_Generator(lhs, rhs)
+      {
+      }
+    };
+
+    return std::make_shared<Friendly_Math_Product_Generator>(lhs, rhs);
+  }
+
+  std::shared_ptr<const Action_Generator> Math_Product_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto lhs0 = m_lhs->clone(action_data);
+    const auto rhs0 = m_rhs->clone(action_data);
+
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs0)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs0)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) * (frhs ? frhs->value : irhs->value))));
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value * irhs->value)));
+        }
+      }
+    }
+
+    return lhs0 == m_lhs && rhs0 == m_rhs ? shared_from_this() : Math_Product_Generator::Create(std::dynamic_pointer_cast<const Math_Generator>(lhs0), std::dynamic_pointer_cast<const Math_Generator>(rhs0));
+  }
+
+  std::shared_ptr<const Node_Action::Action> Math_Product_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto lhs0 = m_lhs->clone(action_data);
+    const auto rhs0 = m_rhs->clone(action_data);
+
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs0)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs0)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) * (frhs ? frhs->value : irhs->value))))->generate(network, job_queue, user_action, action_data);
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value * irhs->value)))->generate(network, job_queue, user_action, action_data);
+        }
+      }
+    }
+
+    class Math_Product_Generator_Action : public Node_Action::Action {
+      Math_Product_Generator_Action(const Math_Product_Generator_Action &) = delete;
+      Math_Product_Generator_Action & operator=(const Math_Product_Generator_Action &) = delete;
+
+    public:
+      Math_Product_Generator_Action(const std::shared_ptr<const Node_Action::Action> lhs, const std::shared_ptr<const Node_Action::Action> rhs)
+        : m_lhs(lhs), m_rhs(rhs)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        (*m_lhs)(network, job_queue, rete_action, action_data);
+        const auto lhs = action_data->result;
+
+        (*m_rhs)(network, job_queue, rete_action, action_data);
+        const auto rhs = action_data->result;
+
+        const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(lhs);
+        const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(lhs);
+        const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(rhs);
+        const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(rhs);
+
+        if (flhs || frhs)
+          action_data->result = std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) * (frhs ? frhs->value : irhs->value));
+        else
+          action_data->result = std::make_shared<Symbol_Constant_Int>(ilhs->value * irhs->value);
+      }
+
+    private:
+      const std::shared_ptr<const Node_Action::Action> m_lhs;
+      const std::shared_ptr<const Node_Action::Action> m_rhs;
+    };
+
+    return std::make_shared<Math_Product_Generator_Action>(lhs0->generate(network, job_queue, user_action, action_data), rhs0->generate(network, job_queue, user_action, action_data));
+  }
+
+  Math_Quotient_Generator::Math_Quotient_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs)
+    : m_lhs(lhs), m_rhs(rhs)
+  {
+  }
+
+  std::shared_ptr<const Math_Generator> Math_Quotient_Generator::Create(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs) {
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) / (frhs ? frhs->value : irhs->value))));
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value / irhs->value)));
+        }
+      }
+    }
+
+    class Friendly_Math_Quotient_Generator : public Math_Quotient_Generator {
+    public:
+      Friendly_Math_Quotient_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs)
+        : Math_Quotient_Generator(lhs, rhs)
+      {
+      }
+    };
+
+    return std::make_shared<Friendly_Math_Quotient_Generator>(lhs, rhs);
+  }
+
+  std::shared_ptr<const Action_Generator> Math_Quotient_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto lhs0 = m_lhs->clone(action_data);
+    const auto rhs0 = m_rhs->clone(action_data);
+
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs0)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs0)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) / (frhs ? frhs->value : irhs->value))));
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value / irhs->value)));
+        }
+      }
+    }
+
+    return lhs0 == m_lhs && rhs0 == m_rhs ? shared_from_this() : Math_Quotient_Generator::Create(std::dynamic_pointer_cast<const Math_Generator>(lhs0), std::dynamic_pointer_cast<const Math_Generator>(rhs0));
+  }
+
+  std::shared_ptr<const Node_Action::Action> Math_Quotient_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto lhs0 = m_lhs->clone(action_data);
+    const auto rhs0 = m_rhs->clone(action_data);
+
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs0)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs0)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) / (frhs ? frhs->value : irhs->value))))->generate(network, job_queue, user_action, action_data);
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value / irhs->value)))->generate(network, job_queue, user_action, action_data);
+        }
+      }
+    }
+
+    class Math_Quotient_Generator_Action : public Node_Action::Action {
+      Math_Quotient_Generator_Action(const Math_Quotient_Generator_Action &) = delete;
+      Math_Quotient_Generator_Action & operator=(const Math_Quotient_Generator_Action &) = delete;
+
+    public:
+      Math_Quotient_Generator_Action(const std::shared_ptr<const Node_Action::Action> lhs, const std::shared_ptr<const Node_Action::Action> rhs)
+        : m_lhs(lhs), m_rhs(rhs)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        (*m_lhs)(network, job_queue, rete_action, action_data);
+        const auto lhs = action_data->result;
+
+        (*m_rhs)(network, job_queue, rete_action, action_data);
+        const auto rhs = action_data->result;
+
+        const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(lhs);
+        const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(lhs);
+        const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(rhs);
+        const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(rhs);
+
+        if (flhs || frhs)
+          action_data->result = std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) / (frhs ? frhs->value : irhs->value));
+        else
+          action_data->result = std::make_shared<Symbol_Constant_Int>(ilhs->value / irhs->value);
+      }
+
+    private:
+      const std::shared_ptr<const Node_Action::Action> m_lhs;
+      const std::shared_ptr<const Node_Action::Action> m_rhs;
+    };
+
+    return std::make_shared<Math_Quotient_Generator_Action>(lhs0->generate(network, job_queue, user_action, action_data), rhs0->generate(network, job_queue, user_action, action_data));
+  }
+
+  Math_Remainder_Generator::Math_Remainder_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs)
+    : m_lhs(lhs), m_rhs(rhs)
+  {
+  }
+
+  std::shared_ptr<const Math_Generator> Math_Remainder_Generator::Create(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs) {
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>(std::fmod(flhs ? flhs->value : ilhs->value, frhs ? frhs->value : irhs->value))));
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value % irhs->value)));
+        }
+      }
+    }
+
+    class Friendly_Math_Remainder_Generator : public Math_Remainder_Generator {
+    public:
+      Friendly_Math_Remainder_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs)
+        : Math_Remainder_Generator(lhs, rhs)
+      {
+      }
+    };
+
+    return std::make_shared<Friendly_Math_Remainder_Generator>(lhs, rhs);
+  }
+
+  std::shared_ptr<const Action_Generator> Math_Remainder_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto lhs0 = m_lhs->clone(action_data);
+    const auto rhs0 = m_rhs->clone(action_data);
+
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs0)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs0)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>(std::fmod(flhs ? flhs->value : ilhs->value, frhs ? frhs->value : irhs->value))));
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value % irhs->value)));
+        }
+      }
+    }
+
+    return lhs0 == m_lhs && rhs0 == m_rhs ? shared_from_this() : Math_Remainder_Generator::Create(std::dynamic_pointer_cast<const Math_Generator>(lhs0), std::dynamic_pointer_cast<const Math_Generator>(rhs0));
+  }
+
+  std::shared_ptr<const Node_Action::Action> Math_Remainder_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto lhs0 = m_lhs->clone(action_data);
+    const auto rhs0 = m_rhs->clone(action_data);
+
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs0)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs0)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>(std::fmod(flhs ? flhs->value : ilhs->value, frhs ? frhs->value : irhs->value))))->generate(network, job_queue, user_action, action_data);
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value % irhs->value)))->generate(network, job_queue, user_action, action_data);
+        }
+      }
+    }
+
+    class Math_Remainder_Generator_Action : public Node_Action::Action {
+      Math_Remainder_Generator_Action(const Math_Remainder_Generator_Action &) = delete;
+      Math_Remainder_Generator_Action & operator=(const Math_Remainder_Generator_Action &) = delete;
+
+    public:
+      Math_Remainder_Generator_Action(const std::shared_ptr<const Node_Action::Action> lhs, const std::shared_ptr<const Node_Action::Action> rhs)
+        : m_lhs(lhs), m_rhs(rhs)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        (*m_lhs)(network, job_queue, rete_action, action_data);
+        const auto lhs = action_data->result;
+
+        (*m_rhs)(network, job_queue, rete_action, action_data);
+        const auto rhs = action_data->result;
+
+        const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(lhs);
+        const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(lhs);
+        const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(rhs);
+        const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(rhs);
+
+        if (flhs || frhs)
+          action_data->result = std::make_shared<Symbol_Constant_Float>(std::fmod(flhs ? flhs->value : ilhs->value, frhs ? frhs->value : irhs->value));
+        else
+          action_data->result = std::make_shared<Symbol_Constant_Int>(ilhs->value % irhs->value);
+      }
+
+    private:
+      const std::shared_ptr<const Node_Action::Action> m_lhs;
+      const std::shared_ptr<const Node_Action::Action> m_rhs;
+    };
+
+    return std::make_shared<Math_Remainder_Generator_Action>(lhs0->generate(network, job_queue, user_action, action_data), rhs0->generate(network, job_queue, user_action, action_data));
+  }
+
+  Math_Sum_Generator::Math_Sum_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs)
+    : m_lhs(lhs), m_rhs(rhs)
+  {
+  }
+
+  std::shared_ptr<const Math_Generator> Math_Sum_Generator::Create(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs) {
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) + (frhs ? frhs->value : irhs->value))));
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value + irhs->value)));
+        }
+      }
+    }
+
+    class Friendly_Math_Sum_Generator : public Math_Sum_Generator {
+    public:
+      Friendly_Math_Sum_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs)
+        : Math_Sum_Generator(lhs, rhs)
+      {
+      }
+    };
+
+    return std::make_shared<Friendly_Math_Sum_Generator>(lhs, rhs);
+  }
+
+  std::shared_ptr<const Action_Generator> Math_Sum_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto lhs0 = m_lhs->clone(action_data);
+    const auto rhs0 = m_rhs->clone(action_data);
+
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs0)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs0)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) + (frhs ? frhs->value : irhs->value))));
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value + irhs->value)));
+        }
+      }
+    }
+
+    return lhs0 == m_lhs && rhs0 == m_rhs ? shared_from_this() : Math_Sum_Generator::Create(std::dynamic_pointer_cast<const Math_Generator>(lhs0), std::dynamic_pointer_cast<const Math_Generator>(rhs0));
+  }
+
+  std::shared_ptr<const Node_Action::Action> Math_Sum_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto lhs0 = m_lhs->clone(action_data);
+    const auto rhs0 = m_rhs->clone(action_data);
+
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs0)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs0)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) + (frhs ? frhs->value : irhs->value))))->generate(network, job_queue, user_action, action_data);
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value + irhs->value)))->generate(network, job_queue, user_action, action_data);
+        }
+      }
+    }
+
+    class Math_Sum_Generator_Action : public Node_Action::Action {
+      Math_Sum_Generator_Action(const Math_Sum_Generator_Action &) = delete;
+      Math_Sum_Generator_Action & operator=(const Math_Sum_Generator_Action &) = delete;
+
+    public:
+      Math_Sum_Generator_Action(const std::shared_ptr<const Node_Action::Action> lhs, const std::shared_ptr<const Node_Action::Action> rhs)
+        : m_lhs(lhs), m_rhs(rhs)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        (*m_lhs)(network, job_queue, rete_action, action_data);
+        const auto lhs = action_data->result;
+
+        (*m_rhs)(network, job_queue, rete_action, action_data);
+        const auto rhs = action_data->result;
+
+        const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(lhs);
+        const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(lhs);
+        const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(rhs);
+        const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(rhs);
+
+        if (flhs || frhs)
+          action_data->result = std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) + (frhs ? frhs->value : irhs->value));
+        else
+          action_data->result = std::make_shared<Symbol_Constant_Int>(ilhs->value + irhs->value);
+      }
+
+    private:
+      const std::shared_ptr<const Node_Action::Action> m_lhs;
+      const std::shared_ptr<const Node_Action::Action> m_rhs;
+    };
+
+    return std::make_shared<Math_Sum_Generator_Action>(lhs0->generate(network, job_queue, user_action, action_data), rhs0->generate(network, job_queue, user_action, action_data));
+  }
+
+  Math_Difference_Generator::Math_Difference_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs)
+    : m_lhs(lhs), m_rhs(rhs)
+  {
+  }
+
+  std::shared_ptr<const Math_Generator> Math_Difference_Generator::Create(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs) {
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) - (frhs ? frhs->value : irhs->value))));
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value - irhs->value)));
+        }
+      }
+    }
+
+    class Friendly_Math_Difference_Generator : public Math_Difference_Generator {
+    public:
+      Friendly_Math_Difference_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs)
+        : Math_Difference_Generator(lhs, rhs)
+      {
+      }
+    };
+
+    return std::make_shared<Friendly_Math_Difference_Generator>(lhs, rhs);
+  }
+
+  std::shared_ptr<const Action_Generator> Math_Difference_Generator::clone(const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto lhs0 = m_lhs->clone(action_data);
+    const auto rhs0 = m_rhs->clone(action_data);
+
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs0)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs0)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) - (frhs ? frhs->value : irhs->value))));
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value - irhs->value)));
+        }
+      }
+    }
+
+    return lhs0 == m_lhs && rhs0 == m_rhs ? shared_from_this() : Math_Difference_Generator::Create(std::dynamic_pointer_cast<const Math_Generator>(lhs0), std::dynamic_pointer_cast<const Math_Generator>(rhs0));
+  }
+
+  std::shared_ptr<const Node_Action::Action> Math_Difference_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const {
+    const auto lhs0 = m_lhs->clone(action_data);
+    const auto rhs0 = m_rhs->clone(action_data);
+
+    if (const auto clhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(lhs0)) {
+      if (const auto crhs = std::dynamic_pointer_cast<const Math_Constant_Generator>(rhs0)) {
+        if (!dynamic_cast<const Symbol_Variable_Generator *>(clhs->symbol.get()) && !dynamic_cast<const Symbol_Variable_Generator *>(crhs->symbol.get())) {
+          const auto cglhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(clhs->symbol);
+          const auto cgrhs = std::dynamic_pointer_cast<const Symbol_Constant_Generator>(crhs->symbol);
+
+          const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cglhs->symbol);
+          const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cglhs->symbol);
+          const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(cgrhs->symbol);
+          const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(cgrhs->symbol);
+
+          if (flhs || frhs)
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) - (frhs ? frhs->value : irhs->value))))->generate(network, job_queue, user_action, action_data);
+          else
+            return std::make_shared<Math_Constant_Generator>(std::make_shared<Symbol_Constant_Generator>(std::make_shared<Symbol_Constant_Int>(ilhs->value - irhs->value)))->generate(network, job_queue, user_action, action_data);
+        }
+      }
+    }
+
+    class Math_Difference_Generator_Action : public Node_Action::Action {
+      Math_Difference_Generator_Action(const Math_Difference_Generator_Action &) = delete;
+      Math_Difference_Generator_Action & operator=(const Math_Difference_Generator_Action &) = delete;
+
+    public:
+      Math_Difference_Generator_Action(const std::shared_ptr<const Node_Action::Action> lhs, const std::shared_ptr<const Node_Action::Action> rhs)
+        : m_lhs(lhs), m_rhs(rhs)
+      {
+      }
+
+      void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Node_Action::Data> action_data) const override {
+        (*m_lhs)(network, job_queue, rete_action, action_data);
+        const auto lhs = action_data->result;
+
+        (*m_rhs)(network, job_queue, rete_action, action_data);
+        const auto rhs = action_data->result;
+
+        const auto flhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(lhs);
+        const auto ilhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(lhs);
+        const auto frhs = std::dynamic_pointer_cast<const Symbol_Constant_Float>(rhs);
+        const auto irhs = std::dynamic_pointer_cast<const Symbol_Constant_Int>(rhs);
+
+        if (flhs || frhs)
+          action_data->result = std::make_shared<Symbol_Constant_Float>((flhs ? flhs->value : ilhs->value) - (frhs ? frhs->value : irhs->value));
+        else
+          action_data->result = std::make_shared<Symbol_Constant_Int>(ilhs->value - irhs->value);
+      }
+
+    private:
+      const std::shared_ptr<const Node_Action::Action> m_lhs;
+      const std::shared_ptr<const Node_Action::Action> m_rhs;
+    };
+
+    return std::make_shared<Math_Difference_Generator_Action>(lhs0->generate(network, job_queue, user_action, action_data), rhs0->generate(network, job_queue, user_action, action_data));
+  }
+
   Node_Action_Generator::Node_Action_Generator(const std::shared_ptr<const Symbol_Generator> name_, const std::shared_ptr<const Node_Generator> input_, const std::shared_ptr<const Action_Generator> action_, const std::shared_ptr<const Action_Generator> retraction_)
     : name(name_), input(input_), action(action_), retraction(retraction_)
   {
@@ -766,7 +1436,7 @@ namespace Zeni::Rete::PEG {
     Node_Action_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const
   {
     const auto name_gen0 = name->generate(action_data);
-    const auto [input0, key0, variable_indices0, predicates0] = input->generate(network, job_queue, user_action, action_data);
+    const auto[input0, key0, variable_indices0, predicates0] = input->generate(network, job_queue, user_action, action_data);
 
     assert(predicates0.empty());
 
@@ -839,7 +1509,7 @@ namespace Zeni::Rete::PEG {
         pred.second = newgen;
       }
     }
-    
+
     return different ? std::make_shared<Node_Filter_Generator>(symbols0, symbols1, symbols2) : shared_from_this();
   }
 

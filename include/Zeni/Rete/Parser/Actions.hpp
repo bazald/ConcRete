@@ -181,6 +181,32 @@ namespace Zeni::Rete::PEG {
     static void apply(const Input &input, Data &data);
   };
 
+  /// Math for RHS
+
+  template <>
+  struct Action<Constant_Number_or_Bound> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Math_Operator> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Math_Expression_Extension> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Final_Math_Expression> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
   /// Right-Hand Side / RHS
 
   template <>

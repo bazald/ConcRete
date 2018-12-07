@@ -285,6 +285,102 @@ namespace Zeni::Rete::PEG {
     data.productions.top()->lhs.top().push(std::make_shared<Node_Predicate_Generator>(node, pred, lhs, rhs));
   }
 
+  /// Math for RHS
+
+  template<typename Input>
+  void Action<Constant_Number_or_Bound>::apply(const Input &input, Data &data) {
+    //std::cerr << "Constant_Number_or_Bound: " << input.string() << std::endl;
+
+    const auto symbol = data.symbols.top()->symbols.back();
+    data.symbols.top()->symbols.pop_back();
+
+    data.symbols.top()->maths.push_back(std::make_shared<Math_Constant_Generator>(symbol));
+  }
+
+  template<typename Input>
+  void Action<Math_Operator>::apply(const Input &input, Data &data) {
+    //std::cerr << "Math_Operator: " << input.string() << std::endl;
+
+    data.symbols.top()->math_operators.push_back(input.string().at(0));
+  }
+
+  template<typename Input>
+  void Action<Math_Expression_Extension>::apply(const Input &input, Data &data) {
+    //std::cerr << "Math_Expression_Extension: " << input.string() << std::endl;
+
+    assert(!data.symbols.top()->math_operators.empty());
+    assert(data.symbols.top()->maths.size() == data.symbols.top()->math_operators.size() + 1);
+
+    switch (const char oc = data.symbols.top()->math_operators.back()) {
+    case '*':
+    case '/':
+    case '%':
+    {
+      const auto second = data.symbols.top()->maths.back();
+      data.symbols.top()->maths.pop_back();
+      const auto first = data.symbols.top()->maths.back();
+      data.symbols.top()->maths.pop_back();
+
+      switch (oc) {
+      case '*':
+        data.symbols.top()->maths.push_back(Math_Product_Generator::Create(first, second));
+        break;
+
+      case '/':
+        data.symbols.top()->maths.push_back(Math_Quotient_Generator::Create(first, second));
+        break;
+
+      case '%*':
+        data.symbols.top()->maths.push_back(Math_Remainder_Generator::Create(first, second));
+        break;
+
+      default:
+        abort();
+      }
+
+      data.symbols.top()->math_operators.pop_back();
+
+      break;
+    }
+
+    default:
+      break;
+    }
+  }
+
+  template<typename Input>
+  void Action<Final_Math_Expression>::apply(const Input &input, Data &data) {
+    //std::cerr << "Final_Math_Expression: " << input.string() << std::endl;
+
+    assert(data.symbols.top()->maths.size() == data.symbols.top()->math_operators.size() + 1);
+
+    auto mt = data.symbols.top()->maths.cbegin();
+    const auto mend = data.symbols.top()->maths.cend();
+    auto value = *mt++;
+
+    auto ot = data.symbols.top()->math_operators.cbegin();
+    const auto oend = data.symbols.top()->math_operators.cend();
+    
+    while (mt != mend) {
+      switch (*ot) {
+      case '+':
+        value = Math_Sum_Generator::Create(value, *mt);
+        break;
+
+      case '-':
+        value = Math_Difference_Generator::Create(value, *mt);
+        break;
+
+      default:
+        abort();
+      }
+
+      ++mt, ++ot;
+    }
+
+    data.productions.top()->actions_or_retractions->push_back(value);
+  }
+
   /// Right-Hand Side / RHS
 
   template<typename Input>
@@ -377,18 +473,18 @@ namespace Zeni::Rete::PEG {
   void Action<Inner_Action>::apply(const Input &input, Data &data) {
     //std::cerr << "Inner_Action: " << input.string() << std::endl;
 
-    const auto result = data.productions.top()->actions_or_retractions->back()->result();
+    const auto result = data.productions.top()->actions_or_retractions->empty() ? Action_Generator::Result::RESULT_UNTOUCHED : data.productions.top()->actions_or_retractions->back()->result();
     if (result & Action_Generator::Result::RESULT_CONSUMED) {
       if (!data.productions.top()->result_available)
         throw parse_error("Parser error: no result available for action to consume", input);
       data.productions.top()->result_available = result & Action_Generator::Result::RESULT_PROVIDED;
-      data.productions.top()->result_must_be_consumed = result & Action_Generator::Result::RESULT_PROVIDED_MUST_BE_CONSUMED;
+      data.productions.top()->result_must_be_consumed = result & Action_Generator::Result::RESULT_MUST_BE_CONSUMED;
     }
     else if (result & Action_Generator::Result::RESULT_PROVIDED) {
       if (data.productions.top()->result_must_be_consumed)
         throw parse_error("Parser error: result that must be consumed is ignored", input);
       data.productions.top()->result_available = true;
-      data.productions.top()->result_must_be_consumed = result & Action_Generator::Result::RESULT_PROVIDED_MUST_BE_CONSUMED;
+      data.productions.top()->result_must_be_consumed = result & Action_Generator::Result::RESULT_MUST_BE_CONSUMED;
     }
   }
 

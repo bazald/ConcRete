@@ -208,6 +208,8 @@ namespace Zeni::Rete::PEG {
   struct Math_Parenthesis_Begin : at<Math_Parenthesis_End> {};
   struct Math_Parenthesis : seq<Math_Parenthesis_Begin, Math_Parenthesis_End> {};
 
+  struct Final_Math_Expression : Math_Expression {};
+
   /// Right-Hand Side / RHS
 
   struct Inner_Cbind : seq<plus<space_comment>, Unbound_Constant_Variable> {};
@@ -249,7 +251,7 @@ namespace Zeni::Rete::PEG {
 
   /// Production Rules
 
-  struct Inner_Action : sor<Math_Expression, Cbind, Excise_All, Excise, Exit, Genatom, Make, Production, Remove, Source, Write> {};
+  struct Inner_Action : sor<Final_Math_Expression, Cbind, Excise_All, Excise, Exit, Genatom, Make, Production, Remove, Source, Write> {};
 
   struct Enclosed_Action : seq<one<'('>, star<space_comment>, Inner_Action, star<space_comment>, one<')'>, star<space_comment>> {};
   struct Action_List : plus<Enclosed_Action> {};

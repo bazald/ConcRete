@@ -77,7 +77,9 @@ namespace Zeni::Rete::PEG {
       RESULT_PROVIDED = 0x1,
       RESULT_CONSUMED = 0x2,
       RESULT_CONSUMED_AND_PROVIDED = 0x3,
-      RESULT_PROVIDED_MUST_BE_CONSUMED = 0x4 //< Should be true if and only if RESULT_PROVIDED
+      RESULT_MUST_BE_CONSUMED = 0x4, //< Should be true if and only if RESULT_PROVIDED
+      RESULT_PROVIDED_AND_MUST_BE_CONSUMED = 0x5,
+      RESULT_CONSUMED_PROVIDED_AND_MUST_BE_CONSUMED = 0x7,
     };
 
     virtual ~Action_Generator() {}
@@ -265,6 +267,125 @@ namespace Zeni::Rete::PEG {
     std::vector<std::shared_ptr<const Symbol_Generator>> m_symbols;
   };
 
+  class Math_Generator : public Action_Generator {
+    Math_Generator(const Math_Generator &) = delete;
+    Math_Generator & operator=(const Math_Generator &) = delete;
+
+  public:
+    Math_Generator() {}
+
+    virtual Result result() const { return Result::RESULT_PROVIDED_AND_MUST_BE_CONSUMED; }
+  };
+
+  class Math_Constant_Generator : public Math_Generator {
+    Math_Constant_Generator(const Math_Constant_Generator &) = delete;
+    Math_Constant_Generator & operator=(const Math_Constant_Generator &) = delete;
+
+  public:
+    Math_Constant_Generator(const std::shared_ptr<const Symbol_Generator> symbol);
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::shared_ptr<const Symbol_Generator> symbol;
+  };
+
+  class Math_Product_Generator : public Math_Generator {
+    Math_Product_Generator(const Math_Product_Generator &) = delete;
+    Math_Product_Generator & operator=(const Math_Product_Generator &) = delete;
+
+  protected:
+    Math_Product_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs);
+
+  public:
+    static std::shared_ptr<const Math_Generator> Create(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs);
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+  private:
+    std::shared_ptr<const Math_Generator> m_lhs;
+    std::shared_ptr<const Math_Generator> m_rhs;
+  };
+
+  class Math_Quotient_Generator : public Math_Generator {
+    Math_Quotient_Generator(const Math_Quotient_Generator &) = delete;
+    Math_Quotient_Generator & operator=(const Math_Quotient_Generator &) = delete;
+
+  protected:
+    Math_Quotient_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs);
+
+  public:
+    static std::shared_ptr<const Math_Generator> Create(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs);
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+  private:
+    std::shared_ptr<const Math_Generator> m_lhs;
+    std::shared_ptr<const Math_Generator> m_rhs;
+  };
+
+  class Math_Remainder_Generator : public Math_Generator {
+    Math_Remainder_Generator(const Math_Remainder_Generator &) = delete;
+    Math_Remainder_Generator & operator=(const Math_Remainder_Generator &) = delete;
+
+  protected:
+    Math_Remainder_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs);
+
+  public:
+    static std::shared_ptr<const Math_Generator> Create(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs);
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+  private:
+    std::shared_ptr<const Math_Generator> m_lhs;
+    std::shared_ptr<const Math_Generator> m_rhs;
+  };
+
+  class Math_Sum_Generator : public Math_Generator {
+    Math_Sum_Generator(const Math_Sum_Generator &) = delete;
+    Math_Sum_Generator & operator=(const Math_Sum_Generator &) = delete;
+
+  protected:
+    Math_Sum_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs);
+
+  public:
+    static std::shared_ptr<const Math_Generator> Create(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs);
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+  private:
+    std::shared_ptr<const Math_Generator> m_lhs;
+    std::shared_ptr<const Math_Generator> m_rhs;
+  };
+
+  class Math_Difference_Generator : public Math_Generator {
+    Math_Difference_Generator(const Math_Difference_Generator &) = delete;
+    Math_Difference_Generator & operator=(const Math_Difference_Generator &) = delete;
+
+  protected:
+    Math_Difference_Generator(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs);
+
+  public:
+    static std::shared_ptr<const Math_Generator> Create(const std::shared_ptr<const Math_Generator> lhs, const std::shared_ptr<const Math_Generator> rhs);
+
+    std::shared_ptr<const Action_Generator> clone(const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+    std::shared_ptr<const Node_Action::Action> generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const Node_Action::Data> action_data) const override;
+
+  private:
+    std::shared_ptr<const Math_Generator> m_lhs;
+    std::shared_ptr<const Math_Generator> m_rhs;
+  };
+
   class Node_Generator : public std::enable_shared_from_this<Node_Generator> {
     Node_Generator(const Node_Generator &) = delete;
     Node_Generator & operator=(const Node_Generator &) = delete;
@@ -305,6 +426,9 @@ namespace Zeni::Rete::PEG {
     std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
     std::vector<std::pair<std::shared_ptr<const Zeni::Rete::Node_Predicate::Predicate>, std::shared_ptr<const Symbol_Generator>>> predicates;
     std::shared_ptr<const Symbol_Variable> variable;
+
+    std::vector<std::shared_ptr<const Math_Generator>> maths;
+    std::vector<char> math_operators;
   };
 
   class Node_Filter_Generator : public Node_Generator {
