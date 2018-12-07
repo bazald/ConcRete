@@ -1455,6 +1455,10 @@ namespace Zeni::Rete::PEG {
     return std::make_tuple(node, Node_Key_Null::Create(), dynamic_cast<const Node_Action *>(node.get())->get_variable_indices(), predicates0);
   }
 
+  Symbols::Symbols() {
+    math.push(Math());
+  }
+
   Node_Filter_Generator::Node_Filter_Generator(const std::shared_ptr<const Symbols> first_, const std::shared_ptr<const Symbols> second_, const std::shared_ptr<const Symbols> third_)
     : first(first_), second(second_), third(third_)
   {

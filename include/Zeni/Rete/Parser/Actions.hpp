@@ -208,6 +208,24 @@ namespace Zeni::Rete::PEG {
   };
 
   template <>
+  struct Action<Math_Expression> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Math_Parenthesis_Begin> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
+  struct Action<Math_Parenthesis_End> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
   struct Action<Final_Math_Expression> {
     template<typename Input>
     static void apply(const Input &input, Data &data);

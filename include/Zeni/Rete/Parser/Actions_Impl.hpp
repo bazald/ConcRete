@@ -306,51 +306,51 @@ namespace Zeni::Rete::PEG {
     const auto symbol = data.symbols.top()->symbols.back();
     data.symbols.top()->symbols.pop_back();
 
-    data.symbols.top()->maths.push_back(std::make_shared<Math_Constant_Generator>(symbol));
+    data.symbols.top()->math.top().maths.push_back(std::make_shared<Math_Constant_Generator>(symbol));
   }
 
   template<typename Input>
   void Action<Math_Operator>::apply(const Input &input, Data &data) {
     //std::cerr << "Math_Operator: " << input.string() << std::endl;
 
-    data.symbols.top()->math_operators.push_back(input.string().at(0));
+    data.symbols.top()->math.top().math_operators.push_back(input.string().at(0));
   }
 
   template<typename Input>
   void Action<Math_Expression_Extension>::apply(const Input &input, Data &data) {
     //std::cerr << "Math_Expression_Extension: " << input.string() << std::endl;
 
-    assert(!data.symbols.top()->math_operators.empty());
-    assert(data.symbols.top()->maths.size() == data.symbols.top()->math_operators.size() + 1);
+    assert(!data.symbols.top()->math.top().math_operators.empty());
+    assert(data.symbols.top()->math.top().maths.size() == data.symbols.top()->math.top().math_operators.size() + 1);
 
-    switch (const char oc = data.symbols.top()->math_operators.back()) {
+    switch (const char oc = data.symbols.top()->math.top().math_operators.back()) {
     case '*':
     case '/':
     case '%':
     {
-      const auto second = data.symbols.top()->maths.back();
-      data.symbols.top()->maths.pop_back();
-      const auto first = data.symbols.top()->maths.back();
-      data.symbols.top()->maths.pop_back();
+      const auto second = data.symbols.top()->math.top().maths.back();
+      data.symbols.top()->math.top().maths.pop_back();
+      const auto first = data.symbols.top()->math.top().maths.back();
+      data.symbols.top()->math.top().maths.pop_back();
 
       switch (oc) {
       case '*':
-        data.symbols.top()->maths.push_back(Math_Product_Generator::Create(first, second));
+        data.symbols.top()->math.top().maths.push_back(Math_Product_Generator::Create(first, second));
         break;
 
       case '/':
-        data.symbols.top()->maths.push_back(Math_Quotient_Generator::Create(first, second));
+        data.symbols.top()->math.top().maths.push_back(Math_Quotient_Generator::Create(first, second));
         break;
 
       case '%':
-        data.symbols.top()->maths.push_back(Math_Remainder_Generator::Create(first, second));
+        data.symbols.top()->math.top().maths.push_back(Math_Remainder_Generator::Create(first, second));
         break;
 
       default:
         abort();
       }
 
-      data.symbols.top()->math_operators.pop_back();
+      data.symbols.top()->math.top().math_operators.pop_back();
 
       break;
     }
@@ -361,18 +361,18 @@ namespace Zeni::Rete::PEG {
   }
 
   template<typename Input>
-  void Action<Final_Math_Expression>::apply(const Input &input, Data &data) {
-    //std::cerr << "Final_Math_Expression: " << input.string() << std::endl;
+  void Action<Math_Expression>::apply(const Input &input, Data &data) {
+    //std::cerr << "Math_Expression: " << input.string() << std::endl;
 
-    assert(data.symbols.top()->maths.size() == data.symbols.top()->math_operators.size() + 1);
+    assert(data.symbols.top()->math.top().maths.size() == data.symbols.top()->math.top().math_operators.size() + 1);
 
-    auto mt = data.symbols.top()->maths.cbegin();
-    const auto mend = data.symbols.top()->maths.cend();
+    auto mt = data.symbols.top()->math.top().maths.cbegin();
+    const auto mend = data.symbols.top()->math.top().maths.cend();
     auto value = *mt++;
 
-    auto ot = data.symbols.top()->math_operators.cbegin();
-    //const auto oend = data.symbols.top()->math_operators.cend();
-    
+    auto ot = data.symbols.top()->math.top().math_operators.cbegin();
+    //const auto oend = data.symbols.top()->math.top().math_operators.cend();
+
     while (mt != mend) {
       switch (*ot) {
       case '+':
@@ -390,7 +390,41 @@ namespace Zeni::Rete::PEG {
       ++mt, ++ot;
     }
 
-    data.productions.top()->actions_or_retractions->push_back(value);
+    data.symbols.top()->math.top().maths.clear();
+    data.symbols.top()->math.top().math_operators.clear();
+    data.symbols.top()->math.top().maths.push_back(value);
+  }
+
+  template<typename Input>
+  void Action<Math_Parenthesis_Begin>::apply(const Input &input, Data &data) {
+    //std::cerr << "Math_Parenthesis_Begin: " << input.string() << std::endl;
+    
+    data.symbols.top()->math.push(Symbols::Math());
+  }
+
+  template<typename Input>
+  void Action<Math_Parenthesis_End>::apply(const Input &input, Data &data) {
+    //std::cerr << "Math_Parenthesis_End: " << input.string() << std::endl;
+
+    assert(data.symbols.top()->math.size() > 1);
+    assert(data.symbols.top()->math.top().maths.size() == 1);
+    assert(data.symbols.top()->math.top().math_operators.empty());
+
+    const auto value = data.symbols.top()->math.top().maths.back();
+    data.symbols.top()->math.pop();
+    data.symbols.top()->math.top().maths.push_back(value);
+  }
+
+  template<typename Input>
+  void Action<Final_Math_Expression>::apply(const Input &input, Data &data) {
+    //std::cerr << "Final_Math_Expression: " << input.string() << std::endl;
+
+    assert(data.symbols.size() == 1);
+    assert(data.symbols.top()->math.top().maths.size() == 1);
+    assert(data.symbols.top()->math.top().math_operators.empty());
+
+    data.productions.top()->actions_or_retractions->push_back(data.symbols.top()->math.top().maths.back());
+    data.symbols.top()->math.top().maths.clear();
   }
 
   /// Right-Hand Side / RHS

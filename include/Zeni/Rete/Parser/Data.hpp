@@ -423,12 +423,18 @@ namespace Zeni::Rete::PEG {
   };
 
   struct Symbols {
+    Symbols();
+
     std::vector<std::shared_ptr<const Symbol_Generator>> symbols;
     std::vector<std::pair<std::shared_ptr<const Zeni::Rete::Node_Predicate::Predicate>, std::shared_ptr<const Symbol_Generator>>> predicates;
     std::shared_ptr<const Symbol_Variable> variable;
 
-    std::vector<std::shared_ptr<const Math_Generator>> maths;
-    std::vector<char> math_operators;
+    struct Math {
+      std::vector<std::shared_ptr<const Math_Generator>> maths;
+      std::vector<char> math_operators;
+    };
+
+    std::stack<Math> math;
   };
 
   class Node_Filter_Generator : public Node_Generator {

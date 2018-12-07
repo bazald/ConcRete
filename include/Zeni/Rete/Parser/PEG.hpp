@@ -218,7 +218,7 @@ namespace Zeni::Rete::PEG {
   struct Math_Parenthesis_Begin : at<Math_Parenthesis_End> {};
   struct Math_Parenthesis : seq<Math_Parenthesis_Begin, Math_Parenthesis_End> {};
 
-  struct Final_Math_Expression : Math_Expression {};
+  struct Final_Math_Expression : seq<Math_Expression> {};
 
   /// Right-Hand Side / RHS
 
