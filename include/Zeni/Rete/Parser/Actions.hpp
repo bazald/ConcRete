@@ -56,6 +56,12 @@ namespace Zeni::Rete::PEG {
   };
 
   template <>
+  struct Action<External_Constant_Variable> {
+    template<typename Input>
+    static void apply(const Input &input, Data &data);
+  };
+
+  template <>
   struct Action<Unbound_Constant_Variable> {
     template<typename Input>
     static void apply(const Input &input, Data &data);

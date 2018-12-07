@@ -525,7 +525,7 @@ namespace Zeni::Rete::PEG {
       Production & operator=(const Production &) = delete;
 
     public:
-      Production(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::unordered_set<std::string> &lhs_variables);
+      Production(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action, const std::shared_ptr<const std::unordered_set<std::string>> external_lhs_variables);
 
       const std::shared_ptr<Network> network;
       const std::shared_ptr<Concurrency::Job_Queue> job_queue;
@@ -540,7 +540,8 @@ namespace Zeni::Rete::PEG {
 
       std::shared_ptr<const Symbol_Generator> rule_name;
       std::stack<std::stack<std::shared_ptr<Node_Generator>>> lhs;
-      std::unordered_set<std::string> lhs_variables;
+      const std::shared_ptr<const std::unordered_set<std::string>> external_lhs_variables;
+      std::shared_ptr<std::unordered_set<std::string>> lhs_variables;
 
       std::vector<std::shared_ptr<const Action_Generator>> actions;
       std::vector<std::shared_ptr<const Action_Generator>> retractions;

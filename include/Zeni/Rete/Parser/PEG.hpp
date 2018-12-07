@@ -75,6 +75,7 @@ namespace Zeni::Rete::PEG {
   struct Unnamed_Variable : seq<one<'{'>, star<space_comment>, one<'}'>> {};
   struct Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
   struct Bound_Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
+  struct External_Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
   struct Unbound_Constant_Variable : if_must<one<'<'>, seq<Unquoted_String, one<'>'>>> {};
 
   struct Constant_or_Variable : sor<
@@ -95,6 +96,15 @@ namespace Zeni::Rete::PEG {
     Constant_Identifier,
     Bound_Constant_Variable> {};
 
+  struct Constant_or_External : sor<
+    seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
+    Constant_Int,
+    minus<Constant_String, at<sor<Constant_Float, Constant_Int>>>,
+    Quoted_Constant_String,
+    CRLF,
+    Constant_Identifier,
+    External_Constant_Variable> {};
+
   //struct Constant_or_Unbound : sor<
   //  seq<at<minus<Constant_Float, Constant_Int>>, Constant_Float>,
   //  Constant_Int,
@@ -105,7 +115,7 @@ namespace Zeni::Rete::PEG {
   //  Unbound_Constant_Variable,
   //  Unnamed_Variable> {};
 
-  struct Rule_Name : Constant_or_Bound {};
+  struct Rule_Name : Constant_or_External {};
 
   struct Predicate_E : string<'=', '='> {};
   struct Predicate_NE : string<'!', '='> {};
@@ -121,14 +131,14 @@ namespace Zeni::Rete::PEG {
 
   /// Conditions and WMEs
 
-  struct Disjunction_Value_2 : seq<plus<space_comment>, Constant_or_Bound> {};
-  struct Inner_Disjunction : seq<star<space_comment>, Constant_or_Bound, star<Disjunction_Value_2>, star<space_comment>, string<'>', '>'>> {};
+  struct Disjunction_Value_2 : seq<plus<space_comment>, Constant_or_External> {};
+  struct Inner_Disjunction : seq<star<space_comment>, Constant_or_External, star<Disjunction_Value_2>, star<space_comment>, string<'>', '>'>> {};
   struct Disjunction_End : if_must<string<'<', '<'>, Inner_Disjunction> {};
   template<> inline const char * Error<Inner_Disjunction>::error_message() { return "Parser error: invalid disjunction syntax (mismatched '<<>>'s?)"; }
   struct Disjunction_Begin : at<Disjunction_End> {};
   struct Disjunction : seq<Disjunction_Begin, Disjunction_End> {};
 
-  struct Inner_Conjunction : seq<star<space_comment>, opt<sor<Disjunction, try_catch<Constant_or_Bound>>, star<space_comment>>, star<seq<not_at<try_catch<Unbound_Constant_Variable>>, Predicate_Alpha>, star<space_comment>>, opt<Unbound_Constant_Variable, star<space_comment>>, one<'}'>> {};
+  struct Inner_Conjunction : seq<star<space_comment>, opt<sor<Disjunction, try_catch<Constant_or_External>>, star<space_comment>>, star<seq<not_at<try_catch<Unbound_Constant_Variable>>, Predicate_Alpha>, star<space_comment>>, opt<Unbound_Constant_Variable, star<space_comment>>, one<'}'>> {};
   struct Conjunction_End : if_must<one<'{'>, Inner_Conjunction> {};
   template<> inline const char * Error<Inner_Conjunction>::error_message() { return "Parser error: invalid conjunction syntax (mismatched '{}'s or misordered conjunction?)"; }
   struct Conjunction_Begin : at<Conjunction_End> {};

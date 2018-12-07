@@ -72,14 +72,14 @@ namespace Zeni::Rete::PEG {
     assert(input.string().size() > 2);
     const auto substr = input.string().substr(1, input.string().size() - 2);
     const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
-    if (data.productions.top()->lhs_variables.find(substr) != data.productions.top()->lhs_variables.end()) {
+    if (data.productions.top()->lhs_variables->find(substr) != data.productions.top()->lhs_variables->end()) {
       /// Treat as bound
       data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
     }
     else {
       /// Treat as new binding
       data.symbols.top()->variable = symbol;
-      data.productions.top()->lhs_variables.insert(substr);
+      data.productions.top()->lhs_variables->insert(substr);
     }
   }
 
@@ -88,9 +88,21 @@ namespace Zeni::Rete::PEG {
     //std::cerr << "Bound_Constant_Variable: " << input.string() << std::endl;
     assert(input.string().size() > 2);
     const auto substr = input.string().substr(1, input.string().size() - 2);
-    if (data.productions.top()->lhs_variables.find(substr) == data.productions.top()->lhs_variables.end())
+    if (data.productions.top()->lhs_variables->find(substr) == data.productions.top()->lhs_variables->end())
       throw parse_error("Parser error: use of unbound variable", input);
-    data.productions.top()->lhs_variables.insert(substr);
+    data.productions.top()->lhs_variables->insert(substr);
+    const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
+    data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
+  }
+
+  template<typename Input>
+  void Action<External_Constant_Variable>::apply(const Input &input, Data &data) {
+    //std::cerr << "External_Constant_Variable: " << input.string() << std::endl;
+    assert(input.string().size() > 2);
+    const auto substr = input.string().substr(1, input.string().size() - 2);
+    if (data.productions.top()->external_lhs_variables->find(substr) == data.productions.top()->external_lhs_variables->end())
+      throw parse_error("Parser error: use of unbound or internally bound variable", input);
+    data.productions.top()->lhs_variables->insert(substr);
     const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
     data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
   }
@@ -100,9 +112,9 @@ namespace Zeni::Rete::PEG {
     //std::cerr << "Unbound_Constant_Variable: " << input.string() << std::endl;
     assert(input.string().size() > 2);
     const auto substr = input.string().substr(1, input.string().size() - 2);
-    if (data.productions.top()->lhs_variables.find(substr) != data.productions.top()->lhs_variables.end())
+    if (data.productions.top()->lhs_variables->find(substr) != data.productions.top()->lhs_variables->end())
       throw parse_error("Parser error: variable previously bound", input);
-    data.productions.top()->lhs_variables.insert(substr);
+    data.productions.top()->lhs_variables->insert(substr);
     const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
     data.symbols.top()->variable = symbol;
   }

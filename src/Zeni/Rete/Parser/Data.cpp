@@ -1845,8 +1845,12 @@ namespace Zeni::Rete::PEG {
     return std::make_tuple(node, Node_Key_Null::Create(), indices0, predicates0);
   }
 
-  Data::Production::Production(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_action_, const std::unordered_set<std::string> &lhs_variables_)
-    : network(network_), job_queue(job_queue_), user_action(user_action_), lhs_variables(lhs_variables_)
+  Data::Production::Production(const std::shared_ptr<Network> network_, const std::shared_ptr<Concurrency::Job_Queue> job_queue_, const bool user_action_, const std::shared_ptr<const std::unordered_set<std::string>> external_lhs_variables_)
+    : network(network_),
+    job_queue(job_queue_),
+    user_action(user_action_),
+    external_lhs_variables(external_lhs_variables_ ? external_lhs_variables_ : std::make_shared<decltype(external_lhs_variables)::element_type>()),
+    lhs_variables(std::make_shared<decltype(lhs_variables)::element_type>(*external_lhs_variables))
   {
     lhs.push(decltype(lhs)::value_type());
   }
