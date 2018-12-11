@@ -22,9 +22,6 @@ namespace Zeni::Concurrency {
     /// Take a Job off the queue.
     std::shared_ptr<IJob> try_take_one(const bool is_already_awake) noexcept override;
 
-    /// Test for reclaim and set to false if true.
-    bool try_reclaim() noexcept override;
-
     /// Give the queue a new Job.
     void give_one(const std::shared_ptr<IJob> job) noexcept(false) override;
 
@@ -33,9 +30,6 @@ namespace Zeni::Concurrency {
 
     /// Give the queue many new Jobs.
     void give_many(const std::vector<std::shared_ptr<IJob>> &jobs) noexcept(false) override;
-
-    /// Set reclaim to true.
-    void set_reclaim() noexcept override;
 
   private:
 #if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE

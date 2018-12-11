@@ -40,15 +40,6 @@ namespace Zeni::Concurrency {
     return job;
   }
 
-  bool Job_Queue_Impl::try_reclaim() noexcept {
-#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
-    if (!m_reclaim.load(std::memory_order_relaxed))
-      return false;
-    m_reclaim.store(false, std::memory_order_relaxed);
-#endif
-    return true;
-  }
-
   void Job_Queue_Impl::give_one(const std::shared_ptr<IJob> job) noexcept(false) {
 #if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
     m_worker_threads->jobs_inserted(1);
@@ -73,12 +64,6 @@ namespace Zeni::Concurrency {
 
     for (auto job : jobs)
       m_jobs.push(job);
-  }
-
-  void Job_Queue_Impl::set_reclaim() noexcept {
-#if ZENI_CONCURRENCY != ZENI_CONCURRENCY_NONE
-    m_reclaim.store(true, std::memory_order_relaxed);
-#endif
   }
 
 }

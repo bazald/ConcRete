@@ -111,6 +111,21 @@ namespace Zeni::Concurrency {
 #else
   void Worker_Threads_Impl::finish_jobs() noexcept(false) {
     for (;;) {
+      int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
+      const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
+      const int32_t count_part = epoch_data & 0xFFFF;
+      if (main_thread_epoch == epoch_part) {
+        if (count_part == 0) {
+          const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
+          m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
+        }
+      }
+      else {
+        Reclamation_Stacks::get_stack()->reclaim();
+        main_thread_epoch = epoch_part;
+        m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
+      }
+
       if (m_num_jobs_in_queues.load(std::memory_order_relaxed) <= 0) {
         // Termination condition OR simply out of jobs
         int16_t awake_workers = m_awake_workers.load(std::memory_order_relaxed);
@@ -124,12 +139,44 @@ namespace Zeni::Concurrency {
 
       for (;;) {
         auto jqt = m_job_queues.begin();
-        while (const std::shared_ptr<IJob> job = (*jqt).second->try_take_one(true))
+        while (const std::shared_ptr<IJob> job = (*jqt).second->try_take_one(true)) {
           job->execute();
+
+          int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
+          const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
+          const int32_t count_part = epoch_data & 0xFFFF;
+          if (main_thread_epoch == epoch_part) {
+            if (count_part == 0) {
+              const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
+              m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
+            }
+          }
+          else {
+            Reclamation_Stacks::get_stack()->reclaim();
+            main_thread_epoch = epoch_part;
+            m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
+          }
+        }
 
         while (++jqt != m_job_queues.end()) {
           if (const std::shared_ptr<IJob> job = (*jqt).second->try_take_one(true)) {
             job->execute();
+
+            int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
+            const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
+            const int32_t count_part = epoch_data & 0xFFFF;
+            if (main_thread_epoch == epoch_part) {
+              if (count_part == 0) {
+                const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
+                m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
+              }
+            }
+            else {
+              Reclamation_Stacks::get_stack()->reclaim();
+              main_thread_epoch = epoch_part;
+              m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
+            }
+
             break;
           }
         }
@@ -138,14 +185,6 @@ namespace Zeni::Concurrency {
           break;
       }
     }
-
-    m_reclaims_remaining.store(int16_t(m_worker_threads.size()));
-    for (auto &job_queue : m_job_queues)
-      job_queue.second->set_reclaim();
-
-    Reclamation_Stacks::get_stack()->reclaim();
-
-    while (m_reclaims_remaining.load(std::memory_order_relaxed) != 0);
   }
 
   void Worker_Threads_Impl::worker_awakened() noexcept {
@@ -185,10 +224,21 @@ namespace Zeni::Concurrency {
     }
 
     bool is_awake = false;
+    int32_t current_epoch = 0;
     for (;;) {
-      if (my_job_queue->try_reclaim()) {
+      int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
+      const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
+      const int32_t count_part = epoch_data & 0xFFFF;
+      if (current_epoch == epoch_part) {
+        if (count_part == 0) {
+          const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
+          m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
+        }
+      }
+      else {
         Reclamation_Stacks::get_stack()->reclaim();
-        m_reclaims_remaining.fetch_sub(1, std::memory_order_relaxed);
+        current_epoch = epoch_part;
+        m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
       }
 
       const int64_t num_jobs_in_queues = m_num_jobs_in_queues.load(std::memory_order_relaxed);
@@ -209,12 +259,43 @@ namespace Zeni::Concurrency {
         while (const std::shared_ptr<IJob> job = (*jqt)->try_take_one(is_awake)) {
           is_awake = true;
           job->execute();
+
+          int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
+          const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
+          const int32_t count_part = epoch_data & 0xFFFF;
+          if (current_epoch == epoch_part) {
+            if (count_part == 0) {
+              const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
+              m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
+            }
+          }
+          else {
+            Reclamation_Stacks::get_stack()->reclaim();
+            current_epoch = epoch_part;
+            m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
+          }
         }
 
         while(++jqt != job_queues.end()) {
           if (const std::shared_ptr<IJob> job = (*jqt)->try_take_one(is_awake)) {
             is_awake = true;
             job->execute();
+
+            int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
+            const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
+            const int32_t count_part = epoch_data & 0xFFFF;
+            if (current_epoch == epoch_part) {
+              if (count_part == 0) {
+                const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
+                m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
+              }
+            }
+            else {
+              Reclamation_Stacks::get_stack()->reclaim();
+              current_epoch = epoch_part;
+              m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
+            }
+
             break;
           }
         }
