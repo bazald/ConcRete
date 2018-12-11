@@ -135,6 +135,9 @@
     <ClCompile Include="..\..\..\src\Zeni\Rete\Internal\Message_Connect_Predicate.cpp">
       <Filter>Source Files\Internal</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\New_and_Delete.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Rete\Internal\Linkage.hpp">
