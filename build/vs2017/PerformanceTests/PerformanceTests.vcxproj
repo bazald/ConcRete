@@ -100,24 +100,20 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(TargetDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Concurrency.lib;Rete.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(TargetDir);$(SolutionDir)\jemalloc\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>jemalloc.lib;Concurrency.lib;Rete.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>
-      </Command>
+      <Command>copy $(SolutionDir)\jemalloc\x64\jemalloc.dll $(TargetDir)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Message>
-      </Message>
+      <Message>Copying jemalloc.dll into TargetDir</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>
-      </Outputs>
+      <Outputs>$(TargetDir)\jemalloc.dll</Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Inputs>
-      </Inputs>
+      <Inputs>$(SolutionDir)\jemalloc\x64\jemalloc.dll</Inputs>
     </CustomBuildStep>
     <CustomBuildStep>
       <TreatOutputAsContent>true</TreatOutputAsContent>
@@ -138,24 +134,20 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(TargetDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Concurrency.lib;Rete.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(TargetDir);$(SolutionDir)\jemalloc\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>jemalloc.lib;Concurrency.lib;Rete.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>
-      </Command>
+      <Command>copy $(SolutionDir)\jemalloc\Win32\jemalloc.dll $(TargetDir)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Message>
-      </Message>
+      <Message>Copying jemalloc.dll into TargetDir</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>
-      </Outputs>
+      <Outputs>$(TargetDir)\jemalloc.dll</Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Inputs>
-      </Inputs>
+      <Inputs>$(SolutionDir)\jemalloc\Win32\jemalloc.dll</Inputs>
     </CustomBuildStep>
     <CustomBuildStep>
       <TreatOutputAsContent>true</TreatOutputAsContent>
@@ -180,24 +172,20 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(TargetDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Concurrency.lib;Rete.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(TargetDir);$(SolutionDir)\jemalloc\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>jemalloc.lib;Concurrency.lib;Rete.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>
-      </Command>
+      <Command>copy $(SolutionDir)\jemalloc\Win32\jemalloc.dll $(TargetDir)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Message>
-      </Message>
+      <Message>Copying jemalloc.dll into TargetDir</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>
-      </Outputs>
+      <Outputs>$(TargetDir)\jemalloc.dll</Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Inputs>
-      </Inputs>
+      <Inputs>$(SolutionDir)\jemalloc\Win32\jemalloc.dll</Inputs>
     </CustomBuildStep>
     <CustomBuildStep>
       <TreatOutputAsContent>true</TreatOutputAsContent>
@@ -222,24 +210,20 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(TargetDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Concurrency.lib;Rete.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(TargetDir);$(SolutionDir)\jemalloc\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>jemalloc.lib;Concurrency.lib;Rete.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
-      <Command>
-      </Command>
+      <Command>copy $(SolutionDir)\jemalloc\x64\jemalloc.dll $(TargetDir)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Message>
-      </Message>
+      <Message>Copying jemalloc.dll into TargetDir</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>
-      </Outputs>
+      <Outputs>$(TargetDir)\jemalloc.dll</Outputs>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Inputs>
-      </Inputs>
+      <Inputs>$(SolutionDir)\jemalloc\x64\jemalloc.dll</Inputs>
     </CustomBuildStep>
     <CustomBuildStep>
       <TreatOutputAsContent>true</TreatOutputAsContent>
