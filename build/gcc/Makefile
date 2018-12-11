@@ -9,7 +9,7 @@ RMDIR=rm -rf
 # LDLIBS=$(shell root-config --libs)
 CPPFLAGS=-std=c++17 -fvisibility=hidden -fvisibility-inlines-hidden -I../../include -I../../PEGTL/include -MMD -Wall -Wno-psabi
 LDFLAGS=-L. -Wl,-rpath,. -Wl,-rpath-link,.
-LDLIBS=-Wl,--as-needed -latomic -pthread -Wl,--no-as-needed
+LDLIBS=-Wl,--as-needed -latomic -pthread -Wl,--no-as-needed -ljemalloc
 
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
 

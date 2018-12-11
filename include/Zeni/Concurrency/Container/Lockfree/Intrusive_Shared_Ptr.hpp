@@ -11,10 +11,10 @@ namespace Zeni::Concurrency {
   template <typename TYPE>
   class Intrusive_Shared_Ptr;
 
-  class ZENI_CONCURRENCY_CACHE_ALIGN Enable_Intrusive_Sharing : Reclamation_Stack::Node {
+  class ZENI_CONCURRENCY_CACHE_ALIGN Enable_Intrusive_Sharing : private Reclamation_Stack::Node {
     Enable_Intrusive_Sharing(const Enable_Intrusive_Sharing &) = delete;
     Enable_Intrusive_Sharing & operator=(const Enable_Intrusive_Sharing &) = delete;
-    
+
   protected:
     Enable_Intrusive_Sharing() = default;
 
@@ -24,7 +24,6 @@ namespace Zeni::Concurrency {
       if (prev > 1)
         return prev;
       assert(prev == 1);
-      std::atomic_thread_fence(std::memory_order_acquire);
       Reclamation_Stacks::push(this);
       return prev;
     }
@@ -58,10 +57,8 @@ namespace Zeni::Concurrency {
       ~Lock() {
         assert(std::this_thread::get_id() == m_thread);
         assert(!m_ptr || bool(*m_ptr));
-        if (m_ptr) {
-          std::atomic_thread_fence(std::memory_order_release);
+        if (m_ptr)
           m_ptr->decrement_refs();
-        }
       }
 
       Lock(const Lock &rhs)

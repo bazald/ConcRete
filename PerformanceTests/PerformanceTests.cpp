@@ -127,7 +127,7 @@ public:
     }
 
     if (num_successors)
-      get_Job_Queue()->give_one(std::make_shared<Simple_Job>(num_successors - 1));
+      get_Job_Queue()->give_one(std::make_shared<Memory_Job>(num_successors - 1));
   }
 
   const size_t num_successors;
@@ -152,14 +152,30 @@ public:
   Reclamation_Job(const size_t num_successors_) : num_successors(num_successors_) {}
 
   void execute() noexcept {
+    //const Zeni::Concurrency::Reclamation_Stack::Node * reclamation_stack = nullptr;
+
     volatile int a = 0;
     for (int i = 0; i != 100000; ++i) {
+      //const auto ii = new Int();
+
       const Zeni::Concurrency::Intrusive_Shared_Ptr<Int>::Lock ii = new Int();
+
       a += ii->value;
+
+      //delete ii;
+
+      //ii->reclamation_next = reclamation_stack;
+      //reclamation_stack = ii;
     }
 
     if (num_successors)
-      get_Job_Queue()->give_one(std::make_shared<Simple_Job>(num_successors - 1));
+      get_Job_Queue()->give_one(std::make_shared<Reclamation_Job>(num_successors - 1));
+
+    //while (reclamation_stack) {
+    //  const auto ii = reclamation_stack;
+    //  reclamation_stack = ii->reclamation_next;
+    //  delete ii;
+    //}
   }
 
   const size_t num_successors;
