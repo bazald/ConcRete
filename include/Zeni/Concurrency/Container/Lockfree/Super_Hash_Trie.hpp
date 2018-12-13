@@ -1125,7 +1125,7 @@ namespace Zeni::Concurrency {
       }
     }
 
-    std::atomic<const Hash_Trie_Super_Node *> m_super_root;
+    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<const Hash_Trie_Super_Node *> m_super_root;
   };
 
 }

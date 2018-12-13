@@ -114,7 +114,7 @@ namespace Zeni::Concurrency {
       int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
       const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
       const int32_t count_part = epoch_data & 0xFFFF;
-      if (main_thread_epoch == epoch_part) {
+      if (m_epoch == epoch_part) {
         if (count_part == 0) {
           const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
           m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
@@ -122,7 +122,7 @@ namespace Zeni::Concurrency {
       }
       else {
         Reclamation_Stacks::get_stack()->reclaim();
-        main_thread_epoch = epoch_part;
+        m_epoch = epoch_part;
         m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
       }
 
@@ -145,7 +145,7 @@ namespace Zeni::Concurrency {
           int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
           const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
           const int32_t count_part = epoch_data & 0xFFFF;
-          if (main_thread_epoch == epoch_part) {
+          if (m_epoch == epoch_part) {
             if (count_part == 0) {
               const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
               m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
@@ -153,7 +153,7 @@ namespace Zeni::Concurrency {
           }
           else {
             Reclamation_Stacks::get_stack()->reclaim();
-            main_thread_epoch = epoch_part;
+            m_epoch = epoch_part;
             m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
           }
         }
@@ -165,7 +165,7 @@ namespace Zeni::Concurrency {
             int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
             const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
             const int32_t count_part = epoch_data & 0xFFFF;
-            if (main_thread_epoch == epoch_part) {
+            if (m_epoch == epoch_part) {
               if (count_part == 0) {
                 const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
                 m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
@@ -173,7 +173,7 @@ namespace Zeni::Concurrency {
             }
             else {
               Reclamation_Stacks::get_stack()->reclaim();
-              main_thread_epoch = epoch_part;
+              m_epoch = epoch_part;
               m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
             }
 
@@ -224,12 +224,11 @@ namespace Zeni::Concurrency {
     }
 
     bool is_awake = false;
-    int32_t current_epoch = 0;
     for (;;) {
       int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
       const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
       const int32_t count_part = epoch_data & 0xFFFF;
-      if (current_epoch == epoch_part) {
+      if (m_epoch == epoch_part) {
         if (count_part == 0) {
           const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
           m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
@@ -237,7 +236,7 @@ namespace Zeni::Concurrency {
       }
       else {
         Reclamation_Stacks::get_stack()->reclaim();
-        current_epoch = epoch_part;
+        m_epoch = epoch_part;
         m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
       }
 
@@ -263,7 +262,7 @@ namespace Zeni::Concurrency {
           int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
           const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
           const int32_t count_part = epoch_data & 0xFFFF;
-          if (current_epoch == epoch_part) {
+          if (m_epoch == epoch_part) {
             if (count_part == 0) {
               const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
               m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
@@ -271,7 +270,7 @@ namespace Zeni::Concurrency {
           }
           else {
             Reclamation_Stacks::get_stack()->reclaim();
-            current_epoch = epoch_part;
+            m_epoch = epoch_part;
             m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
           }
         }
@@ -284,7 +283,7 @@ namespace Zeni::Concurrency {
             int32_t epoch_data = m_epoch_data.load(std::memory_order_acquire);
             const int32_t epoch_part = (epoch_data & ~0xFFFF) >> 16;
             const int32_t count_part = epoch_data & 0xFFFF;
-            if (current_epoch == epoch_part) {
+            if (m_epoch == epoch_part) {
               if (count_part == 0) {
                 const int32_t next = (((epoch_part + 1) % 3) << 16) + int32_t(m_worker_threads.size() + 1);
                 m_epoch_data.compare_exchange_strong(epoch_data, next, std::memory_order_relaxed, std::memory_order_relaxed);
@@ -292,7 +291,7 @@ namespace Zeni::Concurrency {
             }
             else {
               Reclamation_Stacks::get_stack()->reclaim();
-              current_epoch = epoch_part;
+              m_epoch = epoch_part;
               m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
             }
 
@@ -343,5 +342,7 @@ namespace Zeni::Concurrency {
     return g_total_thread_count.load(std::memory_order_relaxed);
 #endif
   }
+
+  thread_local int32_t Worker_Threads_Impl::m_epoch = 0;
 
 }

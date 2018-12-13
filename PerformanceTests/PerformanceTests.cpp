@@ -5,9 +5,11 @@
 #endif
 
 #include "Zeni/Concurrency/Container/Antiable_Hash_Trie.hpp"
+#include "Zeni/Concurrency/Container/Ctrie.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie_2.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
+#include "Zeni/Concurrency/Container/Intrusive_Stack.hpp"
 #include "Zeni/Concurrency/Container/Positive_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Super_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
@@ -54,7 +56,10 @@ struct measure
 
 static void test_Job_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Memory_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+static void test_Hash_Trie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+static void test_Ctrie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Reclamation_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+static void test_SmarterRec_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 
 static int16_t g_num_cores = 0;
 
@@ -62,7 +67,7 @@ int main(int argc, char **argv)
 {
 #ifdef _MSC_VER
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-  //_CrtSetBreakAlloc(4479);
+  //_CrtSetBreakAlloc(236);
 #endif
 
   if (argc > 2 || (argc == 2 && !std::strcmp(argv[1], "--help"))) {
@@ -77,11 +82,17 @@ int main(int argc, char **argv)
   const auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(g_num_cores);
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
-  std::cerr << "Job Performance: " << measure<>::execution(test_Job_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  //std::cerr << "Job Performance: " << measure<>::execution(test_Job_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  std::cerr << "Memory Performance: " << measure<>::execution(test_Memory_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  //std::cerr << "Memory Performance: " << measure<>::execution(test_Memory_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  std::cerr << "Reclamation Performance: " << measure<>::execution(test_Reclamation_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  //std::cerr << "Hash Trie Performance: " << measure<>::execution(test_Hash_Trie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+
+  std::cerr << "Ctrie Performance: " << measure<>::execution(test_Ctrie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+
+  //std::cerr << "Reclamation Performance: " << measure<>::execution(test_Reclamation_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+
+  //std::cerr << "SmarterRec Performance: " << measure<>::execution(test_SmarterRec_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
   return 0;
 }
@@ -108,7 +119,7 @@ public:
 void test_Job_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
 {
   for (int i = 0; i != 64; ++i)
-    job_queue->give_one(std::make_shared<Simple_Job>(64));
+    job_queue->give_one(std::make_shared<Simple_Job>(63));
   worker_threads->finish_jobs();
 }
 
@@ -136,7 +147,73 @@ public:
 void test_Memory_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
 {
   for (int i = 0; i != 64; ++i)
-    job_queue->give_one(std::make_shared<Memory_Job>(64));
+    job_queue->give_one(std::make_shared<Memory_Job>(63));
+  worker_threads->finish_jobs();
+}
+
+class Hash_Trie_Job : public Zeni::Concurrency::Job {
+  Hash_Trie_Job(const Hash_Trie_Job &) = delete;
+  Hash_Trie_Job & operator =(const Hash_Trie_Job &) = delete;
+
+  struct Int : public Zeni::Concurrency::Enable_Intrusive_Sharing {
+    int value;
+  };
+
+public:
+  Hash_Trie_Job(const std::shared_ptr<Zeni::Concurrency::Hash_Trie<int>> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
+
+  void execute() noexcept {
+    for (int i = 0; i != 1000; ++i)
+      hash_trie->insert(i);
+    for (int i = 0; i != 1000; ++i)
+      hash_trie->erase(i);
+
+    if (num_successors)
+      get_Job_Queue()->give_one(std::make_shared<Hash_Trie_Job>(hash_trie, num_successors - 1));
+  }
+
+  const std::shared_ptr<Zeni::Concurrency::Hash_Trie<int>> hash_trie;
+  const size_t num_successors;
+};
+
+void test_Hash_Trie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
+{
+  const auto hash_trie = std::make_shared<Zeni::Concurrency::Hash_Trie<int>>();
+  for (int i = 0; i != 64; ++i)
+    job_queue->give_one(std::make_shared<Hash_Trie_Job>(hash_trie, 63));
+  worker_threads->finish_jobs();
+}
+
+class Ctrie_Job : public Zeni::Concurrency::Job {
+  Ctrie_Job(const Ctrie_Job &) = delete;
+  Ctrie_Job & operator =(const Ctrie_Job &) = delete;
+
+  struct Int : public Zeni::Concurrency::Enable_Intrusive_Sharing {
+    int value;
+  };
+
+public:
+  Ctrie_Job(const std::shared_ptr<Zeni::Concurrency::Ctrie<int>> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
+
+  void execute() noexcept {
+    for (int i = 0; i != 100; ++i)
+      hash_trie->insert(i);
+    for (int i = 0; i != 100; ++i)
+      hash_trie->erase(i);
+
+    if (num_successors)
+      get_Job_Queue()->give_one(std::make_shared<Ctrie_Job>(hash_trie, num_successors - 1));
+  }
+
+  const std::shared_ptr<Zeni::Concurrency::Ctrie<int>> hash_trie;
+  const size_t num_successors;
+};
+
+void test_Ctrie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
+{
+  const auto hash_trie = std::make_shared<Zeni::Concurrency::Ctrie<int>>();
+  for (int i = 0; i != 64; ++i)
+    job_queue->give_one(std::make_shared<Ctrie_Job>(hash_trie, 63));
   worker_threads->finish_jobs();
 }
 
@@ -184,6 +261,55 @@ public:
 void test_Reclamation_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
 {
   for (int i = 0; i != 64; ++i)
-    job_queue->give_one(std::make_shared<Reclamation_Job>(64));
+    job_queue->give_one(std::make_shared<Reclamation_Job>(63));
+  worker_threads->finish_jobs();
+}
+
+class SmarterRec_Job : public Zeni::Concurrency::Job {
+  SmarterRec_Job(const SmarterRec_Job &) = delete;
+  SmarterRec_Job & operator =(const SmarterRec_Job &) = delete;
+  
+public:
+  struct Int : public Zeni::Concurrency::Reclamation_Stack::Node, public Zeni::Concurrency::Intrusive_Stack<Int>::Node {
+    int value;
+  };
+
+  SmarterRec_Job(const std::shared_ptr<Zeni::Concurrency::Intrusive_Stack<Int>> stack_, const size_t num_successors_) : stack(stack_), num_successors(num_successors_) {}
+
+  void execute() noexcept {
+    //const Zeni::Concurrency::Reclamation_Stack::Node * reclamation_stack = nullptr;
+
+    volatile int a = 0;
+    for (int i = 0; i != 100000; ++i) {
+      Int * ii = stack->try_pop();
+      if (!ii) {
+        ii = new Int();
+      }
+
+      a += ii->value;
+
+      stack->push(ii);
+    }
+
+    if (num_successors)
+      get_Job_Queue()->give_one(std::make_shared<SmarterRec_Job>(stack, num_successors - 1));
+
+    //while (reclamation_stack) {
+    //  const auto ii = reclamation_stack;
+    //  reclamation_stack = ii->reclamation_next;
+    //  delete ii;
+    //}
+  }
+
+  const std::shared_ptr<Zeni::Concurrency::Intrusive_Stack<Int>> stack;
+  const size_t num_successors;
+};
+
+void test_SmarterRec_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
+{
+  const auto stack = std::make_shared<Zeni::Concurrency::Intrusive_Stack<SmarterRec_Job::Int>>();
+
+  for (int i = 0; i != 64; ++i)
+    job_queue->give_one(std::make_shared<SmarterRec_Job>(stack, 63));
   worker_threads->finish_jobs();
 }

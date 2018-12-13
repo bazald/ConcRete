@@ -53,7 +53,7 @@ namespace Zeni::Concurrency {
     };
 
     template <typename KEY>
-    struct ZENI_CONCURRENCY_CACHE_ALIGN Singleton_Node : public Main_Node {
+    struct Singleton_Node : public Main_Node {
     private:
       Singleton_Node(const Singleton_Node &) = delete;
       Singleton_Node & operator=(const Singleton_Node &) = delete;
@@ -338,7 +338,6 @@ namespace Zeni::Concurrency {
         }
       }
 
-    public:
       const Singleton_Node<KEY> * const snode;
       List_Node * next = nullptr;
     };

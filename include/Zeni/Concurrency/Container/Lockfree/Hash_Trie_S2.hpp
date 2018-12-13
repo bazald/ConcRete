@@ -72,7 +72,7 @@ namespace Zeni::Concurrency {
     };
 
     template <typename KEY, typename SUBTRIE>
-    struct ZENI_CONCURRENCY_CACHE_ALIGN Singleton_Node : public Main_Node {
+    struct Singleton_Node : public Main_Node {
     private:
       Singleton_Node(const Singleton_Node &) = delete;
       Singleton_Node & operator=(const Singleton_Node &) = delete;
@@ -713,7 +713,6 @@ namespace Zeni::Concurrency {
           return std::make_tuple(std::tuple_element_t<src, typename SUBTRIE::Types>::Result::Failed_Removal, new_head, typename std::tuple_element_t<src, typename SUBTRIE::Types>::Key());
       }
 
-    public:
       const Singleton_Node<KEY, SUBTRIE> * const snode;
       List_Node * next = nullptr;
     };

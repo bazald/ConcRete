@@ -4,7 +4,7 @@
 
 namespace Zeni::Concurrency {
 
-  std::shared_ptr<Reclamation_Stack> Reclamation_Stacks::get_stack() noexcept(false) {
+  Reclamation_Stack * Reclamation_Stacks::get_stack() noexcept(false) {
     return Reclamation_Stacks_Impl::get().get_stack();
   }
 

@@ -56,7 +56,7 @@ namespace Zeni::Concurrency {
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_num_jobs_in_queues = 0;
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool m_initialized = false;
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<std::thread::id> m_failed_thread_id;
-    int32_t main_thread_epoch = 0;
+    static thread_local int32_t m_epoch;
 #endif
   };
 

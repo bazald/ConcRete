@@ -4,8 +4,6 @@
 #include "Linkage.hpp"
 #include "Reclamation_Stack.hpp"
 
-#include <memory>
-
 namespace Zeni::Concurrency {
 
   class Reclamation_Stack;
@@ -15,7 +13,7 @@ namespace Zeni::Concurrency {
     Reclamation_Stacks & operator=(const Reclamation_Stacks &) = delete;
 
   public:
-    ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Reclamation_Stack> get_stack() noexcept(false);
+    ZENI_CONCURRENCY_LINKAGE static Reclamation_Stack * get_stack() noexcept(false);
 
     ZENI_CONCURRENCY_LINKAGE static void push(const Reclamation_Stack::Node * const node) noexcept;
 

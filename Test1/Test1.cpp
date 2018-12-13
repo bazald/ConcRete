@@ -8,6 +8,7 @@
 #include "Zeni/Concurrency/Container/Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie_2.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
+#include "Zeni/Concurrency/Container/Intrusive_Stack.hpp"
 #include "Zeni/Concurrency/Container/Positive_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Super_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
@@ -37,6 +38,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+static void test_Intrusive_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Positive_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
@@ -136,6 +138,16 @@ int main(int argc, char **argv)
   const auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(g_num_cores);
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
+  for (int i = 0; i != 80; ++i) {
+    test_Intrusive_Stack(worker_threads, job_queue);
+    //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+    //  abort();
+    //}
+    std::cout << 'I' << std::flush;
+  }
+  std::cout << std::endl;
+
   //for (int i = 0; i != 80; ++i) {
   //  test_Antiable_Hash_Trie(worker_threads, job_queue);
   //  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
@@ -191,6 +203,47 @@ int main(int argc, char **argv)
 //    return 0;
 //  }
 //};
+
+void test_Intrusive_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+  struct Int : public Zeni::Concurrency::Reclamation_Stack::Node, public Zeni::Concurrency::Intrusive_Stack<Int>::Node {
+    Int() = default;
+    Int(const int value_) : value(value_) {}
+
+    int value = 0;
+  };
+
+  const auto stack = std::make_shared<Zeni::Concurrency::Intrusive_Stack<Int>>();
+
+  class Job : public Zeni::Concurrency::Job {
+    Job(const Job &) = delete;
+    Job & operator=(const Job &) = delete;
+
+  public:
+    Job(const decltype(stack) stack_)
+      : m_stack(stack_)
+    {
+    }
+
+    void execute() noexcept override {
+      for (int i = 0; i != 10000; ++i)
+        m_stack->push(new Int(i));
+      for (int i = 0; i != 10000; ++i) {
+        if (const auto ptr = m_stack->try_pop())
+          Zeni::Concurrency::Reclamation_Stacks::push(ptr);
+      }
+    }
+
+  private:
+    decltype(stack) m_stack;
+  };
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (int16_t i = 0; i != g_num_cores; ++i)
+    jobs.emplace_back(std::shared_ptr<Job>(new Job(stack)));
+  job_queue->give_many(std::move(jobs));
+
+  worker_threads->finish_jobs();
+}
 
 template <size_t MINE, size_t THEIRS>
 class Antiable : public Zeni::Concurrency::Job {

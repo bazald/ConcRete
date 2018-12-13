@@ -4,11 +4,10 @@
 #include <atomic>
 #include <cassert>
 #include <cstdint>
-#include <memory>
 
 namespace Zeni::Concurrency {
 
-  class Reclamation_Stack : public std::enable_shared_from_this<Reclamation_Stack> {
+  class Reclamation_Stack {
     Reclamation_Stack(const Reclamation_Stack &) = delete;
     Reclamation_Stack & operator=(const Reclamation_Stack &) = delete;
 
@@ -22,7 +21,17 @@ namespace Zeni::Concurrency {
     Reclamation_Stack() = default;
 
     ~Reclamation_Stack() noexcept {
-      reclaim();
+      while (m_old_head) {
+        const Node * const head = m_old_head;
+        m_old_head = head->reclamation_next;
+        delete head;
+      }
+
+      while (m_head) {
+        const Node * const head = m_head;
+        m_head = head->reclamation_next;
+        delete head;
+      }
     }
 
     bool empty() const noexcept {
@@ -40,16 +49,19 @@ namespace Zeni::Concurrency {
     }
 
     void reclaim() noexcept {
-      while (m_head) {
-        const Node * const head = m_head;
-        const Node * const reclamation_next = head->reclamation_next;
-        m_head = reclamation_next;
+      while (m_old_head) {
+        const Node * const head = m_old_head;
+        m_old_head = head->reclamation_next;
         delete head;
       }
+
+      m_old_head = m_head;
+      m_head = nullptr;
     }
 
   private:
     const Node * m_head = nullptr;
+    const Node * m_old_head = nullptr;
     //ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
   };
 
