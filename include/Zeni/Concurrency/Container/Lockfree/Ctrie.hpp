@@ -2,19 +2,12 @@
 #define ZENI_CONCURRENCY_CTRIE_HPP
 
 #include "Intrusive_Shared_Ptr.hpp"
+#include "../../Internal/Mallocator.hpp"
 
 #include <array>
 #include <cstring>
 #include <functional>
 #include <stack>
-
-namespace Zeni::Concurrency::Ctrie_Internal {
-  struct Indirection_Node;
-}
-
-namespace std {
-  template struct ZENI_CONCURRENCY_LINKAGE atomic<const Zeni::Concurrency::Ctrie_Internal::Indirection_Node *>;
-}
 
 namespace Zeni::Concurrency {
 
@@ -63,7 +56,8 @@ namespace Zeni::Concurrency {
       virtual Branch * resurrect() = 0;
     };
 
-    struct Tomb_Node : public Main_Node {
+    template <typename ALLOCATOR>
+    struct Tomb_Node : public Main_Node, public Allocated<ALLOCATOR> {
     private:
       Tomb_Node(const Tomb_Node &) = delete;
       Tomb_Node  &operator=(const Tomb_Node &) = delete;
@@ -80,7 +74,8 @@ namespace Zeni::Concurrency {
       Branch * const branch;
     };
 
-    struct Indirection_Node : public Branch {
+    template <typename ALLOCATOR>
+    struct Indirection_Node : public Branch, public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
     private:
       Indirection_Node(const Indirection_Node &) = delete;
       Indirection_Node & operator=(const Indirection_Node &) = delete;
@@ -96,7 +91,7 @@ namespace Zeni::Concurrency {
       }
 
       Branch * resurrect() override {
-        if (const auto tomb_node = dynamic_cast<const Tomb_Node *>(main.load(std::memory_order_acquire))) {
+        if (const auto tomb_node = dynamic_cast<const Tomb_Node<ALLOCATOR> *>(main.load(std::memory_order_acquire))) {
           const int64_t refs = tomb_node->branch->increment_refs();
           return refs ? tomb_node->branch : nullptr;
         }
@@ -109,8 +104,8 @@ namespace Zeni::Concurrency {
       ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<const Main_Node *> main;
     };
 
-    template <typename KEY>
-    struct Singleton_Node : public Branch {
+    template <typename KEY, typename ALLOCATOR>
+    struct Singleton_Node : public Branch, public Allocated<ALLOCATOR> {
     private:
       Singleton_Node(const Singleton_Node &) = delete;
       Singleton_Node & operator=(const Singleton_Node &) = delete;
@@ -127,7 +122,7 @@ namespace Zeni::Concurrency {
       const KEY key;
     };
 
-    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE>
+    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE, typename ALLOCATOR>
     struct ICtrie_Node : public Main_Node {
     private:
       ICtrie_Node(const ICtrie_Node &) = delete;
@@ -156,7 +151,7 @@ namespace Zeni::Concurrency {
         const auto second_flag = flag(second_hash, level);
         if (first_flag == second_flag) {
           std::array<Branch *, hamming_max> branches;
-          branches[0] = new Indirection_Node(Create(first, first_hash, second, second_hash, level + W));
+          branches[0] = new Indirection_Node<ALLOCATOR>(Create(first, first_hash, second, second_hash, level + W));
           return Create(first_flag, 1, branches);
         }
         else {
@@ -205,7 +200,7 @@ namespace Zeni::Concurrency {
           [[maybe_unused]] const int64_t refs = branch->increment_refs();
           assert(refs);
           delete this;
-          return new Tomb_Node(branch);
+          return new Tomb_Node<ALLOCATOR>(branch);
         }
         else
           return this;
@@ -222,12 +217,12 @@ namespace Zeni::Concurrency {
       public:
         inline Factory();
 
-        const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * create(const FLAG_TYPE bmp, const size_t hamming_value, const std::array<Branch *, hamming_max> &branches) {
+        const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> * create(const FLAG_TYPE bmp, const size_t hamming_value, const std::array<Branch *, hamming_max> &branches) {
           return m_generator[hamming_value](bmp, branches);
         }
 
       private:
-        std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> *(const FLAG_TYPE, const std::array<Branch *, hamming_max> &)>, sum(hamming_max, FLAG_TYPE(1))> m_generator;
+        std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> *(const FLAG_TYPE, const std::array<Branch *, hamming_max> &)>, sum(hamming_max, FLAG_TYPE(1))> m_generator;
       };
 
       static FLAG_TYPE flag(const HASH_VALUE_TYPE hash_value, const size_t level) {
@@ -238,8 +233,8 @@ namespace Zeni::Concurrency {
       }
     };
 
-    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE, size_t HAMMING_VALUE>
-    struct Ctrie_Node : public ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> {
+    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE, size_t HAMMING_VALUE, typename ALLOCATOR>
+    struct Ctrie_Node : public ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR>, public Allocated<ALLOCATOR> {
     private:
       Ctrie_Node(const Ctrie_Node &) = delete;
       Ctrie_Node & operator=(const Ctrie_Node &) = delete;
@@ -248,7 +243,7 @@ namespace Zeni::Concurrency {
       static const size_t hamming_value = HAMMING_VALUE;
 
       Ctrie_Node(const FLAG_TYPE bmp, const std::array<Branch *, hamming<FLAG_TYPE>()> &branches)
-        : ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE>(bmp),
+        : ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR>(bmp),
         m_branches(reinterpret_cast<const std::array<Branch *, hamming_value> &>(branches)) //< Should always be smaller, safe to copy subset
       {
       }
@@ -267,7 +262,7 @@ namespace Zeni::Concurrency {
         return m_branches[i];
       }
 
-      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * inserted(const size_t pos, const FLAG_TYPE flag, Branch * const new_branch) const override {
+      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> * inserted(const size_t pos, const FLAG_TYPE flag, Branch * const new_branch) const override {
         assert(!(this->get_bmp() & flag));
         std::array<Branch *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
@@ -284,10 +279,10 @@ namespace Zeni::Concurrency {
           }
         }
         new_branches[pos] = new_branch;
-        return ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE>::Create(this->get_bmp() | flag, hamming_value + 1, new_branches);
+        return ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR>::Create(this->get_bmp() | flag, hamming_value + 1, new_branches);
       }
 
-      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * updated(const size_t pos, const FLAG_TYPE flag, Branch * const new_branch) const override {
+      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> * updated(const size_t pos, const FLAG_TYPE flag, Branch * const new_branch) const override {
         assert(this->get_bmp() & flag);
         std::array<Branch *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
@@ -315,10 +310,10 @@ namespace Zeni::Concurrency {
           }
         }
         new_branches[pos] = new_branch;
-        return ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE>::Create(this->get_bmp(), hamming_value, new_branches);
+        return ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR>::Create(this->get_bmp(), hamming_value, new_branches);
       }
 
-      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * erased(const size_t pos, const FLAG_TYPE flag) const override {
+      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> * erased(const size_t pos, const FLAG_TYPE flag) const override {
         assert(this->get_bmp() & flag);
         std::array<Branch *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
@@ -333,40 +328,40 @@ namespace Zeni::Concurrency {
             }
           }
         }
-        return ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE>::Create(this->get_bmp() & ~flag, hamming_value - 1, new_branches);
+        return ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR>::Create(this->get_bmp() & ~flag, hamming_value - 1, new_branches);
       }
 
     private:
       const std::array<Branch *, hamming_value> m_branches;
     };
 
-    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE, size_t IN = hamming<FLAG_TYPE>()>
+    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE, typename ALLOCATOR, size_t IN = hamming<FLAG_TYPE>()>
     struct Ctrie_Node_Generator {
-      static void Create(std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> *(const FLAG_TYPE, const std::array<Branch *, hamming<FLAG_TYPE>()> &)>, sum(hamming<FLAG_TYPE>(), FLAG_TYPE(1))> &generator) {
-        Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE, IN - 1>::Create(generator);
+      static void Create(std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> *(const FLAG_TYPE, const std::array<Branch *, hamming<FLAG_TYPE>()> &)>, sum(hamming<FLAG_TYPE>(), FLAG_TYPE(1))> &generator) {
+        Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR, IN - 1>::Create(generator);
 
-        generator[IN] = [](const FLAG_TYPE bmp, const std::array<Branch *, hamming<FLAG_TYPE>()> &branches)->ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * {
-          return new Ctrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, IN>(bmp, branches);
+        generator[IN] = [](const FLAG_TYPE bmp, const std::array<Branch *, hamming<FLAG_TYPE>()> &branches)->ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> * {
+          return new Ctrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, IN, ALLOCATOR>(bmp, branches);
         };
       }
     };
 
-    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE>
-    struct Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE, 0> {
-      static void Create(std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> *(const FLAG_TYPE, const std::array<Branch *, hamming<FLAG_TYPE>()> &)>, sum(hamming<FLAG_TYPE>(), FLAG_TYPE(1))> &generator) {
-        generator[0] = [](const FLAG_TYPE bmp, const std::array<Branch *, hamming<FLAG_TYPE>()> &branches)->ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE> * {
-          return new Ctrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, 0>(bmp, branches);
+    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE, typename ALLOCATOR>
+    struct Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR, 0> {
+      static void Create(std::array<std::function<const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> *(const FLAG_TYPE, const std::array<Branch *, hamming<FLAG_TYPE>()> &)>, sum(hamming<FLAG_TYPE>(), FLAG_TYPE(1))> &generator) {
+        generator[0] = [](const FLAG_TYPE bmp, const std::array<Branch *, hamming<FLAG_TYPE>()> &branches)->ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> * {
+          return new Ctrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, 0, ALLOCATOR>(bmp, branches);
         };
       }
     };
 
-    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE>
-    ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE>::Factory::Factory() {
-      Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE>::Create(m_generator);
+    template <typename HASH_VALUE_TYPE, typename FLAG_TYPE, typename ALLOCATOR>
+    ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR>::Factory::Factory() {
+      Ctrie_Node_Generator<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR>::Create(m_generator);
     }
 
-    template <typename KEY, typename PRED>
-    struct List_Node : public Main_Node {
+    template <typename KEY, typename PRED, typename ALLOCATOR>
+    struct List_Node : public Main_Node, public Allocated<ALLOCATOR> {
     private:
       List_Node(const List_Node &) = delete;
       List_Node & operator=(const List_Node &) = delete;
@@ -382,7 +377,7 @@ namespace Zeni::Concurrency {
         Failed_Removal       ///< Object was not present in the trie and could not be removed
       };
 
-      List_Node(Singleton_Node<KEY> * const snode_, List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
+      List_Node(Singleton_Node<KEY, ALLOCATOR> * const snode_, List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
 
       ~List_Node() {
         snode->decrement_refs();
@@ -396,8 +391,8 @@ namespace Zeni::Concurrency {
         }
       }
 
-      std::tuple<Result, List_Node *, const Singleton_Node<KEY> *, const Singleton_Node<KEY> *> updated(const KEY &key, const bool insertion) const {
-        const Singleton_Node<KEY> * found = nullptr;
+      std::tuple<Result, List_Node *, const Singleton_Node<KEY, ALLOCATOR> *, const Singleton_Node<KEY, ALLOCATOR> *> updated(const KEY &key, const bool insertion) const {
+        const Singleton_Node<KEY, ALLOCATOR> * found = nullptr;
         List_Node * new_head = nullptr;
         List_Node * new_tail = nullptr;
         List_Node * old_head = const_cast<List_Node *>(this);
@@ -445,7 +440,7 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           if (insertion) {
-            const auto new_snode = new Singleton_Node<KEY>(key);
+            const auto new_snode = new Singleton_Node<KEY, ALLOCATOR>(key);
             return std::make_tuple(Result::Replacing_Insertion, new List_Node(new_snode, new_head), new_snode, found);
           }
           else
@@ -453,7 +448,7 @@ namespace Zeni::Concurrency {
         }
         else {
           if (insertion) {
-            const auto new_snode = new Singleton_Node<KEY>(key);
+            const auto new_snode = new Singleton_Node<KEY, ALLOCATOR>(key);
             return std::make_tuple(Result::First_Insertion, new List_Node(new_snode, new_head), new_snode, nullptr);
           }
           else
@@ -461,13 +456,13 @@ namespace Zeni::Concurrency {
         }
       }
 
-      Singleton_Node<KEY> * const snode;
+      Singleton_Node<KEY, ALLOCATOR> * const snode;
       List_Node * next = nullptr;
     };
   }
 
-  template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t>
-  class Ctrie {
+  template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t, typename ALLOCATOR = Jemallocator<char>>
+  class Ctrie : public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
     Ctrie(const Ctrie &) = delete;
     Ctrie operator=(const Ctrie &) = delete;
 
@@ -475,17 +470,18 @@ namespace Zeni::Concurrency {
     typedef KEY Key;
     typedef HASH Hash;
     typedef PRED Pred;
+    typedef ALLOCATOR Allocator;
 
     typedef decltype(Hash()(Key())) Hash_Value;
     typedef FLAG_TYPE Flag_Type;
 
     typedef Ctrie_Internal::Main_Node MNode;
-    typedef Ctrie_Internal::Singleton_Node<Key> SNode;
-    typedef Ctrie_Internal::ICtrie_Node<Hash_Value, Flag_Type> CNode;
-    typedef Ctrie_Internal::List_Node<Key, Pred> LNode;
+    typedef Ctrie_Internal::Singleton_Node<Key, Allocator> SNode;
+    typedef Ctrie_Internal::ICtrie_Node<Hash_Value, Flag_Type, Allocator> CNode;
+    typedef Ctrie_Internal::List_Node<Key, Pred, Allocator> LNode;
     typedef Ctrie_Internal::Branch Branch;
-    typedef Ctrie_Internal::Tomb_Node TNode;
-    typedef Ctrie_Internal::Indirection_Node INode;
+    typedef Ctrie_Internal::Tomb_Node<Allocator> TNode;
+    typedef Ctrie_Internal::Indirection_Node<Allocator> INode;
 
     typedef typename LNode::Result Result;
 

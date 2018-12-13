@@ -216,6 +216,18 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Ctrie.hpp">
       <Filter>Header Files\Container\Lockfree</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Memory_Pools.hpp">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Memory_Pool.hpp">
+      <Filter>Header Files\Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Memory_Pool_Impl.hpp">
+      <Filter>Header Files\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Memory_Pools_Impl.hpp">
+      <Filter>Header Files\Container</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Job_Queue_Impl.cpp">
@@ -252,6 +264,18 @@
       <Filter>Source Files\Container</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\Zeni\New_and_Delete.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Memory_Pool_Impl.cpp">
+      <Filter>Source Files\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Memory_Pools_Impl.cpp">
+      <Filter>Source Files\Internal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Memory_Pools.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Memory_Pool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
