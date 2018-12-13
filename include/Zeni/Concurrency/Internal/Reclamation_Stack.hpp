@@ -21,9 +21,15 @@ namespace Zeni::Concurrency {
     Reclamation_Stack() = default;
 
     ~Reclamation_Stack() noexcept {
-      while (m_old_head) {
-        const Node * const head = m_old_head;
-        m_old_head = head->reclamation_next;
+      while (m_head3) {
+        const Node * const head = m_head3;
+        m_head3 = head->reclamation_next;
+        delete head;
+      }
+
+      while (m_head2) {
+        const Node * const head = m_head2;
+        m_head2 = head->reclamation_next;
         delete head;
       }
 
@@ -49,19 +55,21 @@ namespace Zeni::Concurrency {
     }
 
     void reclaim() noexcept {
-      while (m_old_head) {
-        const Node * const head = m_old_head;
-        m_old_head = head->reclamation_next;
+      while (m_head3) {
+        const Node * const head = m_head3;
+        m_head3 = head->reclamation_next;
         delete head;
       }
 
-      m_old_head = m_head;
+      m_head3 = m_head2;
+      m_head2 = m_head;
       m_head = nullptr;
     }
 
   private:
     const Node * m_head = nullptr;
-    const Node * m_old_head = nullptr;
+    const Node * m_head2 = nullptr;
+    const Node * m_head3 = nullptr;
     //ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
   };
 

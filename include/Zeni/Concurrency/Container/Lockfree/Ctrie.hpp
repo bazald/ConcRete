@@ -202,7 +202,7 @@ namespace Zeni::Concurrency {
       const Main_Node * to_contracted(const size_t level) const {
         if (level && get_hamming_value() == 1) {
           Branch * const branch = at(0);
-          const int64_t refs = branch->increment_refs();
+          [[maybe_unused]] const int64_t refs = branch->increment_refs();
           assert(refs);
           delete this;
           return new Tomb_Node(branch);
@@ -610,8 +610,6 @@ namespace Zeni::Concurrency {
       for (;;) {
         auto inode_main = inode->main.load(std::memory_order_acquire);
         if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
-          const auto cnode_copy = cnode;
-          const auto bmp_copy = cnode->get_bmp();
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (!branch) {
@@ -714,8 +712,6 @@ namespace Zeni::Concurrency {
       for (;;) {
         auto inode_main = inode->main.load(std::memory_order_acquire);
         if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
-          const auto cnode_copy = cnode;
-          const auto bmp_copy = cnode->get_bmp();
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (!branch)
@@ -758,7 +754,7 @@ namespace Zeni::Concurrency {
           }
           MNode * new_mainnode = new_lnode;
           if (!new_lnode->next) {
-            const int64_t refs = new_lnode->snode->increment_refs();
+            [[maybe_unused]] const int64_t refs = new_lnode->snode->increment_refs();
             assert(refs);
             new_mainnode = new TNode(new_lnode->snode);
             delete new_lnode;

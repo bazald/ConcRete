@@ -82,17 +82,17 @@ int main(int argc, char **argv)
   const auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(g_num_cores);
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
-  //std::cerr << "Job Performance: " << measure<>::execution(test_Job_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  std::cerr << "Job Performance: " << measure<>::execution(test_Job_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  //std::cerr << "Memory Performance: " << measure<>::execution(test_Memory_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  std::cerr << "Memory Performance: " << measure<>::execution(test_Memory_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  //std::cerr << "Hash Trie Performance: " << measure<>::execution(test_Hash_Trie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  std::cerr << "Hash Trie Performance: " << measure<>::execution(test_Hash_Trie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
   std::cerr << "Ctrie Performance: " << measure<>::execution(test_Ctrie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  //std::cerr << "Reclamation Performance: " << measure<>::execution(test_Reclamation_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  std::cerr << "Reclamation Performance: " << measure<>::execution(test_Reclamation_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  //std::cerr << "SmarterRec Performance: " << measure<>::execution(test_SmarterRec_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  std::cerr << "SmarterRec Performance: " << measure<>::execution(test_SmarterRec_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
   return 0;
 }
@@ -196,9 +196,9 @@ public:
   Ctrie_Job(const std::shared_ptr<Zeni::Concurrency::Ctrie<int>> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
 
   void execute() noexcept {
-    for (int i = 0; i != 100; ++i)
+    for (int i = 0; i != 1000; ++i)
       hash_trie->insert(i);
-    for (int i = 0; i != 100; ++i)
+    for (int i = 0; i != 1000; ++i)
       hash_trie->erase(i);
 
     if (num_successors)
