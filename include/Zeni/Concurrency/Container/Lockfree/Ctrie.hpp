@@ -487,12 +487,6 @@ namespace Zeni::Concurrency {
 
     Ctrie() = default;
 
-    ~Ctrie() {
-      const INode * const inode = m_root.load(std::memory_order_acquire);
-      if (inode)
-        inode->decrement_refs();
-    }
-
     bool empty() const {
       return !m_root.load(std::memory_order_acquire);
     }
@@ -520,8 +514,7 @@ namespace Zeni::Concurrency {
     std::pair<Result, Key> lookup(const Comparable &key) const {
       const Hash_Value hash_value = CHash()(key);
       for (;;) {
-        INode * const root = m_root.load(std::memory_order_acquire);
-        const auto[result, found] = ilookup<Comparable, CPred>(root, key, hash_value, 0, nullptr);
+        const auto[result, found] = ilookup<Comparable, CPred>(const_cast<INode *>(&m_root), key, hash_value, 0, nullptr);
         if (result != Result::Restart)
           return found ? std::make_pair(Result::Found, found->key) : std::make_pair(Result::Not_Found, Key());
       }
@@ -530,8 +523,7 @@ namespace Zeni::Concurrency {
     std::tuple<Result, Key, Key> insert(const Key &key) {
       const Hash_Value hash_value = Hash()(key);
       for (;;) {
-        INode * const root = m_root.load(std::memory_order_acquire);
-        const auto[result, inserted, replaced] = iinsert(root, key, hash_value, 0, nullptr);
+        const auto[result, inserted, replaced] = iinsert(&m_root, key, hash_value, 0, nullptr);
         if (result != Result::Restart)
           return std::make_tuple(result, inserted ? inserted->key : Key(), replaced ? replaced->key : Key());
       }
@@ -540,16 +532,15 @@ namespace Zeni::Concurrency {
     std::pair<Result, Key> erase(const Key &key) {
       const Hash_Value hash_value = Hash()(key);
       for (;;) {
-        INode * const root = m_root.load(std::memory_order_acquire);
-        const auto[result, removed] = ierase(root, key, hash_value, 0, nullptr);
+        const auto[result, removed] = ierase(&m_root, key, hash_value, 0, nullptr);
         if (result != Result::Restart)
           return std::make_pair(result, removed ? removed->key : Key());
       }
     }
 
     void clear() {
-      auto other = new INode(CNode::Create(0x0, 0, {}));
-      other = m_root.exchange(other, std::memory_order_acq_rel);
+      const MNode * other = CNode::Create(0x0, 0, {});
+      other = m_root.main.exchange(other, std::memory_order_acq_rel);
       other->decrement_refs();
     }
 
@@ -814,7 +805,7 @@ namespace Zeni::Concurrency {
       }
     }
 
-    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<INode *> m_root = new INode(CNode::Create(0x0, 0, {}));
+    INode m_root = CNode::Create(0x0, 0, {});
   };
 
 }

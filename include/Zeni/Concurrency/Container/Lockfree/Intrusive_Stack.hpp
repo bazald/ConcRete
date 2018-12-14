@@ -2,7 +2,7 @@
 #define ZENI_CONCURRENCY_INTRUSIVE_STACK_HPP
 
 #include "../../Internal/Linkage.hpp"
-#include "../../CAS2.hpp"
+#include "../../DWCAS.hpp"
 
 namespace Zeni::Concurrency {
 
@@ -22,7 +22,7 @@ namespace Zeni::Concurrency {
     Intrusive_Stack() noexcept = default;
 
     ~Intrusive_Stack() noexcept {
-      typename CAS2_Ptr<Type>::Ptr ptr;
+      typename DWCAS_Ptr<Type>::Ptr ptr;
       m_ptr.load(ptr);
       const Deleter deleter;
       while (ptr.ptr) {
@@ -33,7 +33,7 @@ namespace Zeni::Concurrency {
     }
 
     bool empty() const {
-      typename CAS2_Ptr<Type>::Ptr ptr;
+      typename DWCAS_Ptr<Type>::Ptr ptr;
       m_ptr.load(ptr);
       return ptr.ptr;
     }
@@ -44,7 +44,7 @@ namespace Zeni::Concurrency {
 
     void push(TYPE * const ptr) {
       //m_size.fetch_add(1, std::memory_order_relaxed);
-      typename CAS2_Ptr<Type>::Ptr expected;
+      typename DWCAS_Ptr<Type>::Ptr expected;
       m_ptr.load(expected);
       auto desired = expected.make_desired(ptr);
       desired->next = expected.ptr;
@@ -55,20 +55,20 @@ namespace Zeni::Concurrency {
     }
 
     TYPE * try_pop() {
-      typename CAS2_Ptr<Type>::Ptr expected;
+      typename DWCAS_Ptr<Type>::Ptr expected;
       m_ptr.load(expected);
-      typename CAS2_Ptr<Type>::Ptr desired;
+      typename DWCAS_Ptr<Type>::Ptr desired;
       do {
         if (!expected.ptr)
           return nullptr;
         desired = expected.make_desired(const_cast<Type *>(expected->next));
-      } while (!m_ptr.CAS(expected, desired, CAS2_Ptr<Type>::Memory_Order::Acquire));
+      } while (!m_ptr.CAS(expected, desired, DWCAS_Ptr<Type>::Memory_Order::Acquire));
       //m_size.fetch_sub(1, std::memory_order_relaxed);
       return expected.ptr;
     }
 
   private:
-    CAS2_Ptr<Type> m_ptr;
+    DWCAS_Ptr<Type> m_ptr;
     //ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
   };
 

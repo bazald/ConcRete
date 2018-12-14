@@ -1,5 +1,5 @@
-#ifndef ZENI_CONCURRENCY_CAS2_HPP
-#define ZENI_CONCURRENCY_CAS2_HPP
+#ifndef ZENI_CONCURRENCY_DWCAS_HPP
+#define ZENI_CONCURRENCY_DWCAS_HPP
 
 #include "Internal/Concurrency.hpp"
 
@@ -23,7 +23,7 @@ inline bool _InterlockedCompareExchange128(volatile int64_t * Destination, const
 namespace Zeni::Concurrency {
 
   template <typename TYPE>
-  class ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER CAS2_Ptr {
+  class ZENI_CONCURRENCY_CACHE_ALIGN_TOGETHER DWCAS_Ptr {
   public:
     typedef TYPE Type;
 
@@ -48,9 +48,9 @@ namespace Zeni::Concurrency {
 
     enum Memory_Order : uint8_t {Relaxed = 0x0, Acquire = 0x1, Release = 0x2, Acq_Rel = 0x3};
 
-    CAS2_Ptr() = default;
+    DWCAS_Ptr() = default;
 
-    CAS2_Ptr(Type * const ptr) : m_ptr(ptr) {}
+    DWCAS_Ptr(Type * const ptr) : m_ptr(ptr) {}
 
     bool CAS(Ptr &expected, const Ptr &desired, const Memory_Order
 #ifndef _MSC_VER

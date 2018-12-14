@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Atomic.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\CAS2.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\DWCAS.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Antiable_Hash_Trie.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ctrie.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Hash_Trie.hpp" />

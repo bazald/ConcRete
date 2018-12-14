@@ -1,5 +1,7 @@
 #include "Zeni/Concurrency/Memory_Pool.hpp"
 
+#define DISABLE_MEMORY_POOLS
+
 #if defined(DISABLE_MEMORY_POOLS)
 #define JEMALLOC_NO_DEMANGLE
 #include "jemalloc/jemalloc.h"
