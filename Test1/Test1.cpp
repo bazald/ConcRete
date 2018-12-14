@@ -229,7 +229,7 @@ void test_Intrusive_Stack(const std::shared_ptr<Zeni::Concurrency::Worker_Thread
         m_stack->push(new Int(i));
       for (int i = 0; i != 10000; ++i) {
         if (const auto ptr = m_stack->try_pop())
-          Zeni::Concurrency::Reclamation_Stacks::push(ptr);
+          Zeni::Concurrency::Reclamation_Stack::push(ptr);
       }
     }
 

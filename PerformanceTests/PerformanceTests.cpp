@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 
   std::cerr << "Reclamation Performance: " << measure<>::execution(test_Reclamation_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  std::cerr << "SmarterRec Performance: " << measure<>::execution(test_SmarterRec_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  //std::cerr << "SmarterRec Performance: " << measure<>::execution(test_SmarterRec_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
   return 0;
 }
@@ -211,7 +211,7 @@ public:
 
 void test_Ctrie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
 {
-  const auto hash_trie = std::make_shared<Zeni::Concurrency::Ctrie<int>>();
+  const auto hash_trie = std::allocate_shared<Zeni::Concurrency::Ctrie<int>>(Zeni::Concurrency::Ctrie<int>::Allocator());
   for (int i = 0; i != 64; ++i)
     job_queue->give_one(std::make_shared<Ctrie_Job>(hash_trie, 63));
   worker_threads->finish_jobs();

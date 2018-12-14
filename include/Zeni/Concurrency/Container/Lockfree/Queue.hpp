@@ -1,7 +1,7 @@
 #ifndef ZENI_CONCURRENCY_QUEUE_HPP
 #define ZENI_CONCURRENCY_QUEUE_HPP
 
-#include "../../Internal/Reclamation_Stacks.hpp"
+#include "../../Internal/Reclamation_Stack.hpp"
 
 namespace Zeni::Concurrency {
 
@@ -109,7 +109,7 @@ namespace Zeni::Concurrency {
       if (m_writers.fetch_sub(1, std::memory_order_relaxed) == 1)
         delete head;
       else
-        Reclamation_Stacks::push(head);
+        Reclamation_Stack::push(head);
       std::atomic_thread_fence(std::memory_order_acquire);
       value = std::move(*value_ptr);
       delete value_ptr;

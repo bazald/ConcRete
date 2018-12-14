@@ -5,7 +5,6 @@
 #define ZENI_CONCURRENCY_EXTERN extern
 #define ZENI_CONCURRENCY_LINKAGE __attribute__ ((visibility ("default")))
 #else
-#define _ENABLE_EXTENDED_ALIGNED_STORAGE
 #if defined(CONCURRENCY_EXPORTS)
 #define ZENI_CONCURRENCY_EXTERN
 #define ZENI_CONCURRENCY_LINKAGE __declspec(dllexport)

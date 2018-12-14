@@ -34,6 +34,8 @@ namespace Zeni::Concurrency {
     /// Get the total number of worker threads across all pools
     static int64_t get_total_workers() noexcept;
 
+    static int32_t get_epoch() noexcept;
+
     std::shared_ptr<Job_Queue> get_main_Job_Queue() const noexcept override;
 
     void finish_jobs() noexcept(false) override;

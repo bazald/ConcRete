@@ -5,6 +5,7 @@
 #endif
 
 #include "Zeni/Concurrency/Internal/Memory_Pool_Impl.hpp"
+#include "Zeni/Concurrency/Internal/Worker_Threads_Impl.hpp"
 
 #ifdef _WIN32
 #include "jemalloc/jemalloc.h"
@@ -25,143 +26,180 @@ namespace Zeni::Concurrency {
     clear();
   }
 
-  /// free any cached memory blocks; return a count of the number of blocks freed
-  size_t Memory_Pool_Impl::clear() noexcept {
-    size_t count = 0;
-
-    for (auto &freed : m_freed) {
-      void * ptr = freed.second;
-      while (ptr) {
-        void * ptr2 = *reinterpret_cast<void **>(ptr);
-        std::free(reinterpret_cast<size_t *>(ptr) - 1);
-        ptr = ptr2;
-        ++count;
-      }
-    }
-
-    m_freed.clear();
-
-    return count;
+  Memory_Pool_Impl & Memory_Pool_Impl::get() noexcept {
+    static thread_local Memory_Pool_Impl g_memory_pool;
+    return g_memory_pool;
   }
 
-  /// get a cached memory block or allocate one as needed
+  void Memory_Pool_Impl::clear() noexcept {
+    m_freed_0.clear();
+    m_freed_1.clear();
+    m_freed_2.clear();
+  }
+
+  void Memory_Pool_Impl::rotate() noexcept {
+    const int32_t epoch = Worker_Threads_Impl::get_epoch();
+
+    if (epoch == 0)
+      m_freed_0.clear();
+    else if (epoch == 1)
+      m_freed_1.clear();
+    else //if(epoch == 2)
+      m_freed_2.clear();
+  }
+
   void * Memory_Pool_Impl::allocate(size_t size) noexcept {
-    if (size < sizeof(void *))
-      size = sizeof(void *);
+    if (size < sizeof(Memory_Pool_Stack::Node))
+      size = sizeof(Memory_Pool_Stack::Node);
 
-    {
-      auto &freed = m_freed[size];
-      if (freed) {
-        void * const ptr = freed;
-        freed = *reinterpret_cast<void **>(ptr);
+    auto stack = get_stack(Memory_Pool_Key(size, std::align_val_t()));
+
+    void * ptr = stack->try_pop();
 #ifndef NDEBUG
-        fill(reinterpret_cast<size_t *>(ptr), 0xFA57F00D);
+    if (ptr)
+      fill(ptr, size, 0xFA57F00D);
 #endif
-        return reinterpret_cast<size_t *>(ptr);
+
+    if (!ptr) {
+      stack = get_backup_stack(Memory_Pool_Key(size, std::align_val_t()));
+
+      ptr = stack ? stack->try_pop() : nullptr;
+#ifndef NDEBUG
+      if (ptr)
+        fill(ptr, size, 0xFA57F00D);
+#endif
+
+      if (!ptr) {
+        stack = get_backup_stack_2(Memory_Pool_Key(size, std::align_val_t()));
+
+        ptr = stack ? stack->try_pop() : nullptr;
+#ifndef NDEBUG
+        if (ptr)
+          fill(ptr, size, 0xFA57F00D);
+#endif
+
+        if (!ptr) {
+          ptr = je_malloc(size);
+#ifndef NDEBUG
+          if (ptr)
+            fill(ptr, size, 0xED1B13BF);
+#endif
+        }
       }
     }
 
-#ifdef _WIN32
-    void * ptr = je_malloc(sizeof(size_t) + size);
-#else
-    void * ptr = malloc(sizeof(size_t) + size);
-#endif
-
-    if (ptr) {
-      *reinterpret_cast<size_t *>(ptr) = size;
-#ifndef NDEBUG
-      fill(reinterpret_cast<size_t *>(ptr) + 1, 0xED1B13BF);
-#endif
-      return reinterpret_cast<size_t *>(ptr) + 1;
-    }
-
-    return nullptr;
+    return ptr;
   }
 
-  /// get a cached memory block or allocate one as needed
   void * Memory_Pool_Impl::allocate(size_t size, const std::align_val_t alignment) noexcept {
-    if (size < sizeof(void *))
-      size = sizeof(void *);
+    if (size < sizeof(Memory_Pool_Stack::Node))
+      size = sizeof(Memory_Pool_Stack::Node);
 
-    {
-      auto &freed = m_freed[size];
-      if (freed) {
-        void * const ptr = freed;
-        freed = *reinterpret_cast<void **>(ptr);
+    auto stack = get_stack(Memory_Pool_Key(size, alignment));
+
+    void * ptr = stack->try_pop();
 #ifndef NDEBUG
-        fill(reinterpret_cast<size_t *>(ptr), 0xFA57F00D);
+    if (ptr)
+      fill(ptr, size, 0xFA57F00D);
 #endif
-        return reinterpret_cast<size_t *>(ptr);
+
+    if (!ptr) {
+      stack = get_backup_stack(Memory_Pool_Key(size, std::align_val_t()));
+
+      ptr = stack ? stack->try_pop() : nullptr;
+#ifndef NDEBUG
+      if (ptr)
+        fill(ptr, size, 0xFA57F00D);
+#endif
+
+      if (!ptr) {
+        stack = get_backup_stack_2(Memory_Pool_Key(size, std::align_val_t()));
+
+        ptr = stack ? stack->try_pop() : nullptr;
+#ifndef NDEBUG
+        if (ptr)
+          fill(ptr, size, 0xFA57F00D);
+#endif
+
+        if (!ptr) {
+          ptr = je_aligned_alloc(size_t(alignment), size);
+#ifndef NDEBUG
+          if (ptr)
+            fill(ptr, size, 0xED1B13BF);
+#endif
+        }
       }
     }
 
-#ifdef _WIN32
-    void * ptr = je_malloc(sizeof(size_t) + size);
-#else
-    void * ptr = malloc(sizeof(size_t) + size);
-#endif
-
-    if (ptr) {
-      *reinterpret_cast<size_t *>(ptr) = size;
-#ifndef NDEBUG
-      fill(reinterpret_cast<size_t *>(ptr) + 1, 0xED1B13BF);
-#endif
-      return reinterpret_cast<size_t *>(ptr) + 1;
-    }
-
-    return nullptr;
+    return ptr;
   }
 
-  /// return a memory block to be cached (and eventually freed)
-  void Memory_Pool_Impl::release(void * const ptr) noexcept {
-    {
-      auto &freed = m_freed[size_of(ptr)];
+  void Memory_Pool_Impl::release(void * const ptr, size_t size) noexcept {
+    assert(ptr);
+
+    if (size < sizeof(Memory_Pool_Stack::Node))
+      size = sizeof(Memory_Pool_Stack::Node);
+
+    const auto stack = get_stack(Memory_Pool_Key(size, std::align_val_t()));
+
+    const auto node = reinterpret_cast<Memory_Pool_Stack::Node *>(ptr);
 
 #ifndef NDEBUG
-      fill(ptr, 0xDEADBEEF);
+    fill(ptr, size, 0xFA57F00D);
 #endif
-      *reinterpret_cast<void **>(ptr) = freed;
-      freed = reinterpret_cast<size_t *>(ptr);
 
-      return;
-    }
-
-#ifdef _WIN32
-    je_free(reinterpret_cast<size_t *>(ptr) - 1);
-#else
-    free(reinterpret_cast<size_t *>(ptr) - 1);
-#endif
+    stack->push(node);
   }
 
-  /// return a memory block to be cached (and eventually freed)
-  void Memory_Pool_Impl::release(void * const ptr, const std::align_val_t alignment) noexcept {
-    {
-      auto &freed = m_freed[size_of(ptr)];
+  void Memory_Pool_Impl::release(void * const ptr, size_t size, const std::align_val_t alignment) noexcept {
+    assert(ptr);
+
+    if (size < sizeof(Memory_Pool_Stack::Node))
+      size = sizeof(Memory_Pool_Stack::Node);
+
+    const auto stack = get_stack(Memory_Pool_Key(size, alignment));
+
+    const auto node = reinterpret_cast<Memory_Pool_Stack::Node *>(ptr);
 
 #ifndef NDEBUG
-      fill(ptr, 0xDEADBEEF);
+    fill(ptr, size, 0xFA57F00D);
 #endif
-      *reinterpret_cast<void **>(ptr) = freed;
-      freed = reinterpret_cast<size_t *>(ptr);
 
-      return;
-    }
-
-#ifdef _WIN32
-    je_free(reinterpret_cast<size_t *>(ptr) - 1);
-#else
-    free(reinterpret_cast<size_t *>(ptr) - 1);
-#endif
+    stack->push(node);
   }
 
-  /// get the size of a memory block allocated with an instance of Pool
-  size_t Memory_Pool_Impl::size_of(const void * const ptr) const noexcept {
-    return reinterpret_cast<const size_t *>(ptr)[-1];
+  Intrusive_Stack<Memory_Pool_Stack::Node, Memory_Pool_Stack::Deleter> * Memory_Pool_Impl::get_stack(const Memory_Pool_Key &key) noexcept {
+    const int32_t epoch = Worker_Threads_Impl::get_epoch();
+    auto &freed = epoch == 0 ? m_freed_0 : epoch == 1 ? m_freed_1 : /*epoch == 2*/ m_freed_2;
+
+    const auto[result1, found1] = freed.lookup(key);
+    if (result1 == Trie::Result::Found)
+      return found1.stack.get();
+
+    const auto[result2, inserted2, replaced2] = freed.insert(Memory_Pool_Stack(key));
+    assert(result2 == Trie::Result::First_Insertion);
+    return inserted2.stack.get();
   }
 
-  void Memory_Pool_Impl::fill(void * const dest, const uint32_t pattern) noexcept {
+  Intrusive_Stack<Memory_Pool_Stack::Node, Memory_Pool_Stack::Deleter> * Memory_Pool_Impl::get_backup_stack(const Memory_Pool_Key &key) noexcept {
+    const int32_t epoch = Worker_Threads_Impl::get_epoch();
+    auto &freed = epoch == 0 ? m_freed_2 : epoch == 1 ? m_freed_0 : /*epoch == 2*/ m_freed_1;
+
+    const auto[result, found] = freed.lookup(key);
+    return found.stack.get();
+  }
+
+  Intrusive_Stack<Memory_Pool_Stack::Node, Memory_Pool_Stack::Deleter> * Memory_Pool_Impl::get_backup_stack_2(const Memory_Pool_Key &key) noexcept {
+    const int32_t epoch = Worker_Threads_Impl::get_epoch();
+    auto &freed = epoch == 0 ? m_freed_1 : epoch == 1 ? m_freed_2 : /*epoch == 2*/ m_freed_0;
+
+    const auto[result, found] = freed.lookup(key);
+    return found.stack.get();
+  }
+
+  void Memory_Pool_Impl::fill(void * const dest, const size_t size, const uint32_t pattern) noexcept {
     unsigned char * dd = reinterpret_cast<unsigned char *>(dest);
-    const unsigned char * const dend = dd + size_of(dest);
+    const unsigned char * const dend = dd + size;
 
     while (dend - dd > 3) {
       *reinterpret_cast<uint32_t *>(dd) = pattern;

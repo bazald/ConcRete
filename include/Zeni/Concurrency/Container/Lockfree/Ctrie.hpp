@@ -547,6 +547,12 @@ namespace Zeni::Concurrency {
       }
     }
 
+    void clear() {
+      auto other = new INode(CNode::Create(0x0, 0, {}));
+      other = m_root.exchange(other, std::memory_order_acq_rel);
+      other->decrement_refs();
+    }
+
   private:
     template <typename Comparable, typename CPred>
     std::pair<Result, const SNode *> ilookup(

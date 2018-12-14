@@ -1,7 +1,7 @@
 #ifndef ZENI_CONCURRENCY_INTRUSIVE_SHARED_PTR_HPP
 #define ZENI_CONCURRENCY_INTRUSIVE_SHARED_PTR_HPP
 
-#include "../../Internal/Reclamation_Stacks.hpp"
+#include "../../Internal/Reclamation_Stack.hpp"
 
 #include <iostream>
 #include <thread>
@@ -24,7 +24,7 @@ namespace Zeni::Concurrency {
       if (prev > 1)
         return prev;
       assert(prev == 1);
-      Reclamation_Stacks::push(this);
+      Reclamation_Stack::push(this);
       return prev;
     }
 
