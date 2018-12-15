@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 {
 #ifdef _MSC_VER
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-  //_CrtSetBreakAlloc(236);
+  //_CrtSetBreakAlloc(201);
 #endif
 
   if (argc > 2 || (argc == 2 && !std::strcmp(argv[1], "--help"))) {
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
   const auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(g_num_cores);
   const auto job_queue = worker_threads->get_main_Job_Queue();
 
-  std::cerr << "Job Performance: " << measure<>::execution(test_Job_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  //std::cerr << "Job Performance: " << measure<>::execution(test_Job_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
   //std::cerr << "Memory Performance: " << measure<>::execution(test_Memory_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 

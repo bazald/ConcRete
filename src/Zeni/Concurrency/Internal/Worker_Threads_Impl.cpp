@@ -3,7 +3,6 @@
 #include "Zeni/Concurrency/Internal/Reclamation_Stack.hpp"
 #include "Zeni/Concurrency/IJob.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
-#include "Zeni/Concurrency/Memory_Pool.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -124,7 +123,7 @@ namespace Zeni::Concurrency {
       else {
         Reclamation_Stack::reclaim();
         m_epoch = epoch_part;
-        Memory_Pool::rotate();
+        //Memory_Pool::rotate();
         m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
       }
 
@@ -156,7 +155,7 @@ namespace Zeni::Concurrency {
           else {
             Reclamation_Stack::reclaim();
             m_epoch = epoch_part;
-            Memory_Pool::rotate();
+            //Memory_Pool::rotate();
             m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
           }
         }
@@ -177,7 +176,7 @@ namespace Zeni::Concurrency {
             else {
               Reclamation_Stack::reclaim();
               m_epoch = epoch_part;
-              Memory_Pool::rotate();
+              //Memory_Pool::rotate();
               m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
             }
 
@@ -241,7 +240,7 @@ namespace Zeni::Concurrency {
       else {
         Reclamation_Stack::reclaim();
         m_epoch = epoch_part;
-        Memory_Pool::rotate();
+        //Memory_Pool::rotate();
         m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
       }
 
@@ -276,7 +275,7 @@ namespace Zeni::Concurrency {
           else {
             Reclamation_Stack::reclaim();
             m_epoch = epoch_part;
-            Memory_Pool::rotate();
+            //Memory_Pool::rotate();
             m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
           }
         }
@@ -298,7 +297,7 @@ namespace Zeni::Concurrency {
             else {
               Reclamation_Stack::reclaim();
               m_epoch = epoch_part;
-              Memory_Pool::rotate();
+              //Memory_Pool::rotate();
               m_epoch_data.fetch_sub(1, std::memory_order_relaxed);
             }
 

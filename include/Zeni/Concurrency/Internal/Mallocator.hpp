@@ -81,12 +81,25 @@ namespace Zeni::Concurrency {
       if (n > static_cast<size_t>(-1) / sizeof(T)) {
         throw std::bad_array_new_length();
       }
-      void * const pv = std::aligned_alloc(size_t(alignment), n * sizeof(T));
+      void * const pv =
+#if defined(_MSC_VER) && !defined(NDEBUG)
+        _aligned_malloc_dbg(n * sizeof(T), size_t(alignment), __FILE__, __LINE__);
+#elif defined(_MSC_VER)
+        _aligned_malloc(n * sizeof(T), size_t(alignment));
+#else
+        std::aligned_alloc(size_t(alignment), n * sizeof(T));
+#endif
       if (!pv) { throw std::bad_alloc(); }
       return static_cast<T *>(pv);
     }
     void deallocate(T * const p, size_t) const noexcept {
+#if defined(_MSC_VER) && !defined(NDEBUG)
+      _aligned_free_dbg(p);
+#elif defined(_MSC_VER)
+      _aligned_free(p);
+#else
       free(p);
+#endif
     }
   };
 

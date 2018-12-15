@@ -68,12 +68,10 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Linkage.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Mallocator.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Concurrency.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Memory_Pool_Impl.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Reclamation_Stack.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Internal\Worker_Threads_Impl.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Job.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Job_Queue.hpp" />
-    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Memory_Pool.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Message.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Mutex.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Recipient.hpp" />
@@ -83,12 +81,10 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Container\Exports.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Job_Queue_Impl.cpp" />
-    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Memory_Pool_Impl.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Reclamation_Stack.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Worker_Threads_Impl.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Job_Queue.cpp" />
-    <ClCompile Include="..\..\..\src\Zeni\Concurrency\Memory_Pool.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Message.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Mutex.cpp" />
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Worker_Threads.cpp" />
