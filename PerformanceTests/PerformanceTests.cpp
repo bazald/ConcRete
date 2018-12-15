@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 
   std::cerr << "Job Performance: " << measure<>::execution(test_Job_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  std::cerr << "Memory Performance: " << measure<>::execution(test_Memory_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  //std::cerr << "Memory Performance: " << measure<>::execution(test_Memory_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
   //std::cerr << "Hash Trie Performance: " << measure<>::execution(test_Hash_Trie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
