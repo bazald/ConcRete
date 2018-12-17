@@ -97,7 +97,9 @@ namespace Zeni::Concurrency {
     public:
       Branch() = default;
 
-      virtual Branch * resurrect() = 0;
+      virtual Branch * resurrect() {
+        abort();
+      }
     };
 
     template <typename ALLOCATOR>
@@ -147,14 +149,30 @@ namespace Zeni::Concurrency {
     };
 
     template <typename ALLOCATOR>
-    struct RDCSS_Descriptor : public Main_Node, public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
+    struct RDCSS_Descriptor : public Branch, public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
       RDCSS_Descriptor(const RDCSS_Descriptor &) = delete;
       RDCSS_Descriptor & operator=(const RDCSS_Descriptor &) = delete;
 
     public:
-      Indirection_Node<ALLOCATOR> * expected_root;
-      Main_Node * expected_mnode;
-      Main_Node * desired_mnode;
+      typedef ALLOCATOR Allocator;
+      typedef Main_Node MNode;
+      typedef Indirection_Node<Allocator> INode;
+
+      RDCSS_Descriptor(const MNode * const expected_mnode_, INode * const expected_inode_, INode * const desired_inode_)
+        : expected_mnode(expected_mnode_), expected_inode(expected_inode_), desired_inode(desired_inode_)
+      {
+      }
+
+      ~RDCSS_Descriptor() {
+        expected_mnode->decrement_refs();
+        expected_inode->decrement_refs();
+        desired_inode->decrement_refs();
+      }
+
+      const MNode * const expected_mnode;
+      INode * const expected_inode;
+      INode * const desired_inode;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool successful = false;
     };
 
     template <typename KEY, typename ALLOCATOR>
@@ -570,12 +588,20 @@ namespace Zeni::Concurrency {
 
     typedef typename LNode::Result Result;
 
+    typedef std::shared_ptr<const Ctrie<Key, Hash, Pred, Flag_Type, Allocator>> Snapshot;
+
     Ctrie() = default;
 
+    Ctrie(INode * const inode)
+      : m_root(inode),
+      m_readonly(true)
+    {
+    }
+
     ~Ctrie() {
-      const INode * const inode = m_root.load(std::memory_order_acquire);
-      if (inode)
-        inode->decrement_refs();
+      const Branch * const branch = m_root.load(std::memory_order_acquire);
+      if (branch)
+        branch->decrement_refs();
     }
 
     //bool empty() const {
@@ -605,7 +631,7 @@ namespace Zeni::Concurrency {
     std::pair<Result, Key> lookup(const Comparable &key) const {
       const Hash_Value hash_value = CHash()(key);
       for (;;) {
-        INode * const root = m_root.load(std::memory_order_acquire);
+        INode * const root = RDCSS_Read();
         const auto[result, found] = ilookup<Comparable, CPred>(root, key, hash_value, 0, nullptr, root->generation);
         if (result != Result::Restart)
           return found ? std::make_pair(Result::Found, found->key) : std::make_pair(Result::Not_Found, Key());
@@ -615,7 +641,7 @@ namespace Zeni::Concurrency {
     std::tuple<Result, Key, Key> insert(const Key &key) {
       const Hash_Value hash_value = Hash()(key);
       for (;;) {
-        INode * const root = m_root.load(std::memory_order_acquire);
+        INode * const root = RDCSS_Read();
         const auto[result, inserted, replaced] = iinsert(root, key, hash_value, 0, nullptr, root->generation);
         if (result != Result::Restart)
           return std::make_tuple(result, inserted ? inserted->key : Key(), replaced ? replaced->key : Key());
@@ -625,10 +651,37 @@ namespace Zeni::Concurrency {
     std::pair<Result, Key> erase(const Key &key) {
       const Hash_Value hash_value = Hash()(key);
       for (;;) {
-        INode * const root = m_root.load(std::memory_order_acquire);
+        INode * const root = RDCSS_Read();
         const auto[result, removed] = ierase(root, key, hash_value, 0, nullptr, root->generation);
         if (result != Result::Restart)
           return std::make_pair(result, removed ? removed->key : Key());
+      }
+    }
+
+    Snapshot snapshot() const {
+      for (;;) {
+        INode * const root = RDCSS_Read();
+        if (!root->increment_refs()) // For RCSSD
+          continue;
+        const MNode * const expected_main = GCAS_Read(root);
+        if (!expected_main->increment_refs()) { // For RCSSD
+          root->decrement_refs();
+          continue;
+        }
+        //[[maybe_unused]] const auto irefs = root->increment_refs();
+        //assert(irefs);
+        [[maybe_unused]] const auto mrefs = expected_main->increment_refs();
+        assert(mrefs);
+        //INode * const new_inode = new INode(expected_main, new Gen);
+
+        expected_main->increment_refs(); // For returned Snapshot
+        //root->generation->increment_refs(); // Temporarily for new INode
+        INode * const new_inode = new INode(expected_main, new Gen); // For RCSSD
+
+        if (RDCSS(root, expected_main, new_inode))
+          return std::allocate_shared<Ctrie>(Allocator(), new INode(expected_main, new Gen));
+        else
+          expected_main->decrement_refs();
       }
     }
 
@@ -658,15 +711,15 @@ namespace Zeni::Concurrency {
           if (const auto inode_next = dynamic_cast<INode *>(branch)) {
             parent = inode;
             level += CNode::W;
-            if (inode_next->generation == root_gen)
+            //if (inode_next->generation == root_gen)
               inode = inode_next;
-            else {
-              const auto updated_cnode = cnode->updated(root_gen);
-              if (CAS_del(inode->main, inode_main, updated_cnode, std::memory_order_release, std::memory_order_relaxed))
-                inode = dynamic_cast<INode *>(updated_cnode->at(pos));
-              else
-                return std::make_pair(Result::Restart, nullptr);
-            }
+            //else {
+            //  const auto updated_cnode = cnode->updated(root_gen);
+            //  if (GCAS(inode, inode_main, updated_cnode))
+            //    inode = dynamic_cast<INode *>(updated_cnode->at(pos));
+            //  else
+            //    return std::make_pair(Result::Restart, nullptr);
+            //}
             continue;
           }
           else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
@@ -723,15 +776,15 @@ namespace Zeni::Concurrency {
             if (const auto inode_next = dynamic_cast<INode *>(branch)) {
               parent = inode;
               level += CNode::W;
-              if (inode_next->generation == root_gen)
+              //if (inode_next->generation == root_gen)
                 inode = inode_next;
-              else {
-                const auto updated_cnode = cnode->updated(root_gen);
-                if (CAS_del(inode->main, inode_main, updated_cnode, std::memory_order_release, std::memory_order_relaxed))
-                  inode = dynamic_cast<INode *>(updated_cnode->at(pos));
-                else
-                  return std::make_tuple(Result::Restart, nullptr, nullptr);
-              }
+              //else {
+              //  const auto updated_cnode = cnode->updated(root_gen);
+              //  if (GCAS(inode, inode_main, updated_cnode))
+              //    inode = dynamic_cast<INode *>(updated_cnode->at(pos));
+              //  else
+              //    return std::make_tuple(Result::Restart, nullptr, nullptr);
+              //}
               continue;
             }
             else if (const auto snode = dynamic_cast<SNode *>(branch)) {
@@ -834,15 +887,15 @@ namespace Zeni::Concurrency {
           if (const auto inode_next = dynamic_cast<INode *>(branch)) {
             parent = inode;
             level += CNode::W;
-            if (inode_next->generation == root_gen)
+            //if (inode_next->generation == root_gen)
               inode = inode_next;
-            else {
-              const auto updated_cnode = cnode->updated(root_gen);
-              if (CAS_del(inode->main, inode_main, updated_cnode, std::memory_order_release, std::memory_order_relaxed))
-                inode = dynamic_cast<INode *>(updated_cnode->at(pos));
-              else
-                return std::make_pair(Result::Restart, nullptr);
-            }
+            //else {
+            //  const auto updated_cnode = cnode->updated(root_gen);
+            //  if (GCAS(inode, inode_main, updated_cnode))
+            //    inode = dynamic_cast<INode *>(updated_cnode->at(pos));
+            //  else
+            //    return std::make_pair(Result::Restart, nullptr);
+            //}
             continue;
           }
           else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
@@ -942,25 +995,27 @@ namespace Zeni::Concurrency {
     const MNode * GCAS_Commit(INode * const inode, const MNode * mnode) const {
       for (;;) {
         const MoF * prev_mof = mnode->prev.load(std::memory_order_relaxed);
-        INode * const root = Abortable_Read_Root();
+        INode * const root = RDCSS_Read();
         if (const MNode * const prev_mnode = dynamic_cast<const MNode *>(prev_mof)) {
-          if (root->generation == inode->generation && !m_readonly) {
+          //if (root->generation == inode->generation && !m_readonly) {
             if (CAS(mnode->prev, prev_mof, static_cast<const MNode *>(nullptr), std::memory_order_release, std::memory_order_acquire))
               return mnode;
-          }
-          else {
-            if (prev_mnode->increment_refs())
-              CAS_del(mnode->prev, prev_mof, new FNode(prev_mnode), std::memory_order_release, std::memory_order_acquire);
-            mnode = inode->main.load(std::memory_order_acquire);
-          }
+          //}
+          //else {
+          //  if (prev_mnode->increment_refs())
+          //    CAS_del(mnode->prev, prev_mof, new FNode(prev_mnode), std::memory_order_release, std::memory_order_acquire);
+          //  mnode = inode->main.load(std::memory_order_acquire);
+          //}
         }
         else if (const FNode * const prev_failed_node = dynamic_cast<const FNode *>(prev_mof)) {
           if (!prev_failed_node->prev->increment_refs())
             mnode = inode->main.load(std::memory_order_acquire);
-          else if (CAS(inode->main, mnode, prev_failed_node->prev, std::memory_order_release, std::memory_order_acquire))
-            return prev_failed_node->prev;
-          else
-            mnode = inode->main.load(std::memory_order_acquire);
+          else {
+            if (CAS(inode->main, mnode, prev_failed_node->prev, std::memory_order_release, std::memory_order_acquire))
+              return prev_failed_node->prev;
+            else
+              mnode = inode->main.load(std::memory_order_acquire);
+          }
         }
         else {
           assert(!prev_mof);
@@ -978,49 +1033,53 @@ namespace Zeni::Concurrency {
         return GCAS_Commit(inode, mnode);
     }
 
-    INode * const Abortable_Read_Root() const {
-      return m_root.load(std::memory_order_acquire);
+    bool RDCSS(INode * expected_root, const MNode * const expected_mnode, INode * const desired_root) const {
+      Branch * expected_root_branch = expected_root;
+      Branch * rdcss_descriptor = new RDCSSD(expected_mnode, expected_root, desired_root);
+      if (CAS_del(m_root, expected_root_branch, rdcss_descriptor, std::memory_order_release, std::memory_order_relaxed)) {
+        Branch * rdcss_descriptor_copy = rdcss_descriptor;
+        RDCSS_Complete(rdcss_descriptor_copy, static_cast<RDCSSD *>(rdcss_descriptor));
+        return static_cast<RDCSSD *>(rdcss_descriptor)->successful.load(std::memory_order_relaxed);
+      }
+      else
+        return false;
     }
 
-    bool RDCSS(std::atomic<MNode *> &branch, RDCSSD * const rdcss_descriptor) {
-      for (;;) {
-        MNode * expected = rdcss_descriptor->expected_mnode;
-        if (CAS(branch, expected, rdcss_descriptor, std::memory_order_release, std::memory_order_acquire)) {
-          expected = rdcss_descriptor;
-          RDCSS_Complete(branch, expected, rdcss_descriptor);
-          return true;
-        }
-        else if (const RDCSSD * const other_descriptor = dynamic_cast<RDCSSD *>(expected)) {
-          RDCSS_Complete(branch, expected, other_descriptor);
-          continue;
+    void RDCSS_Complete(Branch * &expected_rdcss_descriptor, RDCSSD * const rdcss_descriptor) const {
+      assert(expected_rdcss_descriptor == rdcss_descriptor);
+      if (rdcss_descriptor->expected_inode->main.load(std::memory_order_relaxed) == rdcss_descriptor->expected_mnode) {
+        if (rdcss_descriptor->desired_inode->increment_refs()) {
+          rdcss_descriptor->successful.store(true, std::memory_order_relaxed);
+          if (CAS(m_root, expected_rdcss_descriptor, rdcss_descriptor->desired_inode, std::memory_order_relaxed, std::memory_order_relaxed))
+            expected_rdcss_descriptor = rdcss_descriptor->desired_inode;
         }
         else
-          return false;
+          expected_rdcss_descriptor = m_root.load(std::memory_order_relaxed);
+      }
+      else {
+        if (rdcss_descriptor->expected_inode->increment_refs()) {
+          if (CAS(m_root, expected_rdcss_descriptor, rdcss_descriptor->expected_inode, std::memory_order_relaxed, std::memory_order_relaxed))
+            expected_rdcss_descriptor = rdcss_descriptor->expected_inode;
+        }
+        else
+          expected_rdcss_descriptor = m_root.load(std::memory_order_relaxed);
       }
     }
 
-    void RDCSS_Commit(std::atomic<MNode *> &branch, MNode * &expected_rdcss_descriptor, const RDCSSD * const rdcss_descriptor) const {
-      assert(expected_rdcss_descriptor == rdcss_descriptor);
-      if (m_root.main.load(std::memory_order_relaxed) == rdcss_descriptor->expected_root)
-        CAS(branch, expected_rdcss_descriptor, rdcss_descriptor->desired_mnode, std::memory_order_relaxed, std::memory_order_relaxed);
-      else
-        CAS(branch, expected_rdcss_descriptor, rdcss_descriptor->expected_mnode, std::memory_order_relaxed, std::memory_order_relaxed);
-    }
-
-    bool RDCSS_Read(std::atomic<MNode *> &branch) const {
+    INode * RDCSS_Read() const {
+      Branch * root = m_root.load(std::memory_order_acquire);
       for (;;) {
-        MNode * expected = branch.load(std::memory_order_acquire);
-        if (const RDCSSD * const rdcss_descriptor = dynamic_cast<RDCSSD *>(expected)) {
-          RDCSS_Complete(branch, expected, rdcss_descriptor);
-          continue;
+        if (RDCSSD * const rdcss_descriptor = dynamic_cast<RDCSSD *>(root))
+          RDCSS_Complete(root, rdcss_descriptor);
+        else {
+          assert(dynamic_cast<INode *>(root));
+          return dynamic_cast<INode *>(root);
         }
-        else
-          return expected;
       }
     }
 
     template <typename VALUE_TYPE, typename DESIRED>
-    static bool CAS(std::atomic<VALUE_TYPE *> &atomic_value, VALUE_TYPE * &expected, const DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
+    static bool CAS(std::atomic<VALUE_TYPE *> &atomic_value, VALUE_TYPE * &expected, DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
       if (atomic_value.compare_exchange_strong(expected, desired, success, failure)) {
         expected->decrement_refs();
         return true;
@@ -1033,7 +1092,7 @@ namespace Zeni::Concurrency {
     }
 
     template <typename VALUE_TYPE, typename DESIRED>
-    static bool CAS_del(std::atomic<VALUE_TYPE *> &atomic_value, VALUE_TYPE * &expected, const DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
+    static bool CAS_del(std::atomic<VALUE_TYPE *> &atomic_value, VALUE_TYPE * &expected, DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
       if (atomic_value.compare_exchange_strong(expected, desired, success, failure)) {
         expected->decrement_refs();
         return true;
@@ -1044,7 +1103,7 @@ namespace Zeni::Concurrency {
       }
     }
 
-    ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<INode *> m_root = new INode(CNode::Create(0x0, 0, {}), new Gen);
+    ZENI_CONCURRENCY_CACHE_ALIGN mutable std::atomic<Branch *> m_root = new INode(CNode::Create(0x0, 0, {}), new Gen);
     bool m_readonly = false;
   };
 

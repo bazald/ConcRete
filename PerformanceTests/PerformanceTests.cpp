@@ -196,10 +196,14 @@ public:
   Ctrie_Job(const std::shared_ptr<Zeni::Concurrency::Ctrie<int>> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
 
   void execute() noexcept {
-    for (int i = 0; i != 1000; ++i)
+    for (int i = 0; i != 1000; ++i) {
       hash_trie->insert(i);
-    for (int i = 0; i != 1000; ++i)
+      hash_trie->snapshot();
+    }
+    for (int i = 0; i != 1000; ++i) {
       hash_trie->erase(i);
+      hash_trie->snapshot();
+    }
 
     if (num_successors)
       get_Job_Queue()->give_one(std::make_shared<Ctrie_Job>(hash_trie, num_successors - 1));
