@@ -46,16 +46,8 @@ namespace Zeni::Concurrency {
       Generation() = default;
     };
 
-    struct Main_or_Failed : public Enable_Intrusive_Sharing {
-    private:
-      Main_or_Failed(const Main_or_Failed &) = delete;
-      Main_or_Failed & operator=(const Main_or_Failed &) = delete;
-
-    public:
-      Main_or_Failed() = default;
-    };
-
-    struct Main_Node : public Main_or_Failed {
+    template <typename ALLOCATOR>
+    struct Main_Node : public Enable_Intrusive_Sharing {
     private:
       Main_Node(const Main_Node &) = delete;
       Main_Node & operator=(const Main_Node &) = delete;
@@ -64,29 +56,38 @@ namespace Zeni::Concurrency {
       Main_Node() = default;
 
       ~Main_Node() {
-        const auto mof = prev.load(std::memory_order_acquire);
-        if (mof)
-          mof->decrement_refs();
+        const auto gen = generation.load(std::memory_order_acquire);
+        if (gen)
+          gen->decrement_refs();
+
+        const auto prev_mnode = ptr_part(prev.load(std::memory_order_acquire));
+        if (prev_mnode)
+          (prev_mnode)->decrement_refs();
       }
 
-      ZENI_CONCURRENCY_CACHE_ALIGN mutable std::atomic<const Main_or_Failed *> prev = nullptr;
-    };
-
-    template <typename ALLOCATOR>
-    struct Failed_Node : public Main_or_Failed, public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
-    private:
-      Failed_Node(const Failed_Node &) = delete;
-      Failed_Node & operator=(const Failed_Node &) = delete;
-
-    public:
-      Failed_Node(const Main_Node * const prev_) : prev(prev_) {}
-
-      ~Failed_Node() {
-        assert(prev);
-        prev->decrement_refs();
+      static bool is_marked_success(const Main_Node * const ptr) {
+        return reinterpret_cast<const uintptr_t>(ptr) & 0x1;
+      }
+      static bool is_marked_failure(const Main_Node * const ptr) {
+        return reinterpret_cast<const uintptr_t>(ptr) & 0x2;
+      }
+      static bool is_marked(const Main_Node * const ptr) {
+        return reinterpret_cast<const uintptr_t>(ptr) & 0x3;
+      }
+      static const Main_Node * ptr_part(const Main_Node * const ptr) {
+        return reinterpret_cast<const Main_Node *>(reinterpret_cast<const uintptr_t>(ptr) & ~0x3);
+      }
+      static const Main_Node * mark_success(const Main_Node * const ptr) {
+        const uintptr_t ival = reinterpret_cast<const uintptr_t>(ptr) & ~0x3;
+        return ival & 0x3 ? ptr : reinterpret_cast<const Main_Node *>(reinterpret_cast<const uintptr_t>(ptr) | 0x1);
+      }
+      static const Main_Node * mark_failure(const Main_Node * const ptr) {
+        const uintptr_t ival = reinterpret_cast<const uintptr_t>(ptr) & ~0x3;
+        return ival & 0x3 ? ptr : reinterpret_cast<const Main_Node *>(reinterpret_cast<const uintptr_t>(ptr) | 0x2);
       }
 
-      const Main_Node * const prev;
+      ZENI_CONCURRENCY_CACHE_ALIGN mutable std::atomic<const Generation<ALLOCATOR> *> generation = nullptr;
+      ZENI_CONCURRENCY_CACHE_ALIGN mutable std::atomic<const Main_Node *> prev = nullptr;
     };
 
     struct Branch : public Enable_Intrusive_Sharing {
@@ -103,7 +104,7 @@ namespace Zeni::Concurrency {
     };
 
     template <typename ALLOCATOR>
-    struct Tomb_Node : public Main_Node, public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
+    struct Tomb_Node : public Main_Node<ALLOCATOR>, public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
     private:
       Tomb_Node(const Tomb_Node &) = delete;
       Tomb_Node & operator=(const Tomb_Node &) = delete;
@@ -127,7 +128,7 @@ namespace Zeni::Concurrency {
       Indirection_Node & operator=(const Indirection_Node &) = delete;
 
     public:
-      Indirection_Node(const Main_Node * main_, const Generation<ALLOCATOR> * generation_)
+      Indirection_Node(const Main_Node<ALLOCATOR> * main_, const Generation<ALLOCATOR> * generation_)
         : main(main_), generation(generation_)
       {
       }
@@ -144,35 +145,8 @@ namespace Zeni::Concurrency {
           return increment_refs() ? this : nullptr;
       }
 
-      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<const Main_Node *> main;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<const Main_Node<ALLOCATOR> *> main;
       const Generation<ALLOCATOR> * const generation;
-    };
-
-    template <typename ALLOCATOR>
-    struct RDCSS_Descriptor : public Branch, public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
-      RDCSS_Descriptor(const RDCSS_Descriptor &) = delete;
-      RDCSS_Descriptor & operator=(const RDCSS_Descriptor &) = delete;
-
-    public:
-      typedef ALLOCATOR Allocator;
-      typedef Main_Node MNode;
-      typedef Indirection_Node<Allocator> INode;
-
-      RDCSS_Descriptor(const MNode * const expected_mnode_, INode * const expected_inode_, INode * const desired_inode_)
-        : expected_mnode(expected_mnode_), expected_inode(expected_inode_), desired_inode(desired_inode_)
-      {
-      }
-
-      ~RDCSS_Descriptor() {
-        expected_mnode->decrement_refs();
-        expected_inode->decrement_refs();
-        desired_inode->decrement_refs();
-      }
-
-      const MNode * const expected_mnode;
-      INode * const expected_inode;
-      INode * const desired_inode;
-      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool successful = false;
     };
 
     template <typename KEY, typename ALLOCATOR>
@@ -193,7 +167,7 @@ namespace Zeni::Concurrency {
     };
 
     template <typename HASH_VALUE_TYPE, typename FLAG_TYPE, typename ALLOCATOR>
-    struct ICtrie_Node : public Main_Node {
+    struct ICtrie_Node : public Main_Node<ALLOCATOR> {
     private:
       ICtrie_Node(const ICtrie_Node &) = delete;
       ICtrie_Node & operator=(const ICtrie_Node &) = delete;
@@ -252,9 +226,9 @@ namespace Zeni::Concurrency {
 
       virtual const ICtrie_Node * erased(const size_t pos, const FLAG_TYPE flag) const = 0;
 
-      virtual const ICtrie_Node * updated(const Generation<ALLOCATOR> * const new_generation) const = 0;
+      virtual const ICtrie_Node * regenerated(const Generation<ALLOCATOR> * const new_generation) const = 0;
 
-      const Main_Node * to_compressed(const size_t level) const {
+      const Main_Node<ALLOCATOR> * to_compressed(const size_t level) const {
         bool at_least_one = false;
         std::array<Branch *, hamming_max> branches;
         for (size_t i = 0; i != get_hamming_value(); ++i) {
@@ -276,7 +250,7 @@ namespace Zeni::Concurrency {
         }
       }
 
-      const Main_Node * to_contracted(const size_t level) const {
+      const Main_Node<ALLOCATOR> * to_contracted(const size_t level) const {
         if (level && get_hamming_value() == 1) {
           Branch * const branch = at(0);
           [[maybe_unused]] const int64_t refs = branch->increment_refs();
@@ -409,7 +383,7 @@ namespace Zeni::Concurrency {
         return ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR>::Create(this->get_bmp() & ~flag, hamming_value - 1, new_branches);
       }
 
-      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> * updated(const Generation<typename ALLOCATOR::Unaligned::Allocator> * const new_generation) const override {
+      const ICtrie_Node<HASH_VALUE_TYPE, FLAG_TYPE, ALLOCATOR> * regenerated(const Generation<typename ALLOCATOR::Unaligned::Allocator> * const new_generation) const override {
         std::array<Branch *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
           std::memcpy(new_branches.data(), m_branches.data(), hamming_value * sizeof(Branch *));
@@ -463,7 +437,7 @@ namespace Zeni::Concurrency {
     }
 
     template <typename KEY, typename PRED, typename ALLOCATOR>
-    struct List_Node : public Main_Node, public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
+    struct List_Node : public Main_Node<ALLOCATOR>, public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
     private:
       List_Node(const List_Node &) = delete;
       List_Node & operator=(const List_Node &) = delete;
@@ -560,7 +534,7 @@ namespace Zeni::Concurrency {
     };
   }
 
-  template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t, typename ALLOCATOR = Jemallocator<char>>
+  template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t, typename ALLOCATOR = Mallocator<char>>
   class Ctrie : public Allocated<typename ALLOCATOR::template Aligned<std::align_val_t(ZENI_CONCURRENCY_DESTRUCTIVE_INTERFERENCE_SIZE)>::Allocator> {
     Ctrie(const Ctrie &) = delete;
     Ctrie operator=(const Ctrie &) = delete;
@@ -575,16 +549,13 @@ namespace Zeni::Concurrency {
     typedef FLAG_TYPE Flag_Type;
 
     typedef Ctrie_Internal::Generation<Allocator> Gen;
-    typedef Ctrie_Internal::Main_or_Failed MoF;
-    typedef Ctrie_Internal::Failed_Node<Allocator> FNode;
-    typedef Ctrie_Internal::Main_Node MNode;
+    typedef Ctrie_Internal::Main_Node<ALLOCATOR> MNode;
     typedef Ctrie_Internal::Singleton_Node<Key, Allocator> SNode;
     typedef Ctrie_Internal::ICtrie_Node<Hash_Value, Flag_Type, Allocator> CNode;
     typedef Ctrie_Internal::List_Node<Key, Pred, Allocator> LNode;
     typedef Ctrie_Internal::Branch Branch;
     typedef Ctrie_Internal::Tomb_Node<Allocator> TNode;
     typedef Ctrie_Internal::Indirection_Node<Allocator> INode;
-    typedef Ctrie_Internal::RDCSS_Descriptor<Allocator> RDCSSD;
 
     typedef typename LNode::Result Result;
 
@@ -631,7 +602,7 @@ namespace Zeni::Concurrency {
     std::pair<Result, Key> lookup(const Comparable &key) const {
       const Hash_Value hash_value = CHash()(key);
       for (;;) {
-        INode * const root = RDCSS_Read();
+        INode * const root = m_root.load(std::memory_order_acquire);
         const auto[result, found] = ilookup<Comparable, CPred>(root, key, hash_value, 0, nullptr, root->generation);
         if (result != Result::Restart)
           return found ? std::make_pair(Result::Found, found->key) : std::make_pair(Result::Not_Found, Key());
@@ -641,7 +612,7 @@ namespace Zeni::Concurrency {
     std::tuple<Result, Key, Key> insert(const Key &key) {
       const Hash_Value hash_value = Hash()(key);
       for (;;) {
-        INode * const root = RDCSS_Read();
+        INode * const root = m_root.load(std::memory_order_acquire);
         const auto[result, inserted, replaced] = iinsert(root, key, hash_value, 0, nullptr, root->generation);
         if (result != Result::Restart)
           return std::make_tuple(result, inserted ? inserted->key : Key(), replaced ? replaced->key : Key());
@@ -651,39 +622,36 @@ namespace Zeni::Concurrency {
     std::pair<Result, Key> erase(const Key &key) {
       const Hash_Value hash_value = Hash()(key);
       for (;;) {
-        INode * const root = RDCSS_Read();
+        INode * const root = m_root.load(std::memory_order_acquire);
         const auto[result, removed] = ierase(root, key, hash_value, 0, nullptr, root->generation);
         if (result != Result::Restart)
           return std::make_pair(result, removed ? removed->key : Key());
       }
     }
 
-    Snapshot snapshot() const {
-      for (;;) {
-        INode * const root = RDCSS_Read();
-        if (!root->increment_refs()) // For RCSSD
-          continue;
-        const MNode * const expected_main = GCAS_Read(root);
-        if (!expected_main->increment_refs()) { // For RCSSD
-          root->decrement_refs();
-          continue;
-        }
-        //[[maybe_unused]] const auto irefs = root->increment_refs();
-        //assert(irefs);
-        [[maybe_unused]] const auto mrefs = expected_main->increment_refs();
-        assert(mrefs);
-        //INode * const new_inode = new INode(expected_main, new Gen);
+    //Snapshot snapshot() const {
+    //  for (;;) {
+    //    INode * const root = RDCSS_Read();
+    //    if (!root->increment_refs()) // For RCSSD
+    //      continue;
+    //    const MNode * const expected_main = GCAS_Read(root);
+    //    if (!expected_main->increment_refs()) { // For RCSSD
+    //      root->decrement_refs();
+    //      continue;
+    //    }
+    //    [[maybe_unused]] const auto mrefs = expected_main->increment_refs(); // For new INode
+    //    assert(mrefs);
+    //    //INode * const new_inode = new INode(expected_main, new Gen);
 
-        expected_main->increment_refs(); // For returned Snapshot
-        //root->generation->increment_refs(); // Temporarily for new INode
-        INode * const new_inode = new INode(expected_main, new Gen); // For RCSSD
+    //    expected_main->increment_refs(); // For returned Snapshot
+    //    INode * const new_inode = new INode(expected_main, new Gen); // For RCSSD
 
-        if (RDCSS(root, expected_main, new_inode))
-          return std::allocate_shared<Ctrie>(Allocator(), new INode(expected_main, new Gen));
-        else
-          expected_main->decrement_refs();
-      }
-    }
+    //    if (RDCSS(root, expected_main, new_inode))
+    //      return std::allocate_shared<Ctrie>(Allocator(), new INode(expected_main, new Gen));
+    //    else
+    //      expected_main->decrement_refs();
+    //  }
+    //}
 
     void clear() {
       auto other = new INode(CNode::Create(0x0, 0, {}), new Gen);
@@ -702,25 +670,17 @@ namespace Zeni::Concurrency {
       const Gen * const root_gen) const
     {
       for (;;) {
-        auto inode_main = GCAS_Read(inode);
+        const auto inode_main = GCAS_Read(inode);
         if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * const branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (!branch)
             return std::make_pair(Result::Not_Found, nullptr);
           if (const auto inode_next = dynamic_cast<INode *>(branch)) {
-            parent = inode;
-            level += CNode::W;
-            //if (inode_next->generation == root_gen)
-              inode = inode_next;
-            //else {
-            //  const auto updated_cnode = cnode->updated(root_gen);
-            //  if (GCAS(inode, inode_main, updated_cnode))
-            //    inode = dynamic_cast<INode *>(updated_cnode->at(pos));
-            //  else
-            //    return std::make_pair(Result::Restart, nullptr);
-            //}
-            continue;
+            if (deepen(inode, inode_main, level, parent, root_gen, cnode, pos, inode_next))
+              continue;
+            else
+              return std::make_pair(Result::Restart, nullptr);
           }
           else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
             if (CPred()(key, snode->key))
@@ -758,7 +718,7 @@ namespace Zeni::Concurrency {
       const Gen * const root_gen)
     {
       for (;;) {
-        auto inode_main = GCAS_Read(inode);
+        const auto inode_main = GCAS_Read(inode);
         if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
@@ -767,25 +727,17 @@ namespace Zeni::Concurrency {
             const auto new_cnode = cnode->inserted(pos, flag, new_snode);
             if (!new_cnode)
               return std::make_tuple(Result::Restart, nullptr, nullptr);
-            if (GCAS(inode, inode_main, new_cnode))
+            if (GCAS(inode, inode_main, new_cnode, root_gen))
               return std::make_tuple(Result::First_Insertion, new_snode, nullptr);
             else
               return std::make_tuple(Result::Restart, nullptr, nullptr);
           }
           else {
             if (const auto inode_next = dynamic_cast<INode *>(branch)) {
-              parent = inode;
-              level += CNode::W;
-              //if (inode_next->generation == root_gen)
-                inode = inode_next;
-              //else {
-              //  const auto updated_cnode = cnode->updated(root_gen);
-              //  if (GCAS(inode, inode_main, updated_cnode))
-              //    inode = dynamic_cast<INode *>(updated_cnode->at(pos));
-              //  else
-              //    return std::make_tuple(Result::Restart, nullptr, nullptr);
-              //}
-              continue;
+              if (deepen(inode, inode_main, level, parent, root_gen, cnode, pos, inode_next))
+                continue;
+              else
+                return std::make_tuple(Result::Restart, nullptr, nullptr);
             }
             else if (const auto snode = dynamic_cast<SNode *>(branch)) {
               const auto new_snode = new SNode(key);
@@ -793,7 +745,7 @@ namespace Zeni::Concurrency {
                 const auto new_cnode = cnode->updated(pos, flag, new_snode);
                 if (!new_cnode)
                   return std::make_tuple(Result::Restart, nullptr, nullptr);
-                if (GCAS(inode, inode_main, new_cnode))
+                if (GCAS(inode, inode_main, new_cnode, root_gen))
                   return std::make_tuple(Result::Replacing_Insertion, new_snode, snode);
                 else
                   return std::make_tuple(Result::Restart, nullptr, nullptr);
@@ -810,7 +762,7 @@ namespace Zeni::Concurrency {
                   const auto new_cnode = cnode->updated(pos, flag, new INode(CNode::Create(snode, snode_hash, new_snode, hash_value, level + CNode::W, inode->generation), inode->generation));
                   if (!new_cnode)
                     return std::make_tuple(Result::Restart, nullptr, nullptr);
-                  if (GCAS(inode, inode_main, new_cnode))
+                  if (GCAS(inode, inode_main, new_cnode, root_gen))
                     return std::make_tuple(Result::First_Insertion, new_snode, nullptr);
                   else
                     return std::make_tuple(Result::Restart, nullptr, nullptr);
@@ -825,7 +777,7 @@ namespace Zeni::Concurrency {
                   const auto new_cnode = cnode->updated(pos, flag, new INode(new LNode(new_snode, new LNode(snode)), inode->generation));
                   if (!new_cnode)
                     return std::make_tuple(Result::Restart, nullptr, nullptr);
-                  if (GCAS(inode, inode_main, new_cnode))
+                  if (GCAS(inode, inode_main, new_cnode, root_gen))
                     return std::make_tuple(Result::First_Insertion, new_snode, nullptr);
                   else
                     return std::make_tuple(Result::Restart, nullptr, nullptr);
@@ -837,7 +789,7 @@ namespace Zeni::Concurrency {
           }
         }
         else if (const auto tnode = dynamic_cast<const TNode *>(inode_main)) {
-          clean(parent, level - CNode::W);
+          clean(parent, level - CNode::W, root_gen);
           return std::make_tuple(Result::Restart, nullptr, nullptr);
         }
         else if (auto lnode = dynamic_cast<const LNode *>(inode_main)) {
@@ -853,14 +805,14 @@ namespace Zeni::Concurrency {
             const auto new_cnode = CNode::Create(new_snode, hash_value, new INode(lnode, inode->generation), lnode_hash, level, inode->generation);
             if (!new_cnode)
               return std::make_tuple(Result::Restart, nullptr, nullptr);
-            if (GCAS(inode, inode_main, new_cnode))
+            if (GCAS(inode, inode_main, new_cnode, root_gen))
               return std::make_tuple(Result::First_Insertion, new_snode, nullptr);
             else
               return std::make_tuple(Result::Restart, nullptr, nullptr);
           }
           else {
             const auto[result, new_lnode, inserted, replaced] = lnode->updated(key, true);
-            if (GCAS(inode, inode_main, new_lnode))
+            if (GCAS(inode, inode_main, new_lnode, root_gen))
               return std::make_tuple(Result::First_Insertion, inserted, replaced);
             else
               return std::make_tuple(Result::Restart, inserted, replaced);
@@ -878,25 +830,17 @@ namespace Zeni::Concurrency {
       const Gen * const root_gen)
     {
       for (;;) {
-        auto inode_main = GCAS_Read(inode);
+        const auto inode_main = GCAS_Read(inode);
         if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (!branch)
             return std::make_pair(Result::Not_Found, nullptr);
           if (const auto inode_next = dynamic_cast<INode *>(branch)) {
-            parent = inode;
-            level += CNode::W;
-            //if (inode_next->generation == root_gen)
-              inode = inode_next;
-            //else {
-            //  const auto updated_cnode = cnode->updated(root_gen);
-            //  if (GCAS(inode, inode_main, updated_cnode))
-            //    inode = dynamic_cast<INode *>(updated_cnode->at(pos));
-            //  else
-            //    return std::make_pair(Result::Restart, nullptr);
-            //}
-            continue;
+            if (deepen(inode, inode_main, level, parent, root_gen, cnode, pos, inode_next))
+              continue;
+            else
+              return std::make_pair(Result::Restart, nullptr);
           }
           else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
             if (Pred()(key, snode->key)) {
@@ -904,9 +848,9 @@ namespace Zeni::Concurrency {
               if (!new_cnode)
                 return std::make_pair(Result::Restart, nullptr);
               const MNode * new_mainnode = new_cnode->to_contracted(level);
-              if (GCAS(inode, inode_main, new_mainnode)) {
+              if (GCAS(inode, inode_main, new_mainnode, root_gen)) {
                 if (const auto tnode = dynamic_cast<const TNode *>(new_mainnode))
-                  clean_parent(parent, inode, hash_value, level - CNode::W);
+                  clean_parent(parent, inode, hash_value, level - CNode::W, root_gen);
                 return std::make_pair(Result::Last_Removal, snode);
               }
               else
@@ -919,7 +863,7 @@ namespace Zeni::Concurrency {
             abort();
         }
         else if (const auto tnode = dynamic_cast<const TNode *>(inode_main)) {
-          clean(parent, level - CNode::W);
+          clean(parent, level - CNode::W, root_gen);
           return std::make_pair(Result::Restart, nullptr);
         }
         else if (auto lnode = dynamic_cast<const LNode *>(inode_main)) {
@@ -935,7 +879,7 @@ namespace Zeni::Concurrency {
             new_mainnode = new TNode(new_lnode->snode);
             delete new_lnode;
           }
-          if (GCAS(inode, inode_main, new_mainnode))
+          if (GCAS(inode, inode_main, new_mainnode, root_gen))
             return std::make_pair(Result::Last_Removal, removed);
           else
             return std::make_pair(Result::Restart, nullptr);
@@ -945,15 +889,39 @@ namespace Zeni::Concurrency {
       }
     }
 
-    void clean(INode * const inode, const size_t level) const {
+    bool deepen(
+      INode * &inode,
+      const MNode * const inode_main,
+      size_t &level,
+      INode * &parent,
+      const Gen * const root_gen,
+      const CNode * const cnode,
+      const size_t pos,
+      INode * const inode_next)
+    {
+      parent = inode;
+      level += CNode::W;
+      if (inode_next->generation == root_gen)
+        inode = inode_next;
+      else {
+        const auto regenerated_cnode = cnode->regenerated(root_gen);
+        if (GCAS(inode, inode_main, regenerated_cnode, root_gen))
+          inode = dynamic_cast<INode *>(regenerated_cnode->at(pos));
+        else
+          return false;
+      }
+      return true;
+    }
+
+    void clean(INode * const inode, const size_t level, const Gen * const root_gen) const {
       const MNode * inode_main = GCAS_Read(inode);
       if (auto cnode = dynamic_cast<const CNode *>(inode_main)) {
         if (const MNode * const compressed = cnode->to_compressed(level))
-          GCAS(inode, inode_main, compressed);
+          GCAS(inode, inode_main, compressed, root_gen);
       }
     }
 
-    void clean_parent(INode * const parent, INode * const inode, const Hash_Value &hash_value, const size_t level) {
+    void clean_parent(INode * const parent, INode * const inode, const Hash_Value &hash_value, const size_t level, const Gen * const root_gen) {
       do {
         const MNode * parent_main = GCAS_Read(parent);
         if (const CNode * const cnode = dynamic_cast<const CNode *>(parent_main)) {
@@ -970,7 +938,7 @@ namespace Zeni::Concurrency {
                 resurrected->decrement_refs();
                 continue;
               }
-              if (!GCAS(parent, parent_main, new_cnode))
+              if (!GCAS(parent, parent_main, new_cnode, root_gen))
                 continue;
             }
           }
@@ -978,115 +946,75 @@ namespace Zeni::Concurrency {
       } while (false);
     }
 
-    bool GCAS(INode * const inode, const MNode * old_mnode, const MNode * const new_mnode) const {
+    bool GCAS(INode * const inode, const MNode * old_mnode, const MNode * const new_mnode, const Gen * const root_gen) const {
       if (!old_mnode->increment_refs()) {
         delete new_mnode;
         return false;
       }
+      if (!root_gen->increment_refs()) {
+        old_mnode->decrement_refs();
+        delete new_mnode;
+        return false;
+      }
+      new_mnode->generation.store(root_gen, std::memory_order_relaxed);
       new_mnode->prev.store(old_mnode, std::memory_order_relaxed);
       if (CAS_del(inode->main, old_mnode, new_mnode, std::memory_order_release, std::memory_order_relaxed)) {
-        GCAS_Commit(inode, new_mnode);
-        return !new_mnode->prev.load(std::memory_order_relaxed);
+        GCAS_Complete(inode, new_mnode);
+        return MNode::is_marked_success(new_mnode->prev.load(std::memory_order_relaxed));
       }
       else
         return false;
     }
 
-    const MNode * GCAS_Commit(INode * const inode, const MNode * mnode) const {
-      for (;;) {
-        const MoF * prev_mof = mnode->prev.load(std::memory_order_relaxed);
-        INode * const root = RDCSS_Read();
-        if (const MNode * const prev_mnode = dynamic_cast<const MNode *>(prev_mof)) {
-          //if (root->generation == inode->generation && !m_readonly) {
-            if (CAS(mnode->prev, prev_mof, static_cast<const MNode *>(nullptr), std::memory_order_release, std::memory_order_acquire))
-              return mnode;
-          //}
-          //else {
-          //  if (prev_mnode->increment_refs())
-          //    CAS_del(mnode->prev, prev_mof, new FNode(prev_mnode), std::memory_order_release, std::memory_order_acquire);
-          //  mnode = inode->main.load(std::memory_order_acquire);
-          //}
-        }
-        else if (const FNode * const prev_failed_node = dynamic_cast<const FNode *>(prev_mof)) {
-          if (!prev_failed_node->prev->increment_refs())
-            mnode = inode->main.load(std::memory_order_acquire);
-          else {
-            if (CAS(inode->main, mnode, prev_failed_node->prev, std::memory_order_release, std::memory_order_acquire))
-              return prev_failed_node->prev;
-            else
-              mnode = inode->main.load(std::memory_order_acquire);
-          }
-        }
-        else {
-          assert(!prev_mof);
-          return mnode;
-        }
+    const MNode * GCAS_Complete(INode * const inode, const MNode * mnode) const {
+      const MNode * prev_mnode = mnode->prev.load(std::memory_order_relaxed);
+      if (!MNode::ptr_part(prev_mnode))
+        return mnode;
+      const Gen * generation = mnode->generation.load(std::memory_order_relaxed);
+      if (m_root.load(std::memory_order_acquire)->generation == generation) {
+        if (CAS(mnode->prev, prev_mnode, MNode::mark_success(prev_mnode), std::memory_order_release, std::memory_order_acquire))
+          prev_mnode = MNode::mark_success(prev_mnode);
+      }
+      else {
+        if (CAS(mnode->prev, prev_mnode, MNode::mark_failure(prev_mnode), std::memory_order_release, std::memory_order_acquire))
+          prev_mnode = MNode::mark_failure(prev_mnode);
+      }
+      if (generation)
+        CAS_dec(mnode->generation, generation, static_cast<const Gen *>(nullptr), std::memory_order_relaxed, std::memory_order_relaxed);
+      if (MNode::is_marked_success(prev_mnode)) {
+        if (MNode::ptr_part(prev_mnode))
+          CAS_dec(mnode->prev, prev_mnode, reinterpret_cast<const MNode *>(0x1), std::memory_order_relaxed, std::memory_order_relaxed);
+        return mnode;
+      }
+      else {
+        const MNode * prev_mnode_copy = prev_mnode;
+        if (MNode::ptr_part(prev_mnode_copy))
+          CAS_dec(mnode->prev, prev_mnode_copy, reinterpret_cast<const MNode *>(0x2), std::memory_order_relaxed, std::memory_order_relaxed);
+        return prev_mnode;
       }
     }
 
     const MNode * GCAS_Read(INode * const inode) const {
       const MNode * const mnode = inode->main.load(std::memory_order_acquire);
-      const MoF * const prev_mof = mnode->prev.load(std::memory_order_relaxed);
-      if (!prev_mof)
-        return mnode;
-      else
-        return GCAS_Commit(inode, mnode);
-    }
-
-    bool RDCSS(INode * expected_root, const MNode * const expected_mnode, INode * const desired_root) const {
-      Branch * expected_root_branch = expected_root;
-      Branch * rdcss_descriptor = new RDCSSD(expected_mnode, expected_root, desired_root);
-      if (CAS_del(m_root, expected_root_branch, rdcss_descriptor, std::memory_order_release, std::memory_order_relaxed)) {
-        Branch * rdcss_descriptor_copy = rdcss_descriptor;
-        RDCSS_Complete(rdcss_descriptor_copy, static_cast<RDCSSD *>(rdcss_descriptor));
-        return static_cast<RDCSSD *>(rdcss_descriptor)->successful.load(std::memory_order_relaxed);
-      }
-      else
-        return false;
-    }
-
-    void RDCSS_Complete(Branch * &expected_rdcss_descriptor, RDCSSD * const rdcss_descriptor) const {
-      assert(expected_rdcss_descriptor == rdcss_descriptor);
-      if (rdcss_descriptor->expected_inode->main.load(std::memory_order_relaxed) == rdcss_descriptor->expected_mnode) {
-        if (rdcss_descriptor->desired_inode->increment_refs()) {
-          rdcss_descriptor->successful.store(true, std::memory_order_relaxed);
-          if (CAS(m_root, expected_rdcss_descriptor, rdcss_descriptor->desired_inode, std::memory_order_relaxed, std::memory_order_relaxed))
-            expected_rdcss_descriptor = rdcss_descriptor->desired_inode;
-        }
-        else
-          expected_rdcss_descriptor = m_root.load(std::memory_order_relaxed);
-      }
-      else {
-        if (rdcss_descriptor->expected_inode->increment_refs()) {
-          if (CAS(m_root, expected_rdcss_descriptor, rdcss_descriptor->expected_inode, std::memory_order_relaxed, std::memory_order_relaxed))
-            expected_rdcss_descriptor = rdcss_descriptor->expected_inode;
-        }
-        else
-          expected_rdcss_descriptor = m_root.load(std::memory_order_relaxed);
-      }
-    }
-
-    INode * RDCSS_Read() const {
-      Branch * root = m_root.load(std::memory_order_acquire);
-      for (;;) {
-        if (RDCSSD * const rdcss_descriptor = dynamic_cast<RDCSSD *>(root))
-          RDCSS_Complete(root, rdcss_descriptor);
-        else {
-          assert(dynamic_cast<INode *>(root));
-          return dynamic_cast<INode *>(root);
-        }
-      }
+      return GCAS_Complete(inode, mnode);
     }
 
     template <typename VALUE_TYPE, typename DESIRED>
     static bool CAS(std::atomic<VALUE_TYPE *> &atomic_value, VALUE_TYPE * &expected, DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
+      return atomic_value.compare_exchange_strong(expected, desired, success, failure);
+    }
+
+    template <typename VALUE_TYPE, typename DESIRED>
+    static bool CAS_dec(std::atomic<VALUE_TYPE *> &atomic_value, VALUE_TYPE * &expected, DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
       if (atomic_value.compare_exchange_strong(expected, desired, success, failure)) {
-        expected->decrement_refs();
+        const auto pp_expected = ptr_part(expected);
+        pp_expected->decrement_refs();
         return true;
       }
       else {
-        if (desired)
-          desired->decrement_refs();
+        const auto pp_desired = ptr_part(desired);
+        if (pp_desired)
+          pp_desired->decrement_refs();
         return false;
       }
     }
@@ -1094,16 +1022,23 @@ namespace Zeni::Concurrency {
     template <typename VALUE_TYPE, typename DESIRED>
     static bool CAS_del(std::atomic<VALUE_TYPE *> &atomic_value, VALUE_TYPE * &expected, DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
       if (atomic_value.compare_exchange_strong(expected, desired, success, failure)) {
-        expected->decrement_refs();
+        const auto pp_expected = ptr_part(expected);
+        pp_expected->decrement_refs();
         return true;
       }
       else {
-        delete desired;
+        const auto pp_desired = ptr_part(desired);
+        delete pp_desired;
         return false;
       }
     }
 
-    ZENI_CONCURRENCY_CACHE_ALIGN mutable std::atomic<Branch *> m_root = new INode(CNode::Create(0x0, 0, {}), new Gen);
+    template <typename TYPE>
+    static TYPE * ptr_part(TYPE * const ptr) {
+      return reinterpret_cast<TYPE *>(reinterpret_cast<uintptr_t>(ptr) & ~0x3);
+    }
+
+    ZENI_CONCURRENCY_CACHE_ALIGN mutable std::atomic<INode *> m_root = new INode(CNode::Create(0x0, 0, {}), new Gen);
     bool m_readonly = false;
   };
 

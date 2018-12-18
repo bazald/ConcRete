@@ -198,11 +198,11 @@ public:
   void execute() noexcept {
     for (int i = 0; i != 1000; ++i) {
       hash_trie->insert(i);
-      hash_trie->snapshot();
+      //hash_trie->snapshot();
     }
     for (int i = 0; i != 1000; ++i) {
       hash_trie->erase(i);
-      hash_trie->snapshot();
+      //hash_trie->snapshot();
     }
 
     if (num_successors)
