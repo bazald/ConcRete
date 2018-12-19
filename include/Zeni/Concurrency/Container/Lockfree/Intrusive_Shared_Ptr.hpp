@@ -38,9 +38,11 @@ namespace Zeni::Concurrency {
       return refs;
     }
 
-    explicit operator bool() const {
+#ifndef NDEBUG
+    bool check_refs() const {
       return m_refs.load(std::memory_order_relaxed) != 0;
     }
+#endif
 
     mutable std::atomic_uint64_t m_refs = 1;
   };
@@ -56,7 +58,7 @@ namespace Zeni::Concurrency {
 
       ~Lock() {
         assert(std::this_thread::get_id() == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
         if (m_ptr)
           m_ptr->decrement_refs();
       }
@@ -65,7 +67,7 @@ namespace Zeni::Concurrency {
         : m_ptr(rhs.m_ptr)
       {
         assert(rhs.m_thread == m_thread);
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         if (m_ptr)
           m_ptr->increment_refs();
       }
@@ -74,15 +76,15 @@ namespace Zeni::Concurrency {
         : m_ptr(rhs.m_ptr)
       {
         assert(rhs.m_thread == m_thread);
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         rhs.m_ptr = nullptr;
       }
 
       Lock & operator=(const Lock &rhs) {
         assert(std::this_thread::get_id() == m_thread);
         assert(rhs.m_thread == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         Lock lock(rhs);
         std::swap(m_ptr, lock.m_ptr);
         return *this;
@@ -91,8 +93,8 @@ namespace Zeni::Concurrency {
       Lock & operator=(Lock &&rhs) {
         assert(std::this_thread::get_id() == m_thread);
         assert(rhs.m_thread == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         std::swap(m_ptr, rhs.m_ptr);
         return *this;
       }
@@ -117,14 +119,14 @@ namespace Zeni::Concurrency {
       void swap(Lock &rhs) {
         assert(std::this_thread::get_id() == m_thread);
         assert(rhs.m_thread == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         std::swap(m_ptr, rhs.m_ptr);
       }
 
       void reset() {
         assert(std::this_thread::get_id() == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
         if (m_ptr)
           m_ptr->decrement_refs();
         m_ptr = nullptr;
@@ -132,7 +134,7 @@ namespace Zeni::Concurrency {
 
       TYPE * get() const {
         assert(std::this_thread::get_id() == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
         return m_ptr;
       }
 
@@ -153,15 +155,15 @@ namespace Zeni::Concurrency {
 
       explicit operator bool() const {
         assert(std::this_thread::get_id() == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
         return m_ptr;
       }
 
       bool operator==(const Lock &rhs) const {
         assert(std::this_thread::get_id() == m_thread);
         assert(rhs.m_thread == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         if (!m_ptr)
           return !rhs;
         if (!rhs)
@@ -172,8 +174,8 @@ namespace Zeni::Concurrency {
       bool operator!=(const Lock &rhs) const {
         assert(std::this_thread::get_id() == m_thread);
         assert(rhs.m_thread == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         if (!m_ptr)
           return rhs.m_ptr;
         if (!rhs.m_ptr)
@@ -184,8 +186,8 @@ namespace Zeni::Concurrency {
       bool operator<(const Lock &rhs) const {
         assert(std::this_thread::get_id() == m_thread);
         assert(rhs.m_thread == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         if (!m_ptr)
           return rhs.m_ptr;
         if (!rhs.m_ptr)
@@ -196,8 +198,8 @@ namespace Zeni::Concurrency {
       bool operator>(const Lock &rhs) const {
         assert(std::this_thread::get_id() == m_thread);
         assert(rhs.m_thread == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         if (!m_ptr)
           return false;
         if (!rhs.m_ptr)
@@ -208,8 +210,8 @@ namespace Zeni::Concurrency {
       bool operator<=(const Lock &rhs) const {
         assert(std::this_thread::get_id() == m_thread);
         assert(rhs.m_thread == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         if (!m_ptr)
           return true;
         if (!rhs.m_ptr)
@@ -220,8 +222,8 @@ namespace Zeni::Concurrency {
       bool operator>=(const Lock &rhs) const {
         assert(std::this_thread::get_id() == m_thread);
         assert(rhs.m_thread == m_thread);
-        assert(!m_ptr || bool(*m_ptr));
-        assert(!rhs.m_ptr || bool(*rhs.m_ptr));
+        assert(!m_ptr || m_ptr->check_refs());
+        assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         if (!m_ptr)
           return !rhs.m_ptr;
         if (!rhs.m_ptr)
@@ -240,7 +242,8 @@ namespace Zeni::Concurrency {
 
     ~Intrusive_Shared_Ptr() {
       TYPE * const ptr = m_ptr.load(std::memory_order_relaxed);
-      if (ptr && bool(*ptr))
+      assert(ptr->check_refs());
+      if (ptr)
         ptr->decrement_refs();
     }
 
@@ -292,8 +295,8 @@ namespace Zeni::Concurrency {
     }
 
     bool compare_exchange_strong(typename Intrusive_Shared_Ptr<TYPE>::Lock &expected, const typename Intrusive_Shared_Ptr<TYPE>::Lock desired, const std::memory_order succ, const std::memory_order fail) {
-      assert(!expected.m_ptr || bool(*expected.m_ptr));
-      assert(!desired.m_ptr || bool(*desired.m_ptr));
+      assert(!expected.m_ptr || expected.m_ptr->check_refs());
+      assert(!desired.m_ptr || desired.m_ptr->check_refs());
       TYPE * const old_expected = expected.m_ptr;
       if (desired.m_ptr)
         desired.m_ptr->increment_refs();
@@ -337,8 +340,9 @@ namespace Zeni::Concurrency {
 
     void reset() {
       TYPE * old_ptr = m_ptr.load(std::memory_order_relaxed);
+      assert(old_ptr->check_refs());
       if (m_ptr.compare_exchange_strong(old_ptr, nullptr, std::memory_order_relaxed, std::memory_order_relaxed)) {
-        if (old_ptr && bool(*old_ptr))
+        if (old_ptr)
           old_ptr->decrement_refs();
       }
     }

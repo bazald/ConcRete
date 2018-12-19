@@ -184,6 +184,13 @@ void test_Hash_Trie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_
   worker_threads->finish_jobs();
 }
 
+template <typename TYPE, size_t MOD>
+struct Hash_Mod {
+  size_t operator()(const TYPE &value) const {
+    return std::hash<TYPE>()(value); // % MOD;
+  }
+};
+
 class Ctrie_Job : public Zeni::Concurrency::Job {
   Ctrie_Job(const Ctrie_Job &) = delete;
   Ctrie_Job & operator =(const Ctrie_Job &) = delete;
@@ -193,14 +200,14 @@ class Ctrie_Job : public Zeni::Concurrency::Job {
   };
 
 public:
-  Ctrie_Job(const std::shared_ptr<Zeni::Concurrency::Ctrie<int>> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
+  Ctrie_Job(const std::shared_ptr<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint8_t>> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
 
   void execute() noexcept {
-    for (int i = 0; i != 100; ++i) {
+    for (int i = 0; i != 1000; ++i) {
       hash_trie->insert(i);
       hash_trie->snapshot();
     }
-    for (int i = 0; i != 100; ++i) {
+    for (int i = 0; i != 1000; ++i) {
       hash_trie->erase(i);
       hash_trie->snapshot();
     }
@@ -209,13 +216,13 @@ public:
       get_Job_Queue()->give_one(std::make_shared<Ctrie_Job>(hash_trie, num_successors - 1));
   }
 
-  const std::shared_ptr<Zeni::Concurrency::Ctrie<int>> hash_trie;
+  const std::shared_ptr<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint8_t>> hash_trie;
   const size_t num_successors;
 };
 
 void test_Ctrie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
 {
-  const auto hash_trie = std::allocate_shared<Zeni::Concurrency::Ctrie<int>>(Zeni::Concurrency::Ctrie<int>::Allocator());
+  const auto hash_trie = std::allocate_shared<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint8_t>>(Zeni::Concurrency::Ctrie<int>::Allocator());
   for (int i = 0; i != 64; ++i)
     job_queue->give_one(std::make_shared<Ctrie_Job>(hash_trie, 63));
   worker_threads->finish_jobs();
