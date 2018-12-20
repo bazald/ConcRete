@@ -319,7 +319,7 @@ namespace Zeni::Concurrency {
           return new Tomb_Node<ALLOCATOR>(branch);
         }
         else
-          return this->increment_refs() ? this : nullptr;
+          return this;
       }
 
     private:
@@ -554,13 +554,9 @@ namespace Zeni::Concurrency {
             found = old_head->snode;
             if (old_head->next) {
               if (!old_head->next->increment_refs()) {
-                while (new_head) {
-                  auto next = new_head->next;
-                  new_head->next = nullptr;
+                if (new_head)
                   new_head->immediate_deletion();
-                  new_head = next;
-                  return std::make_tuple(Result::Restart, nullptr, nullptr, nullptr);
-                }
+                return std::make_tuple(Result::Restart, nullptr, nullptr, nullptr);
               }
               if (new_head)
                 new_tail->next = old_head->next;
@@ -573,13 +569,9 @@ namespace Zeni::Concurrency {
           }
           else {
             if (!old_head->snode->increment_refs()) {
-              while (new_head) {
-                auto next = new_head->next;
-                new_head->next = nullptr;
+              if (new_head)
                 new_head->immediate_deletion();
-                new_head = next;
-                return std::make_tuple(Result::Restart, nullptr, nullptr, nullptr);
-              }
+              return std::make_tuple(Result::Restart, nullptr, nullptr, nullptr);
             }
             if (new_head)
               new_head = new List_Node(old_head->snode, new_head);
@@ -997,13 +989,17 @@ namespace Zeni::Concurrency {
             return std::make_pair(Result::Failed_Removal, nullptr);
           }
           MNode * new_mainnode = new_lnode;
+          bool gcas_result;
           if (!new_lnode->next) {
             [[maybe_unused]] const int64_t refs = new_lnode->snode->increment_refs();
             assert(refs);
             new_mainnode = new TNode(new_lnode->snode);
             new_lnode->decrement_refs();
+            gcas_result = GCAS_del(inode, inode_main, new_mainnode);
           }
-          if (GCAS_dec(inode, inode_main, new_mainnode))
+          else
+            gcas_result = GCAS_dec(inode, inode_main, new_mainnode);
+          if (gcas_result)
             return std::make_pair(Result::Last_Removal, removed);
           else
             return std::make_pair(Result::Restart, nullptr);
@@ -1063,7 +1059,6 @@ namespace Zeni::Concurrency {
               if (!resurrected)
                 continue;
               const auto new_cnode = cnode->updated(pos, flag, resurrected)->to_contracted(level);
-              resurrected->decrement_refs();
               if (!new_cnode)
                 continue;
               if (!GCAS_del(parent, parent_main, new_cnode))

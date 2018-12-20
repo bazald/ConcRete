@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 {
 #ifdef _MSC_VER
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-  //_CrtSetBreakAlloc(201);
+  //_CrtSetBreakAlloc(169);
 #endif
 
   if (argc > 2 || (argc == 2 && !std::strcmp(argv[1], "--help"))) {
@@ -79,8 +79,8 @@ int main(int argc, char **argv)
   else
     g_num_cores = std::thread::hardware_concurrency();
 
-  const auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(g_num_cores);
-  const auto job_queue = worker_threads->get_main_Job_Queue();
+  auto worker_threads = Zeni::Concurrency::Worker_Threads::Create(g_num_cores);
+  auto job_queue = worker_threads->get_main_Job_Queue();
 
   //std::cerr << "Job Performance: " << measure<>::execution(test_Job_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
@@ -93,6 +93,9 @@ int main(int argc, char **argv)
   //std::cerr << "Reclamation Performance: " << measure<>::execution(test_Reclamation_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
   //std::cerr << "SmarterRec Performance: " << measure<>::execution(test_SmarterRec_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+
+  job_queue.reset();
+  worker_threads.reset();
 
   return 0;
 }
@@ -187,7 +190,7 @@ void test_Hash_Trie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_
 template <typename TYPE, size_t MOD>
 struct Hash_Mod {
   size_t operator()(const TYPE &value) const {
-    return std::hash<TYPE>()(value) % MOD;
+    return std::hash<TYPE>()(value); // % MOD;
   }
 };
 
@@ -200,7 +203,7 @@ class Ctrie_Job : public Zeni::Concurrency::Job {
   };
 
 public:
-  Ctrie_Job(const std::shared_ptr<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint8_t>> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
+  Ctrie_Job(const std::shared_ptr<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint32_t>> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
 
   void execute() noexcept {
     for (int i = 0; i != 100; ++i) {
@@ -216,15 +219,15 @@ public:
       get_Job_Queue()->give_one(std::make_shared<Ctrie_Job>(hash_trie, num_successors - 1));
   }
 
-  const std::shared_ptr<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint8_t>> hash_trie;
+  const std::shared_ptr<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint32_t>> hash_trie;
   const size_t num_successors;
 };
 
 void test_Ctrie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
 {
-  const auto hash_trie = std::allocate_shared<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint8_t>>(Zeni::Concurrency::Ctrie<int>::Allocator());
-  for (int i = 0; i != 16; ++i)
-    job_queue->give_one(std::make_shared<Ctrie_Job>(hash_trie, 15));
+  const auto hash_trie = std::allocate_shared<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint32_t>>(Zeni::Concurrency::Ctrie<int>::Allocator());
+  for (int i = 0; i != 64; ++i)
+    job_queue->give_one(std::make_shared<Ctrie_Job>(hash_trie, 63));
   worker_threads->finish_jobs();
 }
 
