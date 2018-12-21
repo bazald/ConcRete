@@ -634,7 +634,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template inserted<index>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -653,7 +653,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template inserted_ip<index>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -672,7 +672,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template inserted_2<index1, index2>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -691,7 +691,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template inserted_2_ip<index1, index2>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -710,7 +710,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template inserted_2<index1, index2>(key, value);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -729,7 +729,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template inserted_2_ip<index1, index2>(key, value);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -790,7 +790,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template erased<index>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -809,7 +809,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template erased_ip<index>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -828,7 +828,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template erased_2<index1, index2>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -847,7 +847,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template erased_2_ip<index1, index2>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -866,7 +866,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template erased_2<index1, index2>(key, value);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -885,7 +885,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template erased_2_ip<index1, index2>(key, value);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -946,7 +946,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template moved<src, dest>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -972,7 +972,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template moved_2<index, src, dest>(key, value);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -998,7 +998,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template inserted_ip_xp<if_possible, regardless>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -1024,7 +1024,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template inserted_2_ip_xp<index, if_possible, regardless>(key, value);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -1050,7 +1050,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template erased_ip_xp<if_possible, regardless>(key);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -1076,7 +1076,7 @@ namespace Zeni::Concurrency {
       for (;;) {
         const auto tuple_value = super_root->template erased_2_ip_xp<index, if_possible, regardless>(key, value);
         if (std::get<1>(tuple_value))
-          std::get<1>(tuple_value)->increment_refs();
+          std::get<1>(tuple_value)->try_increment_refs();
         if (super_root)
           super_root->decrement_refs();
         if (CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
@@ -1108,7 +1108,7 @@ namespace Zeni::Concurrency {
     }
 
     void enforce_snapshot(const Hash_Trie_Super_Node * &super_root) const {
-      while (super_root && !super_root->increment_refs())
+      while (super_root && !super_root->try_increment_refs())
         super_root = m_super_root.load(std::memory_order_acquire);
     }
 

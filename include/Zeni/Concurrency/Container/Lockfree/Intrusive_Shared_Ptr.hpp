@@ -28,7 +28,7 @@ namespace Zeni::Concurrency {
       return prev;
     }
 
-    int64_t increment_refs() const {
+    int64_t try_increment_refs() const {
       uint64_t refs = m_refs.load(std::memory_order_relaxed);
       while (refs) {
         assert(refs != uint64_t(-1));
@@ -69,7 +69,7 @@ namespace Zeni::Concurrency {
         assert(rhs.m_thread == m_thread);
         assert(!rhs.m_ptr || rhs.m_ptr->check_refs());
         if (m_ptr)
-          m_ptr->increment_refs();
+          m_ptr->try_increment_refs();
       }
 
       Lock(Lock &&rhs)
@@ -102,13 +102,13 @@ namespace Zeni::Concurrency {
       explicit Lock(const Intrusive_Shared_Ptr<TYPE> &rhs) {
         do {
           m_ptr = rhs.m_ptr.load(std::memory_order_seq_cst);
-        } while (m_ptr && !m_ptr->increment_refs());
+        } while (m_ptr && !m_ptr->try_increment_refs());
       }
 
       explicit Lock(const Intrusive_Shared_Ptr<TYPE> &rhs, const std::memory_order order) {
         do {
           m_ptr = rhs.m_ptr.load(order);
-        } while (m_ptr && !m_ptr->increment_refs());
+        } while (m_ptr && !m_ptr->try_increment_refs());
       }
 
       Lock(TYPE * const ptr)
@@ -253,13 +253,13 @@ namespace Zeni::Concurrency {
     }
 
     Intrusive_Shared_Ptr(const typename Intrusive_Shared_Ptr<TYPE>::Lock &rhs)
-      : m_ptr(rhs.m_ptr && rhs.m_ptr->increment_refs() ? rhs.m_ptr : nullptr)
+      : m_ptr(rhs.m_ptr && rhs.m_ptr->try_increment_refs() ? rhs.m_ptr : nullptr)
     {
     }
 
     Intrusive_Shared_Ptr(const Intrusive_Shared_Ptr<TYPE> &rhs) {
       TYPE * const rhs_ptr = rhs.m_ptr.load(std::memory_order_relaxed);
-      if (rhs_ptr && rhs_ptr->increment_refs())
+      if (rhs_ptr && rhs_ptr->try_increment_refs())
         m_ptr.store(rhs_ptr);
     }
 
@@ -299,10 +299,10 @@ namespace Zeni::Concurrency {
       assert(!desired.m_ptr || desired.m_ptr->check_refs());
       TYPE * const old_expected = expected.m_ptr;
       if (desired.m_ptr)
-        desired.m_ptr->increment_refs();
+        desired.m_ptr->try_increment_refs();
       bool success = m_ptr.compare_exchange_strong(expected.m_ptr, desired.m_ptr, succ, fail);
       if (!success) {
-        if (expected.m_ptr && !expected.m_ptr->increment_refs()) {
+        if (expected.m_ptr && !expected.m_ptr->try_increment_refs()) {
           expected.m_ptr = nullptr;
           expected = load(fail);
         }

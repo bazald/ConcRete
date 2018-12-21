@@ -34,7 +34,7 @@ namespace Zeni::Concurrency {
         assert(rhs.m_thread == m_thread);
         assert(!rhs.m_ptr || bool(*rhs.m_ptr));
         if (m_ptr)
-          m_ptr->increment_refs();
+          m_ptr->try_increment_refs();
       }
 
       Lock(Lock &&rhs)
@@ -66,12 +66,12 @@ namespace Zeni::Concurrency {
 
       explicit Lock(const Shared_Ptr<TYPE> &rhs) {
         Node * const rhs_ptr = rhs.m_ptr.load(std::memory_order_seq_cst);
-        m_ptr = rhs_ptr && rhs_ptr->increment_refs() ? rhs_ptr : nullptr;
+        m_ptr = rhs_ptr && rhs_ptr->try_increment_refs() ? rhs_ptr : nullptr;
       }
 
       explicit Lock(const Shared_Ptr<TYPE> &rhs, const std::memory_order order) {
         Node * const rhs_ptr = rhs.m_ptr.load(order);
-        m_ptr = rhs_ptr && rhs_ptr->increment_refs() ? rhs_ptr : nullptr;
+        m_ptr = rhs_ptr && rhs_ptr->try_increment_refs() ? rhs_ptr : nullptr;
       }
 
       Lock(TYPE * const ptr)
@@ -215,13 +215,13 @@ namespace Zeni::Concurrency {
     }
 
     Shared_Ptr(const typename Shared_Ptr<TYPE>::Lock &rhs)
-      : m_ptr(rhs.m_ptr && rhs.m_ptr->increment_refs() ? rhs.m_ptr : nullptr)
+      : m_ptr(rhs.m_ptr && rhs.m_ptr->try_increment_refs() ? rhs.m_ptr : nullptr)
     {
     }
 
     Shared_Ptr(const Shared_Ptr<TYPE> &rhs) {
       Node * const rhs_ptr = rhs.m_ptr.load(std::memory_order_relaxed);
-      if (rhs_ptr && rhs_ptr->increment_refs())
+      if (rhs_ptr && rhs_ptr->try_increment_refs())
         m_ptr.store(rhs_ptr);
     }
 
@@ -261,10 +261,10 @@ namespace Zeni::Concurrency {
       assert(!desired.m_ptr || bool(*desired.m_ptr));
       Node * const old_expected = expected.m_ptr;
       if (desired.m_ptr)
-        desired.m_ptr->increment_refs();
+        desired.m_ptr->try_increment_refs();
       bool success = m_ptr.compare_exchange_strong(expected.m_ptr, desired.m_ptr, succ, fail);
       if (!success) {
-        if (expected.m_ptr && !expected.m_ptr->increment_refs())
+        if (expected.m_ptr && !expected.m_ptr->try_increment_refs())
           expected.m_ptr = nullptr;
         if (desired.m_ptr)
           desired.m_ptr->decrement_refs();
@@ -331,7 +331,7 @@ namespace Zeni::Concurrency {
         Reclamation_Stacks::push(this);
       }
 
-      bool increment_refs() {
+      bool try_increment_refs() {
         uint64_t refs = m_refs.load(std::memory_order_relaxed);
         while (refs) {
           assert(refs != uint64_t(-1));
