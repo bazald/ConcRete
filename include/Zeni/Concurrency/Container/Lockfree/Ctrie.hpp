@@ -361,10 +361,15 @@ namespace Zeni::Concurrency {
       {
       }
 
-      void on_final_decrement() override {
-        Main_Node<ALLOCATOR>::on_final_decrement();
+      ~Ctrie_Node() {
         for (auto branch : m_branches)
           branch->decrement_refs();
+      }
+
+      void on_final_decrement() override {
+        Main_Node<ALLOCATOR>::on_final_decrement();
+        //for (auto branch : m_branches)
+        //  branch->decrement_refs();
       }
 
       size_t get_hamming_value() const override {
@@ -810,10 +815,7 @@ namespace Zeni::Concurrency {
       const Hash_Value hash_value = Hash()(key);
       for (;;) {
         INode * const root = Read_Root();
-        if (!root->try_increment_refs())
-          continue;
         const auto[result, inserted, replaced] = iinsert(root, key, hash_value, 0, nullptr, root->generation);
-        root->decrement_refs();
         if (result != Result::Restart)
           return std::make_tuple(result, inserted ? inserted->key : Key(), replaced ? replaced->key : Key());
       }
@@ -823,10 +825,7 @@ namespace Zeni::Concurrency {
       const Hash_Value hash_value = Hash()(key);
       for (;;) {
         INode * const root = Read_Root();
-        if (!root->try_increment_refs())
-          continue;
         const auto[result, removed] = ierase(root, key, hash_value, 0, nullptr, root->generation);
-        root->decrement_refs();
         if (result != Result::Restart)
           return std::make_pair(result, removed ? removed->key : Key());
       }
@@ -982,21 +981,13 @@ namespace Zeni::Concurrency {
             else if (const auto snode = dynamic_cast<SNode *>(branch)) {
               const auto new_snode = new SNode(key);
               if (Pred()(snode->key, key)) {
-                if (inode->try_increment_refs()) {
-                  const auto new_cnode = cnode->updated(pos, flag, new_snode);
-                  if (new_cnode) {
-                    if (GCAS_del(inode, inode_main, new_cnode)) {
-                      inode->decrement_refs();
-                      return std::make_tuple(Result::Replacing_Insertion, new_snode, snode);
-                    }
-                  }
-                  else
-                    delete new_cnode;
-                  inode->decrement_refs();
-                }
+                const auto new_cnode = cnode->updated(pos, flag, new_snode);
+                if (!new_cnode)
+                  return std::make_tuple(Result::Restart, nullptr, nullptr);
+                if (GCAS_del(inode, inode_main, new_cnode))
+                  return std::make_tuple(Result::Replacing_Insertion, new_snode, snode);
                 else
-                  delete new_snode;
-                return std::make_tuple(Result::Restart, nullptr, nullptr);
+                  return std::make_tuple(Result::Restart, nullptr, nullptr);
               }
               else {
                 const Hash_Value snode_hash = Hash()(snode->key);
@@ -1096,26 +1087,19 @@ namespace Zeni::Concurrency {
           }
           else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
             if (Pred()(key, snode->key)) {
-              if (inode->try_increment_refs()) {
-                const CNode * new_cnode = cnode->erased(pos, flag);
-                if (!new_cnode) {
-                  inode->decrement_refs();
-                  return std::make_pair(Result::Restart, nullptr);
-                }
-                const MNode * new_mainnode = new_cnode->to_contracted(level);
-                if (!new_mainnode) {
-                  inode->decrement_refs();
-                  return std::make_pair(Result::Restart, nullptr);
-                }
-                if (GCAS_del(inode, inode_main, new_mainnode)) {
-                  if (const auto tnode = dynamic_cast<const TNode *>(new_mainnode))
-                    clean_parent(parent, inode, hash_value, level - CNode::W);
-                  inode->decrement_refs();
-                  return std::make_pair(Result::Last_Removal, snode);
-                }
-                inode->decrement_refs();
+              const CNode * new_cnode = cnode->erased(pos, flag);
+              if (!new_cnode)
+                return std::make_pair(Result::Restart, nullptr);
+              const MNode * new_mainnode = new_cnode->to_contracted(level);
+              if (!new_mainnode)
+                return std::make_pair(Result::Restart, nullptr);
+              if (GCAS_del(inode, inode_main, new_mainnode)) {
+                if (const auto tnode = dynamic_cast<const TNode *>(new_mainnode))
+                  clean_parent(parent, inode, hash_value, level - CNode::W);
+                return std::make_pair(Result::Last_Removal, snode);
               }
-              return std::make_pair(Result::Restart, nullptr);
+              else
+                return std::make_pair(Result::Restart, nullptr);
             }
             else
               return std::make_pair(Result::Not_Found, nullptr);
@@ -1171,41 +1155,29 @@ namespace Zeni::Concurrency {
 #endif
       parent = inode;
       level += CNode::W;
-      if (inode_next->generation == root_gen) {
+      if (inode_next->generation == root_gen)
         inode = inode_next;
-        return true;
-      }
       else {
-        if (inode->try_increment_refs()) {
-          const auto regenerated_cnode = cnode->regenerated(this, root_gen);
-          if (regenerated_cnode) {
-            if (GCAS_del(inode, inode_main, regenerated_cnode)) {
-              inode->decrement_refs();
-              return false;
-              //inode = dynamic_cast<INode *>(regenerated_cnode->at(pos));
-              //return true;
-            }
-          }
-          inode->decrement_refs();
-        }
-        return false;
+        const auto regenerated_cnode = cnode->regenerated(this, root_gen);
+        if (!regenerated_cnode)
+          return false;
+        if (GCAS_del(inode, inode_main, regenerated_cnode))
+          inode = dynamic_cast<INode *>(regenerated_cnode->at(pos));
+        else
+          return false;
       }
+      return true;
     }
 
     void clean(INode * const inode, const size_t level) const {
-      if (inode->try_increment_refs()) {
-        const auto inode_main = GCAS_Read(inode);
-        if (auto cnode = dynamic_cast<const CNode *>(inode_main)) {
-          if (const MNode * const compressed = cnode->to_compressed(level))
-            GCAS_del(inode, inode_main, compressed);
-        }
-        inode->decrement_refs();
+      const auto inode_main = GCAS_Read(inode);
+      if (auto cnode = dynamic_cast<const CNode *>(inode_main)) {
+        if (const MNode * const compressed = cnode->to_compressed(level))
+          GCAS_del(inode, inode_main, compressed);
       }
     }
 
     void clean_parent(INode * const parent, INode * const inode, const Hash_Value &hash_value, const size_t level) {
-      if (!parent->try_increment_refs())
-        return;
       do {
         const auto parent_main = GCAS_Read(parent);
         if (const CNode * const cnode = dynamic_cast<const CNode *>(parent_main)) {
@@ -1214,13 +1186,10 @@ namespace Zeni::Concurrency {
           if (branch == inode) {
             const auto inode_main = GCAS_Read(inode);
             if (const TNode * const tnode = dynamic_cast<const TNode *>(inode_main)) {
-              Branch * const resurrected = tnode->branch;
-              if (!resurrected->try_increment_refs())
+              Branch * const resurrected = inode->resurrect();
+              if (!resurrected)
                 continue;
-              const CNode * const updated = cnode->updated(pos, flag, resurrected);
-              if (!updated)
-                continue;
-              const auto new_cnode = updated->to_contracted(level);
+              const auto new_cnode = cnode->updated(pos, flag, resurrected)->to_contracted(level);
               if (!new_cnode)
                 continue;
               if (!GCAS_del(parent, parent_main, new_cnode))
@@ -1229,7 +1198,6 @@ namespace Zeni::Concurrency {
           }
         }
       } while (false);
-      parent->decrement_refs();
     }
 
     bool GCAS_dec(INode * const inode, const MNode * old_mnode, const MNode * const new_mnode) const {
