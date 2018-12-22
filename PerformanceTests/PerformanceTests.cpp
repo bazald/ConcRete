@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 
   //std::cerr << "Memory Performance: " << measure<>::execution(test_Memory_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  //std::cerr << "Hash Trie Performance: " << measure<>::execution(test_Hash_Trie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  std::cerr << "Hash Trie Performance: " << measure<>::execution(test_Hash_Trie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
   std::cerr << "Ctrie Performance: " << measure<>::execution(test_Ctrie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
@@ -166,10 +166,17 @@ public:
   Hash_Trie_Job(const std::shared_ptr<Zeni::Concurrency::Hash_Trie<int>> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
 
   void execute() noexcept {
-    for (int i = 0; i != 1000; ++i)
-      hash_trie->insert(i);
-    for (int i = 0; i != 1000; ++i)
-      hash_trie->erase(i);
+    int sum = 0;
+    for (int i = 0; i != 1000; ++i) {
+      const auto [result, snapshot, inserted, replaced] = hash_trie->insert(i);
+      for (const auto i : snapshot)
+        sum += i;
+    }
+    for (int i = 0; i != 1000; ++i) {
+      const auto [result, snapshot, erased] = hash_trie->erase(i);
+      for (const auto i : snapshot)
+        sum -= i;
+    }
 
     if (num_successors)
       get_Job_Queue()->give_one(std::make_shared<Hash_Trie_Job>(hash_trie, num_successors - 1));
@@ -182,8 +189,8 @@ public:
 void test_Hash_Trie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
 {
   const auto hash_trie = std::make_shared<Zeni::Concurrency::Hash_Trie<int>>();
-  for (int i = 0; i != 64; ++i)
-    job_queue->give_one(std::make_shared<Hash_Trie_Job>(hash_trie, 63));
+  for (int i = 0; i != 192; ++i)
+    job_queue->give_one(std::make_shared<Hash_Trie_Job>(hash_trie, 0));
   worker_threads->finish_jobs();
 }
 
@@ -206,13 +213,18 @@ public:
   Ctrie_Job(const std::shared_ptr<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint32_t>> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
 
   void execute() noexcept {
-    for (int i = 0; i != 100; ++i) {
+    int sum = 0;
+    for (int i = 0; i != 1000; ++i) {
       hash_trie->insert(i);
-      hash_trie->snapshot();
+      const auto snapshot = hash_trie->snapshot();
+      for (const auto j : *snapshot)
+        sum += j;
     }
-    for (int i = 0; i != 100; ++i) {
+    for (int i = 0; i != 1000; ++i) {
       hash_trie->erase(i);
-      hash_trie->snapshot();
+      const auto snapshot = hash_trie->snapshot();
+      for (const auto j : *snapshot)
+        sum -= j;
     }
 
     if (num_successors)
@@ -226,8 +238,8 @@ public:
 void test_Ctrie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
 {
   const auto hash_trie = std::allocate_shared<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint32_t>>(Zeni::Concurrency::Ctrie<int>::Allocator());
-  for (int i = 0; i != 64; ++i)
-    job_queue->give_one(std::make_shared<Ctrie_Job>(hash_trie, 63));
+  for (int i = 0; i != 192; ++i)
+    job_queue->give_one(std::make_shared<Ctrie_Job>(hash_trie, 0));
   worker_threads->finish_jobs();
 }
 

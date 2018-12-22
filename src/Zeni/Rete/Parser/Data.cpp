@@ -2,6 +2,7 @@
 
 #include "Zeni/Rete/Internal/Token_Alpha.hpp"
 #include "Zeni/Rete/Internal/Token_Beta.hpp"
+#include "Zeni/Rete/Parser/PEG.hpp"
 #include "Zeni/Rete/Network.hpp"
 #include "Zeni/Rete/Node_Filter_1.hpp"
 #include "Zeni/Rete/Node_Filter_2.hpp"
@@ -609,8 +610,13 @@ namespace Zeni::Rete::PEG {
       }
 
       void operator()(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> rete_action, const std::shared_ptr<const Node_Action::Data> action_data) const override {
-        for (const auto filename : m_filenames)
-          parser->parse_file(network, job_queue, filename, true);
+        try {
+          for (const auto filename : m_filenames)
+            parser->parse_file(network, job_queue, filename, true);
+        }
+        catch (const PEG::input_error &)
+        {
+        }
       }
 
     private:

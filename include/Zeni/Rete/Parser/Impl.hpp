@@ -1,8 +1,8 @@
 #ifndef ZENI_RETE_PARSER_IMPL_HPP
 #define ZENI_RETE_PARSER_IMPL_HPP
 
-#include "Actions_Impl.hpp"
 #include "Data.hpp"
+#include "Actions_Impl.hpp"
 #include "PEG.hpp"
 #include "../Parser.hpp"
 

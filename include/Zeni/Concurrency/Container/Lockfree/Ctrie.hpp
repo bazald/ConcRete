@@ -67,7 +67,17 @@ namespace Zeni::Concurrency {
     };
 
     template <typename ALLOCATOR>
-    struct Main_Node : public Early_Decrement_Propagation<ALLOCATOR> {
+    struct Node : public Early_Decrement_Propagation<ALLOCATOR> {
+    private:
+      Node(const Node &) = delete;
+      Node & operator=(const Node &) = delete;
+
+    public:
+      Node() = default;
+    };
+
+    template <typename ALLOCATOR>
+    struct Main_Node : public Node<ALLOCATOR> {
     private:
       Main_Node(const Main_Node &) = delete;
       Main_Node & operator=(const Main_Node &) = delete;
@@ -106,7 +116,7 @@ namespace Zeni::Concurrency {
     };
 
     template <typename ALLOCATOR>
-    struct Branch : public Early_Decrement_Propagation<ALLOCATOR> {
+    struct Branch : public Node<ALLOCATOR> {
     private:
       Branch(const Branch &) = delete;
       Branch & operator=(const Branch &) = delete;
@@ -281,7 +291,7 @@ namespace Zeni::Concurrency {
 
       virtual const ICtrie_Node * erased(const size_t pos, const FLAG_TYPE flag) const = 0;
 
-      virtual const ICtrie_Node * regenerated(Ctrie<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR> * const ctrie, const Generation<ALLOCATOR> * const new_generation) const = 0;
+      virtual const ICtrie_Node * regenerated(const Ctrie<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR> * const ctrie, const Generation<ALLOCATOR> * const new_generation) const = 0;
 
       const Main_Node<ALLOCATOR> * to_compressed(const size_t level) const {
         bool at_least_one = false;
@@ -446,7 +456,7 @@ namespace Zeni::Concurrency {
         return ICtrie_Node<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR>::Create(this->get_bmp() & ~flag, hamming_value - 1, new_branches);
       }
 
-      const ICtrie_Node<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR> * regenerated(Ctrie<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR> * const ctrie, const Generation<typename ALLOCATOR::Unaligned::Allocator> * const new_generation) const override {
+      const ICtrie_Node<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR> * regenerated(const Ctrie<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR> * const ctrie, const Generation<typename ALLOCATOR::Unaligned::Allocator> * const new_generation) const override {
         std::array<Branch<ALLOCATOR> *, hamming<FLAG_TYPE>()> new_branches;
         if (hamming_value) {
           std::memcpy(new_branches.data(), m_branches.data(), hamming_value * sizeof(Branch<ALLOCATOR> *));
@@ -614,6 +624,7 @@ namespace Zeni::Concurrency {
     typedef FLAG_TYPE Flag_Type;
 
     typedef Ctrie_Internal::Generation<Allocator> Gen;
+    typedef Ctrie_Internal::Node<Allocator> Node;
     typedef Ctrie_Internal::Main_Node<Allocator> MNode;
     typedef Ctrie_Internal::Singleton_Node<Key, Allocator> SNode;
     typedef Ctrie_Internal::ICtrie_Node<Key, Hash, Pred, Flag_Type, Allocator> CNode;
@@ -627,132 +638,141 @@ namespace Zeni::Concurrency {
 
     typedef std::shared_ptr<const Ctrie<Key, Hash, Pred, Flag_Type, Allocator>> Snapshot;
 
-    //class const_iterator {
-    //  struct Level {
-    //    const MNode * mnode = nullptr;
-    //    size_t pos = -1;
+    class const_iterator {
+      struct Level {
+        const Node * node = nullptr;
+        size_t pos = -1;
 
-    //    bool operator==(const Level &rhs) const {
-    //      return mnode == rhs.mnode && pos == rhs.pos;
-    //    }
-    //    bool operator!=(const Level &rhs) const {
-    //      return mnode != rhs.mnode || pos != rhs.pos;
-    //    }
-    //  };
+        bool operator==(const Level &rhs) const {
+          return node == rhs.node && pos == rhs.pos;
+        }
+        bool operator!=(const Level &rhs) const {
+          return node != rhs.node || pos != rhs.pos;
+        }
+      };
 
-    //public:
-    //  typedef std::forward_iterator_tag iterator_category;
-    //  typedef const Key value_type;
-    //  typedef value_type & reference;
+    public:
+      typedef std::forward_iterator_tag iterator_category;
+      typedef const Key value_type;
+      typedef value_type & reference;
 
-    //  const_iterator() = default;
+      const_iterator() = default;
 
-    //  const_iterator(const MNode * root)
-    //    : m_root(root)
-    //  {
-    //    for (;;) {
-    //      if (const auto cnode = dynamic_cast<const CNode *>(root)) {
-    //        assert(cnode->get_hamming_value() != 0);
-    //        if (cnode->get_hamming_value() != 1)
-    //          m_level_stack.push({ cnode, size_t(1) });
-    //        const auto inode_next = cnode->at(0);
-    //        if (const auto inode_next = dynamic_cast<INode *>(branch))
-    //          root = cnode->at(0);
-    //      }
-    //      else if (const auto lnode = dynamic_cast<const LNode *>(root)) {
-    //        if (lnode->next)
-    //          m_level_stack.push({ lnode->next, size_t(-1) });
-    //        m_level_stack.push({ lnode->snode, size_t(-1) });
-    //        break;
-    //      }
-    //      else if (const auto snode = dynamic_cast<const SNode *>(root)) {
-    //        m_level_stack.push({ snode, size_t(-1) });
-    //        break;
-    //      }
-    //      else
-    //        break;
-    //    }
-    //  }
+      const_iterator(const Ctrie * const snapshot, const Node * root)
+        : m_snapshot(snapshot)
+      {
+        for (;;) {
+          if (const auto inode = dynamic_cast<const INode *>(root))
+            root = m_snapshot->GCAS_Read(inode);
+          else if (const auto cnode = dynamic_cast<const CNode *>(root)) {
+            if (cnode->get_hamming_value() == 0)
+              break;
+            if (cnode->get_hamming_value() != 1)
+              m_level_stack.push({ cnode, size_t(1) });
+            root = cnode->at(0);
+          }
+          else if (const auto lnode = dynamic_cast<const LNode *>(root)) {
+            if (lnode->next)
+              m_level_stack.push({ lnode->next, size_t(-1) });
+            m_level_stack.push({ lnode->snode, size_t(-1) });
+            break;
+          }
+          else if (const auto snode = dynamic_cast<const SNode *>(root)) {
+            m_level_stack.push({ snode, size_t(-1) });
+            break;
+          }
+          else if (const auto tnode = dynamic_cast<const TNode *>(root))
+            root = tnode->branch;
+          else
+            break;
+        }
+      }
 
-    //  reference operator*() const {
-    //    return static_cast<const SNode *>(m_level_stack.top().mnode)->key;
-    //  }
+      reference operator*() const {
+        return static_cast<const SNode *>(m_level_stack.top().node)->key;
+      }
 
-    //  const_iterator next() const {
-    //    return ++const_iterator(*this);
-    //  }
+      const_iterator next() const {
+        return ++const_iterator(*this);
+      }
 
-    //  const_iterator & operator++() {
-    //    m_level_stack.pop();
-    //    while (!m_level_stack.empty()) {
-    //      const auto top = m_level_stack.top();
-    //      m_level_stack.pop();
-    //      if (const auto cnode = dynamic_cast<const CNode *>(top.mnode)) {
-    //        if (top.pos + 1 != cnode->get_hamming_value())
-    //          m_level_stack.push({ cnode, top.pos + 1 });
-    //        const auto mnode_next = cnode->at(top.pos);
-    //        if (const auto snode_next = dynamic_cast<const SNode *>(mnode_next)) {
-    //          m_level_stack.push({ snode_next, size_t(0) });
-    //          break;
-    //        }
-    //        else
-    //          m_level_stack.push({ mnode_next, size_t(0) });
-    //      }
-    //      else if (const auto lnode = dynamic_cast<const LNode *>(top.mnode)) {
-    //        if (lnode->next)
-    //          m_level_stack.push({ lnode->next, size_t(-1) });
-    //        m_level_stack.push({ lnode->snode, size_t(-1) });
-    //        break;
-    //      }
-    //      else if (const auto snode = dynamic_cast<const SNode *>(top.mnode)) {
-    //        abort();
-    //      }
-    //      else
-    //        abort();
-    //    }
-    //    return *this;
-    //  }
+      const_iterator & operator++() {
+        m_level_stack.pop();
+        while (!m_level_stack.empty()) {
+          const auto top = m_level_stack.top();
+          m_level_stack.pop();
+          if (const auto cnode = dynamic_cast<const CNode *>(top.node)) {
+            if (top.pos + 1 != cnode->get_hamming_value())
+              m_level_stack.push({ cnode, top.pos + 1 });
+            const auto branch = cnode->at(top.pos);
+            if (const auto inode = dynamic_cast<const INode *>(branch))
+              m_level_stack.push({ m_snapshot->GCAS_Read(inode), size_t(0) });
+            else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
+              m_level_stack.push({ snode, size_t(-1) });
+              break;
+            }
+            else
+              abort();
+          }
+          else if (const auto lnode = dynamic_cast<const LNode *>(top.node)) {
+            if (lnode->next)
+              m_level_stack.push({ lnode->next, size_t(-1) });
+            m_level_stack.push({ lnode->snode, size_t(-1) });
+            break;
+          }
+          else if (const auto tnode = dynamic_cast<const TNode *>(top.node)) {
+            m_level_stack.push({ dynamic_cast<const SNode *>(tnode->branch), size_t(-1) });
+            break;
+          }
+          else if (const auto snode = dynamic_cast<const SNode *>(top.node)) {
+            abort();
+          }
+          else
+            abort();
+        }
+        return *this;
+      }
 
-    //  const_iterator operator++(int) {
-    //    const_iterator rv(*this);
-    //    ++*this;
-    //    return rv;
-    //  }
+      const_iterator operator++(int) {
+        const_iterator rv(*this);
+        ++*this;
+        return rv;
+      }
 
-    //  bool operator==(const const_iterator &rhs) const {
-    //    return m_level_stack == rhs.m_level_stack;
-    //  }
-    //  bool operator!=(const const_iterator &rhs) const {
-    //    return m_level_stack != rhs.m_level_stack;
-    //  }
+      bool operator==(const const_iterator &rhs) const {
+        return m_level_stack == rhs.m_level_stack;
+      }
+      bool operator!=(const const_iterator &rhs) const {
+        return m_level_stack != rhs.m_level_stack;
+      }
 
-    //private:
-    //  Intrusive_Shared_Ptr<const MNode> m_root;
-    //  std::stack<Level> m_level_stack;
-    //};
+    private:
+      const Ctrie * m_snapshot;
+      std::stack<Level> m_level_stack;
+    };
 
-    //const_iterator cbegin() const {
-    //  if (!m_readonly)
-    //    throw std::runtime_error("Illegal attempt to initialize an iterator for a live (non-snapshot) Ctrie!")
-    //  for (;;) {
-    //    INode * const root = Read_Root();
-    //    const auto inode_main = GCAS_Read(root);
-    //    if (inode_main->try_increment_refs())
-    //      return const_iterator(inode_main);
-    //  }
-    //}
+    const_iterator cbegin() const {
+      if (!m_readonly)
+        throw std::runtime_error("Illegal attempt to initialize an iterator for a live (non-snapshot) Ctrie!");
+      for (;;) {
+        INode * const root = Read_Root();
+        const auto inode_main = GCAS_Read(root);
+        if (inode_main->try_increment_refs())
+          return const_iterator(this, inode_main);
+      }
+    }
 
-    //const_iterator cend() const {
-    //  return const_iterator();
-    //}
+    const_iterator cend() const {
+      return const_iterator();
+    }
 
-    //const_iterator begin() const {
-    //  return cbegin();
-    //}
+    const_iterator begin() const {
+      return cbegin();
+    }
 
-    //const_iterator end() const {
-    //  return cend();
-    //}
+    const_iterator end() const {
+      return cend();
+    }
 
     Ctrie() = default;
 
@@ -768,37 +788,37 @@ namespace Zeni::Concurrency {
         branch->decrement_refs();
     }
 
-    //bool empty() const {
-    //  for (;;) {
-    //    INode * const root = Read_Root();
-    //    const auto inode_main = GCAS_Read(root);
-    //    if (inode_main) {
-    //      if (const auto cnode = dynamic_cast<const CNode *>(inode_main))
-    //        return cnode->get_hamming_value() == 0;
-    //      else
-    //        return false;
-    //    }
-    //  }
-    //}
+    bool empty() const {
+      for (;;) {
+        INode * const root = Read_Root();
+        const auto inode_main = GCAS_Read(root);
+        if (inode_main) {
+          if (const auto cnode = dynamic_cast<const CNode *>(inode_main))
+            return cnode->get_hamming_value() == 0;
+          else
+            return false;
+        }
+      }
+    }
 
-    //size_t size() const {
-    //  size_t sz = 0;
-    //  for ([[maybe_unused]] auto &value : *this)
-    //    ++sz;
-    //  return sz;
-    //}
+    size_t size() const {
+      size_t sz = 0;
+      for ([[maybe_unused]] auto &value : *this)
+        ++sz;
+      return sz;
+    }
 
-    //bool size_one() const {
-    //  auto it = cbegin();
-    //  const auto iend = cend();
-    //  if (it != iend)
-    //    return ++it == iend;
-    //  return false;
-    //}
+    bool size_one() const {
+      auto it = cbegin();
+      const auto iend = cend();
+      if (it != iend)
+        return ++it == iend;
+      return false;
+    }
 
-    //bool size_zero() const {
-    //  return cbegin() == cend();
-    //}
+    bool size_zero() const {
+      return cbegin() == cend();
+    }
 
     template <typename Comparable, typename CHash = Hash, typename CPred = Pred>
     std::pair<Result, Key> lookup(const Comparable &key) const {
@@ -898,7 +918,7 @@ namespace Zeni::Concurrency {
     template <typename Comparable, typename CPred>
     std::pair<Result, const SNode *> ilookup(
       INode * inode,
-      const Key &key,
+      const Comparable &key,
       const Hash_Value &hash_value,
       size_t level,
       INode * parent,
@@ -1148,7 +1168,7 @@ namespace Zeni::Concurrency {
       const Gen * const root_gen,
       const CNode * const cnode,
       const size_t pos,
-      INode * const inode_next)
+      INode * const inode_next) const
     {
 #ifndef NDEBUG
       [[maybe_unused]] const INode * const old_parent = parent;
@@ -1254,9 +1274,9 @@ namespace Zeni::Concurrency {
     }
 
   public:
-    const MNode * GCAS_Read(INode * const inode) const {
+    const MNode * GCAS_Read(const INode * const inode) const {
       for (;;) {
-        const MNode * const mnode = GCAS_Complete(inode, INode::ptr_part(inode->main.load(std::memory_order_acquire)));
+        const MNode * const mnode = GCAS_Complete(const_cast<INode *>(inode), INode::ptr_part(inode->main.load(std::memory_order_acquire)));
         if (mnode)
           return mnode;
       }

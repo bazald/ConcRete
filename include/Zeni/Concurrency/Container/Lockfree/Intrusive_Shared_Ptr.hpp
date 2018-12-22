@@ -242,7 +242,7 @@ namespace Zeni::Concurrency {
 
     ~Intrusive_Shared_Ptr() {
       TYPE * const ptr = m_ptr.load(std::memory_order_relaxed);
-      assert(ptr->check_refs());
+      assert(!ptr || ptr->check_refs());
       if (ptr)
         ptr->decrement_refs();
     }

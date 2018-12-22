@@ -158,13 +158,13 @@ namespace Zeni::Rete {
   }
 
   std::shared_ptr<Node_Action> Network::get_rule(const std::string &name) const {
-    const auto [found, snapshot] = m_rules.lookup(name);
+    const auto [result, found] = m_rules.lookup(name);
     return found;
   }
 
   std::set<std::string> Network::get_rule_names() const {
     std::set<std::string> rv;
-    for (auto rule : m_rules.snapshot())
+    for (auto rule : *m_rules.snapshot())
       rv.emplace(rule->get_name());
     return rv;
   }
@@ -214,7 +214,7 @@ namespace Zeni::Rete {
   }
 
   void Network::excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action) {
-    for (auto rule : m_rules.snapshot())
+    for (auto rule : *m_rules.snapshot())
       excise_rule(job_queue, rule->get_name(), user_action);
   }
 
@@ -390,7 +390,7 @@ namespace Zeni::Rete {
     for(;;) {
       oss.str("");
       oss << prefix << genatom();
-      const auto [found, snapshot] = m_rules.lookup(oss.str());
+      const auto [result, found] = m_rules.lookup(oss.str());
       if (!found)
         break;
     }
@@ -398,7 +398,7 @@ namespace Zeni::Rete {
   }
 
   std::shared_ptr<Node_Action> Network::unname_rule(const std::string &name, const bool user_action) {
-    const auto[result, snapshot, erased] = m_rules.erase(std::make_shared<Node_Action>(name));
+    const auto[result, erased] = m_rules.erase(std::make_shared<Node_Action>(name));
 
     if (result == Rule_Trie::Result::Failed_Removal)
       return nullptr;
@@ -449,7 +449,7 @@ namespace Zeni::Rete {
   }
 
   void Network::source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_action) {
-    const auto[result, snapshot, inserted, replaced] = m_rules.insert(action);
+    const auto[result, inserted, replaced] = m_rules.insert(action);
 
     if (user_action && m_printed_output != Printed_Output::None) {
       if (replaced)

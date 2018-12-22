@@ -1,7 +1,6 @@
 #ifndef ZENI_RETE_NETWORK_HPP
 #define ZENI_RETE_NETWORK_HPP
 
-#include "Zeni/Concurrency/Container/Hash_Trie.hpp"
 #include "Zeni/Concurrency/Job_Queue.hpp"
 #include "Zeni/Concurrency/Recipient.hpp"
 #include "Node.hpp"
@@ -157,7 +156,7 @@ namespace Zeni::Rete {
 
     Filter_Layer_0_Trie m_filter_layer_0_trie;
 
-    typedef Concurrency::Hash_Trie<std::shared_ptr<Node_Action>, Node_Action::Hash_By_Name, Node_Action::Compare_By_Name_Eq> Rule_Trie;
+    typedef Concurrency::Ctrie<std::shared_ptr<Node_Action>, Node_Action::Hash_By_Name, Node_Action::Compare_By_Name_Eq> Rule_Trie;
     Rule_Trie m_rules;
 
     Concurrency::Intrusive_Shared_Ptr<Genatom> m_genatom = new Genatom();
