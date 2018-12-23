@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 {
 #ifdef _MSC_VER
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-  //_CrtSetBreakAlloc(4479);
+  //_CrtSetBreakAlloc(18481);
 #endif
 
   if (argc > 2 || (argc == 2 && !std::strcmp(argv[1], "--help"))) {
@@ -29,8 +29,8 @@ int main(int argc, char **argv)
   else
     g_num_cores = std::thread::hardware_concurrency();
 
-  const auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::Normal, nullptr);
-  const auto parser = Zeni::Rete::Parser::Create();
+  auto network = Zeni::Rete::Network::Create(Zeni::Rete::Network::Printed_Output::Normal, nullptr);
+  auto parser = Zeni::Rete::Parser::Create();
 
   while (!network->get()->is_exit_requested() && std::cin) {
     std::cout << "ConcRete$ ";
@@ -47,6 +47,8 @@ int main(int argc, char **argv)
   }
 
   network->get()->set_worker_threads(Zeni::Concurrency::Worker_Threads::Create(g_num_cores));
+  parser.reset();
+  network.reset();
 
   return 0;
 }
