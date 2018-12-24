@@ -13,7 +13,7 @@ namespace Zeni::Concurrency {
     Reclamation_Stack(const Reclamation_Stack &) = delete;
     Reclamation_Stack & operator=(const Reclamation_Stack &) = delete;
 
-    ZENI_CONCURRENCY_LINKAGE Reclamation_Stack() = default;
+    ZENI_CONCURRENCY_LINKAGE Reclamation_Stack() noexcept;
 
     ZENI_CONCURRENCY_LINKAGE ~Reclamation_Stack() noexcept;
 
@@ -34,11 +34,15 @@ namespace Zeni::Concurrency {
 
     ZENI_CONCURRENCY_LINKAGE static void reclaim() noexcept;
 
+    ZENI_CONCURRENCY_LINKAGE static void final_reclaim() noexcept;
+
   private:
     const Node * m_head = nullptr;
     const Node * m_head2 = nullptr;
     const Node * m_head3 = nullptr;
     //ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
+    bool m_middestruction = false;
+    bool m_destroyed = false;
   };
 
 }
