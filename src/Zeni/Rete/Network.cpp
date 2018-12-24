@@ -163,8 +163,9 @@ namespace Zeni::Rete {
   }
 
   std::set<std::string> Network::get_rule_names() const {
+    const auto rules = m_rules.snapshot();
     std::set<std::string> rv;
-    for (auto rule : *m_rules.snapshot())
+    for (auto rule : *rules)
       rv.emplace(rule->get_name());
     return rv;
   }
@@ -214,7 +215,8 @@ namespace Zeni::Rete {
   }
 
   void Network::excise_all(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool user_action) {
-    for (auto rule : *m_rules.snapshot())
+    const auto rules = m_rules.snapshot();
+    for (auto rule : *rules)
       excise_rule(job_queue, rule->get_name(), user_action);
   }
 
@@ -381,7 +383,7 @@ namespace Zeni::Rete {
   void Network::excise_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::string &name, const bool user_action) {
     auto erased = unname_rule(name, user_action);
 
-    if(erased)
+    if (erased)
       erased->Destroy(shared_from_this(), job_queue);
   }
 
@@ -457,7 +459,7 @@ namespace Zeni::Rete {
       std::cerr << '*';
     }
 
-    if(replaced)
+    if (replaced)
       replaced->Destroy(shared_from_this(), job_queue);
   }
 

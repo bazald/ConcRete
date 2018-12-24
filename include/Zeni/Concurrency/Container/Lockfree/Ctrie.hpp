@@ -11,7 +11,7 @@
 
 namespace Zeni::Concurrency {
 
-  template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t, typename ALLOCATOR = Jemallocator<char>>
+  template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t, typename ALLOCATOR = Mallocator<char>>
   class Ctrie;
 
   namespace Ctrie_Internal {
@@ -658,8 +658,8 @@ namespace Zeni::Concurrency {
 
       const_iterator() = default;
 
-      const_iterator(const Ctrie * const snapshot, const Node * root)
-        : m_snapshot(snapshot)
+      const_iterator(INode * const root_inode, const Node * root)
+        : m_snapshot(std::make_shared<Ctrie>(root_inode))
       {
         for (;;) {
           if (const auto inode = dynamic_cast<const INode *>(root))
@@ -747,7 +747,7 @@ namespace Zeni::Concurrency {
       }
 
     private:
-      const Ctrie * m_snapshot;
+      std::shared_ptr<Ctrie> m_snapshot;
       std::stack<Level> m_level_stack;
     };
 
@@ -756,9 +756,10 @@ namespace Zeni::Concurrency {
         throw std::runtime_error("Illegal attempt to initialize an iterator for a live (non-snapshot) Ctrie!");
       for (;;) {
         INode * const root = Read_Root();
-        const auto inode_main = GCAS_Read(root);
-        if (inode_main->try_increment_refs())
-          return const_iterator(this, inode_main);
+        if (root->try_increment_refs()) {
+          const auto inode_main = GCAS_Read(root);
+          return const_iterator(root, inode_main);
+        }
       }
     }
 
