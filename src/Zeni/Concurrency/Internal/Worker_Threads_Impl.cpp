@@ -130,7 +130,7 @@ namespace Zeni::Concurrency {
         m_epoch = epoch_part;
       }
 
-      if (m_num_jobs_in_queues.load(std::memory_order_relaxed) <= 0) {
+      if (Reclamation_Stack::empty() && m_num_jobs_in_queues.load(std::memory_order_relaxed) <= 0) {
         // Termination condition OR simply out of jobs
         int16_t awake_workers = m_awake_workers.load(std::memory_order_relaxed);
         if (awake_workers == 0)
@@ -250,17 +250,19 @@ namespace Zeni::Concurrency {
         m_epoch = epoch_part;
       }
 
-      const int64_t num_jobs_in_queues = m_num_jobs_in_queues.load(std::memory_order_relaxed);
-      if (num_jobs_in_queues < 0)
-        break; // Termination condition
-      if (num_jobs_in_queues == 0) {
-        // Must be a worker thread, so safe to continue
-        if (is_awake) {
-          is_awake = false;
-          m_awake_workers.fetch_sub(1, std::memory_order_relaxed);
-          std::this_thread::yield();
+      if (Reclamation_Stack::empty()) {
+        const int64_t num_jobs_in_queues = m_num_jobs_in_queues.load(std::memory_order_relaxed);
+        if (num_jobs_in_queues < 0)
+          break; // Termination condition
+        if (num_jobs_in_queues == 0) {
+          // Must be a worker thread, so safe to continue
+          if (is_awake) {
+            is_awake = false;
+            m_awake_workers.fetch_sub(1, std::memory_order_relaxed);
+            std::this_thread::yield();
+          }
+          continue;
         }
-        continue;
       }
 
       for(;;) {

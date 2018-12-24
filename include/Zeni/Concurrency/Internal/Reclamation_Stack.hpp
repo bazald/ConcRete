@@ -26,9 +26,13 @@ namespace Zeni::Concurrency {
 
     ZENI_CONCURRENCY_LINKAGE static Reclamation_Stack & get() noexcept;
 
-    //int64_t size() const {
-    //  return m_size.load(std::memory_order_relaxed);
-    //}
+    static bool empty() {
+      return get().m_size == 0;
+    }
+
+    static int64_t size() {
+      return get().m_size;
+    }
 
     ZENI_CONCURRENCY_LINKAGE static void push(const Node * const node) noexcept;
 
@@ -40,7 +44,9 @@ namespace Zeni::Concurrency {
     const Node * m_head = nullptr;
     const Node * m_head2 = nullptr;
     const Node * m_head3 = nullptr;
-    //ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_size = 0;
+
+    int64_t m_size = 0;
+
     bool m_middestruction = false;
     bool m_destroyed = false;
   };

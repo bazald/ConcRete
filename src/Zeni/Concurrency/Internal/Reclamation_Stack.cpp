@@ -32,6 +32,8 @@ namespace Zeni::Concurrency {
 
     assert(!reclamation_stack.m_destroyed);
 
+    ++reclamation_stack.m_size;
+
     node->reclamation_next = reclamation_stack.m_head;
     reclamation_stack.m_head = node;
   }
@@ -48,6 +50,8 @@ namespace Zeni::Concurrency {
       const Node * const head = reclamation_stack.m_head3;
       reclamation_stack.m_head3 = head->reclamation_next;
       delete head;
+
+      --reclamation_stack.m_size;
     }
 
     reclamation_stack.m_head3 = reclamation_stack.m_head2;
@@ -67,18 +71,24 @@ namespace Zeni::Concurrency {
       const Node * const head = reclamation_stack.m_head3;
       reclamation_stack.m_head3 = head->reclamation_next;
       delete head;
+
+      --reclamation_stack.m_size;
     }
 
     while (reclamation_stack.m_head2) {
       const Node * const head = reclamation_stack.m_head2;
       reclamation_stack.m_head2 = head->reclamation_next;
       delete head;
+
+      --reclamation_stack.m_size;
     }
 
     while (reclamation_stack.m_head) {
       const Node * const head = reclamation_stack.m_head;
       reclamation_stack.m_head = head->reclamation_next;
       delete head;
+
+      --reclamation_stack.m_size;
     }
 
     assert(!reclamation_stack.m_head);
