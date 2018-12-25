@@ -11,7 +11,7 @@
 
 namespace Zeni::Concurrency {
 
-  template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t, typename ALLOCATOR = Mallocator<char>>
+  template <typename KEY, typename HASH = std::hash<KEY>, typename PRED = std::equal_to<KEY>, typename FLAG_TYPE = uint32_t, typename ALLOCATOR = Jemallocator<char>>
   class Ctrie;
 
   namespace Ctrie_Internal {
@@ -674,6 +674,7 @@ namespace Zeni::Concurrency {
           else if (const auto lnode = dynamic_cast<const LNode *>(root)) {
             if (lnode->next)
               m_level_stack.push({ lnode->next, size_t(-1) });
+            assert(lnode->snode);
             m_level_stack.push({ lnode->snode, size_t(-1) });
             break;
           }
@@ -684,7 +685,7 @@ namespace Zeni::Concurrency {
           else if (const auto tnode = dynamic_cast<const TNode *>(root))
             root = tnode->branch;
           else
-            break;
+            abort();
         }
       }
 
@@ -705,8 +706,11 @@ namespace Zeni::Concurrency {
             if (top.pos + 1 != cnode->get_hamming_value())
               m_level_stack.push({ cnode, top.pos + 1 });
             const auto branch = cnode->at(top.pos);
-            if (const auto inode = dynamic_cast<const INode *>(branch))
-              m_level_stack.push({ m_snapshot->GCAS_Read(inode), size_t(0) });
+            if (const auto inode = dynamic_cast<const INode *>(branch)) {
+              const MNode * const mnode = m_snapshot->GCAS_Read(inode);
+              assert(mnode);
+              m_level_stack.push({ mnode, size_t(0) });
+            }
             else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
               m_level_stack.push({ snode, size_t(-1) });
               break;
@@ -717,10 +721,12 @@ namespace Zeni::Concurrency {
           else if (const auto lnode = dynamic_cast<const LNode *>(top.node)) {
             if (lnode->next)
               m_level_stack.push({ lnode->next, size_t(-1) });
+            assert(lnode->snode);
             m_level_stack.push({ lnode->snode, size_t(-1) });
             break;
           }
           else if (const auto tnode = dynamic_cast<const TNode *>(top.node)) {
+            assert(tnode->branch);
             m_level_stack.push({ dynamic_cast<const SNode *>(tnode->branch), size_t(-1) });
             break;
           }
@@ -1000,8 +1006,8 @@ namespace Zeni::Concurrency {
                 return std::make_tuple(Result::Restart, nullptr, nullptr);
             }
             else if (const auto snode = dynamic_cast<SNode *>(branch)) {
-              const auto new_snode = new SNode(key);
               if (Pred()(snode->key, key)) {
+                const auto new_snode = new SNode(key);
                 const auto new_cnode = cnode->updated(pos, flag, new_snode);
                 if (!new_cnode)
                   return std::make_tuple(Result::Restart, nullptr, nullptr);
@@ -1019,6 +1025,7 @@ namespace Zeni::Concurrency {
                     snode->decrement_refs();
                     return std::make_tuple(Result::Restart, nullptr, nullptr);
                   }
+                  const auto new_snode = new SNode(key);
                   const auto new_cnode = cnode->updated(pos, flag, new INode(CNode::Create(snode, snode_hash, new_snode, hash_value, level + CNode::W, inode->generation), inode->generation));
                   if (!new_cnode)
                     return std::make_tuple(Result::Restart, nullptr, nullptr);
@@ -1034,6 +1041,7 @@ namespace Zeni::Concurrency {
                     snode->decrement_refs();
                     return std::make_tuple(Result::Restart, nullptr, nullptr);
                   }
+                  const auto new_snode = new SNode(key);
                   const auto new_cnode = cnode->updated(pos, flag, new INode(new LNode(new_snode, new LNode(snode)), inode->generation));
                   if (!new_cnode)
                     return std::make_tuple(Result::Restart, nullptr, nullptr);
@@ -1148,6 +1156,8 @@ namespace Zeni::Concurrency {
             new_mainnode = new TNode(new_lnode->snode);
             new_lnode->decrement_refs();
             gcas_result = GCAS_del(inode, inode_main, new_mainnode);
+            if (gcas_result)
+              clean_parent(parent, inode, hash_value, level - CNode::W);
           }
           else
             gcas_result = GCAS_dec(inode, inode_main, new_mainnode);
