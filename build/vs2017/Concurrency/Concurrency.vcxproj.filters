@@ -210,6 +210,12 @@
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\DWCAS.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ctrie_NS.hpp">
+      <Filter>Header Files\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Ctrie_NS.hpp">
+      <Filter>Header Files\Container\Lockfree</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\Zeni\Concurrency\Internal\Job_Queue_Impl.cpp">
