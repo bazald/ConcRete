@@ -491,6 +491,10 @@ namespace Zeni::Concurrency {
         mnode->decrement_refs();
     }
 
+    constexpr bool valid() const {
+      return true;
+    }
+
     bool empty() const {
       return !m_root.load(std::memory_order_acquire);
     }

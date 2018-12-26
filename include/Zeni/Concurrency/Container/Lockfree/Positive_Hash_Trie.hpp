@@ -59,19 +59,68 @@ namespace Zeni::Concurrency {
       Singleton_Node & operator=(const Singleton_Node &) = delete;
 
       template <typename KEY_TYPE>
-      Singleton_Node(KEY_TYPE &&key_, const int64_t count_) : key(std::forward<KEY_TYPE>(key_)), count(count_) {}
+      Singleton_Node(KEY_TYPE &&key_, const int64_t count_) : key(std::forward<KEY_TYPE>(key_)), m_count(count_) {}
 
     public:
-      template <typename KEY_TYPE>
-      Singleton_Node(KEY_TYPE &&key_) : key(std::forward<KEY_TYPE>(key_)), count(1) {}
+      enum class Result {
+        First_Insertion,      ///< Count increases to 1 and object inserted into trie
+        Last_Removal,         ///< Count decrements to 0 and object removed from trie
+        Extra_Insertion,      ///< Count increases past 1
+        Canceling_Removal,    ///< Count decreases to a natural number,
+        Failed_Removal,       ///< Object was not present in the trie and could not be removed
+        Successful_Move,      ///< Snode was successfully moved from one trie to the other
+        Failed_Insertion,     ///< Snode could not be moved into the trie due to preexisting Snode with the same key
+        Not_Present,          ///< Object was not present in the trie and update was impossible
+        Last_Removal_IP,      ///< If-present removal succeeded and decrements to 0
+        Extra_Insertion_IP,   ///< If-present insertion succeeded and increments past 1
+        Canceling_Removal_IP  ///< If-present removal succeeded and decrements to a natural number
+      };
 
-      const Singleton_Node * updated_count(const bool insertion) const {
-        const int64_t new_count = count + (insertion ? 1 : -1);
-        return new_count != 0 ? new Singleton_Node(key, new_count) : nullptr;
+      template <typename KEY_TYPE>
+      Singleton_Node(KEY_TYPE &&key_) : key(std::forward<KEY_TYPE>(key_)), m_count(1) {}
+
+      std::pair<Result, const Singleton_Node *> updated_count(const bool insertion) const {
+        int64_t count = m_count.load();
+        for (;;) {
+          if (!count) {
+            if (insertion)
+              return std::make_pair(Result::Extra_Insertion, new Singleton_Node(key, 2));
+            else
+              return std::make_pair(Result::Last_Removal, nullptr);
+          }
+          const int64_t new_count = count + (insertion ? 1 : -1);
+          if (m_count.compare_exchange_weak(count, new_count, std::memory_order_relaxed, std::memory_order_relaxed)) {
+            if (new_count)
+              return std::make_pair(insertion ? Result::Extra_Insertion : Result::Canceling_Removal, this);
+            else
+              return std::make_pair(Result::Last_Removal, nullptr);
+          }
+        }
+      }
+
+      std::pair<Result, const Singleton_Node *> updated_count_ip(const bool insertion) const {
+        int64_t count = m_count.load();
+        for (;;) {
+          if (!count) {
+            if (insertion)
+              return std::make_pair(Result::Extra_Insertion_IP, new Singleton_Node(key, 2));
+            else
+              return std::make_pair(Result::Last_Removal_IP, nullptr);
+          }
+          const int64_t new_count = count + (insertion ? 1 : -1);
+          if (m_count.compare_exchange_weak(count, new_count, std::memory_order_relaxed, std::memory_order_relaxed)) {
+            if (new_count)
+              return std::make_pair(insertion ? Result::Extra_Insertion_IP : Result::Canceling_Removal_IP, this);
+            else
+              return std::make_pair(Result::Last_Removal_IP, nullptr);
+          }
+        }
       }
 
       const KEY key;
-      const int64_t count;
+
+    private:
+      mutable ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_count;
     };
 
     template <typename HASH_VALUE_TYPE, typename FLAG_TYPE>
@@ -264,19 +313,7 @@ namespace Zeni::Concurrency {
       List_Node & operator=(const List_Node &) = delete;
 
     public:
-      enum class Result {
-        First_Insertion,      ///< Count increases to 1 and object inserted into trie
-        Last_Removal,         ///< Count decrements to 0 and object removed from trie
-        Extra_Insertion,      ///< Count increases past 1
-        Canceling_Removal,    ///< Count decreases to a natural number,
-        Failed_Removal,       ///< Object was not present in the trie and could not be removed
-        Successful_Move,      ///< Snode was successfully moved from one trie to the other
-        Failed_Insertion,     ///< Snode could not be moved into the trie due to preexisting Snode with the same key
-        Not_Present,          ///< Object was not present in the trie and update was impossible
-        Last_Removal_IP,      ///< If-present removal succeeded and decrements to 0
-        Extra_Insertion_IP,   ///< If-present insertion succeeded and increments past 1
-        Canceling_Removal_IP  ///< If-present removal succeeded and decrements to a natural number
-      };
+      typedef typename Singleton_Node<KEY>::Result Result;
 
       List_Node(const Singleton_Node<KEY> * const snode_, List_Node * const next_ = nullptr) : snode(snode_), next(next_) {}
 
@@ -322,9 +359,13 @@ namespace Zeni::Concurrency {
           }
         }
         if (found) {
-          const auto new_snode = found->updated_count(insertion);
-          const Result result = !new_snode ? Result::Last_Removal : insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
-          return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode ? new_snode : found);
+          const auto [result, new_snode] = found->updated_count(insertion);
+          if (found == new_snode) {
+            delete new_head;
+            return std::make_tuple(result, reinterpret_cast<List_Node *>(0x1), found);
+          }
+          else
+            return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode ? new_snode : found);
         }
         else {
           if (insertion) {
@@ -366,9 +407,13 @@ namespace Zeni::Concurrency {
           }
         }
         if (found) {
-          const auto new_snode = found->updated_count(insertion);
-          const Result result = !new_snode ? Result::Last_Removal_IP : insertion ? Result::Extra_Insertion_IP : Result::Canceling_Removal_IP;
-          return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode ? new_snode : found);
+          const auto [result, new_snode] = found->updated_count_ip(insertion);
+          if (found == new_snode) {
+            delete new_head;
+            return std::make_tuple(result, reinterpret_cast<List_Node *>(0x1), found);
+          }
+          else
+            return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode ? new_snode : found);
         }
         else
           return std::make_tuple(Result::Not_Present, new_head, nullptr);
@@ -546,6 +591,7 @@ namespace Zeni::Concurrency {
     };
 
     const_iterator cbegin() const {
+      assert(valid());
       return const_iterator(isnapshot());
     }
 
@@ -583,15 +629,22 @@ namespace Zeni::Concurrency {
 
     ~Positive_Hash_Trie() {
       const MNode * const mnode = m_root.load(std::memory_order_acquire);
-      if (mnode)
+      if (mnode && uintptr_t(mnode) != 0x1)
         mnode->decrement_refs();
     }
 
+    bool valid() const {
+      const MNode * const mnode = m_root.load(std::memory_order_acquire);
+      return uintptr_t(mnode) != 0x1;
+    }
+
     bool empty() const {
-      return !m_root.load(std::memory_order_acquire);
+      const MNode * const mnode = m_root.load(std::memory_order_acquire);
+      return mnode && uintptr_t(mnode) != 0x1;
     }
 
     size_t size() const {
+      assert(valid());
       size_t sz = 0;
       for ([[maybe_unused]] auto &value : *this)
         ++sz;
@@ -599,6 +652,7 @@ namespace Zeni::Concurrency {
     }
 
     bool size_one() const {
+      assert(valid());
       auto it = cbegin();
       const auto iend = cend();
       if (it != iend)
@@ -607,11 +661,13 @@ namespace Zeni::Concurrency {
     }
 
     bool size_zero() const {
+      assert(valid());
       return cbegin() == cend();
     }
 
     template <typename Comparable, typename CHash = Hash, typename CPred = Pred>
     std::pair<Key, Snapshot> lookup(const Comparable &key) const {
+      assert(valid());
       const Hash_Value hash_value = CHash()(key);
       const MNode * const root = isnapshot();
       const SNode * const found = ilookup<Comparable, CPred>(root, key, hash_value, 0);
@@ -623,6 +679,7 @@ namespace Zeni::Concurrency {
 
     template <typename Comparable, typename CHash = Hash, typename CPred = Pred>
     Key looked_up(const Comparable &key) const {
+      assert(valid());
       const Hash_Value hash_value = CHash()(key);
       const MNode * const root = m_root.load(std::memory_order_acquire);
       const SNode * const found = ilookup<Comparable, CPred>(root, key, hash_value, 0);
@@ -633,46 +690,57 @@ namespace Zeni::Concurrency {
     }
 
     std::tuple<Result, Snapshot, Key> insert(const Key &key) {
+      assert(valid());
       return insert_or_erase(key, true);
     }
 
     std::tuple<Result, Snapshot, Key> insert_ip(const Key &key) {
+      assert(valid());
       return insert_or_erase_ip(key, true);
     }
 
     std::tuple<Result, Snapshot, Key> inserted(const Key &key) const {
+      assert(valid());
       return inserted_or_erased(key, true);
     }
 
     std::tuple<Result, Snapshot, Key> inserted_ip(const Key &key) const {
+      assert(valid());
       return inserted_or_erased_ip(key, true);
     }
 
     std::tuple<Result, Snapshot, const SNode *> inserted(const SNode * const external_snode) const {
+      assert(valid());
       return inserted_or_erased(external_snode, true);
     }
 
     std::tuple<Result, Snapshot, Key> erase(const Key &key) {
+      assert(valid());
       return insert_or_erase(key, false);
     }
 
     std::tuple<Result, Snapshot, Key> erase_ip(const Key &key) {
+      assert(valid());
       return insert_or_erase_ip(key, false);
     }
 
     std::tuple<Result, Snapshot, Key> erased(const Key &key) const {
+      assert(valid());
       return inserted_or_erased(key, false);
     }
 
     std::tuple<Result, Snapshot, Key> erased_ip(const Key &key) const {
+      assert(valid());
       return inserted_or_erased_ip(key, false);
     }
 
     std::tuple<Result, Snapshot, const SNode *> erased(const SNode * const external_snode) const {
+      assert(valid());
       return inserted_or_erased(external_snode, false);
     }
 
     Snapshot snapshot() const {
+      assert(valid());
       return isnapshot();
     }
 
@@ -682,11 +750,11 @@ namespace Zeni::Concurrency {
       const MNode * root = isnapshot();
       for (;;) {
         const auto[result, new_root, inserted] = iinsert(root, key, hash_value, insertion, 0);
-        if (new_root)
+        if (new_root && uintptr_t(new_root) != 0x1)
           new_root->try_increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
+        if (uintptr_t(new_root) == 0x1 || CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
           return std::make_tuple(result, Snapshot(new_root), inserted ? inserted->key : Key());
         else {
           if (new_root)
@@ -701,11 +769,11 @@ namespace Zeni::Concurrency {
       const MNode * root = isnapshot();
       for (;;) {
         const auto[result, new_root, inserted] = iinsert_ip(root, key, hash_value, insertion, 0);
-        if (new_root)
+        if (new_root && uintptr_t(new_root) != 0x1)
           new_root->try_increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
+        if (uintptr_t(new_root) == 0x1 || CAS(m_root, root, new_root, std::memory_order_release, std::memory_order_acquire))
           return std::make_tuple(result, Snapshot(new_root), inserted ? inserted->key : Key());
         else {
           if (new_root)
@@ -743,7 +811,8 @@ namespace Zeni::Concurrency {
 
     const MNode * isnapshot() const {
       const MNode * root = m_root.load(std::memory_order_acquire);
-      enforce_snapshot(root);
+      if (uintptr_t(root) != 0x1)
+        enforce_snapshot(root);
       return root;
     }
 
@@ -806,7 +875,9 @@ namespace Zeni::Concurrency {
           }
         }
         const auto[result, new_next, new_snode] = iinsert(next, key, hash_value, insertion, level + CNode::W);
-        if (!new_next) {
+        if (uintptr_t(new_next) == 0x1)
+          return std::make_tuple(result, new_next, new_snode);
+        else if (!new_next) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
             return std::make_tuple(result, nullptr, new_snode);
@@ -839,7 +910,9 @@ namespace Zeni::Concurrency {
         }
         else {
           const auto[result, new_lnode, new_snode] = lnode->updated(key, insertion);
-          if (!new_lnode->next) {
+          if (uintptr_t(new_lnode) == 0x1)
+            return std::make_tuple(result, new_lnode, new_snode);
+          else if (!new_lnode->next) {
             new_lnode->snode->try_increment_refs();
             new_lnode->decrement_refs();
             return std::make_tuple(result, new_lnode->snode, new_snode);
@@ -860,9 +933,11 @@ namespace Zeni::Concurrency {
             return std::make_tuple(Result::Failed_Removal, snode, nullptr);
         }
         else if (Pred()(snode->key, key)) {
-          const auto new_snode = snode->updated_count(insertion);
-          const Result result = !new_snode ? Result::Last_Removal : insertion ? Result::Extra_Insertion : Result::Canceling_Removal;
-          return std::make_tuple(result, new_snode, new_snode ? new_snode : snode);
+          const auto [result, new_snode] = snode->updated_count(insertion);
+          if (snode == new_snode)
+            return std::make_tuple(result, reinterpret_cast<MNode *>(0x1), new_snode);
+          else
+            return std::make_tuple(result, new_snode, new_snode ? new_snode : snode);
         }
         else {
           snode->try_increment_refs();
@@ -899,7 +974,9 @@ namespace Zeni::Concurrency {
           return std::make_tuple(Result::Not_Present, cnode, nullptr);
         }
         const auto[result, new_next, new_snode] = iinsert_ip(next, key, hash_value, insertion, level + CNode::W);
-        if (!new_next) {
+        if (uintptr_t(new_next) == 0x1)
+          return std::make_tuple(result, new_next, new_snode);
+        else if (!new_next) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
             return std::make_tuple(result, nullptr, new_snode);
@@ -927,7 +1004,9 @@ namespace Zeni::Concurrency {
         }
         else {
           const auto[result, new_lnode, new_snode] = lnode->updated_ip(key, insertion);
-          if (!new_lnode->next) {
+          if (uintptr_t(new_lnode) == 0x1)
+            return std::make_tuple(result, new_lnode, new_snode);
+          else if (!new_lnode->next) {
             new_lnode->snode->try_increment_refs();
             new_lnode->decrement_refs();
             return std::make_tuple(result, new_lnode->snode, new_snode);
@@ -943,9 +1022,11 @@ namespace Zeni::Concurrency {
           return std::make_tuple(Result::Not_Present, snode, nullptr);
         }
         else if (Pred()(snode->key, key)) {
-          const auto new_snode = snode->updated_count(insertion);
-          const Result result = !new_snode ? Result::Last_Removal_IP : insertion ? Result::Extra_Insertion_IP : Result::Canceling_Removal_IP;
-          return std::make_tuple(result, new_snode, new_snode ? new_snode : snode);
+          const auto [result, new_snode] = snode->updated_count_ip(insertion);
+          if (snode == new_snode)
+            return std::make_tuple(result, reinterpret_cast<MNode *>(0x1), new_snode);
+          else
+            return std::make_tuple(result, new_snode, new_snode ? new_snode : snode);
         }
         else {
           snode->try_increment_refs();
@@ -1062,12 +1143,12 @@ namespace Zeni::Concurrency {
     template <typename VALUE_TYPE, typename DESIRED>
     static bool CAS(std::atomic<VALUE_TYPE *> &atomic_value, VALUE_TYPE * &expected, const DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
       if (atomic_value.compare_exchange_strong(expected, desired, success, failure)) {
-        if (expected)
+        if (expected && uintptr_t(expected) != 0x1)
           expected->decrement_refs();
         return true;
       }
       else {
-        if (desired)
+        if (desired && uintptr_t(desired) != 0x1)
           desired->decrement_refs();
         return false;
       }

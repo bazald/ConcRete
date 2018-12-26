@@ -158,6 +158,16 @@ int main(int argc, char **argv)
   }
   std::cout << std::endl;
 
+  for (int i = 0; i != 80; ++i) {
+    test_Positive_Hash_Trie(worker_threads, job_queue);
+    //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+    //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+    //  abort();
+    //}
+    std::cout << 'P' << std::flush;
+  }
+  std::cout << std::endl;
+
   //for (int i = 0; i != 80; ++i) {
   //  test_Hash_Trie(worker_threads, job_queue);
   //  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
@@ -165,16 +175,6 @@ int main(int argc, char **argv)
   //  //  abort();
   //  //}
   //  std::cout << 'H' << std::flush;
-  //}
-  //std::cout << std::endl;
-
-  //for (int i = 0; i != 80; ++i) {
-  //  test_Positive_Hash_Trie(worker_threads, job_queue);
-  //  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  //  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  //  //  abort();
-  //  //}
-  //  std::cout << 'P' << std::flush;
   //}
   //std::cout << std::endl;
 
@@ -382,280 +382,280 @@ void test_Antiable_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Thr
   //std::cout << std::endl;
 }
 
-//template <size_t MINE, size_t THEIRS>
-//class Normal : public Zeni::Concurrency::Job {
-//public:
-//  Normal(const std::shared_ptr<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Hash_Trie<int64_t>, Zeni::Concurrency::Hash_Trie<int64_t>>> &hash_tries,
-//    const int64_t to_acquire,
-//    const int64_t count,
-//#ifdef DEBUG_HARD
-//    const std::shared_ptr<Zeni::Concurrency::Queue<std::string>> &debug_output,
-//#endif
-//    std::atomic_int64_t &sum)
-//    : m_hash_tries(hash_tries),
-//    m_to_acquire(to_acquire),
-//    m_count(count),
-//#ifdef DEBUG_HARD
-//    m_debug_output(debug_output),
-//#endif
-//    m_sum(sum),
-//    dre(rd())
-//  {
-//  }
-//
-//  void execute() noexcept override {
-//    //#ifdef DEBUG_HARD
-//    //      std::vector<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>::Snapshot> snapshots;
-//    //#endif
-//    m_values_to_acquire.reserve(m_to_acquire);
-//    m_values_to_release.reserve(m_to_acquire);
-//    for (int64_t i = 1; i != m_to_acquire + 1; ++i)
-//      m_values_to_acquire.push_back(m_count * m_to_acquire + i);
-//    while (!m_values_to_acquire.empty() || !m_values_to_release.empty()) {
-//      const size_t index = std::uniform_int_distribution<size_t>(0, m_values_to_acquire.size() + m_values_to_release.size() - 1)(dre);
-//      if (index < m_values_to_acquire.size()) {
-//        auto selected = m_values_to_acquire.begin();
-//        std::advance(selected, index);
-//#ifdef DEBUG_HARD
-//        std::ostringstream oss, oss2;
-//        oss << std::this_thread::get_id() << " +" << *selected << ':';
-//#endif
-//        const auto[result, snapshot, inserted, replaced] = m_hash_tries->template insert<MINE>(*selected);
-//        //snapshots.push_back(snapshot);
-//        if (result == Zeni::Concurrency::Hash_Trie<int64_t>::Result::First_Insertion) {
-//          int64_t sum = 0;
-//          const auto theirs = snapshot.template snapshot<THEIRS>();
-//          for (const auto &value : theirs) {
-//            sum += *selected * value;
-//#ifdef DEBUG_HARD
-//            oss << ' ' << value;
-//#endif
-//          }
-//          m_sum.fetch_add(sum, std::memory_order_relaxed);
-//        }
-//#ifdef DEBUG_HARD
-//        m_debug_output->push(oss.str());
-//#endif
-//        m_values_to_release.push_back(*selected);
-//        m_values_to_acquire.erase(selected);
-//      }
-//      else {
-//        auto selected = m_values_to_release.begin();
-//        std::advance(selected, index - m_values_to_acquire.size());
-//#ifdef DEBUG_HARD
-//        std::ostringstream oss, oss2;
-//        oss << std::this_thread::get_id() << " -" << *selected << ':';
-//#endif
-//        const auto[result, snapshot, erased] = m_hash_tries->template erase<MINE>(*selected);
-//        //snapshots.push_back(snapshot);
-//        if (result == Zeni::Concurrency::Hash_Trie<int64_t>::Result::Last_Removal) {
-//          int64_t sum = 0;
-//          const auto theirs = snapshot.template snapshot<THEIRS>();
-//          for (const auto &value : theirs) {
-//            sum += *selected * value;
-//#ifdef DEBUG_HARD
-//            oss << ' ' << value;
-//#endif
-//          }
-//          m_sum.fetch_sub(sum, std::memory_order_relaxed);
-//        }
-//#ifdef DEBUG_HARD
-//        m_debug_output->push(oss.str());
-//#endif
-//        m_values_to_release.erase(selected);
-//      }
-//    }
-//  }
-//
-//private:
-//  std::shared_ptr<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Hash_Trie<int64_t>, Zeni::Concurrency::Hash_Trie<int64_t>>> m_hash_tries;
-//  int64_t m_to_acquire;
-//  int64_t m_count;
-//#ifdef DEBUG_HARD
-//  std::shared_ptr<Zeni::Concurrency::Queue<std::string>> m_debug_output;
-//#endif
-//  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_sum;
-//  std::vector<int64_t> m_values_to_acquire;
-//  std::vector<int64_t> m_values_to_release;
-//  std::random_device rd;
-//  std::default_random_engine dre;
-//};
-//
-//void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
-//  const auto hash_tries = std::make_shared<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Hash_Trie<int64_t>, Zeni::Concurrency::Hash_Trie<int64_t>>>();
-//#ifdef DEBUG_HARD
-//  const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
-//#endif
-//  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
-//
-//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-//  for (int16_t i = 0; i != g_num_cores / 2; ++i) {
-//    jobs.emplace_back(std::shared_ptr<Normal<0, 1>>(new Normal<0, 1>(hash_tries, 256, i,
-//#ifdef DEBUG_HARD
-//      debug_output,
-//#endif
-//      sum)));
-//    jobs.emplace_back(std::shared_ptr<Normal<1, 0>>(new Normal<1, 0>(hash_tries, 256, i,
-//#ifdef DEBUG_HARD
-//      debug_output,
-//#endif
-//      sum)));
-//  }
-//  job_queue->give_many(std::move(jobs));
-//
-//  worker_threads->finish_jobs();
-//
-//  if (sum.load(std::memory_order_relaxed) != 0) {
-//#ifdef DEBUG_HARD
-//    std::cerr << std::endl;
-//    std::string line;
-//    while (debug_output->try_pop(line))
-//      std::cerr << line << std::endl;
-//    std::cerr << sum << std::endl;
-//#else
-//    std::cerr << 'Y';
-//#endif
-//    abort();
-//  }
-//
-//  //std::cout << std::endl;
-//}
+template <size_t MINE, size_t THEIRS>
+class Normal : public Zeni::Concurrency::Job {
+public:
+  Normal(const std::shared_ptr<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Hash_Trie<int64_t>, Zeni::Concurrency::Hash_Trie<int64_t>>> &hash_tries,
+    const int64_t to_acquire,
+    const int64_t count,
+#ifdef DEBUG_HARD
+    const std::shared_ptr<Zeni::Concurrency::Queue<std::string>> &debug_output,
+#endif
+    std::atomic_int64_t &sum)
+    : m_hash_tries(hash_tries),
+    m_to_acquire(to_acquire),
+    m_count(count),
+#ifdef DEBUG_HARD
+    m_debug_output(debug_output),
+#endif
+    m_sum(sum),
+    dre(rd())
+  {
+  }
 
-//template <size_t MINE, size_t THEIRS>
-//class Positive : public Zeni::Concurrency::Job {
-//public:
-//  Positive(const std::shared_ptr<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int64_t>, Zeni::Concurrency::Positive_Hash_Trie<int64_t>>> &positive_hash_tries,
-//    const int64_t to_acquire,
-//#ifdef DEBUG_HARD
-//    const std::shared_ptr<Zeni::Concurrency::Queue<std::string>> &debug_output,
-//#endif
-//    std::atomic_int64_t &sum)
-//    : m_positive_hash_tries(positive_hash_tries),
-//    m_to_acquire(to_acquire),
-//#ifdef DEBUG_HARD
-//    m_debug_output(debug_output),
-//#endif
-//    m_sum(sum),
-//    dre(rd())
-//  {
-//  }
-//
-//  void execute() noexcept override {
-//    //#ifdef DEBUG_HARD
-//    //      std::vector<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>::Snapshot> snapshots;
-//    //#endif
-//    m_values_to_acquire.reserve(m_to_acquire);
-//    m_values_to_release.reserve(m_to_acquire);
-//    for (int64_t i = 1; i != m_to_acquire + 1; ++i)
-//      m_values_to_acquire.push_back(i);
-//    while (!m_values_to_acquire.empty() || !m_values_to_release.empty()) {
-//      const size_t index = std::uniform_int_distribution<size_t>(0, m_values_to_acquire.size() + m_values_to_release.size() - 1)(dre);
-//      if (index < m_values_to_acquire.size()) {
-//        auto selected = m_values_to_acquire.begin();
-//        std::advance(selected, index);
-//#ifdef DEBUG_HARD
-//        std::ostringstream oss, oss2;
-//        oss << std::this_thread::get_id() << " +" << *selected << ':';
-//#endif
-//        const auto[result, snapshot, inserted] = m_positive_hash_tries->template insert<MINE>(*selected);
-//        //snapshots.push_back(snapshot);
-//        if (result == Zeni::Concurrency::Positive_Hash_Trie<int64_t>::Result::First_Insertion) {
-//          int64_t sum = 0;
-//          const auto theirs = snapshot.template snapshot<THEIRS>();
-//          for (const auto &value : theirs) {
-//            sum += *selected * value;
-//#ifdef DEBUG_HARD
-//            oss << ' ' << value;
-//#endif
-//          }
-//          m_sum.fetch_add(sum, std::memory_order_relaxed);
-//        }
-//#ifdef DEBUG_HARD
-//        m_debug_output->push(oss.str());
-//#endif
-//        m_values_to_release.push_back(*selected);
-//        m_values_to_acquire.erase(selected);
-//      }
-//      else {
-//        auto selected = m_values_to_release.begin();
-//        std::advance(selected, index - m_values_to_acquire.size());
-//#ifdef DEBUG_HARD
-//        std::ostringstream oss, oss2;
-//        oss << std::this_thread::get_id() << " -" << *selected << ':';
-//#endif
-//        const auto[result, snapshot, erased] = m_positive_hash_tries->template erase<MINE>(*selected);
-//        //snapshots.push_back(snapshot);
-//        if (result == Zeni::Concurrency::Positive_Hash_Trie<int64_t>::Result::Last_Removal) {
-//          int64_t sum = 0;
-//          const auto theirs = snapshot.template snapshot<THEIRS>();
-//          for (const auto &value : theirs) {
-//            sum += *selected * value;
-//#ifdef DEBUG_HARD
-//            oss << ' ' << value;
-//#endif
-//          }
-//          m_sum.fetch_sub(sum, std::memory_order_relaxed);
-//        }
-//#ifdef DEBUG_HARD
-//        m_debug_output->push(oss.str());
-//#endif
-//        m_values_to_release.erase(selected);
-//      }
-//    }
-//  }
-//
-//private:
-//  std::shared_ptr<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int64_t>, Zeni::Concurrency::Positive_Hash_Trie<int64_t>>> m_positive_hash_tries;
-//  int64_t m_to_acquire;
-//#ifdef DEBUG_HARD
-//  std::shared_ptr<Zeni::Concurrency::Queue<std::string>> m_debug_output;
-//#endif
-//  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_sum;
-//  std::vector<int64_t> m_values_to_acquire;
-//  std::vector<int64_t> m_values_to_release;
-//  std::random_device rd;
-//  std::default_random_engine dre;
-//};
-//
-//void test_Positive_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
-//  const auto positive_hash_tries = std::make_shared<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int64_t>, Zeni::Concurrency::Positive_Hash_Trie<int64_t>>>();
-//#ifdef DEBUG_HARD
-//  const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
-//#endif
-//  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
-//
-//  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
-//  for (int16_t i = 0; i != g_num_cores / 2; ++i) {
-//    jobs.emplace_back(std::shared_ptr<Positive<0, 1>>(new Positive<0, 1>(positive_hash_tries, 256,
-//#ifdef DEBUG_HARD
-//      debug_output,
-//#endif
-//      sum)));
-//    jobs.emplace_back(std::shared_ptr<Positive<1, 0>>(new Positive<1, 0>(positive_hash_tries, 256,
-//#ifdef DEBUG_HARD
-//      debug_output,
-//#endif
-//      sum)));
-//  }
-//  job_queue->give_many(std::move(jobs));
-//
-//  worker_threads->finish_jobs();
-//
-//  if (sum.load(std::memory_order_relaxed) != 0) {
-//#ifdef DEBUG_HARD
-//    std::cerr << std::endl;
-//    std::string line;
-//    while (debug_output->try_pop(line))
-//      std::cerr << line << std::endl;
-//    std::cerr << sum << std::endl;
-//#else
-//    std::cerr << 'Y';
-//#endif
-//    abort();
-//  }
-//
-//  //std::cout << std::endl;
-//}
+  void execute() noexcept override {
+    //#ifdef DEBUG_HARD
+    //      std::vector<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>::Snapshot> snapshots;
+    //#endif
+    m_values_to_acquire.reserve(m_to_acquire);
+    m_values_to_release.reserve(m_to_acquire);
+    for (int64_t i = 1; i != m_to_acquire + 1; ++i)
+      m_values_to_acquire.push_back(m_count * m_to_acquire + i);
+    while (!m_values_to_acquire.empty() || !m_values_to_release.empty()) {
+      const size_t index = std::uniform_int_distribution<size_t>(0, m_values_to_acquire.size() + m_values_to_release.size() - 1)(dre);
+      if (index < m_values_to_acquire.size()) {
+        auto selected = m_values_to_acquire.begin();
+        std::advance(selected, index);
+#ifdef DEBUG_HARD
+        std::ostringstream oss, oss2;
+        oss << std::this_thread::get_id() << " +" << *selected << ':';
+#endif
+        const auto[result, snapshot, inserted, replaced] = m_hash_tries->template insert<MINE>(*selected);
+        //snapshots.push_back(snapshot);
+        if (result == Zeni::Concurrency::Hash_Trie<int64_t>::Result::First_Insertion) {
+          int64_t sum = 0;
+          const auto theirs = snapshot.template snapshot<THEIRS>();
+          for (const auto &value : theirs) {
+            sum += *selected * value;
+#ifdef DEBUG_HARD
+            oss << ' ' << value;
+#endif
+          }
+          m_sum.fetch_add(sum, std::memory_order_relaxed);
+        }
+#ifdef DEBUG_HARD
+        m_debug_output->push(oss.str());
+#endif
+        m_values_to_release.push_back(*selected);
+        m_values_to_acquire.erase(selected);
+      }
+      else {
+        auto selected = m_values_to_release.begin();
+        std::advance(selected, index - m_values_to_acquire.size());
+#ifdef DEBUG_HARD
+        std::ostringstream oss, oss2;
+        oss << std::this_thread::get_id() << " -" << *selected << ':';
+#endif
+        const auto[result, snapshot, erased] = m_hash_tries->template erase<MINE>(*selected);
+        //snapshots.push_back(snapshot);
+        if (result == Zeni::Concurrency::Hash_Trie<int64_t>::Result::Last_Removal) {
+          int64_t sum = 0;
+          const auto theirs = snapshot.template snapshot<THEIRS>();
+          for (const auto &value : theirs) {
+            sum += *selected * value;
+#ifdef DEBUG_HARD
+            oss << ' ' << value;
+#endif
+          }
+          m_sum.fetch_sub(sum, std::memory_order_relaxed);
+        }
+#ifdef DEBUG_HARD
+        m_debug_output->push(oss.str());
+#endif
+        m_values_to_release.erase(selected);
+      }
+    }
+  }
+
+private:
+  std::shared_ptr<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Hash_Trie<int64_t>, Zeni::Concurrency::Hash_Trie<int64_t>>> m_hash_tries;
+  int64_t m_to_acquire;
+  int64_t m_count;
+#ifdef DEBUG_HARD
+  std::shared_ptr<Zeni::Concurrency::Queue<std::string>> m_debug_output;
+#endif
+  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_sum;
+  std::vector<int64_t> m_values_to_acquire;
+  std::vector<int64_t> m_values_to_release;
+  std::random_device rd;
+  std::default_random_engine dre;
+};
+
+void test_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+  const auto hash_tries = std::make_shared<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Hash_Trie<int64_t>, Zeni::Concurrency::Hash_Trie<int64_t>>>();
+#ifdef DEBUG_HARD
+  const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
+#endif
+  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (int16_t i = 0; i != g_num_cores / 2; ++i) {
+    jobs.emplace_back(std::shared_ptr<Normal<0, 1>>(new Normal<0, 1>(hash_tries, 256, i,
+#ifdef DEBUG_HARD
+      debug_output,
+#endif
+      sum)));
+    jobs.emplace_back(std::shared_ptr<Normal<1, 0>>(new Normal<1, 0>(hash_tries, 256, i,
+#ifdef DEBUG_HARD
+      debug_output,
+#endif
+      sum)));
+  }
+  job_queue->give_many(std::move(jobs));
+
+  worker_threads->finish_jobs();
+
+  if (sum.load(std::memory_order_relaxed) != 0) {
+#ifdef DEBUG_HARD
+    std::cerr << std::endl;
+    std::string line;
+    while (debug_output->try_pop(line))
+      std::cerr << line << std::endl;
+    std::cerr << sum << std::endl;
+#else
+    std::cerr << 'Y';
+#endif
+    abort();
+  }
+
+  //std::cout << std::endl;
+}
+
+template <size_t MINE, size_t THEIRS>
+class Positive : public Zeni::Concurrency::Job {
+public:
+  Positive(const std::shared_ptr<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int64_t>, Zeni::Concurrency::Positive_Hash_Trie<int64_t>>> &positive_hash_tries,
+    const int64_t to_acquire,
+#ifdef DEBUG_HARD
+    const std::shared_ptr<Zeni::Concurrency::Queue<std::string>> &debug_output,
+#endif
+    std::atomic_int64_t &sum)
+    : m_positive_hash_tries(positive_hash_tries),
+    m_to_acquire(to_acquire),
+#ifdef DEBUG_HARD
+    m_debug_output(debug_output),
+#endif
+    m_sum(sum),
+    dre(rd())
+  {
+  }
+
+  void execute() noexcept override {
+    //#ifdef DEBUG_HARD
+    //      std::vector<Zeni::Concurrency::Antiable_Hash_Trie<int64_t, Null_Hash>::Snapshot> snapshots;
+    //#endif
+    m_values_to_acquire.reserve(m_to_acquire);
+    m_values_to_release.reserve(m_to_acquire);
+    for (int64_t i = 1; i != m_to_acquire + 1; ++i)
+      m_values_to_acquire.push_back(i);
+    while (!m_values_to_acquire.empty() || !m_values_to_release.empty()) {
+      const size_t index = std::uniform_int_distribution<size_t>(0, m_values_to_acquire.size() + m_values_to_release.size() - 1)(dre);
+      if (index < m_values_to_acquire.size()) {
+        auto selected = m_values_to_acquire.begin();
+        std::advance(selected, index);
+#ifdef DEBUG_HARD
+        std::ostringstream oss, oss2;
+        oss << std::this_thread::get_id() << " +" << *selected << ':';
+#endif
+        const auto[result, snapshot, inserted] = m_positive_hash_tries->template insert<MINE>(*selected);
+        //snapshots.push_back(snapshot);
+        if (result == Zeni::Concurrency::Positive_Hash_Trie<int64_t>::Result::First_Insertion) {
+          int64_t sum = 0;
+          const auto theirs = snapshot.template snapshot<THEIRS>();
+          for (const auto &value : theirs) {
+            sum += *selected * value;
+#ifdef DEBUG_HARD
+            oss << ' ' << value;
+#endif
+          }
+          m_sum.fetch_add(sum, std::memory_order_relaxed);
+        }
+#ifdef DEBUG_HARD
+        m_debug_output->push(oss.str());
+#endif
+        m_values_to_release.push_back(*selected);
+        m_values_to_acquire.erase(selected);
+      }
+      else {
+        auto selected = m_values_to_release.begin();
+        std::advance(selected, index - m_values_to_acquire.size());
+#ifdef DEBUG_HARD
+        std::ostringstream oss, oss2;
+        oss << std::this_thread::get_id() << " -" << *selected << ':';
+#endif
+        const auto[result, snapshot, erased] = m_positive_hash_tries->template erase<MINE>(*selected);
+        //snapshots.push_back(snapshot);
+        if (result == Zeni::Concurrency::Positive_Hash_Trie<int64_t>::Result::Last_Removal) {
+          int64_t sum = 0;
+          const auto theirs = snapshot.template snapshot<THEIRS>();
+          for (const auto &value : theirs) {
+            sum += *selected * value;
+#ifdef DEBUG_HARD
+            oss << ' ' << value;
+#endif
+          }
+          m_sum.fetch_sub(sum, std::memory_order_relaxed);
+        }
+#ifdef DEBUG_HARD
+        m_debug_output->push(oss.str());
+#endif
+        m_values_to_release.erase(selected);
+      }
+    }
+  }
+
+private:
+  std::shared_ptr<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int64_t>, Zeni::Concurrency::Positive_Hash_Trie<int64_t>>> m_positive_hash_tries;
+  int64_t m_to_acquire;
+#ifdef DEBUG_HARD
+  std::shared_ptr<Zeni::Concurrency::Queue<std::string>> m_debug_output;
+#endif
+  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t &m_sum;
+  std::vector<int64_t> m_values_to_acquire;
+  std::vector<int64_t> m_values_to_release;
+  std::random_device rd;
+  std::default_random_engine dre;
+};
+
+void test_Positive_Hash_Trie(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue) {
+  const auto positive_hash_tries = std::make_shared<Zeni::Concurrency::Super_Hash_Trie<Zeni::Concurrency::Positive_Hash_Trie<int64_t>, Zeni::Concurrency::Positive_Hash_Trie<int64_t>>>();
+#ifdef DEBUG_HARD
+  const auto debug_output = std::make_shared<Zeni::Concurrency::Queue<std::string>>();
+#endif
+  ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t sum = 0;
+
+  std::vector<std::shared_ptr<Zeni::Concurrency::IJob>> jobs;
+  for (int16_t i = 0; i != g_num_cores / 2; ++i) {
+    jobs.emplace_back(std::shared_ptr<Positive<0, 1>>(new Positive<0, 1>(positive_hash_tries, 256,
+#ifdef DEBUG_HARD
+      debug_output,
+#endif
+      sum)));
+    jobs.emplace_back(std::shared_ptr<Positive<1, 0>>(new Positive<1, 0>(positive_hash_tries, 256,
+#ifdef DEBUG_HARD
+      debug_output,
+#endif
+      sum)));
+  }
+  job_queue->give_many(std::move(jobs));
+
+  worker_threads->finish_jobs();
+
+  if (sum.load(std::memory_order_relaxed) != 0) {
+#ifdef DEBUG_HARD
+    std::cerr << std::endl;
+    std::string line;
+    while (debug_output->try_pop(line))
+      std::cerr << line << std::endl;
+    std::cerr << sum << std::endl;
+#else
+    std::cerr << 'Y';
+#endif
+    abort();
+  }
+
+  //std::cout << std::endl;
+}
 
 class Action_Print_Char : public Zeni::Rete::Node_Action::Action {
   Action_Print_Char(const Action_Print_Char &) = delete;
