@@ -84,9 +84,8 @@ namespace Zeni::Concurrency {
       template <size_t index, typename KEY_TYPE, typename VALUE_TYPE>
       static auto Create_Insert(KEY_TYPE &&key_, VALUE_TYPE &&value_) {
         auto tuple_value = SUBTRIE().template inserted<index>(std::forward<VALUE_TYPE>(value_));
-        if (std::get<1>(tuple_value).empty()) {
+        if (std::get<1>(tuple_value).empty())
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node<KEY, SUBTRIE> *>(nullptr));
-        }
         else {
           auto new_snode = new Singleton_Node<KEY, SUBTRIE>(std::forward<KEY_TYPE>(key_), std::get<1>(tuple_value));
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_snode);
@@ -96,9 +95,8 @@ namespace Zeni::Concurrency {
       template <size_t index, typename KEY_TYPE, typename VALUE_TYPE>
       static auto Create_Erase(KEY_TYPE &&key_, VALUE_TYPE &&value_) {
         auto tuple_value = SUBTRIE().template erased<index>(std::forward<VALUE_TYPE>(value_));
-        if (std::get<1>(tuple_value).empty()) {
+        if (std::get<1>(tuple_value).empty())
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node<KEY, SUBTRIE> *>(nullptr));
-        }
         else {
           auto new_snode = new Singleton_Node<KEY, SUBTRIE>(std::forward<KEY_TYPE>(key_), std::get<1>(tuple_value));
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_snode);
@@ -108,7 +106,10 @@ namespace Zeni::Concurrency {
       template <size_t index>
       auto inserted(const KEY &key, const typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key &value) const {
         auto tuple_value = subtrie.template inserted<index>(value);
-        if (std::get<1>(tuple_value).empty()) {
+        if (!std::get<1>(tuple_value).valid()) {
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<Singleton_Node<KEY, SUBTRIE> *>(0x1));
+        }
+        else if (std::get<1>(tuple_value).empty()) {
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node<KEY, SUBTRIE> *>(nullptr));
         }
         else {
@@ -120,7 +121,10 @@ namespace Zeni::Concurrency {
       template <size_t index>
       auto inserted_ip(const KEY &key, const typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key &value) const {
         auto tuple_value = subtrie.template inserted_ip<index>(value);
-        if (std::get<1>(tuple_value).empty()) {
+        if (!std::get<1>(tuple_value).valid()) {
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<Singleton_Node<KEY, SUBTRIE> *>(0x1));
+        }
+        else if (std::get<1>(tuple_value).empty()) {
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node<KEY, SUBTRIE> *>(nullptr));
         }
         else {
@@ -132,7 +136,10 @@ namespace Zeni::Concurrency {
       template <size_t index>
       auto erased(const KEY &key, const typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key &value) const {
         auto tuple_value = subtrie.template erased<index>(value);
-        if (std::get<1>(tuple_value).empty()) {
+        if (!std::get<1>(tuple_value).valid()) {
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<Singleton_Node<KEY, SUBTRIE> *>(0x1));
+        }
+        else if (std::get<1>(tuple_value).empty()) {
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node<KEY, SUBTRIE> *>(nullptr));
         }
         else {
@@ -144,7 +151,10 @@ namespace Zeni::Concurrency {
       template <size_t index>
       auto erased_ip(const KEY &key, const typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key &value) const {
         auto tuple_value = subtrie.template erased_ip<index>(value);
-        if (std::get<1>(tuple_value).empty()) {
+        if (!std::get<1>(tuple_value).valid()) {
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<Singleton_Node<KEY, SUBTRIE> *>(0x1));
+        }
+        else if (std::get<1>(tuple_value).empty()) {
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node<KEY, SUBTRIE> *>(nullptr));
         }
         else {
@@ -156,7 +166,10 @@ namespace Zeni::Concurrency {
       template <size_t src, size_t dest>
       auto moved(const KEY &key, const typename std::tuple_element_t<src, typename SUBTRIE::Types>::Key &value) const {
         auto tuple_value = subtrie.template moved<src, dest>(value);
-        if (std::get<1>(tuple_value).empty()) {
+        if (!std::get<1>(tuple_value).valid()) {
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<Singleton_Node<KEY, SUBTRIE> *>(0x1));
+        }
+        else if (std::get<1>(tuple_value).empty()) {
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node<KEY, SUBTRIE> *>(nullptr));
         }
         else {
@@ -168,7 +181,10 @@ namespace Zeni::Concurrency {
       template <size_t if_present, size_t regardless>
       auto inserted_ip_xp(const KEY &key, const typename std::tuple_element_t<if_present, typename SUBTRIE::Types>::Key &value) const {
         auto tuple_value = subtrie.template inserted_ip_xp<if_present, regardless>(value);
-        if (std::get<1>(tuple_value).empty()) {
+        if (!std::get<1>(tuple_value).valid()) {
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<Singleton_Node<KEY, SUBTRIE> *>(0x1));
+        }
+        else if (std::get<1>(tuple_value).empty()) {
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node<KEY, SUBTRIE> *>(nullptr));
         }
         else {
@@ -180,7 +196,10 @@ namespace Zeni::Concurrency {
       template <size_t if_present, size_t regardless>
       auto erased_ip_xp(const KEY &key, const typename std::tuple_element_t<if_present, typename SUBTRIE::Types>::Key &value) const {
         auto tuple_value = subtrie.template erased_ip_xp<if_present, regardless>(value);
-        if (std::get<1>(tuple_value).empty()) {
+        if (!std::get<1>(tuple_value).valid()) {
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<Singleton_Node<KEY, SUBTRIE> *>(0x1));
+        }
+        else if (std::get<1>(tuple_value).empty()) {
           return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node<KEY, SUBTRIE> *>(nullptr));
         }
         else {
@@ -465,8 +484,14 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           auto tuple_value = found->template inserted<index>(key, value);
-          auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
+            new_head->decrement_refs();
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
+          }
+          else {
+            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          }
         }
         else {
           auto tuple_value = Singleton_Node<KEY, SUBTRIE>::template Create_Insert<index>(key, value);
@@ -506,8 +531,14 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           auto tuple_value = found->template inserted_ip<index>(key, value);
-          auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
+            new_head->decrement_refs();
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
+          }
+          else {
+            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          }
         }
         else
           return std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, new_head, KEY());
@@ -545,8 +576,14 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           auto tuple_value = found->template inserted_ip_xp<if_present, regardless>(key, value);
-          auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
+            new_head->decrement_refs();
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
+          }
+          else {
+            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          }
         }
         else {
           auto tuple_value = Singleton_Node<KEY, SUBTRIE>::template Create_Insert<regardless>(key, value);
@@ -586,8 +623,14 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           auto tuple_value = found->template erased<index>(key, value);
-          auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
+            new_head->decrement_refs();
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
+          }
+          else {
+            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          }
         }
         else {
           auto tuple_value = Singleton_Node<KEY, SUBTRIE>::template Create_Erase<index>(key, value);
@@ -627,8 +670,14 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           auto tuple_value = found->template erased_ip<index>(key, value);
-          auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
+            new_head->decrement_refs();
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
+          }
+          else {
+            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          }
         }
         else
           return std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, new_head, KEY());
@@ -666,8 +715,14 @@ namespace Zeni::Concurrency {
         }
         if (found) {
           auto tuple_value = found->template erased_ip_xp<if_present, regardless>(key, value);
-          auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
+            new_head->decrement_refs();
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
+          }
+          else {
+            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
+          }
         }
         else {
           auto tuple_value = Singleton_Node<KEY, SUBTRIE>::template Create_Erase<regardless>(key, value);
@@ -840,6 +895,7 @@ namespace Zeni::Concurrency {
     };
 
     const_iterator cbegin() const {
+      assert(valid());
       return const_iterator(isnapshot());
     }
 
@@ -877,8 +933,13 @@ namespace Zeni::Concurrency {
 
     ~Hash_Trie_S2() {
       const MNode * const mnode = m_root.load(std::memory_order_acquire);
-      if (mnode)
+      if (mnode && uintptr_t(mnode) != 0x1)
         mnode->decrement_refs();
+    }
+
+    bool valid() const {
+      const auto root = m_root.load(std::memory_order_acquire);
+      return uintptr_t(root) != 0x1;
     }
 
     bool empty() const {
@@ -886,6 +947,7 @@ namespace Zeni::Concurrency {
     }
 
     size_t size() const {
+      assert(valid());
       size_t sz = 0;
       for ([[maybe_unused]] auto &value : *this)
         ++sz;
@@ -893,6 +955,7 @@ namespace Zeni::Concurrency {
     }
 
     bool size_one() const {
+      assert(valid());
       auto it = cbegin();
       const auto iend = cend();
       if (it != iend)
@@ -901,11 +964,13 @@ namespace Zeni::Concurrency {
     }
 
     bool size_zero() const {
+      assert(valid());
       return cbegin() == cend();
     }
 
     template <size_t index, typename Comparable1, typename Comparable2, typename CHash1 = Hash, typename CPred1 = Pred, typename CHash2 = typename std::tuple_element_t<index, typename Subtrie::Types>::Hash, typename CPred2 = typename std::tuple_element_t<index, typename Subtrie::Types>::Pred>
     auto lookup(const Comparable1 &key, const Comparable2 &value) const {
+      assert(valid());
       const Hash_Value hash_value = CHash1()(key);
       const MNode * const root = isnapshot();
       const auto found = ilookup<index, Comparable1, Comparable2, CPred1, CHash2, CPred2>(root, key, value, hash_value, 0);
@@ -914,6 +979,7 @@ namespace Zeni::Concurrency {
 
     template <size_t index, typename Comparable1, typename Comparable2, typename CHash1 = Hash, typename CPred1 = Pred, typename CHash2 = typename std::tuple_element_t<index, typename Subtrie::Types>::Hash, typename CPred2 = typename std::tuple_element_t<index, typename Subtrie::Types>::Pred>
     auto looked_up(const Comparable1 &key, const Comparable2 &value) const {
+      assert(valid());
       const Hash_Value hash_value = CHash1()(key);
       const MNode * const root = m_root.load(std::memory_order_acquire);
       return ilookup<index, Comparable1, Comparable2, CPred1, CHash2, CPred2>(root, key, value, hash_value, 0);
@@ -921,80 +987,96 @@ namespace Zeni::Concurrency {
 
     template <size_t index>
     auto insert(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
+      assert(valid());
       return iinsert<index>(key, value);
     }
 
     template <size_t index>
     auto insert_ip(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
+      assert(valid());
       return iinsert_ip<index>(key, value);
     }
 
     template <size_t if_present, size_t regardless>
     auto insert_ip_xp(const Key &key, const typename std::tuple_element_t<if_present, typename Subtrie::Types>::Key &value) {
+      assert(valid());
       return iinsert_ip_xp<if_present, regardless>(key, value);
     }
 
     template <size_t index>
     auto inserted(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) const {
+      assert(valid());
       return iinserted<index>(key, value);
     }
 
     template <size_t index>
     auto inserted_ip(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) const {
+      assert(valid());
       return iinserted_ip<index>(key, value);
     }
 
     template <size_t if_present, size_t regardless>
     auto inserted_ip_xp(const Key &key, const typename std::tuple_element_t<if_present, typename Subtrie::Types>::Key &value) const {
+      assert(valid());
       return iinserted_ip_xp<if_present, regardless>(key, value);
     }
 
     template <size_t index>
     auto erase(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
+      assert(valid());
       return ierase<index>(key, value);
     }
 
     template <size_t index>
     auto erase_ip(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
+      assert(valid());
       return ierase_ip<index>(key, value);
     }
 
     template <size_t if_present, size_t regardless>
     auto erase_ip_xp(const Key &key, const typename std::tuple_element_t<if_present, typename Subtrie::Types>::Key &value) {
+      assert(valid());
       return ierase_ip_xp<if_present, regardless>(key, value);
     }
 
     template <size_t index>
     auto erased(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) const {
+      assert(valid());
       return ierased<index>(key, value);
     }
 
     template <size_t index>
     auto erased_ip(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) const {
+      assert(valid());
       return ierased_ip<index>(key, value);
     }
 
     template <size_t if_present, size_t regardless>
     auto erased_ip_xp(const Key &key, const typename std::tuple_element_t<if_present, typename Subtrie::Types>::Key &value) const {
+      assert(valid());
       return ierased_ip_xp<if_present, regardless>(key, value);
     }
 
     template <size_t src, size_t dest>
     auto move(const Key &key, const typename std::tuple_element_t<src, typename Subtrie::Types>::Key &value) {
+      assert(valid());
       return imove<src, dest>(key, value);
     }
 
     template <size_t src, size_t dest>
     auto moved(const Key &key, const typename std::tuple_element_t<src, typename Subtrie::Types>::Key &value) const {
+      assert(valid());
       return imoved<src, dest>(key, value);
     }
 
     Snapshot snapshot() const {
+      assert(valid());
       return isnapshot();
     }
 
     template <size_t index, typename Comparable1, typename CHash1 = Hash, typename CPred1 = Pred>
     auto lookup_snapshot(const Comparable1 &key) const {
+      assert(valid());
       const Hash_Value hash_value = CHash1()(key);
       const MNode * const root = m_root.load(std::memory_order_acquire);
       return isnapshot<index, Comparable1, CPred1>(root, key, hash_value, 0);
@@ -1007,11 +1089,11 @@ namespace Zeni::Concurrency {
       const MNode * root = isnapshot();
       for (;;) {
         auto tuple_value = iinsert<index>(root, key, value, hash_value, 0);
-        if (std::get<1>(tuple_value))
+        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
           std::get<1>(tuple_value)->try_increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
           return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
           if (std::get<1>(tuple_value))
@@ -1027,11 +1109,11 @@ namespace Zeni::Concurrency {
       const MNode * root = isnapshot();
       for (;;) {
         auto tuple_value = iinsert_ip<index>(root, key, value, hash_value, 0);
-        if (std::get<1>(tuple_value))
+        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
           std::get<1>(tuple_value)->try_increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
           return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
           if (std::get<1>(tuple_value))
@@ -1047,11 +1129,11 @@ namespace Zeni::Concurrency {
       const MNode * root = isnapshot();
       for (;;) {
         auto tuple_value = iinsert_ip_xp<if_present, regardless>(root, key, value, hash_value, 0);
-        if (std::get<1>(tuple_value))
+        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
           std::get<1>(tuple_value)->try_increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
           return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
           if (std::get<1>(tuple_value))
@@ -1067,11 +1149,11 @@ namespace Zeni::Concurrency {
       const MNode * root = isnapshot();
       for (;;) {
         auto tuple_value = ierase<index>(root, key, value, hash_value, 0);
-        if (std::get<1>(tuple_value))
+        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
           std::get<1>(tuple_value)->try_increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
           return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
           if (std::get<1>(tuple_value))
@@ -1087,11 +1169,11 @@ namespace Zeni::Concurrency {
       const MNode * root = isnapshot();
       for (;;) {
         auto tuple_value = ierase_ip<index>(root, key, value, hash_value, 0);
-        if (std::get<1>(tuple_value))
+        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
           std::get<1>(tuple_value)->try_increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
           return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
           if (std::get<1>(tuple_value))
@@ -1107,11 +1189,11 @@ namespace Zeni::Concurrency {
       const MNode * root = isnapshot();
       for (;;) {
         auto tuple_value = ierase_ip_xp<if_present, regardless>(root, key, value, hash_value, 0);
-        if (std::get<1>(tuple_value))
+        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
           std::get<1>(tuple_value)->try_increment_refs();
         if (root)
           root->decrement_refs();
-        if (CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_root, root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
           return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
         else {
           if (std::get<1>(tuple_value))
@@ -1204,7 +1286,8 @@ namespace Zeni::Concurrency {
 
     const MNode * isnapshot() const {
       const MNode * root = m_root.load(std::memory_order_acquire);
-      enforce_snapshot(root);
+      if (uintptr_t(root) != 0x1)
+        enforce_snapshot(root);
       return root;
     }
 
@@ -1296,7 +1379,9 @@ namespace Zeni::Concurrency {
           return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode->inserted(pos, flag, std::get<1>(tuple_value))));
         }
         auto tuple_value = iinsert<index>(next, key, value, hash_value, level + CNode::W);
-        if (!std::get<1>(tuple_value)) {
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+        else if (!std::get<1>(tuple_value)) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(nullptr));
@@ -1325,7 +1410,9 @@ namespace Zeni::Concurrency {
         }
         else {
           auto tuple_value = lnode->template inserted<index>(key, value);
-          if (!std::get<1>(tuple_value)->next) {
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else if (!std::get<1>(tuple_value)->next) {
             std::get<1>(tuple_value)->snode->try_increment_refs();
             std::get<1>(tuple_value)->decrement_refs();
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)->snode));
@@ -1343,7 +1430,10 @@ namespace Zeni::Concurrency {
         }
         else if (Pred()(snode->key, key)) {
           auto tuple_value = snode->template inserted<index>(key, value);
-          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
         }
         else {
           snode->try_increment_refs();
@@ -1373,7 +1463,9 @@ namespace Zeni::Concurrency {
           return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, static_cast<const MNode *>(cnode), Key());
         }
         auto tuple_value = iinsert_ip<index>(next, key, value, hash_value, level + CNode::W);
-        if (!std::get<1>(tuple_value)) {
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+        else if (!std::get<1>(tuple_value)) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(nullptr));
@@ -1401,7 +1493,9 @@ namespace Zeni::Concurrency {
         }
         else {
           auto tuple_value = lnode->template inserted_ip<index>(key, value);
-          if (!std::get<1>(tuple_value)->next) {
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else if (!std::get<1>(tuple_value)->next) {
             std::get<1>(tuple_value)->snode->try_increment_refs();
             std::get<1>(tuple_value)->decrement_refs();
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)->snode));
@@ -1418,7 +1512,10 @@ namespace Zeni::Concurrency {
         }
         else if (Pred()(snode->key, key)) {
           auto tuple_value = snode->template inserted_ip<index>(key, value);
-          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
         }
         else {
           snode->try_increment_refs();
@@ -1445,7 +1542,9 @@ namespace Zeni::Concurrency {
           return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode->inserted(pos, flag, std::get<1>(tuple_value))));
         }
         auto tuple_value = iinsert_ip_xp<if_present, regardless>(next, key, value, hash_value, level + CNode::W);
-        if (!std::get<1>(tuple_value)) {
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+        else if (!std::get<1>(tuple_value)) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(nullptr));
@@ -1474,7 +1573,9 @@ namespace Zeni::Concurrency {
         }
         else {
           auto tuple_value = lnode->template inserted_ip_xp<if_present, regardless>(key, value);
-          if (!std::get<1>(tuple_value)->next) {
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else if (!std::get<1>(tuple_value)->next) {
             std::get<1>(tuple_value)->snode->try_increment_refs();
             std::get<1>(tuple_value)->decrement_refs();
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)->snode));
@@ -1492,7 +1593,10 @@ namespace Zeni::Concurrency {
         }
         else if (Pred()(snode->key, key)) {
           auto tuple_value = snode->template inserted_ip_xp<if_present, regardless>(key, value);
-          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
         }
         else {
           snode->try_increment_refs();
@@ -1522,7 +1626,9 @@ namespace Zeni::Concurrency {
           return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode->inserted(pos, flag, std::get<1>(tuple_value))));
         }
         auto tuple_value = ierase<index>(next, key, value, hash_value, level + CNode::W);
-        if (!std::get<1>(tuple_value)) {
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+        else if (!std::get<1>(tuple_value)) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(nullptr));
@@ -1551,7 +1657,9 @@ namespace Zeni::Concurrency {
         }
         else {
           auto tuple_value = lnode->template erased<index>(key, value);
-          if (!std::get<1>(tuple_value)->next) {
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else if (!std::get<1>(tuple_value)->next) {
             std::get<1>(tuple_value)->snode->try_increment_refs();
             std::get<1>(tuple_value)->decrement_refs();
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)->snode));
@@ -1569,7 +1677,10 @@ namespace Zeni::Concurrency {
         }
         else if (Pred()(snode->key, key)) {
           auto tuple_value = snode->template erased<index>(key, value);
-          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
         }
         else {
           snode->try_increment_refs();
@@ -1599,7 +1710,9 @@ namespace Zeni::Concurrency {
           return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, static_cast<const MNode *>(cnode), Key());
         }
         auto tuple_value = ierase_ip<index>(next, key, value, hash_value, level + CNode::W);
-        if (!std::get<1>(tuple_value)) {
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+        else if (!std::get<1>(tuple_value)) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(nullptr));
@@ -1627,7 +1740,9 @@ namespace Zeni::Concurrency {
         }
         else {
           auto tuple_value = lnode->template erased_ip<index>(key, value);
-          if (!std::get<1>(tuple_value)->next) {
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else if (!std::get<1>(tuple_value)->next) {
             std::get<1>(tuple_value)->snode->try_increment_refs();
             std::get<1>(tuple_value)->decrement_refs();
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)->snode));
@@ -1644,7 +1759,10 @@ namespace Zeni::Concurrency {
         }
         else if (Pred()(snode->key, key)) {
           auto tuple_value = snode->template erased_ip<index>(key, value);
-          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
         }
         else {
           snode->try_increment_refs();
@@ -1671,7 +1789,9 @@ namespace Zeni::Concurrency {
           return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode->inserted(pos, flag, std::get<1>(tuple_value))));
         }
         auto tuple_value = ierase_ip_xp<if_present, regardless>(next, key, value, hash_value, level + CNode::W);
-        if (!std::get<1>(tuple_value)) {
+        if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+        else if (!std::get<1>(tuple_value)) {
           const auto new_cnode = cnode->erased(pos, flag);
           if (!new_cnode)
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(nullptr));
@@ -1700,7 +1820,9 @@ namespace Zeni::Concurrency {
         }
         else {
           auto tuple_value = lnode->template erased_ip_xp<if_present, regardless>(key, value);
-          if (!std::get<1>(tuple_value)->next) {
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else if (!std::get<1>(tuple_value)->next) {
             std::get<1>(tuple_value)->snode->try_increment_refs();
             std::get<1>(tuple_value)->decrement_refs();
             return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)->snode));
@@ -1718,7 +1840,10 @@ namespace Zeni::Concurrency {
         }
         else if (Pred()(snode->key, key)) {
           auto tuple_value = snode->template erased_ip_xp<if_present, regardless>(key, value);
-          return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+          if (uintptr_t(std::get<1>(tuple_value)) == 0x1)
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<const MNode *>(0x1));
+          else
+            return Hash_Trie_S2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
         }
         else {
           snode->try_increment_refs();
@@ -1801,12 +1926,12 @@ namespace Zeni::Concurrency {
     template <typename VALUE_TYPE, typename DESIRED>
     static bool CAS(std::atomic<VALUE_TYPE *> &atomic_value, VALUE_TYPE * &expected, const DESIRED * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
       if (atomic_value.compare_exchange_strong(expected, desired, success, failure)) {
-        if (expected)
+        if (expected && uintptr_t(expected) != 0x1)
           expected->decrement_refs();
         return true;
       }
       else {
-        if (desired)
+        if (desired && uintptr_t(desired) != 0x1)
           desired->decrement_refs();
         return false;
       }

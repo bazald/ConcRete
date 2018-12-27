@@ -361,7 +361,7 @@ namespace Zeni::Concurrency {
         if (found) {
           const auto [result, new_snode] = found->updated_count(insertion);
           if (found == new_snode) {
-            delete new_head;
+            new_head->decrement_refs();
             return std::make_tuple(result, reinterpret_cast<List_Node *>(0x1), found);
           }
           else
@@ -409,7 +409,7 @@ namespace Zeni::Concurrency {
         if (found) {
           const auto [result, new_snode] = found->updated_count_ip(insertion);
           if (found == new_snode) {
-            delete new_head;
+            new_head->decrement_refs();
             return std::make_tuple(result, reinterpret_cast<List_Node *>(0x1), found);
           }
           else
@@ -639,8 +639,7 @@ namespace Zeni::Concurrency {
     }
 
     bool empty() const {
-      const MNode * const mnode = m_root.load(std::memory_order_acquire);
-      return mnode && uintptr_t(mnode) != 0x1;
+      return !m_root.load(std::memory_order_acquire);
     }
 
     size_t size() const {

@@ -148,25 +148,25 @@ int main(int argc, char **argv)
   //}
   //std::cout << std::endl;
 
-  for (int i = 0; i != 80; ++i) {
-    test_Antiable_Hash_Trie(worker_threads, job_queue);
-    //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-    //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-    //  abort();
-    //}
-    std::cout << 'A' << std::flush;
-  }
-  std::cout << std::endl;
+  //for (int i = 0; i != 80; ++i) {
+  //  test_Antiable_Hash_Trie(worker_threads, job_queue);
+  //  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //  //  abort();
+  //  //}
+  //  std::cout << 'A' << std::flush;
+  //}
+  //std::cout << std::endl;
 
-  for (int i = 0; i != 80; ++i) {
-    test_Positive_Hash_Trie(worker_threads, job_queue);
-    //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-    //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-    //  abort();
-    //}
-    std::cout << 'P' << std::flush;
-  }
-  std::cout << std::endl;
+  //for (int i = 0; i != 80; ++i) {
+  //  test_Positive_Hash_Trie(worker_threads, job_queue);
+  //  //if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
+  //  //  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
+  //  //  abort();
+  //  //}
+  //  std::cout << 'P' << std::flush;
+  //}
+  //std::cout << std::endl;
 
   //for (int i = 0; i != 80; ++i) {
   //  test_Hash_Trie(worker_threads, job_queue);
@@ -178,21 +178,15 @@ int main(int argc, char **argv)
   //}
   //std::cout << std::endl;
 
-  //test_Rete_Network(worker_threads, job_queue);
-  ////if (Zeni::Concurrency::Worker_Threads::get_total_workers() != 0) {
-  ////  std::cerr << "Total Workers = " << Zeni::Concurrency::Worker_Threads::get_total_workers() << std::endl;
-  ////  abort();
-  ////}
+  std::cerr << "Test: ";
+  for (int i = 1; i != 11; ++i) {
+    std::cerr << ' ' << i;
+    test_Rete_Network(worker_threads, job_queue);
+  }
 
-  //std::cerr << "Test: ";
-  //for (int i = 1; i != 11; ++i) {
-  //  std::cerr << ' ' << i;
-  //  test_Rete_Network(worker_threads, job_queue);
-  //}
+  std::cerr << std::endl;
 
-  //std::cerr << std::endl;
-
-  //test_Parser(worker_threads, job_queue);
+  test_Parser(worker_threads, job_queue);
 
   return 0;
 }
