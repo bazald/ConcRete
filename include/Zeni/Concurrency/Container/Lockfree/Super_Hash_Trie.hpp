@@ -349,7 +349,7 @@ namespace Zeni::Concurrency {
       auto erased_ip_xp(const Key &key) const {
         typedef std::remove_const_t<std::remove_reference_t<decltype(std::get<if_present>(m_hash_tries))>> Hash_Trie_Type;
 
-        Hash_Trie_Super_Node * const updated_node;
+        Hash_Trie_Super_Node * updated_node;
 
         const auto[result1, snapshot1, key1] = std::get<if_present>(m_hash_tries).erased_ip(key);
         if (result1 != Hash_Trie_Type::LNode::Result::Not_Present) {

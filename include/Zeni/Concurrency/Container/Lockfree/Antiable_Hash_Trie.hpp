@@ -98,7 +98,7 @@ namespace Zeni::Concurrency {
       const bool inserted;
 
     private:
-      mutable ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t m_count;
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_int64_t mutable m_count;
     };
 
     template <typename HASH_VALUE_TYPE, typename FLAG_TYPE>
