@@ -63,17 +63,18 @@ namespace Zeni::Concurrency {
 
     public:
       enum class Result {
-        First_Insertion,      ///< Count increases to 1 and object inserted into trie
-        Last_Removal,         ///< Count decrements to 0 and object removed from trie
-        Extra_Insertion,      ///< Count increases past 1
-        Canceling_Removal,    ///< Count decreases to a natural number,
-        Failed_Removal,       ///< Object was not present in the trie and could not be removed
-        Successful_Move,      ///< Snode was successfully moved from one trie to the other
-        Failed_Insertion,     ///< Snode could not be moved into the trie due to preexisting Snode with the same key
-        Not_Present,          ///< Object was not present in the trie and update was impossible
-        Last_Removal_IP,      ///< If-present removal succeeded and decrements to 0
-        Extra_Insertion_IP,   ///< If-present insertion succeeded and increments past 1
-        Canceling_Removal_IP  ///< If-present removal succeeded and decrements to a natural number
+        Invalid_SHT,         ///< Enclosing Super_Hash_Trie invalidated
+        First_Insertion,     ///< Count increases to 1 and object inserted into trie
+        Last_Removal,        ///< Count decrements to 0 and object removed from trie
+        Extra_Insertion,     ///< Count increases past 1
+        Canceling_Removal,   ///< Count decreases to a natural number,
+        Failed_Removal,      ///< Object was not present in the trie and could not be removed
+        Successful_Move,     ///< Snode was successfully moved from one trie to the other
+        Failed_Insertion,    ///< Snode could not be moved into the trie due to preexisting Snode with the same key
+        Not_Present,         ///< Object was not present in the trie and update was impossible
+        Last_Removal_IP,     ///< If-present removal succeeded and decrements to 0
+        Extra_Insertion_IP,  ///< If-present insertion succeeded and increments past 1
+        Canceling_Removal_IP ///< If-present removal succeeded and decrements to a natural number
       };
 
       template <typename KEY_TYPE>

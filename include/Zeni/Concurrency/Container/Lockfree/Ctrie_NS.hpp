@@ -562,12 +562,6 @@ namespace Zeni::Concurrency {
 
     Ctrie_NS() = default;
 
-    Ctrie_NS(INode * const inode)
-      : m_root(inode),
-      m_readonly(true)
-    {
-    }
-
     ~Ctrie_NS() {
       const Branch * const branch = m_root.load(std::memory_order_acquire);
       if (branch)
@@ -965,7 +959,6 @@ namespace Zeni::Concurrency {
     }
 
     ZENI_CONCURRENCY_CACHE_ALIGN mutable std::atomic<Branch *> m_root = new INode(CNode::Create(0x0, 0, {}));
-    bool m_readonly = false;
   };
 
 }

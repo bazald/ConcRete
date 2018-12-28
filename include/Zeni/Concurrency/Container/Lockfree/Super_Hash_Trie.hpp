@@ -31,20 +31,43 @@ namespace Zeni::Concurrency {
     }
 
     template <size_t tuple_size>
+    struct Generate_Invalid_Tuple {};
+
+    template <>
+    struct Generate_Invalid_Tuple<3> {
+      template <typename Tuple_Type>
+      static auto generate() {
+        std::tuple_element_t<0, Tuple_Type> result; ///< MSVC hack: Direct use fails
+        result = decltype(result)::Invalid_SHT;     ///< MSVC hack: decltype succeeds
+        return std::make_tuple(result, std::tuple_element_t<1, Tuple_Type>(0x1), std::tuple_element_t<2, Tuple_Type>());
+      }
+    };
+
+    template <>
+    struct Generate_Invalid_Tuple<4> {
+      template <typename Tuple_Type>
+      static auto generate() {
+        std::tuple_element_t<0, Tuple_Type> result; ///< MSVC hack: Direct use fails
+        result = decltype(result)::Invalid_SHT;     ///< MSVC hack: decltype succeeds
+        return std::make_tuple(result, std::tuple_element_t<1, Tuple_Type>(0x1), std::tuple_element_t<2, Tuple_Type>(), std::tuple_element_t<3, Tuple_Type>());
+      }
+    };
+
+    template <size_t tuple_size>
     struct Update_Tuple_1 {};
 
     template <>
     struct Update_Tuple_1<3> {
-      template <typename Tuple_Tupe, typename Updated_Node_Type>
-      static auto updated(Tuple_Tupe tuple_value, Updated_Node_Type updated_node) {
+      template <typename Tuple_Type, typename Updated_Node_Type>
+      static auto updated(Tuple_Type tuple_value, Updated_Node_Type updated_node) {
         return std::make_tuple(std::get<0>(tuple_value), updated_node, std::get<2>(tuple_value));
       }
     };
 
     template <>
     struct Update_Tuple_1<4> {
-      template <typename Tuple_Tupe, typename Updated_Node_Type>
-      static auto updated(Tuple_Tupe tuple_value, Updated_Node_Type updated_node) {
+      template <typename Tuple_Type, typename Updated_Node_Type>
+      static auto updated(Tuple_Type tuple_value, Updated_Node_Type updated_node) {
         return std::make_tuple(std::get<0>(tuple_value), updated_node, std::get<2>(tuple_value), std::get<3>(tuple_value));
       }
     };
@@ -405,8 +428,9 @@ namespace Zeni::Concurrency {
   public:
     typedef Super_Hash_Trie<TYPES...> Snapshot;
 
-    Super_Hash_Trie()
-      : m_super_root(new Hash_Trie_Super_Node())
+    Super_Hash_Trie(const bool invalidate_on_empty = false)
+      : m_super_root(new Hash_Trie_Super_Node()),
+      m_invalidate_on_empty(invalidate_on_empty)
     {
     }
 
@@ -417,26 +441,28 @@ namespace Zeni::Concurrency {
     }
 
     Super_Hash_Trie(const Super_Hash_Trie &rhs)
-      : m_super_root(rhs.isnapshot())
+      : m_super_root(rhs.isnapshot()),
+      m_invalidate_on_empty(false)
     {
     }
 
     Super_Hash_Trie & operator=(const Super_Hash_Trie &rhs) {
       const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
       const Hash_Trie_Super_Node * const new_super_root = rhs.isnapshot();
-      CAS(m_super_root, super_root, new_super_root, std::memory_order_release, std::memory_order_acquire);
+      CAS_dec(m_super_root, super_root, new_super_root, std::memory_order_release, std::memory_order_acquire);
       return *this;
     }
 
     Super_Hash_Trie(Super_Hash_Trie &&rhs)
-      : m_super_root(rhs.m_super_root.load(std::memory_order_relaxed))
+      : m_super_root(rhs.m_super_root.load(std::memory_order_relaxed)),
+      m_invalidate_on_empty(rhs.m_invalidate_on_empty)
     {
       rhs.m_super_root.store(nullptr, std::memory_order_relaxed);
     }
 
     bool valid() const {
       const auto super_root = m_super_root.load(std::memory_order_acquire);
-      return uintptr_t(super_root) != 0x1;
+      return super_root && uintptr_t(super_root) != 0x1;
     }
 
     bool empty() const {
@@ -782,114 +808,84 @@ namespace Zeni::Concurrency {
     template <size_t index, typename Key>
     auto iinsert(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
-      for (;;) {
-        const auto tuple_value = super_root->template inserted<index>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+      bool done = false;
+      for(;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template inserted<index>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template inserted<index>(key)))>();
+        auto tuple_value = super_root->template inserted<index>(key);
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
     template <size_t index, typename Key>
     auto iinsert_ip(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
-        const auto tuple_value = super_root->template inserted_ip<index>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template inserted_ip<index>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template inserted_ip<index>(key)))>();
+        auto tuple_value = super_root->template inserted_ip<index>(key);
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto iinsert_2(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
-        const auto tuple_value = super_root->template inserted_2<index1, index2>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template inserted_2<index1, index2>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template inserted_2<index1, index2>(key)))>();
+        auto tuple_value = super_root->template inserted_2<index1, index2>(key);
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto iinsert_2_ip(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template inserted_2_ip<index1, index2>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template inserted_2_ip<index1, index2>(key)))>();
         const auto tuple_value = super_root->template inserted_2_ip<index1, index2>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto iinsert_2(const Key &key, const Value &value) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template inserted_2<index1, index2>(key, value)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template inserted_2<index1, index2>(key, value)))>();
         const auto tuple_value = super_root->template inserted_2<index1, index2>(key, value);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto iinsert_2_ip(const Key &key, const Value &value) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template inserted_2_ip<index1, index2>(key, value)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template inserted_2_ip<index1, index2>(key, value)))>();
         const auto tuple_value = super_root->template inserted_2_ip<index1, index2>(key, value);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
@@ -938,114 +934,84 @@ namespace Zeni::Concurrency {
     template <size_t index, typename Key>
     auto ierase(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template erased<index>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template erased<index>(key)))>();
         const auto tuple_value = super_root->template erased<index>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
     template <size_t index, typename Key>
     auto ierase_ip(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template erased_ip<index>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template erased_ip<index>(key)))>();
         const auto tuple_value = super_root->template erased_ip<index>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto ierase_2(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template erased_2<index1, index2>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template erased_2<index1, index2>(key)))>();
         const auto tuple_value = super_root->template erased_2<index1, index2>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto ierase_2_ip(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template erased_2_ip<index1, index2>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template erased_2_ip<index1, index2>(key)))>();
         const auto tuple_value = super_root->template erased_2_ip<index1, index2>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto ierase_2(const Key &key, const Value &value) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template erased_2<index1, index2>(key, value)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template erased_2<index1, index2>(key, value)))>();
         const auto tuple_value = super_root->template erased_2<index1, index2>(key, value);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto ierase_2_ip(const Key &key, const Value &value) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template erased_2_ip<index1, index2>(key, value)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template erased_2_ip<index1, index2>(key, value)))>();
         const auto tuple_value = super_root->template erased_2_ip<index1, index2>(key, value);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
@@ -1094,19 +1060,14 @@ namespace Zeni::Concurrency {
     template <size_t src, size_t dest, typename Key>
     auto imove(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template moved<src, dest>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template moved<src, dest>(key)))>();
         const auto tuple_value = super_root->template moved<src, dest>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
@@ -1120,19 +1081,14 @@ namespace Zeni::Concurrency {
     template <size_t index, size_t src, size_t dest, typename Key, typename Value>
     auto imove_2(const Key &key, const Value &value) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template moved_2<index, src, dest>(key, value)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template moved_2<index, src, dest>(key, value)))>();
         const auto tuple_value = super_root->template moved_2<index, src, dest>(key, value);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
@@ -1146,19 +1102,14 @@ namespace Zeni::Concurrency {
     template <size_t if_possible, size_t regardless, typename Key>
     auto iinsert_ip_xp(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template inserted_ip_xp<if_possible, regardless>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template inserted_ip_xp<if_possible, regardless>(key)))>();
         const auto tuple_value = super_root->template inserted_ip_xp<if_possible, regardless>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
@@ -1172,19 +1123,14 @@ namespace Zeni::Concurrency {
     template <size_t index, size_t if_possible, size_t regardless, typename Key, typename Value>
     auto iinsert_2_ip_xp(const Key &key, const Value &value) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template inserted_2_ip_xp<index, if_possible, regardless>(key, value)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template inserted_2_ip_xp<index, if_possible, regardless>(key, value)))>();
         const auto tuple_value = super_root->template inserted_2_ip_xp<index, if_possible, regardless>(key, value);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
@@ -1198,19 +1144,14 @@ namespace Zeni::Concurrency {
     template <size_t if_possible, size_t regardless, typename Key>
     auto ierase_ip_xp(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template erased_ip_xp<if_possible, regardless>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template erased_ip_xp<if_possible, regardless>(key)))>();
         const auto tuple_value = super_root->template erased_ip_xp<if_possible, regardless>(key);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
@@ -1224,19 +1165,14 @@ namespace Zeni::Concurrency {
     template <size_t index, size_t if_possible, size_t regardless, typename Key, typename Value>
     auto ierase_2_ip_xp(const Key &key, const Value &value) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
+      bool done = false;
       for (;;) {
+        if (uintptr_t(super_root) == 0x1)
+          return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template erased_2_ip_xp<index, if_possible, regardless>(key, value)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template erased_2_ip_xp<index, if_possible, regardless>(key, value)))>();
         const auto tuple_value = super_root->template erased_2_ip_xp<index, if_possible, regardless>(key, value);
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
-        if (uintptr_t(std::get<1>(tuple_value)) == 0x1 || CAS(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire))
-          return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
-        else {
-          if (std::get<1>(tuple_value))
-            std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        const auto rv = complete_operation(done, super_root, tuple_value);
+        if (done)
+          return rv;
       }
     }
 
@@ -1248,7 +1184,8 @@ namespace Zeni::Concurrency {
     }
 
     Super_Hash_Trie(const Hash_Trie_Super_Node * const super_node)
-      : m_super_root(super_node)
+      : m_super_root(super_node),
+      m_invalidate_on_empty(false)
     {
     }
 
@@ -1259,12 +1196,44 @@ namespace Zeni::Concurrency {
       return super_root;
     }
 
+    template <typename TUPLE_TYPE>
+    auto complete_operation(bool &done, const Hash_Trie_Super_Node * &super_root, TUPLE_TYPE tuple_value) {
+      if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
+        if (super_root)
+          super_root->decrement_refs();
+        done = true;
+        return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+      }
+      else {
+        assert(std::get<1>(tuple_value));
+        if (m_invalidate_on_empty && std::get<1>(tuple_value)->empty()) {
+          delete std::get<1>(tuple_value);
+          std::get<1>(tuple_value) = reinterpret_cast<std::remove_reference_t<decltype(std::get<1>(tuple_value))>>(0x1);
+        }
+        else
+          std::get<1>(tuple_value)->try_increment_refs();
+        if (super_root)
+          super_root->decrement_refs();
+      }
+      if (CAS_del(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire)) {
+        done = true;
+        return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
+      }
+      else {
+        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1) {
+          std::get<1>(tuple_value)->decrement_refs();
+          enforce_snapshot(super_root);
+        }
+        return decltype(complete_operation(done, super_root, tuple_value))();
+      }
+    }
+
     void enforce_snapshot(const Hash_Trie_Super_Node * &super_root) const {
       while (super_root && !super_root->try_increment_refs())
         super_root = m_super_root.load(std::memory_order_acquire);
     }
 
-    static bool CAS(std::atomic<const Hash_Trie_Super_Node *> &atomic_value, const Hash_Trie_Super_Node * &expected, const Hash_Trie_Super_Node * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
+    static bool CAS_dec(std::atomic<const Hash_Trie_Super_Node *> &atomic_value, const Hash_Trie_Super_Node * &expected, const Hash_Trie_Super_Node * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
       if (atomic_value.compare_exchange_strong(expected, desired, success, failure)) {
         if (expected && uintptr_t(expected) != 0x1)
           expected->decrement_refs();
@@ -1277,7 +1246,21 @@ namespace Zeni::Concurrency {
       }
     }
 
+    static bool CAS_del(std::atomic<const Hash_Trie_Super_Node *> &atomic_value, const Hash_Trie_Super_Node * &expected, const Hash_Trie_Super_Node * desired, const std::memory_order success = std::memory_order_seq_cst, const std::memory_order failure = std::memory_order_seq_cst) {
+      if (atomic_value.compare_exchange_strong(expected, desired, success, failure)) {
+        if (expected && uintptr_t(expected) != 0x1)
+          expected->decrement_refs();
+        return true;
+      }
+      else {
+        if (desired && uintptr_t(desired) != 0x1)
+          delete desired;
+        return false;
+      }
+    }
+
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<const Hash_Trie_Super_Node *> m_super_root;
+    const bool m_invalidate_on_empty;
   };
 
 }

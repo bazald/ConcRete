@@ -21,7 +21,9 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Atomic.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ctrie_NS.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ctrie_NS_S2.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Ctrie_NS.hpp" />
+    <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Lockfree\Ctrie_NS_S2.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\DWCAS.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Antiable_Hash_Trie.hpp" />
     <ClInclude Include="..\..\..\include\Zeni\Concurrency\Container\Ctrie.hpp" />

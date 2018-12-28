@@ -25,16 +25,16 @@ namespace Zeni::Concurrency {
 
     template <>
     struct Update_Tuple_1<3> {
-      template <typename Tuple_Tupe, typename Updated_Node_Type>
-      static auto updated(Tuple_Tupe tuple_value, Updated_Node_Type updated_node) {
+      template <typename Tuple_Type, typename Updated_Node_Type>
+      static auto updated(Tuple_Type tuple_value, Updated_Node_Type updated_node) {
         return std::make_tuple(std::get<0>(tuple_value), updated_node, std::get<2>(tuple_value));
       }
     };
 
     template <>
     struct Update_Tuple_1<4> {
-      template <typename Tuple_Tupe, typename Updated_Node_Type>
-      static auto updated(Tuple_Tupe tuple_value, Updated_Node_Type updated_node) {
+      template <typename Tuple_Type, typename Updated_Node_Type>
+      static auto updated(Tuple_Type tuple_value, Updated_Node_Type updated_node) {
         return std::make_tuple(std::get<0>(tuple_value), updated_node, std::get<2>(tuple_value), std::get<3>(tuple_value));
       }
     };
