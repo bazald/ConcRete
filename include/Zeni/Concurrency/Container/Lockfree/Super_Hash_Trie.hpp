@@ -466,201 +466,183 @@ namespace Zeni::Concurrency {
     }
 
     bool empty() const {
-      assert(valid());
       const auto super_root = m_super_root.load(std::memory_order_acquire);
-      return super_root->empty();
+      return !super_root || uintptr_t(super_root) == 0x1 || super_root->empty();
     }
 
     template <size_t index>
     bool empty() const {
-      assert(valid());
       const auto super_root = m_super_root.load(std::memory_order_acquire);
-      return super_root->template empty<index>();
+      return !super_root || uintptr_t(super_root) == 0x1 || super_root->template empty<index>();
     }
 
     template <size_t index>
     size_t size() const {
-      assert(valid());
       const auto super_root = m_super_root.load(std::memory_order_acquire);
-      return super_root->template size<index>();
+      return !super_root || uintptr_t(super_root) == 0x1 || super_root->template size<index>();
     }
 
     template <size_t index>
     bool size_one() const {
-      assert(valid());
       const auto super_root = m_super_root.load(std::memory_order_acquire);
-      return super_root->template size_one<index>();
+      return !super_root || uintptr_t(super_root) == 0x1 || super_root->template size_one<index>();
     }
 
     template <size_t index>
     bool size_zero() const {
-      assert(valid());
       const auto super_root = m_super_root.load(std::memory_order_acquire);
-      return super_root->template size_zero<index>();
+      return !super_root || uintptr_t(super_root) == 0x1 || super_root->template size_zero<index>();
     }
 
     template <size_t index, typename Comparable, typename CHash = typename std::tuple_element_t<index, Types>::Hash, typename CPred = typename std::tuple_element_t<index, Types>::Pred>
     auto lookup(const Comparable &key) const {
-      assert(valid());
       const Hash_Trie_Super_Node * const super_root = isnapshot();
+      if (uintptr_t(super_root) == 0x1)
+        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up<index, Comparable, CHash, CPred>(key))>::value>::template generate<decltype(super_root->template looked_up<index, Comparable, CHash, CPred>(key))>();
       const auto found = super_root->template looked_up<index, Comparable, CHash, CPred>(key);
       return std::make_pair(found, Snapshot(super_root));
     }
 
     template <size_t index1, size_t index2, typename Comparable, typename CHash = typename std::tuple_element_t<index2, typename std::tuple_element_t<index1, Types>>::Hash, typename CPred = typename std::tuple_element_t<index2, typename std::tuple_element_t<index1, Types>>::Pred>
     auto lookup_2(const Comparable &key) const {
-      assert(valid());
       const Hash_Trie_Super_Node * const super_root = isnapshot();
+      if (uintptr_t(super_root) == 0x1)
+        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key))>::value>::template generate<decltype(super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key))>();
       const auto found = super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key);
       return std::make_pair(found, Snapshot(super_root));
     }
 
     template <size_t index1, size_t index2, typename Comparable1, typename Comparable2, typename CHash1 = typename std::tuple_element_t<index1, Types>::Hash, typename CPred1 = typename std::tuple_element_t<index1, Types>::Pred, typename CHash2 = typename std::tuple_element_t<index2, typename std::tuple_element_t<index1, Types>::Subtrie::Types>::Hash, typename CPred2 = typename std::tuple_element_t<index2, typename std::tuple_element_t<index1, Types>::Subtrie::Types>::Pred>
     auto lookup_2(const Comparable1 &key, const Comparable2 &value) const {
-      assert(valid());
       const Hash_Trie_Super_Node * const super_root = isnapshot();
+      if (uintptr_t(super_root) == 0x1)
+        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred1, CHash2, CPred2>(key, value))>::value>::template generate<decltype(super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred1, CHash2, CPred2>(key, value))>();
       const auto found = super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred1, CHash2, CPred2>(key, value);
       return std::make_pair(found, Snapshot(super_root));
     }
 
     template <size_t index, typename Comparable, typename CHash = typename std::tuple_element_t<index, Types>::Hash, typename CPred = typename std::tuple_element_t<index, Types>::Pred>
     auto looked_up(const Comparable &key) const {
-      assert(valid());
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
+      if (uintptr_t(super_root) == 0x1)
+        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up<index, Comparable, CHash, CPred>(key))>::value>::template generate<decltype(super_root->template looked_up<index, Comparable, CHash, CPred>(key))>();
       return super_root->template looked_up<index, Comparable, CHash, CPred>(key);
     }
 
     template <size_t index1, size_t index2, typename Comparable, typename CHash = typename std::tuple_element_t<index2, typename std::tuple_element_t<index1, Types>>::Hash, typename CPred = typename std::tuple_element_t<index2, typename std::tuple_element_t<index1, Types>>::Pred>
     auto looked_up_2(const Comparable &key) const {
-      assert(valid());
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
+      if (uintptr_t(super_root) == 0x1)
+        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key))>::value>::template generate<decltype(super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key))>();
       return super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key);
     }
 
     template <size_t index1, size_t index2, typename Comparable1, typename Comparable2, typename CHash1 = typename std::tuple_element_t<index1, Types>::Hash, typename CPred1 = typename std::tuple_element_t<index1, Types>::Pred, typename CHash2 = typename std::tuple_element_t<index2, typename std::tuple_element_t<index1, Types>::Subtrie::Types>::Hash, typename CPred2 = typename std::tuple_element_t<index2, typename std::tuple_element_t<index1, Types>::Subtrie::Types>::Pred>
     auto looked_up_2(const Comparable1 &key, const Comparable2 &value) const {
-      assert(valid());
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
+      if (uintptr_t(super_root) == 0x1)
+        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred2, CHash2, CPred2>(key, value))>::value>::template generate<decltype(super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred2, CHash2, CPred2>(key, value))>();
       return super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred2, CHash2, CPred2>(key, value);
     }
 
     template <size_t index, typename Key>
     auto insert(const Key &key) {
-      assert(valid());
       return iinsert<index>(key);
     }
 
     template <size_t index, typename Key>
     auto insert_ip(const Key &key) {
-      assert(valid());
       return iinsert_ip<index>(key);
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto insert_2(const Key &key) {
-      assert(valid());
       return iinsert_2<index1, index2>(key);
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto insert_2_ip(const Key &key) {
-      assert(valid());
       return iinsert_2_ip<index1, index2>(key);
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto insert_2(const Key &key, const Value &value) {
-      assert(valid());
       return iinsert_2<index1, index2>(key, value);
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto insert_2_ip(const Key &key, const Value &value) {
-      assert(valid());
       return iinsert_2_ip<index1, index2>(key, value);
     }
 
     template <size_t index, typename Key>
     auto inserted(const Key &key) const {
-      assert(valid());
       return iinserted<index>(key);
     }
 
     template <size_t index, typename Key>
     auto inserted_ip(const Key &key) const {
-      assert(valid());
       return iinserted_ip<index>(key);
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto inserted_2(const Key &key) const {
-      assert(valid());
       return iinserted_2<index1, index2>(key);
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto inserted_2_ip(const Key &key) const {
-      assert(valid());
       return iinserted_2_ip<index1, index2>(key);
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto inserted_2(const Key &key, const Value &value) const {
-      assert(valid());
       return iinserted_2<index1, index2>(key, value);
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto inserted_2_ip(const Key &key, const Value &value) const {
-      assert(valid());
       return iinserted_2_ip<index1, index2>(key, value);
     }
 
     template <size_t index, typename Key>
     auto erase(const Key &key) {
-      assert(valid());
       const auto tuple_value = ierase<index>(key);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index, typename Key>
     auto erase_ip(const Key &key) {
-      assert(valid());
       const auto tuple_value = ierase_ip<index>(key);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto erase_2(const Key &key) {
-      assert(valid());
       const auto tuple_value = ierase_2<index1, index2>(key);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto erase_2_ip(const Key &key) {
-      assert(valid());
       const auto tuple_value = ierase_2_ip<index1, index2>(key);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto erase_2(const Key &key, const Value &value) {
-      assert(valid());
       const auto tuple_value = ierase_2<index1, index2>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto erase_2_ip(const Key &key, const Value &value) {
-      assert(valid());
       const auto tuple_value = ierase_2_ip<index1, index2>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index, typename Key>
     auto erased(const Key &key) const {
-      assert(valid());
       const auto tuple_value = ierased<index>(key);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
@@ -668,139 +650,124 @@ namespace Zeni::Concurrency {
     template <size_t index, typename Key>
     auto erased_ip(const Key &key) const {
       const auto tuple_value = ierased_ip<index>(key);
-      assert(valid());
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto erased_2(const Key &key) const {
-      assert(valid());
       const auto tuple_value = ierased_2<index1, index2>(key);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index1, size_t index2, typename Key>
     auto erased_2_ip(const Key &key) const {
-      assert(valid());
       const auto tuple_value = ierased_2_ip<index1, index2>(key);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto erased_2(const Key &key, const Value &value) const {
-      assert(valid());
       const auto tuple_value = ierased_2<index1, index2>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index1, size_t index2, typename Key, typename Value>
     auto erased_2_ip(const Key &key, const Value &value) const {
-      assert(valid());
       const auto tuple_value = ierased_2_ip<index1, index2>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t src, size_t dest, typename Key>
     auto move(const Key &key) {
-      assert(valid());
       return imove<src, dest>(key);
     }
 
     template <size_t src, size_t dest, typename Key>
     auto moved(const Key &key) const {
-      assert(valid());
       return imoved<src, dest>(key);
     }
 
     template <size_t index, size_t src, size_t dest, typename Key, typename Value>
     auto move_2(const Key &key, const Value &value) {
-      assert(valid());
       const auto tuple_value = imove_2<index, src, dest>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index, size_t src, size_t dest, typename Key, typename Value>
     auto moved_2(const Key &key, const Value &value) const {
-      assert(valid());
       const auto tuple_value = imoved_2<index, src, dest>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t if_possible, size_t regardless, typename Key>
     auto insert_ip_xp(const Key &key) {
-      assert(valid());
       return iinsert_ip_xp<if_possible, regardless>(key);
     }
 
     template <size_t if_possible, size_t regardless, typename Key>
     auto inserted_ip_xp(const Key &key) const {
-      assert(valid());
       return iinserted_ip_xp<if_possible, regardless>(key);
     }
 
     template <size_t index, size_t if_possible, size_t regardless, typename Key, typename Value>
     auto insert_2_ip_xp(const Key &key, const Value &value) {
-      assert(valid());
       const auto tuple_value = iinsert_2_ip_xp<index, if_possible, regardless>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index, size_t if_possible, size_t regardless, typename Key, typename Value>
     auto inserted_2_ip_xp(const Key &key, const Value &value) const {
-      assert(valid());
       const auto tuple_value = iinserted_2_ip_xp<index, if_possible, regardless>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t if_possible, size_t regardless, typename Key>
     auto erase_ip_xp(const Key &key) {
-      assert(valid());
       return ierase_ip_xp<if_possible, regardless>(key);
     }
 
     template <size_t if_possible, size_t regardless, typename Key>
     auto erased_ip_xp(const Key &key) const {
-      assert(valid());
       return ierased_ip_xp<if_possible, regardless>(key);
     }
 
     template <size_t index, size_t if_possible, size_t regardless, typename Key, typename Value>
     auto erase_2_ip_xp(const Key &key, const Value &value) {
-      assert(valid());
       const auto tuple_value = ierase_2_ip_xp<index, if_possible, regardless>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     template <size_t index, size_t if_possible, size_t regardless, typename Key, typename Value>
     auto erased_2_ip_xp(const Key &key, const Value &value) const {
-      assert(valid());
       const auto tuple_value = ierased_2_ip_xp<index, if_possible, regardless>(key, value);
       return std::make_tuple(std::get<0>(tuple_value), std::get<1>(tuple_value), std::get<2>(tuple_value));
     }
 
     Snapshot snapshot() const {
-      assert(valid());
       return isnapshot();
     }
 
     template <size_t index>
     auto snapshot() const {
-      assert(valid());
       const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
+      if (uintptr_t(super_root) == 0x1)
+        return decltype(super_root->template snapshot<index>())::invalid_snapshot();
       return super_root->template snapshot<index>();
     }
 
     template <size_t index1, size_t index2>
     auto snapshot_2() const {
-      assert(valid());
       const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
+      if (uintptr_t(super_root) == 0x1)
+        return decltype(super_root->template snapshot<index1>().template snapshot<index2>())::invalid_snapshot();
       return super_root->template snapshot<index1>().template snapshot<index2>();
     }
 
     template <size_t index1, size_t index2>
     auto lookup_snapshot(const typename std::tuple_element_t<index1, Types>::Key &key) const {
-      assert(valid());
       const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
+      if (uintptr_t(super_root) == 0x1)
+        return decltype(super_root->template snapshot<index1>().template lookup_snapshot<index2>(key))::invalid_snapshot();
       return super_root->template snapshot<index1>().template lookup_snapshot<index2>(key);
     }
 
@@ -809,7 +776,7 @@ namespace Zeni::Concurrency {
     auto iinsert(const Key &key) {
       const Hash_Trie_Super_Node * super_root = isnapshot();
       bool done = false;
-      for(;;) {
+      for (;;) {
         if (uintptr_t(super_root) == 0x1)
           return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(complete_operation(done, super_root, super_root->template inserted<index>(key)))>::value>::template generate<decltype(complete_operation(done, super_root, super_root->template inserted<index>(key)))>();
         auto tuple_value = super_root->template inserted<index>(key);

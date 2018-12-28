@@ -1074,6 +1074,10 @@ namespace Zeni::Concurrency {
       return isnapshot();
     }
 
+    static Snapshot invalid_snapshot() {
+      return Snapshot(reinterpret_cast<const MNode *>(0x1));
+    }
+
     template <size_t index, typename Comparable1, typename CHash1 = Hash, typename CPred1 = Pred>
     auto lookup_snapshot(const Comparable1 &key) const {
       assert(valid());

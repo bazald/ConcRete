@@ -744,6 +744,10 @@ namespace Zeni::Concurrency {
       return isnapshot();
     }
 
+    static Snapshot invalid_snapshot() {
+      return Snapshot(reinterpret_cast<const MNode *>(0x1));
+    }
+
   private:
     std::tuple<Result, Snapshot, Key> insert_or_erase(const Key &key, const bool insertion) {
       const Hash_Value hash_value = Hash()(key);
