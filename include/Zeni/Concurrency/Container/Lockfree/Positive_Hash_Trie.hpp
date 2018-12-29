@@ -80,6 +80,21 @@ namespace Zeni::Concurrency {
       template <typename KEY_TYPE>
       Singleton_Node(KEY_TYPE &&key_) : key(std::forward<KEY_TYPE>(key_)), m_count(1) {}
 
+      std::pair<Result, bool> updated_count_in_place(const bool insertion) const {
+        int64_t count = m_count.load();
+        for (;;) {
+          if (!count)
+            return std::make_pair(Result::Last_Removal, false);
+          const int64_t new_count = count + (insertion ? 1 : -1);
+          if (m_count.compare_exchange_weak(count, new_count, std::memory_order_relaxed, std::memory_order_relaxed)) {
+            if (new_count)
+              return std::make_pair(insertion ? Result::Extra_Insertion : Result::Canceling_Removal, true);
+            else
+              return std::make_pair(Result::Last_Removal, false);
+          }
+        }
+      }
+
       std::pair<Result, const Singleton_Node *> updated_count(const bool insertion) const {
         int64_t count = m_count.load();
         for (;;) {
@@ -95,6 +110,21 @@ namespace Zeni::Concurrency {
               return std::make_pair(insertion ? Result::Extra_Insertion : Result::Canceling_Removal, this);
             else
               return std::make_pair(Result::Last_Removal, nullptr);
+          }
+        }
+      }
+
+      std::pair<Result, bool> updated_count_ip_in_place(const bool insertion) const {
+        int64_t count = m_count.load();
+        for (;;) {
+          if (!count)
+            return std::make_pair(Result::Last_Removal_IP, false);
+          const int64_t new_count = count + (insertion ? 1 : -1);
+          if (m_count.compare_exchange_weak(count, new_count, std::memory_order_relaxed, std::memory_order_relaxed)) {
+            if (new_count)
+              return std::make_pair(insertion ? Result::Extra_Insertion_IP : Result::Canceling_Removal_IP, true);
+            else
+              return std::make_pair(Result::Last_Removal_IP, false);
           }
         }
       }
@@ -331,34 +361,11 @@ namespace Zeni::Concurrency {
       }
 
       std::tuple<Result, List_Node *, const Singleton_Node<KEY> *> updated(const KEY &key, const bool insertion) const {
-        const Singleton_Node<KEY> * found = nullptr;
-        List_Node * new_head = nullptr;
-        List_Node * new_tail = nullptr;
-        List_Node * old_head = const_cast<List_Node *>(this);
-        for (; old_head; old_head = old_head->next) {
-          if (PRED()(old_head->snode->key, key)) {
-            found = old_head->snode;
-            if (old_head->next) {
-              old_head->next->try_increment_refs();
-              if (new_head)
-                new_tail->next = old_head->next;
-              else {
-                new_head = old_head->next;
-                new_tail = new_head;
-              }
-              break;
-            }
-          }
-          else {
-            old_head->snode->try_increment_refs();
-            if (new_head)
-              new_head = new List_Node(old_head->snode, new_head);
-            else {
-              new_head = new List_Node(old_head->snode, nullptr);
-              new_tail = new_head;
-            }
-          }
-        }
+        const auto found0 = find(key);
+        const auto [result0, metaresult0] = found0->updated_count_in_place(insertion);
+        if (metaresult0)
+          return std::make_tuple(result0, reinterpret_cast<List_Node *>(0x1), found0);
+        const auto [found, new_head] = find_and_generate(key);
         if (found) {
           const auto [result, new_snode] = found->updated_count(insertion);
           if (found == new_snode) {
@@ -379,11 +386,55 @@ namespace Zeni::Concurrency {
       }
 
       std::tuple<Result, List_Node *, const Singleton_Node<KEY> *> updated_ip(const KEY &key, const bool insertion) const {
+        const auto found0 = find(key);
+        const auto[result0, metaresult0] = found0->updated_count_ip_in_place(insertion);
+        if (metaresult0)
+          return std::make_tuple(result0, reinterpret_cast<List_Node *>(0x1), found0);
+        const auto [found, new_head] = find_and_generate(key);
+        if (found) {
+          const auto [result, new_snode] = found->updated_count_ip(insertion);
+          if (found == new_snode) {
+            new_head->decrement_refs();
+            return std::make_tuple(result, reinterpret_cast<List_Node *>(0x1), found);
+          }
+          else
+            return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode ? new_snode : found);
+        }
+        else
+          return std::make_tuple(Result::Not_Present, new_head, nullptr);
+      }
+
+      std::tuple<Result, List_Node *, const Singleton_Node<KEY> *> updated(const Singleton_Node<KEY> * const external_snode, const bool insertion) const {
+        const auto [found, new_head] = find_and_generate(external_snode->key);
+        if (found) {
+          if (insertion)
+            return std::make_tuple(Result::Failed_Insertion, new_head, nullptr);
+          else
+            return std::make_tuple(Result::Last_Removal, new_head, found);
+        }
+        else {
+          if (insertion) {
+            external_snode->try_increment_refs();
+            return std::make_tuple(Result::First_Insertion, new List_Node(external_snode, new_head), external_snode);
+          }
+          else
+            return std::make_tuple(Result::Failed_Removal, new_head, nullptr);
+        }
+      }
+
+      const Singleton_Node<KEY> * find(const KEY &key) const {
+        for (List_Node * head = const_cast<List_Node *>(this); head; head = head->next) {
+          if (PRED()(head->snode->key, key))
+            return head->snode;
+        }
+        return nullptr;
+      }
+
+      std::pair<const Singleton_Node<KEY> *, List_Node *> find_and_generate(const KEY &key) const {
         const Singleton_Node<KEY> * found = nullptr;
         List_Node * new_head = nullptr;
         List_Node * new_tail = nullptr;
-        List_Node * old_head = const_cast<List_Node *>(this);
-        for (; old_head; old_head = old_head->next) {
+        for (List_Node * old_head = const_cast<List_Node *>(this); old_head; old_head = old_head->next) {
           if (PRED()(old_head->snode->key, key)) {
             found = old_head->snode;
             if (old_head->next) {
@@ -407,62 +458,7 @@ namespace Zeni::Concurrency {
             }
           }
         }
-        if (found) {
-          const auto [result, new_snode] = found->updated_count_ip(insertion);
-          if (found == new_snode) {
-            new_head->decrement_refs();
-            return std::make_tuple(result, reinterpret_cast<List_Node *>(0x1), found);
-          }
-          else
-            return std::make_tuple(result, new_snode ? new List_Node(new_snode, new_head) : new_head, new_snode ? new_snode : found);
-        }
-        else
-          return std::make_tuple(Result::Not_Present, new_head, nullptr);
-      }
-
-      std::tuple<Result, List_Node *, const Singleton_Node<KEY> *> updated(const Singleton_Node<KEY> * const external_snode, const bool insertion) const {
-        const Singleton_Node<KEY> * found = nullptr;
-        List_Node * new_head = nullptr;
-        List_Node * new_tail = nullptr;
-        List_Node * old_head = const_cast<List_Node *>(this);
-        for (; old_head; old_head = old_head->next) {
-          if (PRED()(old_head->snode->key, external_snode->key)) {
-            found = old_head->snode;
-            if (old_head->next) {
-              old_head->next->try_increment_refs();
-              if (new_head)
-                new_tail->next = old_head->next;
-              else {
-                new_head = old_head->next;
-                new_tail = new_head;
-              }
-              break;
-            }
-          }
-          else {
-            old_head->snode->try_increment_refs();
-            if (new_head)
-              new_head = new List_Node(old_head->snode, new_head);
-            else {
-              new_head = new List_Node(old_head->snode, nullptr);
-              new_tail = new_head;
-            }
-          }
-        }
-        if (found) {
-          if (insertion)
-            return std::make_tuple(Result::Failed_Insertion, new_head, nullptr);
-          else
-            return std::make_tuple(Result::Last_Removal, new_head, found);
-        }
-        else {
-          if (insertion) {
-            external_snode->try_increment_refs();
-            return std::make_tuple(Result::First_Insertion, new List_Node(external_snode, new_head), external_snode);
-          }
-          else
-            return std::make_tuple(Result::Failed_Removal, new_head, nullptr);
-        }
+        return std::make_pair(found, new_head);
       }
 
       const Singleton_Node<KEY> * const snode;
