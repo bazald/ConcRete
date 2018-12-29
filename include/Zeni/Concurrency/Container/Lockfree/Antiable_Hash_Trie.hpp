@@ -63,6 +63,7 @@ namespace Zeni::Concurrency {
 
     public:
       enum class Result {
+        Restart,                  ///< Enclosing Ctrie_NS_S2 invalidated
         Invalid_SHT,              ///< Enclosing Super_Hash_Trie invalidated
         First_Insertion,          ///< Count increases to 1 and object inserted into trie
         Last_Removal,             ///< Count decrements to 0 and object removed from trie

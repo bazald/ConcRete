@@ -5,7 +5,7 @@
 #endif
 
 #include "Zeni/Concurrency/Container/Antiable_Hash_Trie.hpp"
-//#include "Zeni/Concurrency/Container/Ctrie_NS_S2.hpp"
+#include "Zeni/Concurrency/Container/Ctrie_NS_S2.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie_2.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
@@ -103,7 +103,7 @@ int main(int argc, char **argv)
   //}
 
   {
-    Zeni::Concurrency::Hash_Trie_S2<int64_t, Zeni::Concurrency::Super_Hash_Trie<
+    Zeni::Concurrency::Ctrie_NS_S2<int64_t, Zeni::Concurrency::Super_Hash_Trie<
       Zeni::Concurrency::Positive_Hash_Trie<int64_t>,
       Zeni::Concurrency::Positive_Hash_Trie<int64_t>>> tries;
 

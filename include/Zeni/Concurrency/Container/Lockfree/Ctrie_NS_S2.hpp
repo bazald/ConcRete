@@ -15,25 +15,6 @@ namespace Zeni::Concurrency {
 
   namespace Ctrie_NS_S2_Internal {
 
-    template <size_t tuple_size>
-    struct Update_Tuple_1 {};
-
-    template <>
-    struct Update_Tuple_1<3> {
-      template <typename Tuple_Type, typename Updated_Node_Type>
-      static auto updated(Tuple_Type tuple_value, Updated_Node_Type updated_node) {
-        return std::make_tuple(std::get<0>(tuple_value), updated_node, std::get<2>(tuple_value));
-      }
-    };
-
-    template <>
-    struct Update_Tuple_1<4> {
-      template <typename Tuple_Type, typename Updated_Node_Type>
-      static auto updated(Tuple_Type tuple_value, Updated_Node_Type updated_node) {
-        return std::make_tuple(std::get<0>(tuple_value), updated_node, std::get<2>(tuple_value), std::get<3>(tuple_value));
-      }
-    };
-
     template <typename INT_TYPE>
     constexpr static INT_TYPE hamming(const INT_TYPE value = std::numeric_limits<INT_TYPE>::max()) {
       return (value & 0x1) + ((value >> 1) ? hamming(value >> 1) : 0);
@@ -174,7 +155,7 @@ namespace Zeni::Concurrency {
       static auto Create_Insert(KEY_TYPE &&key_, VALUE_TYPE &&value_) {
         auto snode = new Singleton_Node;
         auto tuple_value = snode->subtrie.template insert<index>(std::forward<VALUE_TYPE>(value_));
-        return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, snode);
+        return std::make_pair(tuple_value, snode);
       }
 
       template <size_t index, typename KEY_TYPE, typename VALUE_TYPE>
@@ -183,10 +164,10 @@ namespace Zeni::Concurrency {
         auto tuple_value = snode->subtrie.template erase<index>(std::forward<VALUE_TYPE>(value_));
         if (snode->subtrie.empty()) {
           delete snode;
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node<KEY, SUBTRIE> *>(nullptr));
+          return std::make_pair(tuple_value, static_cast<Singleton_Node *>(nullptr));
         }
         else
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, snode);
+          return std::make_pair(tuple_value, snode);
       }
 
       template <size_t index>
@@ -538,166 +519,91 @@ namespace Zeni::Concurrency {
 
       template <size_t index>
       auto insert(const KEY &key, const typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key &value) const {
-        const auto[found, new_head] = find_and_generate(key);
-        if (found) {
-          auto tuple_value = found->template insert<index>(key, value);
-          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
-            new_head->decrement_refs();
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
-          }
-          else {
-            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
-          }
-        }
+        if (const auto found = find(key))
+          return std::make_pair(found->template insert<index>(key, value), static_cast<List_Node *>(0x1));
         else {
-          auto tuple_value = Singleton_Node<KEY, SUBTRIE>::template Create_Insert<index>(key, value);
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
+          if (!try_increment_refs())
+            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename std::tuple_element_t<index, typename SUBTRIE::Types>::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+          const auto[tuple_value, snode] = Singleton_Node<KEY, SUBTRIE>::Create_Insert<index>(key, value);
+          return std::make_pair(tuple_value, snode ? new List_Node(snode, this) : this);
         }
       }
 
       template <size_t index>
       auto insert_ip(const KEY &key, const typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key &value) const {
-        const auto[found, new_head] = find_and_generate(key);
-        if (found) {
-          auto tuple_value = found->template insert_ip<index>(key, value);
-          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
-            new_head->decrement_refs();
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
-          }
-          else {
-            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
-          }
+        if (const auto found = find(key))
+          return std::make_pair(found->template insert_ip<index>(key, value), static_cast<List_Node *>(0x1));
+        else {
+          if (!try_increment_refs())
+            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename std::tuple_element_t<index, typename SUBTRIE::Types>::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+          return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, typename std::tuple_element_t<index, typename SUBTRIE::Types>::Snapshot(), KEY()), this);
         }
-        else
-          return std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, new_head, KEY());
       }
 
       template <size_t if_present, size_t regardless>
       auto insert_ip_xp(const KEY &key, const typename std::tuple_element_t<if_present, typename SUBTRIE::Types>::Key &value) const {
-        const auto[found, new_head] = find_and_generate(key);
-        if (found) {
-          auto tuple_value = found->template insert_ip_xp<if_present, regardless>(key, value);
-          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
-            new_head->decrement_refs();
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
-          }
-          else {
-            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
-          }
-        }
+        if (const auto found = find(key))
+          return std::make_pair(found->template insert_ip_xp<if_present, regardless>(key, value), static_cast<List_Node *>(0x1));
         else {
-          auto tuple_value = Singleton_Node<KEY, SUBTRIE>::template Create_Insert<regardless>(key, value);
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
+          if (!try_increment_refs())
+            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename std::tuple_element_t<index, typename SUBTRIE::Types>::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+          const auto[tuple_value, snode] = Singleton_Node<KEY, SUBTRIE>::template Create_Insert<regardless>(key, value);
+          return std::make_pair(tuple_value, snode ? new List_Node(snode, this) : this);
         }
       }
 
       template <size_t index>
       auto erase(const KEY &key, const typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key &value) const {
-        const auto[found, new_head] = find_and_generate(key);
-        if (found) {
-          auto tuple_value = found->template erase<index>(key, value);
-          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
-            new_head->decrement_refs();
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
-          }
-          else {
-            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
-          }
-        }
+        if (const auto found = find(key))
+          return std::make_pair(found->template erase<index>(key, value), static_cast<List_Node *>(0x1));
         else {
-          auto tuple_value = Singleton_Node<KEY, SUBTRIE>::template Create_Erase<index>(key, value);
-          if (std::get<1>(tuple_value))
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
-          else
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_head);
+          if (!try_increment_refs())
+            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename std::tuple_element_t<index, typename SUBTRIE::Types>::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+          const auto[tuple_value, snode] = Singleton_Node<KEY, SUBTRIE>::template Create_Erase<index>(key, value);
+          return std::make_pair(tuple_value, snode ? new List_Node(snode, this) : this);
         }
       }
 
       template <size_t index>
       auto erase_ip(const KEY &key, const typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key &value) const {
-        const auto[found, new_head] = find_and_generate(key);
-        if (found) {
-          auto tuple_value = found->template erase_ip<index>(key, value);
-          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
-            new_head->decrement_refs();
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
-          }
-          else {
-            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
-          }
+        if (const auto found = find(key))
+          return std::make_pair(found->template erase_ip<index>(key, value), static_cast<List_Node *>(0x1));
+        else {
+          if (!try_increment_refs())
+            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename std::tuple_element_t<index, typename SUBTRIE::Types>::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+          return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, typename std::tuple_element_t<index, typename SUBTRIE::Types>::Snapshot(), KEY()), this);
         }
-        else
-          return std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, new_head, KEY());
       }
 
       template <size_t if_present, size_t regardless>
       auto erase_ip_xp(const KEY &key, const typename std::tuple_element_t<if_present, typename SUBTRIE::Types>::Key &value) const {
-        const auto[found, new_head] = find_and_generate(key);
-        if (found) {
-          auto tuple_value = found->template erase_ip_xp<if_present, regardless>(key, value);
-          if (uintptr_t(std::get<1>(tuple_value)) == 0x1) {
-            new_head->decrement_refs();
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, reinterpret_cast<List_Node *>(0x1));
-          }
-          else {
-            auto new_lnode = std::get<1>(tuple_value) ? new List_Node(std::get<1>(tuple_value), new_head) : new_head;
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_lnode);
-          }
-        }
+        if (const auto found = find(key))
+          return std::make_pair(found->template erase_ip_xp<if_present, regardless>(key, value), static_cast<List_Node *>(0x1));
         else {
-          auto tuple_value = Singleton_Node<KEY, SUBTRIE>::template Create_Erase<regardless>(key, value);
-          if (std::get<1>(tuple_value))
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_head);
-          else
-            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
+          if (!try_increment_refs())
+            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename std::tuple_element_t<index, typename SUBTRIE::Types>::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+          const auto[tuple_value, snode] = Singleton_Node<KEY, SUBTRIE>::template Create_Erase<regardless>(key, value);
+          return std::make_pair(tuple_value, snode ? new List_Node(snode, this) : this);
         }
       }
 
       template <size_t src, size_t dest>
       auto move(const KEY &key, const typename std::tuple_element_t<src, typename SUBTRIE::Types>::Key &value) const {
-        const auto[found, new_head] = find_and_generate(key);
-        if (found) {
-          auto tuple_value = found->template move<src, dest>(key, value);
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
+        if (const auto found = find(key))
+          return std::make_pair(found->template move<src, dest>(key, value), static_cast<List_Node *>(0x1));
+        else {
+          if (!try_increment_refs())
+            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename std::tuple_element_t<index, typename SUBTRIE::Types>::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+          return std::make_pair(std::make_tuple(std::tuple_element_t<src, typename SUBTRIE::Types>::Result::Failed_Removal, typename std::tuple_element_t<src, typename SUBTRIE::Types>::Snapshot(), KEY()), this);
         }
-        else
-          return std::make_tuple(std::tuple_element_t<src, typename SUBTRIE::Types>::Result::Failed_Removal, new_head, typename std::tuple_element_t<src, typename SUBTRIE::Types>::Key());
       }
 
-      std::pair<const Singleton_Node<KEY, SUBTRIE> *, List_Node * > find_and_generate(const KEY &key) const {
-        const Singleton_Node<KEY, SUBTRIE> * found = nullptr;
-        List_Node * new_head = nullptr;
-        List_Node * new_tail = nullptr;
-        for (List_Node * old_head = const_cast<List_Node *>(this); old_head; old_head = old_head->next) {
-          if (PRED()(old_head->snode->key, key)) {
-            found = old_head->snode;
-            if (old_head->next) {
-              old_head->next->try_increment_refs();
-              if (new_head)
-                new_tail->next = old_head->next;
-              else {
-                new_head = old_head->next;
-                new_tail = new_head;
-              }
-              break;
-            }
-          }
-          else {
-            old_head->snode->try_increment_refs();
-            if (new_head)
-              new_head = new List_Node(old_head->snode, new_head);
-            else {
-              new_head = new List_Node(old_head->snode, nullptr);
-              new_tail = new_head;
-            }
-          }
+      const Singleton_Node<KEY, SUBTRIE> * find(const KEY &key) const {
+        for (List_Node * head = const_cast<List_Node *>(this); head; head = head->next) {
+          if (PRED()(head->snode->key, key))
+            return head->snode;
         }
-        return std::make_pair(found, new_head);
+        return nullptr;
       }
 
       Singleton_Node<KEY, SUBTRIE> * const snode;
