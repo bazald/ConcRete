@@ -325,7 +325,7 @@ namespace Zeni::Concurrency {
 
       std::tuple<Result, List_Node *, const Singleton_Node<KEY> *> updated(const KEY &key, const bool insertion) const {
         const auto found0 = find(key);
-        const auto[result0, metaresult0] = found0->updated_count_in_place(insertion);
+        const auto[result0, metaresult0] = found0 ? found0->updated_count_in_place(insertion) : std::make_pair(Result::Last_Removal, false);
         if (metaresult0)
           return std::make_tuple(result0, reinterpret_cast<List_Node *>(0x1), found0);
         const auto[found, new_head] = find_and_generate(key);

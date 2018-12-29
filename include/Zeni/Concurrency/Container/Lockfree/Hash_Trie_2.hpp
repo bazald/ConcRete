@@ -91,8 +91,12 @@ namespace Zeni::Concurrency {
       template <typename KEY_TYPE, typename VALUE_TYPE>
       static auto Create_Erase(KEY_TYPE &&key_, VALUE_TYPE &&value_) {
         auto tuple_value = SUBTRIE().erased(std::forward<VALUE_TYPE>(value_));
-        auto new_snode = new Singleton_Node<KEY, SUBTRIE>(std::forward<KEY_TYPE>(key_), std::get<1>(tuple_value));
-        return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_snode);
+        if (std::get<1>(tuple_value).empty())
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<Singleton_Node *>(nullptr));
+        else {
+          auto new_snode = new Singleton_Node<KEY, SUBTRIE>(std::forward<KEY_TYPE>(key_), std::get<1>(tuple_value));
+          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_snode);
+        }
       }
 
       auto inserted(const KEY &key, const typename SUBTRIE::Key &value) const {
@@ -391,7 +395,10 @@ namespace Zeni::Concurrency {
         }
         else {
           auto tuple_value = Singleton_Node<KEY, SUBTRIE>::Create_Erase(key, value);
-          return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
+          if (std::get<1>(tuple_value))
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new List_Node(std::get<1>(tuple_value), new_head));
+          else
+            return Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, new_head);
         }
       }
 
@@ -811,7 +818,12 @@ namespace Zeni::Concurrency {
         const MNode * const next = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
         if (!next) {
           auto tuple_value = SNode::Create_Erase(key, value);
-          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode->inserted(pos, flag, std::get<1>(tuple_value))));
+          if (std::get<1>(tuple_value))
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode->inserted(pos, flag, std::get<1>(tuple_value))));
+          else {
+            cnode->try_increment_refs();
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(cnode));
+          }
         }
         auto tuple_value = ierase(next, key, value, hash_value, level + CNode::W);
         if (!std::get<1>(tuple_value)) {
@@ -839,7 +851,10 @@ namespace Zeni::Concurrency {
         if (lnode_hash != hash_value) {
           lnode->try_increment_refs();
           auto tuple_value = SNode::Create_Erase(key, value);
-          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(CNode::Create(std::get<1>(tuple_value), hash_value, lnode, lnode_hash, level)));
+          if (std::get<1>(tuple_value))
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(CNode::Create(std::get<1>(tuple_value), hash_value, lnode, lnode_hash, level)));
+          else
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(lnode));
         }
         else {
           auto tuple_value = lnode->erased(key, value);
@@ -856,7 +871,10 @@ namespace Zeni::Concurrency {
         if (snode_hash != hash_value) {
           snode->try_increment_refs();
           auto tuple_value = SNode::Create_Erase(key, value);
-          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(CNode::Create(std::get<1>(tuple_value), hash_value, snode, snode_hash, level)));
+          if (std::get<1>(tuple_value))
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(CNode::Create(std::get<1>(tuple_value), hash_value, snode, snode_hash, level)));
+          else
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(snode));
         }
         else if (Pred()(snode->key, key)) {
           auto tuple_value = snode->erased(key, value);
@@ -865,12 +883,18 @@ namespace Zeni::Concurrency {
         else {
           snode->try_increment_refs();
           auto tuple_value = SNode::Create_Erase(key, value);
-          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new LNode(std::get<1>(tuple_value), snode)));
+          if (std::get<1>(tuple_value))
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(new LNode(std::get<1>(tuple_value), snode)));
+          else
+            return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(snode));
         }
       }
       else {
         auto tuple_value = SNode::Create_Erase(key, value);
-        return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+        if (std::get<1>(tuple_value))
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(std::get<1>(tuple_value)));
+        else
+          return Hash_Trie_2_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, static_cast<const MNode *>(nullptr));
       }
     }
 
