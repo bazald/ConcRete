@@ -524,7 +524,7 @@ namespace Zeni::Concurrency {
         else {
           if (!try_increment_refs())
             return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
-          const auto[tuple_value, new_snode] = Singleton_Node<KEY, SUBTRIE>::Create_Insert<index>(key, value);
+          const auto[tuple_value, new_snode] = Singleton_Node<KEY, SUBTRIE>::template Create_Insert<index>(key, value);
           if (new_snode)
             return std::make_pair(tuple_value, new List_Node(new_snode, this));
           else {
@@ -771,7 +771,7 @@ namespace Zeni::Concurrency {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (!branch) {
-            const auto[tuple_value, new_snode] = SNode::Create_Insert<index>(key, value);
+            const auto[tuple_value, new_snode] = SNode::template Create_Insert<index>(key, value);
             if (!new_snode)
               return tuple_value;
             const auto new_cnode = cnode->inserted(pos, flag, new_snode);
@@ -799,7 +799,7 @@ namespace Zeni::Concurrency {
                 if (snode_hash != hash_value) {
                   if (!snode->try_increment_refs())
                     return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
-                  const auto[tuple_value, new_snode] = SNode::Create_Insert<index>(key, value);
+                  const auto[tuple_value, new_snode] = SNode::template Create_Insert<index>(key, value);
                   if (!new_snode)
                     return tuple_value;
                   const auto new_cnode = cnode->updated(pos, flag, new INode(CNode::Create(snode, snode_hash, new_snode, hash_value, level + CNode::W)));
@@ -813,7 +813,7 @@ namespace Zeni::Concurrency {
                 else {
                   if (!snode->try_increment_refs())
                     return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
-                  const auto[tuple_value, new_snode] = SNode::Create_Insert<index>(key, value);
+                  const auto[tuple_value, new_snode] = SNode::template Create_Insert<index>(key, value);
                   if (!new_snode)
                     return tuple_value;
                   const auto new_cnode = cnode->updated(pos, flag, new INode(new LNode(new_snode, new LNode(snode))));
@@ -839,7 +839,7 @@ namespace Zeni::Concurrency {
           if (lnode_hash != hash_value) {
             if (!lnode->try_increment_refs())
               return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
-            const auto[tuple_value, new_snode] = SNode::Create_Insert<index>(key, value);
+            const auto[tuple_value, new_snode] = SNode::template Create_Insert<index>(key, value);
             if (!new_snode)
               return tuple_value;
             const auto new_cnode = CNode::Create(new_snode, hash_value, new INode(lnode), lnode_hash, level);
