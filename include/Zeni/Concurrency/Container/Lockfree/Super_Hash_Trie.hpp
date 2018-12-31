@@ -1158,8 +1158,7 @@ namespace Zeni::Concurrency {
 
     const Hash_Trie_Super_Node * isnapshot() const {
       const Hash_Trie_Super_Node * super_root = m_super_root.load(std::memory_order_acquire);
-      if (uintptr_t(super_root) != 0x1)
-        enforce_snapshot(super_root);
+      enforce_snapshot(super_root);
       return super_root;
     }
 
@@ -1194,7 +1193,7 @@ namespace Zeni::Concurrency {
     }
 
     void enforce_snapshot(const Hash_Trie_Super_Node * &super_root) const {
-      while (super_root && !super_root->try_increment_refs())
+      while (super_root && uintptr_t(super_root) != 0x1 && !super_root->try_increment_refs())
         super_root = m_super_root.load(std::memory_order_acquire);
     }
 

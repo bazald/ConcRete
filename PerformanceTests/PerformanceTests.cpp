@@ -96,6 +96,11 @@ int main(int argc, char **argv)
 
   std::cerr << "Hash_Trie_S2 Performance: " << measure<>::execution(test_Hash_Trie_S2_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
+  job_queue.reset();
+  worker_threads.reset();
+  worker_threads = Zeni::Concurrency::Worker_Threads::Create(g_num_cores);
+  job_queue = worker_threads->get_main_Job_Queue();
+
   std::cerr << "Ctrie_NS_S2 Performance: " << measure<>::execution(test_Ctrie_NS_S2_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
   //std::cerr << "Reclamation Performance: " << measure<>::execution(test_Reclamation_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
