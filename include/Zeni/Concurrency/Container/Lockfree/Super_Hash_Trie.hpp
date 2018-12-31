@@ -1171,17 +1171,15 @@ namespace Zeni::Concurrency {
         done = true;
         return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
       }
-      else {
-        assert(std::get<1>(tuple_value));
-        if (m_invalidate_on_empty && std::get<1>(tuple_value)->empty()) {
-          delete std::get<1>(tuple_value);
-          std::get<1>(tuple_value) = reinterpret_cast<std::remove_reference_t<decltype(std::get<1>(tuple_value))>>(0x1);
-        }
-        else
-          std::get<1>(tuple_value)->try_increment_refs();
-        if (super_root)
-          super_root->decrement_refs();
+      assert(std::get<1>(tuple_value));
+      if (m_invalidate_on_empty && std::get<1>(tuple_value)->empty()) {
+        delete std::get<1>(tuple_value);
+        std::get<1>(tuple_value) = reinterpret_cast<Hash_Trie_Super_Node *>(0x1);
       }
+      else
+        std::get<1>(tuple_value)->try_increment_refs();
+      if (super_root)
+        super_root->decrement_refs();
       if (CAS_del(m_super_root, super_root, std::get<1>(tuple_value), std::memory_order_release, std::memory_order_acquire)) {
         done = true;
         return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));

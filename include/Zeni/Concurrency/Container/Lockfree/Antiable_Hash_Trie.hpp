@@ -519,8 +519,7 @@ namespace Zeni::Concurrency {
     };
 
     const_iterator cbegin() const {
-      assert(valid());
-      return const_iterator(isnapshot());
+      return valid() ? const_iterator(isnapshot()) : const_iterator();
     }
 
     const_iterator cend() const {
@@ -571,7 +570,6 @@ namespace Zeni::Concurrency {
     }
 
     size_t size() const {
-      assert(valid());
       size_t sz = 0;
       for ([[maybe_unused]] auto &value : *this)
         ++sz;
@@ -579,7 +577,6 @@ namespace Zeni::Concurrency {
     }
 
     bool size_one() const {
-      assert(valid());
       auto it = cbegin();
       const auto iend = cend();
       if (it != iend)
@@ -588,7 +585,6 @@ namespace Zeni::Concurrency {
     }
 
     bool size_zero() const {
-      assert(valid());
       return cbegin() == cend();
     }
 
