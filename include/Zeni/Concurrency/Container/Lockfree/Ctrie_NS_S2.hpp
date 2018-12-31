@@ -97,48 +97,11 @@ namespace Zeni::Concurrency {
 
       void on_final_decrement() override {
         Main_Node::on_final_decrement();
-        branch->decrement_refs();
+        if (branch)
+          branch->decrement_refs();
       }
 
       Branch * const branch;
-    };
-
-    struct Indirection_Node : public Branch {
-    private:
-      Indirection_Node(const Indirection_Node &) = delete;
-      Indirection_Node & operator=(const Indirection_Node &) = delete;
-
-    public:
-      Indirection_Node(Main_Node * const main_)
-        : main(main_)
-      {
-      }
-
-      void on_final_decrement() override {
-        Main_Node * const m = ptr_part(main.load(std::memory_order_acquire));
-        if (m)
-          m->decrement_refs();
-      }
-
-      static bool is_marked_readonly(Main_Node * const ptr) {
-        return reinterpret_cast<uintptr_t>(ptr) & 0x1;
-      }
-      static Main_Node * ptr_part(Main_Node * const ptr) {
-        return reinterpret_cast<Main_Node *>(reinterpret_cast<uintptr_t>(ptr) & ~0x3);
-      }
-      static Main_Node * mark_readonly(Main_Node * const ptr) {
-        const uintptr_t ival = reinterpret_cast<uintptr_t>(ptr) & ~0x3;
-        return ival & 0x3 ? ptr : reinterpret_cast<Main_Node *>(reinterpret_cast<uintptr_t>(ptr) | 0x1);
-      }
-
-      Branch * resurrect() override {
-        if (const auto tomb_node = dynamic_cast<const Tomb_Node *>(main.load(std::memory_order_acquire)))
-          return tomb_node->branch->try_increment_refs() ? tomb_node->branch : nullptr;
-        else
-          return this->try_increment_refs() ? this : nullptr;
-      }
-
-      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Main_Node *> main;
     };
 
     template <typename KEY, typename SUBTRIE>
@@ -206,11 +169,54 @@ namespace Zeni::Concurrency {
       }
 
       Branch * resurrect() override {
-        return this->try_increment_refs() ? this : nullptr;
+        return subtrie.valid() ? (this->try_increment_refs() ? this : nullptr) : reinterpret_cast<Branch *>(0x1);
       }
 
       const KEY key;
       mutable SUBTRIE subtrie = true;
+    };
+
+    template <typename KEY, typename SUBTRIE>
+    struct Indirection_Node : public Branch {
+    private:
+      Indirection_Node(const Indirection_Node &) = delete;
+      Indirection_Node & operator=(const Indirection_Node &) = delete;
+
+    public:
+      Indirection_Node(Main_Node * const main_)
+        : main(main_)
+      {
+      }
+
+      void on_final_decrement() override {
+        Main_Node * const m = ptr_part(main.load(std::memory_order_acquire));
+        if (m)
+          m->decrement_refs();
+      }
+
+      static bool is_marked_readonly(Main_Node * const ptr) {
+        return reinterpret_cast<uintptr_t>(ptr) & 0x1;
+      }
+      static Main_Node * ptr_part(Main_Node * const ptr) {
+        return reinterpret_cast<Main_Node *>(reinterpret_cast<uintptr_t>(ptr) & ~0x3);
+      }
+      static Main_Node * mark_readonly(Main_Node * const ptr) {
+        const uintptr_t ival = reinterpret_cast<uintptr_t>(ptr) & ~0x3;
+        return ival & 0x3 ? ptr : reinterpret_cast<Main_Node *>(reinterpret_cast<uintptr_t>(ptr) | 0x1);
+      }
+
+      Branch * resurrect() override {
+        const auto mnode = main.load(std::memory_order_acquire);
+        if (const auto tnode = dynamic_cast<const Tomb_Node *>(mnode))
+          return tnode->branch ? (tnode->branch->try_increment_refs() ? tnode->branch : nullptr) : reinterpret_cast<Branch *>(0x1);
+        if (const auto snode = dynamic_cast<const Singleton_Node<KEY, SUBTRIE> *>(mnode)) {
+          if (!snode->subtrie.valid())
+            return reinterpret_cast<Branch *>(0x1);
+        }
+        return this->try_increment_refs() ? this : nullptr;
+      }
+
+      ZENI_CONCURRENCY_CACHE_ALIGN std::atomic<Main_Node *> main;
     };
 
     template <typename KEY, typename SUBTRIE, typename HASH, typename PRED, typename FLAG_TYPE>
@@ -242,7 +248,7 @@ namespace Zeni::Concurrency {
         const auto second_flag = flag(second_hash, level);
         if (first_flag == second_flag) {
           std::array<Branch *, hamming_max> branches;
-          branches[0] = new Indirection_Node(Create(first, first_hash, second, second_hash, level + W));
+          branches[0] = new Indirection_Node<KEY, SUBTRIE>(Create(first, first_hash, second, second_hash, level + W));
           return Create(first_flag, 1, branches);
         }
         else {
@@ -271,25 +277,40 @@ namespace Zeni::Concurrency {
 
       virtual ICtrie_Node * erased(const size_t pos, const FLAG_TYPE flag) const = 0;
 
-      virtual ICtrie_Node * regenerated(const Ctrie_NS_S2<KEY, SUBTRIE, HASH, PRED, FLAG_TYPE> * const ctrie) const = 0;
-
       Main_Node * to_compressed(const size_t level) {
-        bool at_least_one = false;
+        FLAG_TYPE new_bmp = get_bmp();
+        size_t new_hamming_value = 0;
+        std::array<size_t, hamming_max> desired_bits;
+        for (size_t desired_bit_index = 0; desired_bit_index != hamming_max; ++desired_bit_index) {
+          const FLAG_TYPE desired_bit = FLAG_TYPE(1u) << desired_bit_index;
+          if (new_bmp & desired_bit)
+            desired_bits[new_hamming_value++] = desired_bit_index;
+        }
+        assert(new_hamming_value = get_hamming_value());
+
+        bool is_compressed = false;
         std::array<Branch *, hamming_max> branches;
-        for (size_t i = 0; i != get_hamming_value(); ++i) {
+        for (size_t i = 0, j = 0; i != get_hamming_value(); ++i) {
           Branch * const resurrected = at(i)->resurrect();
           if (!resurrected) {
-            for (size_t j = 0; j != i; ++j)
-              branches[j]->decrement_refs();
+            for (size_t k = 0; k != j; ++k)
+              branches[k]->decrement_refs();
             return nullptr;
           }
-          branches[i] = resurrected;
-          at_least_one |= resurrected != at(i);
+          if (uintptr_t(resurrected) == 0x1) {
+            new_bmp ^= FLAG_TYPE(1u) << desired_bits[i];
+            --new_hamming_value;
+            is_compressed = true;
+          }
+          else {
+            branches[j++] = resurrected;
+            is_compressed |= resurrected != at(i);
+          }
         }
-        if (at_least_one)
-          return Create(m_bmp, get_hamming_value(), branches)->to_contracted(level);
+        if (is_compressed)
+          return Create(new_bmp, new_hamming_value, branches)->to_contracted(level);
         else {
-          for (size_t i = 0; i != get_hamming_value(); ++i)
+          for (size_t i = 0; i != new_hamming_value; ++i)
             branches[i]->decrement_refs();
           return nullptr;
         }
@@ -302,6 +323,10 @@ namespace Zeni::Concurrency {
           assert(refs);
           this->immediate_deletion();
           return new Tomb_Node(branch);
+        }
+        else if (level && get_hamming_value() == 0) {
+          this->immediate_deletion();
+          return new Tomb_Node(nullptr);
         }
         else
           return this;
@@ -434,30 +459,6 @@ namespace Zeni::Concurrency {
           }
         }
         return ICtrie_Node<KEY, SUBTRIE, HASH, PRED, FLAG_TYPE>::Create(this->get_bmp() & ~flag, hamming_value - 1, new_branches);
-      }
-
-      ICtrie_Node<KEY, SUBTRIE, HASH, PRED, FLAG_TYPE> * regenerated(const Ctrie_NS_S2<KEY, SUBTRIE, HASH, PRED, FLAG_TYPE> * const ctrie) const override {
-        std::array<Branch *, hamming<FLAG_TYPE>()> new_branches;
-        if (hamming_value) {
-          std::memcpy(new_branches.data(), m_branches.data(), hamming_value * sizeof(Branch *));
-          for (size_t i = 0; i != hamming_value; ++i) {
-            if (Indirection_Node * const inode = dynamic_cast<Indirection_Node *>(new_branches[i])) {
-              const auto mnode = ctrie->CAS_Read(inode);
-              if (!mnode || !mnode->try_increment_refs()) {
-                for (size_t j = 0; j != i; ++j)
-                  new_branches[j]->decrement_refs();
-                return nullptr;
-              }
-              new_branches[i] = new Indirection_Node(mnode);
-            }
-            else if (!new_branches[i]->try_increment_refs()) {
-              for (size_t j = 0; j != i; ++j)
-                new_branches[j]->decrement_refs();
-              return nullptr;
-            }
-          }
-        }
-        return ICtrie_Node<KEY, SUBTRIE, HASH, PRED, FLAG_TYPE>::Create(this->get_bmp(), hamming_value, new_branches);
       }
 
     private:
@@ -643,7 +644,7 @@ namespace Zeni::Concurrency {
     typedef Ctrie_NS_S2_Internal::List_Node<Key, Subtrie, Pred> LNode;
     typedef Ctrie_NS_S2_Internal::Branch Branch;
     typedef Ctrie_NS_S2_Internal::Tomb_Node TNode;
-    typedef Ctrie_NS_S2_Internal::Indirection_Node INode;
+    typedef Ctrie_NS_S2_Internal::Indirection_Node<Key, Subtrie> INode;
 
     Ctrie_NS_S2() = default;
 
@@ -699,16 +700,16 @@ namespace Zeni::Concurrency {
     //  }
     //}
 
-    //template <size_t index>
-    //auto erase(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
-    //  const Hash_Value hash_value = Hash()(key);
-    //  for (;;) {
-    //    INode * const root = Read_Root();
-    //    const auto tuple_value = ierase<index>(root, key, value, hash_value, 0, nullptr);
-    //    if (std::get<0>(tuple_value) != std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
-    //      return tuple_value;
-    //  }
-    //}
+    template <size_t index>
+    auto erase(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
+      const Hash_Value hash_value = Hash()(key);
+      for (;;) {
+        INode * const root = Read_Root();
+        const auto tuple_value = ierase<index>(root, key, value, hash_value, 0, nullptr);
+        if (std::get<0>(tuple_value) != std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
+          return tuple_value;
+      }
+    }
 
     //template <size_t index>
     //auto erase_ip(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
@@ -792,7 +793,7 @@ namespace Zeni::Concurrency {
             else if (const auto snode = dynamic_cast<SNode *>(branch)) {
               if (Pred()(snode->key, key)) {
                 const auto tuple_value = snode->template insert<index>(key, value);
-                return post_op<index>(tuple_value);
+                return post_op<index>(inode, level, tuple_value);
               }
               else {
                 const Hash_Value snode_hash = Hash()(snode->key);
@@ -853,7 +854,7 @@ namespace Zeni::Concurrency {
           else {
             const auto[tuple_value, new_lnode] = lnode->template insert<index>(key, value);
             if (uintptr_t(new_lnode) == 0x1)
-              return post_op<index>(tuple_value);
+              return post_op<index>(inode, level, tuple_value);
             if (std::get<0>(tuple_value) == std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
               return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
             if (CAS_del(inode, inode_main, new_lnode))
@@ -866,97 +867,115 @@ namespace Zeni::Concurrency {
     }
 
     template <size_t index>
-    auto post_op(const std::tuple<typename std::tuple_element_t<index, typename Subtrie::Types>::Result, typename Subtrie::Snapshot, typename std::tuple_element_t<index, typename Subtrie::Types>::Key> &tuple_value) {
-      if (std::get<0>(tuple_value) == std::tuple_element_t<index, typename Subtrie::Types>::Result::Invalid_SHT) {
-        /// TODO: Clean up
-        return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+    auto ierase(
+      INode * inode,
+      const Key &key,
+      const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value,
+      const Hash_Value &hash_value,
+      size_t level,
+      INode * parent)
+    {
+      for (;;) {
+        const auto inode_main = CAS_Read(inode);
+        if (!inode_main)
+          return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+        if (auto cnode = dynamic_cast<CNode *>(inode_main)) {
+          const auto[flag, pos] = cnode->flagpos(hash_value, level);
+          Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          if (!branch) {
+            const auto[tuple_value, new_snode] = SNode::template Create_Erase<index>(key, value);
+            if (!new_snode)
+              return tuple_value;
+            const auto new_cnode = cnode->inserted(pos, flag, new_snode);
+            if (!new_cnode)
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            if (CAS_del(inode, inode_main, new_cnode))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+          }
+          else {
+            if (const auto inode_next = dynamic_cast<INode *>(branch)) {
+              if (deepen(inode, inode_main, level, parent, cnode, pos, inode_next))
+                continue;
+              else
+                return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            }
+            else if (const auto snode = dynamic_cast<SNode *>(branch)) {
+              if (Pred()(snode->key, key)) {
+                const auto tuple_value = snode->template erase<index>(key, value);
+                return post_op<index>(inode, level, tuple_value);
+              }
+              else {
+                const Hash_Value snode_hash = Hash()(snode->key);
+                if (snode_hash != hash_value) {
+                  if (!snode->try_increment_refs())
+                    return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+                  const auto[tuple_value, new_snode] = SNode::template Create_Erase<index>(key, value);
+                  if (!new_snode)
+                    return tuple_value;
+                  const auto new_cnode = cnode->updated(pos, flag, new INode(CNode::Create(snode, snode_hash, new_snode, hash_value, level + CNode::W)));
+                  if (!new_cnode)
+                    return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+                  if (CAS_del(inode, inode_main, new_cnode))
+                    return tuple_value;
+                  else
+                    return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+                }
+                else {
+                  if (!snode->try_increment_refs())
+                    return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+                  const auto[tuple_value, new_snode] = SNode::template Create_Erase<index>(key, value);
+                  if (!new_snode)
+                    return tuple_value;
+                  const auto new_cnode = cnode->updated(pos, flag, new INode(new LNode(new_snode, new LNode(snode))));
+                  if (!new_cnode)
+                    return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+                  if (CAS_del(inode, inode_main, new_cnode))
+                    return tuple_value;
+                  else
+                    return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+                }
+              }
+            }
+            else
+              abort();
+          }
+        }
+        else if (const auto tnode = dynamic_cast<TNode *>(inode_main)) {
+          clean(parent, level - CNode::W);
+          return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+        }
+        else if (auto lnode = dynamic_cast<LNode *>(inode_main)) {
+          const Hash_Value lnode_hash = Hash()(lnode->snode->key);
+          if (lnode_hash != hash_value) {
+            if (!lnode->try_increment_refs())
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            const auto[tuple_value, new_snode] = SNode::template Create_Erase<index>(key, value);
+            if (!new_snode)
+              return tuple_value;
+            const auto new_cnode = CNode::Create(new_snode, hash_value, new INode(lnode), lnode_hash, level);
+            if (!new_cnode)
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            if (CAS_del(inode, inode_main, new_cnode))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+          }
+          else {
+            const auto[tuple_value, new_lnode] = lnode->template erase<index>(key, value);
+            if (uintptr_t(new_lnode) == 0x1)
+              return post_op<index>(inode, level, tuple_value);
+            if (std::get<0>(tuple_value) == std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            if (CAS_del(inode, inode_main, new_lnode))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+          }
+        }
       }
-      if (!std::get<1>(tuple_value).valid()) {
-        /// TODO: Clean up
-      }
-      return tuple_value;
     }
-
-    //template <size_t index>
-    //auto ierase(
-    //  INode * inode,
-    //  const Key &key,
-    //  const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value,
-    //  const Hash_Value &hash_value,
-    //  size_t level,
-    //  INode * parent)
-    //{
-    //  for (;;) {
-    //    const auto inode_main = CAS_Read(inode);
-    //    if (!inode_main)
-    //      return std::make_pair(Result::Restart, nullptr);
-    //    if (const auto cnode = dynamic_cast<const CNode *>(inode_main)) {
-    //      const auto[flag, pos] = cnode->flagpos(hash_value, level);
-    //      Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
-    //      if (!branch)
-    //        return std::make_pair(Result::Not_Found, nullptr);
-    //      if (const auto inode_next = dynamic_cast<INode *>(branch)) {
-    //        if (deepen(inode, inode_main, level, parent, cnode, pos, inode_next))
-    //          continue;
-    //        else
-    //          return std::make_pair(Result::Restart, nullptr);
-    //      }
-    //      else if (const auto snode = dynamic_cast<const SNode *>(branch)) {
-    //        if (Pred()(key, snode->key)) {
-    //          const CNode * new_cnode = cnode->erased(pos, flag);
-    //          if (!new_cnode)
-    //            return std::make_pair(Result::Restart, nullptr);
-    //          const MNode * new_mainnode = new_cnode->to_contracted(level);
-    //          if (!new_mainnode)
-    //            return std::make_pair(Result::Restart, nullptr);
-    //          if (CAS_del(inode, inode_main, new_mainnode)) {
-    //            if (const auto tnode = dynamic_cast<const TNode *>(new_mainnode))
-    //              clean_parent(parent, inode, hash_value, level - CNode::W);
-    //            return std::make_pair(Result::Last_Removal, snode);
-    //          }
-    //          else
-    //            return std::make_pair(Result::Restart, nullptr);
-    //        }
-    //        else
-    //          return std::make_pair(Result::Not_Found, nullptr);
-    //      }
-    //      else
-    //        abort();
-    //    }
-    //    else if (const auto tnode = dynamic_cast<const TNode *>(inode_main)) {
-    //      clean(parent, level - CNode::W);
-    //      return std::make_pair(Result::Restart, nullptr);
-    //    }
-    //    else if (auto lnode = dynamic_cast<const LNode *>(inode_main)) {
-    //      const auto[result, new_lnode, removed, unused] = lnode->updated(key, false);
-    //      if (result == Result::Restart)
-    //        return std::make_pair(Result::Restart, nullptr);
-    //      else if (result == Result::Failed_Removal) {
-    //        new_lnode->decrement_refs();
-    //        return std::make_pair(Result::Failed_Removal, nullptr);
-    //      }
-    //      MNode * new_mainnode = new_lnode;
-    //      bool gcas_result;
-    //      if (!new_lnode->next) {
-    //        [[maybe_unused]] const int64_t refs = new_lnode->snode->try_increment_refs();
-    //        assert(refs);
-    //        new_mainnode = new TNode(new_lnode->snode);
-    //        new_lnode->decrement_refs();
-    //        gcas_result = CAS_del(inode, inode_main, new_mainnode);
-    //        if (gcas_result)
-    //          clean_parent(parent, inode, hash_value, level - CNode::W);
-    //      }
-    //      else
-    //        gcas_result = CAS_dec(inode, inode_main, new_mainnode);
-    //      if (gcas_result)
-    //        return std::make_pair(Result::Last_Removal, removed);
-    //      else
-    //        return std::make_pair(Result::Restart, nullptr);
-    //    }
-    //    else
-    //      abort();
-    //  }
-    //}
 
     bool deepen(
       INode * &inode,
@@ -971,6 +990,17 @@ namespace Zeni::Concurrency {
       level += CNode::W;
       inode = inode_next;
       return true;
+    }
+
+    template <size_t index>
+    auto post_op(INode * const inode, const size_t level, const std::tuple<typename std::tuple_element_t<index, typename Subtrie::Types>::Result, typename Subtrie::Snapshot, typename std::tuple_element_t<index, typename Subtrie::Types>::Key> &tuple_value) {
+      if (std::get<0>(tuple_value) == std::tuple_element_t<index, typename Subtrie::Types>::Result::Invalid_SHT) {
+        clean(inode, level);
+        return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+      }
+      if (!std::get<1>(tuple_value).valid())
+        clean(inode, level);
+      return tuple_value;
     }
 
     void clean(INode * const inode, const size_t level) const {
@@ -990,13 +1020,18 @@ namespace Zeni::Concurrency {
           if (branch == inode) {
             const auto inode_main = CAS_Read(inode);
             if (const TNode * const tnode = dynamic_cast<const TNode *>(inode_main)) {
-              Branch * const resurrected = inode->resurrect();
-              if (!resurrected)
+              const MNode * new_mnode;
+              if (tnode->branch) {
+                MNode * const resurrected = inode->resurrect();
+                if (!resurrected)
+                  continue;
+                new_mnode = cnode->updated(pos, flag, resurrected)->to_contracted(level);
+              }
+              else
+                new_mnode = cnode->erased(pos, flag)->to_contracted(level);
+              if (!new_mnode)
                 continue;
-              const auto new_cnode = cnode->updated(pos, flag, resurrected)->to_contracted(level);
-              if (!new_cnode)
-                continue;
-              if (!CAS_del(parent, parent_main, new_cnode))
+              if (!CAS_del(parent, parent_main, new_mnode))
                 continue;
             }
           }

@@ -223,8 +223,6 @@ namespace Zeni::Concurrency {
 
       virtual const ICtrie_Node * erased(const size_t pos, const FLAG_TYPE flag) const = 0;
 
-      virtual const ICtrie_Node * regenerated(const Ctrie_NS<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR> * const ctrie) const = 0;
-
       const Main_Node<ALLOCATOR> * to_compressed(const size_t level) const {
         bool at_least_one = false;
         std::array<Branch<ALLOCATOR> *, hamming_max> branches;
@@ -386,30 +384,6 @@ namespace Zeni::Concurrency {
           }
         }
         return ICtrie_Node<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR>::Create(this->get_bmp() & ~flag, hamming_value - 1, new_branches);
-      }
-
-      const ICtrie_Node<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR> * regenerated(const Ctrie_NS<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR> * const ctrie) const override {
-        std::array<Branch<ALLOCATOR> *, hamming<FLAG_TYPE>()> new_branches;
-        if (hamming_value) {
-          std::memcpy(new_branches.data(), m_branches.data(), hamming_value * sizeof(Branch<ALLOCATOR> *));
-          for (size_t i = 0; i != hamming_value; ++i) {
-            if (Indirection_Node<ALLOCATOR> * const inode = dynamic_cast<Indirection_Node<ALLOCATOR> *>(new_branches[i])) {
-              const auto mnode = ctrie->CAS_Read(inode);
-              if (!mnode || !mnode->try_increment_refs()) {
-                for (size_t j = 0; j != i; ++j)
-                  new_branches[j]->decrement_refs();
-                return nullptr;
-              }
-              new_branches[i] = new Indirection_Node<ALLOCATOR>(mnode);
-            }
-            else if (!new_branches[i]->try_increment_refs()) {
-              for (size_t j = 0; j != i; ++j)
-                new_branches[j]->decrement_refs();
-              return nullptr;
-            }
-          }
-        }
-        return ICtrie_Node<KEY, HASH, PRED, FLAG_TYPE, ALLOCATOR>::Create(this->get_bmp(), hamming_value, new_branches);
       }
 
     private:

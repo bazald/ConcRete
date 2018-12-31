@@ -270,14 +270,25 @@ public:
     std::random_device r;
     std::default_random_engine e1(r());
     std::uniform_int_distribution<int> bool_dist(0, 1);
-    std::uniform_int_distribution<int64_t> uniform_dist(1, 1000);
+    std::uniform_int_distribution<int64_t> odist(1, 500);
+    std::uniform_int_distribution<int64_t> idist(1, 20);
     int sum = 0;
     for (int i = 0; i != 5000; ++i) {
       if (bool_dist(e1)) {
-        const auto[result, snapshot, value] = hash_trie->insert<1>(uniform_dist(e1), uniform_dist(e1));
+        if (bool_dist(e1)) {
+          const auto[result, snapshot, value] = hash_trie->insert<1>(odist(e1), idist(e1));
+        }
+        else {
+          const auto[result, snapshot, value] = hash_trie->insert<0>(odist(e1), idist(e1));
+        }
       }
       else {
-        const auto[result, snapshot, value] = hash_trie->insert<1>(uniform_dist(e1), uniform_dist(e1));
+        if (bool_dist(e1)) {
+          const auto[result, snapshot, value] = hash_trie->erase<1>(odist(e1), idist(e1));
+        }
+        else {
+          const auto[result, snapshot, value] = hash_trie->erase<0>(odist(e1), idist(e1));
+        }
       }
     }
 
@@ -316,14 +327,25 @@ public:
     std::random_device r;
     std::default_random_engine e1(r());
     std::uniform_int_distribution<int> bool_dist(0, 1);
-    std::uniform_int_distribution<int64_t> uniform_dist(1, 1000);
+    std::uniform_int_distribution<int64_t> odist(1, 500);
+    std::uniform_int_distribution<int64_t> idist(1, 20);
     int sum = 0;
     for (int i = 0; i != 5000; ++i) {
       if (bool_dist(e1)) {
-        const auto[result, snapshot, value] = hash_trie->insert<1>(uniform_dist(e1), uniform_dist(e1));
+        if (bool_dist(e1)) {
+          const auto[result, snapshot, value] = hash_trie->insert<1>(odist(e1), idist(e1));
+        }
+        else {
+          const auto[result, snapshot, value] = hash_trie->insert<0>(odist(e1), idist(e1));
+        }
       }
       else {
-        const auto[result, snapshot, value] = hash_trie->insert<1>(uniform_dist(e1), uniform_dist(e1));
+        if (bool_dist(e1)) {
+          const auto[result, snapshot, value] = hash_trie->erase<1>(odist(e1), idist(e1));
+        }
+        else {
+          const auto[result, snapshot, value] = hash_trie->erase<0>(odist(e1), idist(e1));
+        }
       }
     }
 

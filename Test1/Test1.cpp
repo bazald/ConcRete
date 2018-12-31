@@ -111,6 +111,14 @@ int main(int argc, char **argv)
       const auto result = tries.insert<0>(13, 42);
     }
 
+    {
+      const auto result = tries.erase<0>(13, 42);
+    }
+
+    {
+      const auto result = tries.insert<0>(13, 42);
+    }
+
     //{
     //  const auto result = tries.insert_ip_xp<0, 1>(13, 42);
     //}
