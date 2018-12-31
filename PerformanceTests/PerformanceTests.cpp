@@ -7,6 +7,7 @@
 #include "Zeni/Concurrency/Container/Antiable_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Ctrie.hpp"
 #include "Zeni/Concurrency/Container/Ctrie_NS.hpp"
+#include "Zeni/Concurrency/Container/Ctrie_NS_S2.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie_2.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
@@ -59,6 +60,8 @@ static void test_Job_Performance(const std::shared_ptr<Zeni::Concurrency::Worker
 static void test_Memory_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Hash_Trie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Ctrie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+static void test_Hash_Trie_S2_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
+static void test_Ctrie_NS_S2_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_Reclamation_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 static void test_SmarterRec_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue);
 
@@ -87,9 +90,13 @@ int main(int argc, char **argv)
 
   //std::cerr << "Memory Performance: " << measure<>::execution(test_Memory_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  std::cerr << "Hash Trie Performance: " << measure<>::execution(test_Hash_Trie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  //std::cerr << "Hash Trie Performance: " << measure<>::execution(test_Hash_Trie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
-  std::cerr << "Ctrie Performance: " << measure<>::execution(test_Ctrie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+  //std::cerr << "Ctrie Performance: " << measure<>::execution(test_Ctrie_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+
+  std::cerr << "Hash_Trie_S2 Performance: " << measure<>::execution(test_Hash_Trie_S2_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
+
+  std::cerr << "Ctrie_NS_S2 Performance: " << measure<>::execution(test_Ctrie_NS_S2_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
   //std::cerr << "Reclamation Performance: " << measure<>::execution(test_Reclamation_Performance, worker_threads, job_queue) / 1000.0 << 's' << std::endl;
 
@@ -241,6 +248,98 @@ void test_Ctrie_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Thre
   const auto hash_trie = std::allocate_shared<Zeni::Concurrency::Ctrie<int, Hash_Mod<int, 10>, std::equal_to<int>, uint32_t>>(Zeni::Concurrency::Ctrie<int>::Allocator());
   for (int i = 0; i != 192; ++i)
     job_queue->give_one(std::make_shared<Ctrie_Job>(hash_trie, 0));
+  worker_threads->finish_jobs();
+}
+
+class Hash_Trie_S2_Job : public Zeni::Concurrency::Job {
+  Hash_Trie_S2_Job(const Hash_Trie_S2_Job &) = delete;
+  Hash_Trie_S2_Job & operator =(const Hash_Trie_S2_Job &) = delete;
+
+  struct Int : public Zeni::Concurrency::Enable_Intrusive_Sharing {
+    int value;
+  };
+
+public:
+  typedef Zeni::Concurrency::Hash_Trie_S2<int64_t, Zeni::Concurrency::Super_Hash_Trie<
+    Zeni::Concurrency::Positive_Hash_Trie<int64_t>,
+    Zeni::Concurrency::Positive_Hash_Trie<int64_t>>> Trie_Type;
+
+  Hash_Trie_S2_Job(const std::shared_ptr<Trie_Type> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
+
+  void execute() noexcept {
+    std::random_device r;
+    std::default_random_engine e1(r());
+    std::uniform_int_distribution<int> bool_dist(0, 1);
+    std::uniform_int_distribution<int64_t> uniform_dist(1, 1000);
+    int sum = 0;
+    for (int i = 0; i != 5000; ++i) {
+      if (bool_dist(e1)) {
+        const auto[result, snapshot, value] = hash_trie->insert<1>(uniform_dist(e1), uniform_dist(e1));
+      }
+      else {
+        const auto[result, snapshot, value] = hash_trie->insert<1>(uniform_dist(e1), uniform_dist(e1));
+      }
+    }
+
+    if (num_successors)
+      get_Job_Queue()->give_one(std::make_shared<Hash_Trie_S2_Job>(hash_trie, num_successors - 1));
+  }
+
+  const std::shared_ptr<Trie_Type> hash_trie;
+  const size_t num_successors;
+};
+
+void test_Hash_Trie_S2_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
+{
+  const auto hash_trie = std::make_shared<Hash_Trie_S2_Job::Trie_Type>();
+  for (int i = 0; i != 192; ++i)
+    job_queue->give_one(std::make_shared<Hash_Trie_S2_Job>(hash_trie, 0));
+  worker_threads->finish_jobs();
+}
+
+class Ctrie_NS_S2_Job : public Zeni::Concurrency::Job {
+  Ctrie_NS_S2_Job(const Ctrie_NS_S2_Job &) = delete;
+  Ctrie_NS_S2_Job & operator =(const Ctrie_NS_S2_Job &) = delete;
+
+  struct Int : public Zeni::Concurrency::Enable_Intrusive_Sharing {
+    int value;
+  };
+
+public:
+  typedef Zeni::Concurrency::Ctrie_NS_S2<int64_t, Zeni::Concurrency::Super_Hash_Trie<
+    Zeni::Concurrency::Positive_Hash_Trie<int64_t>,
+    Zeni::Concurrency::Positive_Hash_Trie<int64_t>>> Trie_Type;
+
+  Ctrie_NS_S2_Job(const std::shared_ptr<Trie_Type> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
+
+  void execute() noexcept {
+    std::random_device r;
+    std::default_random_engine e1(r());
+    std::uniform_int_distribution<int> bool_dist(0, 1);
+    std::uniform_int_distribution<int64_t> uniform_dist(1, 1000);
+    int sum = 0;
+    for (int i = 0; i != 5000; ++i) {
+      if (bool_dist(e1)) {
+        const auto[result, snapshot, value] = hash_trie->insert<1>(uniform_dist(e1), uniform_dist(e1));
+      }
+      else {
+        const auto[result, snapshot, value] = hash_trie->insert<1>(uniform_dist(e1), uniform_dist(e1));
+      }
+    }
+
+    if (num_successors)
+      get_Job_Queue()->give_one(std::make_shared<Ctrie_NS_S2_Job>(hash_trie, num_successors - 1));
+  }
+
+  const std::shared_ptr<Trie_Type> hash_trie;
+  const size_t num_successors;
+};
+
+void test_Ctrie_NS_S2_Performance(const std::shared_ptr<Zeni::Concurrency::Worker_Threads> &worker_threads, const std::shared_ptr<Zeni::Concurrency::Job_Queue> &job_queue)
+{
+  const auto hash_trie = std::make_shared<Ctrie_NS_S2_Job::Trie_Type>();
+  for (int i = 0; i != 192; ++i)
+    job_queue->give_one(std::make_shared<Ctrie_NS_S2_Job>(hash_trie, 0));
   worker_threads->finish_jobs();
 }
 
