@@ -1184,10 +1184,9 @@ namespace Zeni::Concurrency {
         return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
       }
       else {
-        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1) {
+        if (std::get<1>(tuple_value) && uintptr_t(std::get<1>(tuple_value)) != 0x1)
           std::get<1>(tuple_value)->decrement_refs();
-          enforce_snapshot(super_root);
-        }
+        enforce_snapshot(super_root);
         return decltype(complete_operation(done, super_root, tuple_value))();
       }
     }
