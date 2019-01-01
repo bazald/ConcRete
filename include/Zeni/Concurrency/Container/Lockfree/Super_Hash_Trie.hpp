@@ -39,7 +39,7 @@ namespace Zeni::Concurrency {
       static auto generate() {
         std::tuple_element_t<0, Tuple_Type> result; ///< MSVC hack: Direct use fails
         result = decltype(result)::Invalid_SHT;     ///< MSVC hack: decltype succeeds
-        return std::make_tuple(result, std::tuple_element_t<1, Tuple_Type>(0x1), std::tuple_element_t<2, Tuple_Type>());
+        return std::make_tuple(result, std::tuple_element_t<1, Tuple_Type>::Create_Invalid(), std::tuple_element_t<2, Tuple_Type>());
       }
     };
 
@@ -49,7 +49,7 @@ namespace Zeni::Concurrency {
       static auto generate() {
         std::tuple_element_t<0, Tuple_Type> result; ///< MSVC hack: Direct use fails
         result = decltype(result)::Invalid_SHT;     ///< MSVC hack: decltype succeeds
-        return std::make_tuple(result, std::tuple_element_t<1, Tuple_Type>(0x1), std::tuple_element_t<2, Tuple_Type>(), std::tuple_element_t<3, Tuple_Type>());
+        return std::make_tuple(result, std::tuple_element_t<1, Tuple_Type>::Create_Invalid(), std::tuple_element_t<2, Tuple_Type>(), std::tuple_element_t<3, Tuple_Type>());
       }
     };
 
@@ -432,6 +432,10 @@ namespace Zeni::Concurrency {
       : m_super_root(new Hash_Trie_Super_Node()),
       m_invalidate_on_empty(invalidate_on_empty)
     {
+    }
+
+    static Snapshot Create_Invalid() {
+      return Super_Hash_Trie(reinterpret_cast<Hash_Trie_Super_Node *>(0x1), true);
     }
 
     ~Super_Hash_Trie() {
@@ -1150,9 +1154,9 @@ namespace Zeni::Concurrency {
       return Super_Hash_Trie_Internal::Update_Tuple_1<std::tuple_size<decltype(tuple_value)>::value>::updated(tuple_value, Snapshot(std::get<1>(tuple_value)));
     }
 
-    Super_Hash_Trie(const Hash_Trie_Super_Node * const super_node)
+    Super_Hash_Trie(const Hash_Trie_Super_Node * const super_node, const bool invalidate_on_empty = false)
       : m_super_root(super_node),
-      m_invalidate_on_empty(false)
+      m_invalidate_on_empty(invalidate_on_empty)
     {
     }
 

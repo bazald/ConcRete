@@ -520,8 +520,18 @@ namespace Zeni::Concurrency {
 
       template <size_t index>
       auto insert(const KEY &key, const typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key &value) {
-        if (const auto found = find(key))
-          return std::make_pair(found->template insert<index>(key, value), reinterpret_cast<List_Node *>(0x1));
+        if (const auto found = find(key)) {
+          const auto tuple_value = found->template insert<index>(key, value);
+          if (std::get<1>(tuple_value).valid())
+            return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(0x1));
+          else {
+            const auto new_lnode = erased(found);
+            if (uintptr_t(new_lnode) == 0x1)
+              return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(0x1));
+            else
+              return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(uintptr_t(new_lnode) | 0x2));
+          }
+        }
         else {
           if (!try_increment_refs())
             return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
@@ -545,8 +555,18 @@ namespace Zeni::Concurrency {
 
       template <size_t if_present, size_t regardless>
       auto insert_ip_xp(const KEY &key, const typename std::tuple_element_t<if_present, typename SUBTRIE::Types>::Key &value) {
-        if (const auto found = find(key))
-          return std::make_pair(found->template insert_ip_xp<if_present, regardless>(key, value), static_cast<List_Node *>(0x1));
+        if (const auto found = find(key)) {
+          const auto tuple_value = found->template insert_ip_xp<if_present, regardless>(key, value);
+          if (std::get<1>(tuple_value).valid())
+            return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(0x1));
+          else {
+            const auto new_lnode = erased(found);
+            if (uintptr_t(new_lnode) == 0x1)
+              return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(0x1));
+            else
+              return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(uintptr_t(new_lnode) | 0x2));
+          }
+        }
         else {
           if (!try_increment_refs())
             return std::make_pair(std::make_tuple(std::tuple_element_t<if_present, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
@@ -562,8 +582,18 @@ namespace Zeni::Concurrency {
 
       template <size_t index>
       auto erase(const KEY &key, const typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key &value) {
-        if (const auto found = find(key))
-          return std::make_pair(found->template erase<index>(key, value), reinterpret_cast<List_Node *>(0x1));
+        if (const auto found = find(key)) {
+          const auto tuple_value = found->template erase<index>(key, value);
+          if (std::get<1>(tuple_value).valid())
+            return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(0x1));
+          else {
+            const auto new_lnode = erased(found);
+            if (uintptr_t(new_lnode) == 0x1)
+              return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(0x1));
+            else
+              return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(uintptr_t(new_lnode) | 0x2));
+          }
+        }
         else {
           if (!try_increment_refs())
             return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
@@ -587,8 +617,18 @@ namespace Zeni::Concurrency {
 
       template <size_t if_present, size_t regardless>
       auto erase_ip_xp(const KEY &key, const typename std::tuple_element_t<if_present, typename SUBTRIE::Types>::Key &value) {
-        if (const auto found = find(key))
-          return std::make_pair(found->template erase_ip_xp<if_present, regardless>(key, value), static_cast<List_Node *>(0x1));
+        if (const auto found = find(key)) {
+          const auto tuple_value = found->template erase_ip_xp<if_present, regardless>(key, value);
+          if (std::get<1>(tuple_value).valid())
+            return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(0x1));
+          else {
+            const auto new_lnode = erased(found);
+            if (uintptr_t(new_lnode) == 0x1)
+              return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(0x1));
+            else
+              return std::make_pair(tuple_value, reinterpret_cast<List_Node *>(uintptr_t(new_lnode) | 0x2));
+          }
+        }
         else {
           if (!try_increment_refs())
             return std::make_pair(std::make_tuple(std::tuple_element_t<if_present, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
@@ -616,6 +656,43 @@ namespace Zeni::Concurrency {
             return head->snode;
         }
         return nullptr;
+      }
+
+      List_Node * erased(const Singleton_Node<KEY, SUBTRIE> * const snode) const {
+        List_Node * new_head = nullptr;
+        List_Node * new_tail = nullptr;
+        for (List_Node * old_head = const_cast<List_Node *>(this); old_head; old_head = old_head->next) {
+          if (old_head->snode == snode) {
+            if (old_head->next) {
+              if (!old_head->next->try_increment_refs()) {
+                if (new_head)
+                  delete new_head;
+                return reinterpret_cast<List_Node *>(0x1);
+              }
+              if (new_head)
+                new_tail->next = old_head->next;
+              else {
+                new_head = old_head->next;
+                new_tail = new_head;
+              }
+              break;
+            }
+          }
+          else {
+            if (!old_head->snode->try_increment_refs()) {
+              if (new_head)
+                delete new_head;
+              return reinterpret_cast<List_Node *>(0x1);
+            }
+            if (new_head)
+              new_head = new List_Node(old_head->snode, new_head);
+            else {
+              new_head = new List_Node(old_head->snode, nullptr);
+              new_tail = new_head;
+            }
+          }
+        }
+        return new_head;
       }
 
       Singleton_Node<KEY, SUBTRIE> * const snode;
@@ -857,7 +934,17 @@ namespace Zeni::Concurrency {
               return post_op<index>(inode, level, tuple_value);
             if (std::get<0>(tuple_value) == std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
               return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
-            if (CAS_del(inode, inode_main, new_lnode))
+            const auto lnode_ptr_part = reinterpret_cast<LNode *>(uintptr_t(new_lnode) & ~uintptr_t(0x2));
+            MNode * replacement;
+            if (lnode_ptr_part->next)
+              replacement = lnode_ptr_part;
+            else {
+              [[maybe_unused]] const auto refs = lnode_ptr_part->snode->try_increment_refs();
+              assert(refs);
+              replacement = new TNode(lnode_ptr_part->snode);
+              lnode_ptr_part->decrement_refs();
+            }
+            if (CAS_dec(inode, inode_main, replacement) || (uintptr_t(new_lnode) & 0x2))
               return tuple_value;
             else
               return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
@@ -968,7 +1055,17 @@ namespace Zeni::Concurrency {
               return post_op<index>(inode, level, tuple_value);
             if (std::get<0>(tuple_value) == std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
               return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
-            if (CAS_del(inode, inode_main, new_lnode))
+            const auto lnode_ptr_part = reinterpret_cast<LNode *>(uintptr_t(new_lnode) & ~uintptr_t(0x2));
+            MNode * replacement;
+            if (lnode_ptr_part->next)
+              replacement = lnode_ptr_part;
+            else {
+              [[maybe_unused]] const auto refs = lnode_ptr_part->snode->try_increment_refs();
+              assert(refs);
+              replacement = new TNode(lnode_ptr_part->snode);
+              lnode_ptr_part->decrement_refs();
+            }
+            if (CAS_dec(inode, inode_main, replacement) || (uintptr_t(new_lnode) & 0x2))
               return tuple_value;
             else
               return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());

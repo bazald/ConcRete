@@ -324,7 +324,8 @@ class Ctrie_NS_S2_Job : public Zeni::Concurrency::Job {
 public:
   typedef Zeni::Concurrency::Ctrie_NS_S2<int64_t, Zeni::Concurrency::Super_Hash_Trie<
     Zeni::Concurrency::Positive_Hash_Trie<int64_t>,
-    Zeni::Concurrency::Positive_Hash_Trie<int64_t>>> Trie_Type;
+    Zeni::Concurrency::Positive_Hash_Trie<int64_t>>,
+    std::hash<int64_t>, std::equal_to<int64_t>, uint32_t> Trie_Type;
 
   Ctrie_NS_S2_Job(const std::shared_ptr<Trie_Type> hash_trie_, const size_t num_successors_) : hash_trie(hash_trie_), num_successors(num_successors_) {}
 
