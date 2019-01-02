@@ -550,7 +550,7 @@ namespace Zeni::Concurrency {
         if (const auto found = find(key))
           return std::make_pair(found->template insert_ip<index>(key, value), reinterpret_cast<List_Node *>(0x1));
         else
-          return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(0x1));
+          return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, SUBTRIE::Create_Invalid(), KEY()), reinterpret_cast<List_Node *>(0x1));
       }
 
       template <size_t if_present, size_t regardless>
@@ -612,7 +612,7 @@ namespace Zeni::Concurrency {
         if (const auto found = find(key))
           return std::make_pair(found->template erase_ip<index>(key, value), reinterpret_cast<List_Node *>(0x1));
         else
-          return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(0x1));
+          return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, SUBTRIE::Create_Invalid(), KEY()), reinterpret_cast<List_Node *>(0x1));
       }
 
       template <size_t if_present, size_t regardless>
@@ -647,7 +647,7 @@ namespace Zeni::Concurrency {
         if (const auto found = find(key))
           return std::make_pair(found->template move<src, dest>(key, value), reinterpret_cast<List_Node *>(0x1));
         else
-          return std::make_pair(std::make_tuple(std::tuple_element_t<src, typename SUBTRIE::Types>::Result::Failed_Removal, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(0x1));
+          return std::make_pair(std::make_tuple(std::tuple_element_t<src, typename SUBTRIE::Types>::Result::Failed_Removal, SUBTRIE::Create_Invalid(), KEY()), reinterpret_cast<List_Node *>(0x1));
       }
 
       const Singleton_Node<KEY, SUBTRIE> * find(const KEY &key) const {
@@ -755,27 +755,27 @@ namespace Zeni::Concurrency {
       }
     }
 
-    //template <size_t index>
-    //auto insert_ip(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
-    //  const Hash_Value hash_value = Hash()(key);
-    //  for (;;) {
-    //    INode * const root = Read_Root();
-    //    const auto tuple_value = iinsert_ip<index>(root, key, value, hash_value, 0, nullptr);
-    //    if (std::get<0>(tuple_value) != std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
-    //      return tuple_value;
-    //  }
-    //}
+    template <size_t index>
+    auto insert_ip(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
+      const Hash_Value hash_value = Hash()(key);
+      for (;;) {
+        INode * const root = Read_Root();
+        const auto tuple_value = iinsert_ip<index>(root, key, value, hash_value, 0, nullptr);
+        if (std::get<0>(tuple_value) != std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
+          return tuple_value;
+      }
+    }
 
-    //template <size_t if_possible, size_t regardless>
-    //auto insert_ip_xp(const Key &key, const typename std::tuple_element_t<if_possible, typename Subtrie::Types>::Key &value) {
-    //  const Hash_Value hash_value = Hash()(key);
-    //  for (;;) {
-    //    INode * const root = Read_Root();
-    //    const auto tuple_value = iinsert_ip_xp<if_possible, regardless>(root, key, value, hash_value, 0, nullptr);
-    //    if (std::get<0>(tuple_value) != std::tuple_element_t<if_possible, typename Subtrie::Types>::Result::Restart)
-    //      return tuple_value;
-    //  }
-    //}
+    template <size_t if_present, size_t regardless>
+    auto insert_ip_xp(const Key &key, const typename std::tuple_element_t<if_present, typename Subtrie::Types>::Key &value) {
+      const Hash_Value hash_value = Hash()(key);
+      for (;;) {
+        INode * const root = Read_Root();
+        const auto tuple_value = iinsert_ip_xp<if_present, regardless>(root, key, value, hash_value, 0, nullptr);
+        if (std::get<0>(tuple_value) != std::tuple_element_t<if_present, typename Subtrie::Types>::Result::Restart)
+          return tuple_value;
+      }
+    }
 
     template <size_t index>
     auto erase(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
@@ -788,38 +788,38 @@ namespace Zeni::Concurrency {
       }
     }
 
-    //template <size_t index>
-    //auto erase_ip(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
-    //  const Hash_Value hash_value = Hash()(key);
-    //  for (;;) {
-    //    INode * const root = Read_Root();
-    //    const auto tuple_value = ierase_ip<index>(root, key, value, hash_value, 0, nullptr);
-    //    if (std::get<0>(tuple_value) != std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
-    //      return tuple_value;
-    //  }
-    //}
+    template <size_t index>
+    auto erase_ip(const Key &key, const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value) {
+      const Hash_Value hash_value = Hash()(key);
+      for (;;) {
+        INode * const root = Read_Root();
+        const auto tuple_value = ierase_ip<index>(root, key, value, hash_value, 0, nullptr);
+        if (std::get<0>(tuple_value) != std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
+          return tuple_value;
+      }
+    }
 
-    //template <size_t if_possible, size_t regardless>
-    //auto erase_ip_xp(const Key &key, const typename std::tuple_element_t<if_possible, typename Subtrie::Types>::Key &value) {
-    //  const Hash_Value hash_value = Hash()(key);
-    //  for (;;) {
-    //    INode * const root = Read_Root();
-    //    const auto tuple_value = ierase_ip_xp<if_possible, regardless>(root, key, value, hash_value, 0, nullptr);
-    //    if (std::get<0>(tuple_value) != std::tuple_element_t<if_possible, typename Subtrie::Types>::Result::Restart)
-    //      return tuple_value;
-    //  }
-    //}
+    template <size_t if_present, size_t regardless>
+    auto erase_ip_xp(const Key &key, const typename std::tuple_element_t<if_present, typename Subtrie::Types>::Key &value) {
+      const Hash_Value hash_value = Hash()(key);
+      for (;;) {
+        INode * const root = Read_Root();
+        const auto tuple_value = ierase_ip_xp<if_present, regardless>(root, key, value, hash_value, 0, nullptr);
+        if (std::get<0>(tuple_value) != std::tuple_element_t<if_present, typename Subtrie::Types>::Result::Restart)
+          return tuple_value;
+      }
+    }
 
-    //template <size_t src, size_t dest>
-    //auto move(const Key &key, const typename std::tuple_element_t<src, typename Subtrie::Types>::Key &value) {
-    //  const Hash_Value hash_value = Hash()(key);
-    //  for (;;) {
-    //    INode * const root = Read_Root();
-    //    const auto tuple_value = imove<src, dest>(root, key, value, hash_value, 0, nullptr);
-    //    if (std::get<0>(tuple_value) != std::tuple_element_t<src, typename Subtrie::Types>::Result::Restart)
-    //      return tuple_value;
-    //  }
-    //}
+    template <size_t src, size_t dest>
+    auto move(const Key &key, const typename std::tuple_element_t<src, typename Subtrie::Types>::Key &value) {
+      const Hash_Value hash_value = Hash()(key);
+      for (;;) {
+        INode * const root = Read_Root();
+        const auto tuple_value = imove<src, dest>(root, key, value, hash_value, 0, nullptr);
+        if (std::get<0>(tuple_value) != std::tuple_element_t<src, typename Subtrie::Types>::Result::Restart)
+          return tuple_value;
+      }
+    }
 
     void clear() {
       auto other = new INode(CNode::Create(0x0, 0, {}));
@@ -954,6 +954,197 @@ namespace Zeni::Concurrency {
     }
 
     template <size_t index>
+    auto iinsert_ip(
+      INode * inode,
+      const Key &key,
+      const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value,
+      const Hash_Value &hash_value,
+      size_t level,
+      INode * parent)
+    {
+      for (;;) {
+        const auto inode_main = CAS_Read(inode);
+        if (!inode_main)
+          return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+        if (auto cnode = dynamic_cast<CNode *>(inode_main)) {
+          const auto[flag, pos] = cnode->flagpos(hash_value, level);
+          Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          if (!branch)
+            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+          else {
+            if (const auto inode_next = dynamic_cast<INode *>(branch)) {
+              if (deepen(inode, inode_main, level, parent, cnode, pos, inode_next))
+                continue;
+              else
+                return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            }
+            else if (const auto snode = dynamic_cast<SNode *>(branch)) {
+              if (Pred()(snode->key, key)) {
+                const auto tuple_value = snode->template insert_ip<index>(key, value);
+                return post_op<index>(inode, level, tuple_value);
+              }
+              else
+                return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            }
+            else
+              abort();
+          }
+        }
+        else if (const auto tnode = dynamic_cast<TNode *>(inode_main)) {
+          clean(parent, level - CNode::W);
+          return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+        }
+        else if (auto lnode = dynamic_cast<LNode *>(inode_main)) {
+          const Hash_Value lnode_hash = Hash()(lnode->snode->key);
+          if (lnode_hash != hash_value)
+            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+          else {
+            const auto[tuple_value, new_lnode] = lnode->template insert_ip<index>(key, value);
+            if (uintptr_t(new_lnode) == 0x1)
+              return post_op<index>(inode, level, tuple_value);
+            if (std::get<0>(tuple_value) == std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            const auto lnode_ptr_part = reinterpret_cast<LNode *>(uintptr_t(new_lnode) & ~uintptr_t(0x2));
+            MNode * replacement;
+            if (lnode_ptr_part->next)
+              replacement = lnode_ptr_part;
+            else {
+              [[maybe_unused]] const auto refs = lnode_ptr_part->snode->try_increment_refs();
+              assert(refs);
+              replacement = new TNode(lnode_ptr_part->snode);
+              lnode_ptr_part->decrement_refs();
+            }
+            if (CAS_dec(inode, inode_main, replacement) || (uintptr_t(new_lnode) & 0x2))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+          }
+        }
+      }
+    }
+
+    template <size_t if_present, size_t regardless>
+    auto iinsert_ip_xp(
+      INode * inode,
+      const Key &key,
+      const typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key &value,
+      const Hash_Value &hash_value,
+      size_t level,
+      INode * parent)
+    {
+      for (;;) {
+        const auto inode_main = CAS_Read(inode);
+        if (!inode_main)
+          return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+        if (auto cnode = dynamic_cast<CNode *>(inode_main)) {
+          const auto[flag, pos] = cnode->flagpos(hash_value, level);
+          Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          if (!branch) {
+            const auto[tuple_value, new_snode] = SNode::template Create_Insert<regardless>(key, value);
+            if (!new_snode)
+              return tuple_value;
+            const auto new_cnode = cnode->inserted(pos, flag, new_snode);
+            if (!new_cnode)
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+            if (CAS_del(inode, inode_main, new_cnode))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+          }
+          else {
+            if (const auto inode_next = dynamic_cast<INode *>(branch)) {
+              if (deepen(inode, inode_main, level, parent, cnode, pos, inode_next))
+                continue;
+              else
+                return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+            }
+            else if (const auto snode = dynamic_cast<SNode *>(branch)) {
+              if (Pred()(snode->key, key)) {
+                const auto tuple_value = snode->template insert_ip_xp<if_present, regardless>(key, value);
+                return post_op<regardless>(inode, level, tuple_value);
+              }
+              else {
+                const Hash_Value snode_hash = Hash()(snode->key);
+                if (snode_hash != hash_value) {
+                  if (!snode->try_increment_refs())
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                  const auto[tuple_value, new_snode] = SNode::template Create_Insert<regardless>(key, value);
+                  if (!new_snode)
+                    return tuple_value;
+                  const auto new_cnode = cnode->updated(pos, flag, new INode(CNode::Create(snode, snode_hash, new_snode, hash_value, level + CNode::W)));
+                  if (!new_cnode)
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                  if (CAS_del(inode, inode_main, new_cnode))
+                    return tuple_value;
+                  else
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                }
+                else {
+                  if (!snode->try_increment_refs())
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                  const auto[tuple_value, new_snode] = SNode::template Create_Insert<regardless>(key, value);
+                  if (!new_snode)
+                    return tuple_value;
+                  const auto new_cnode = cnode->updated(pos, flag, new INode(new LNode(new_snode, new LNode(snode))));
+                  if (!new_cnode)
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                  if (CAS_del(inode, inode_main, new_cnode))
+                    return tuple_value;
+                  else
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                }
+              }
+            }
+            else
+              abort();
+          }
+        }
+        else if (const auto tnode = dynamic_cast<TNode *>(inode_main)) {
+          clean(parent, level - CNode::W);
+          return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+        }
+        else if (auto lnode = dynamic_cast<LNode *>(inode_main)) {
+          const Hash_Value lnode_hash = Hash()(lnode->snode->key);
+          if (lnode_hash != hash_value) {
+            if (!lnode->try_increment_refs())
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+            const auto[tuple_value, new_snode] = SNode::template Create_Insert<regardless>(key, value);
+            if (!new_snode)
+              return tuple_value;
+            const auto new_cnode = CNode::Create(new_snode, hash_value, new INode(lnode), lnode_hash, level);
+            if (!new_cnode)
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+            if (CAS_del(inode, inode_main, new_cnode))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+          }
+          else {
+            const auto[tuple_value, new_lnode] = lnode->template insert_ip_xp<if_present, regardless>(key, value);
+            if (uintptr_t(new_lnode) == 0x1)
+              return post_op<regardless>(inode, level, tuple_value);
+            if (std::get<0>(tuple_value) == std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart)
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+            const auto lnode_ptr_part = reinterpret_cast<LNode *>(uintptr_t(new_lnode) & ~uintptr_t(0x2));
+            MNode * replacement;
+            if (lnode_ptr_part->next)
+              replacement = lnode_ptr_part;
+            else {
+              [[maybe_unused]] const auto refs = lnode_ptr_part->snode->try_increment_refs();
+              assert(refs);
+              replacement = new TNode(lnode_ptr_part->snode);
+              lnode_ptr_part->decrement_refs();
+            }
+            if (CAS_dec(inode, inode_main, replacement) || (uintptr_t(new_lnode) & 0x2))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+          }
+        }
+      }
+    }
+
+    template <size_t index>
     auto ierase(
       INode * inode,
       const Key &key,
@@ -1069,6 +1260,267 @@ namespace Zeni::Concurrency {
               return tuple_value;
             else
               return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+          }
+        }
+      }
+    }
+
+    template <size_t index>
+    auto ierase_ip(
+      INode * inode,
+      const Key &key,
+      const typename std::tuple_element_t<index, typename Subtrie::Types>::Key &value,
+      const Hash_Value &hash_value,
+      size_t level,
+      INode * parent)
+    {
+      for (;;) {
+        const auto inode_main = CAS_Read(inode);
+        if (!inode_main)
+          return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+        if (auto cnode = dynamic_cast<CNode *>(inode_main)) {
+          const auto[flag, pos] = cnode->flagpos(hash_value, level);
+          Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          if (!branch)
+            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+          else {
+            if (const auto inode_next = dynamic_cast<INode *>(branch)) {
+              if (deepen(inode, inode_main, level, parent, cnode, pos, inode_next))
+                continue;
+              else
+                return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            }
+            else if (const auto snode = dynamic_cast<SNode *>(branch)) {
+              if (Pred()(snode->key, key)) {
+                const auto tuple_value = snode->template erase_ip<index>(key, value);
+                return post_op<index>(inode, level, tuple_value);
+              }
+              else
+                return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            }
+            else
+              abort();
+          }
+        }
+        else if (const auto tnode = dynamic_cast<TNode *>(inode_main)) {
+          clean(parent, level - CNode::W);
+          return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+        }
+        else if (auto lnode = dynamic_cast<LNode *>(inode_main)) {
+          const Hash_Value lnode_hash = Hash()(lnode->snode->key);
+          if (lnode_hash != hash_value)
+            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+          else {
+            const auto[tuple_value, new_lnode] = lnode->template erase_ip<index>(key, value);
+            if (uintptr_t(new_lnode) == 0x1)
+              return post_op<index>(inode, level, tuple_value);
+            if (std::get<0>(tuple_value) == std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart)
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            const auto lnode_ptr_part = reinterpret_cast<LNode *>(uintptr_t(new_lnode) & ~uintptr_t(0x2));
+            MNode * replacement;
+            if (lnode_ptr_part->next)
+              replacement = lnode_ptr_part;
+            else {
+              [[maybe_unused]] const auto refs = lnode_ptr_part->snode->try_increment_refs();
+              assert(refs);
+              replacement = new TNode(lnode_ptr_part->snode);
+              lnode_ptr_part->decrement_refs();
+            }
+            if (CAS_dec(inode, inode_main, replacement) || (uintptr_t(new_lnode) & 0x2))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+          }
+        }
+      }
+    }
+
+    template <size_t if_present, size_t regardless>
+    auto ierase_ip_xp(
+      INode * inode,
+      const Key &key,
+      const typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key &value,
+      const Hash_Value &hash_value,
+      size_t level,
+      INode * parent)
+    {
+      for (;;) {
+        const auto inode_main = CAS_Read(inode);
+        if (!inode_main)
+          return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+        if (auto cnode = dynamic_cast<CNode *>(inode_main)) {
+          const auto[flag, pos] = cnode->flagpos(hash_value, level);
+          Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          if (!branch) {
+            const auto[tuple_value, new_snode] = SNode::template Create_Erase<regardless>(key, value);
+            if (!new_snode)
+              return tuple_value;
+            const auto new_cnode = cnode->inserted(pos, flag, new_snode);
+            if (!new_cnode)
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+            if (CAS_del(inode, inode_main, new_cnode))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+          }
+          else {
+            if (const auto inode_next = dynamic_cast<INode *>(branch)) {
+              if (deepen(inode, inode_main, level, parent, cnode, pos, inode_next))
+                continue;
+              else
+                return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+            }
+            else if (const auto snode = dynamic_cast<SNode *>(branch)) {
+              if (Pred()(snode->key, key)) {
+                const auto tuple_value = snode->template erase_ip_xp<if_present, regardless>(key, value);
+                return post_op<regardless>(inode, level, tuple_value);
+              }
+              else {
+                const Hash_Value snode_hash = Hash()(snode->key);
+                if (snode_hash != hash_value) {
+                  if (!snode->try_increment_refs())
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                  const auto[tuple_value, new_snode] = SNode::template Create_Erase<regardless>(key, value);
+                  if (!new_snode)
+                    return tuple_value;
+                  const auto new_cnode = cnode->updated(pos, flag, new INode(CNode::Create(snode, snode_hash, new_snode, hash_value, level + CNode::W)));
+                  if (!new_cnode)
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                  if (CAS_del(inode, inode_main, new_cnode))
+                    return tuple_value;
+                  else
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                }
+                else {
+                  if (!snode->try_increment_refs())
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                  const auto[tuple_value, new_snode] = SNode::template Create_Erase<regardless>(key, value);
+                  if (!new_snode)
+                    return tuple_value;
+                  const auto new_cnode = cnode->updated(pos, flag, new INode(new LNode(new_snode, new LNode(snode))));
+                  if (!new_cnode)
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                  if (CAS_del(inode, inode_main, new_cnode))
+                    return tuple_value;
+                  else
+                    return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+                }
+              }
+            }
+            else
+              abort();
+          }
+        }
+        else if (const auto tnode = dynamic_cast<TNode *>(inode_main)) {
+          clean(parent, level - CNode::W);
+          return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+        }
+        else if (auto lnode = dynamic_cast<LNode *>(inode_main)) {
+          const Hash_Value lnode_hash = Hash()(lnode->snode->key);
+          if (lnode_hash != hash_value) {
+            if (!lnode->try_increment_refs())
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+            const auto[tuple_value, new_snode] = SNode::template Create_Erase<regardless>(key, value);
+            if (!new_snode)
+              return tuple_value;
+            const auto new_cnode = CNode::Create(new_snode, hash_value, new INode(lnode), lnode_hash, level);
+            if (!new_cnode)
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+            if (CAS_del(inode, inode_main, new_cnode))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+          }
+          else {
+            const auto[tuple_value, new_lnode] = lnode->template erase_ip_xp<if_present, regardless>(key, value);
+            if (uintptr_t(new_lnode) == 0x1)
+              return post_op<regardless>(inode, level, tuple_value);
+            if (std::get<0>(tuple_value) == std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart)
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+            const auto lnode_ptr_part = reinterpret_cast<LNode *>(uintptr_t(new_lnode) & ~uintptr_t(0x2));
+            MNode * replacement;
+            if (lnode_ptr_part->next)
+              replacement = lnode_ptr_part;
+            else {
+              [[maybe_unused]] const auto refs = lnode_ptr_part->snode->try_increment_refs();
+              assert(refs);
+              replacement = new TNode(lnode_ptr_part->snode);
+              lnode_ptr_part->decrement_refs();
+            }
+            if (CAS_dec(inode, inode_main, replacement) || (uintptr_t(new_lnode) & 0x2))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<regardless, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<regardless, typename Subtrie::Types>::Key());
+          }
+        }
+      }
+    }
+
+    template <size_t src, size_t dest>
+    auto imove(
+      INode * inode,
+      const Key &key,
+      const typename std::tuple_element_t<src, typename Subtrie::Types>::Key &value,
+      const Hash_Value &hash_value,
+      size_t level,
+      INode * parent)
+    {
+      for (;;) {
+        const auto inode_main = CAS_Read(inode);
+        if (!inode_main)
+          return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
+        if (auto cnode = dynamic_cast<CNode *>(inode_main)) {
+          const auto[flag, pos] = cnode->flagpos(hash_value, level);
+          Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
+          if (!branch)
+            return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
+          else {
+            if (const auto inode_next = dynamic_cast<INode *>(branch)) {
+              if (deepen(inode, inode_main, level, parent, cnode, pos, inode_next))
+                continue;
+              else
+                return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
+            }
+            else if (const auto snode = dynamic_cast<SNode *>(branch)) {
+              if (Pred()(snode->key, key)) {
+                const auto tuple_value = snode->template move<src, dest>(key, value);
+                return post_op<src>(inode, level, tuple_value);
+              }
+              else
+                return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
+            }
+            else
+              abort();
+          }
+        }
+        else if (const auto tnode = dynamic_cast<TNode *>(inode_main)) {
+          clean(parent, level - CNode::W);
+          return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
+        }
+        else if (auto lnode = dynamic_cast<LNode *>(inode_main)) {
+          const Hash_Value lnode_hash = Hash()(lnode->snode->key);
+          if (lnode_hash != hash_value)
+            return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
+          else {
+            const auto[tuple_value, new_lnode] = lnode->template move<src, dest>(key, value);
+            if (uintptr_t(new_lnode) == 0x1)
+              return post_op<src>(inode, level, tuple_value);
+            if (std::get<0>(tuple_value) == std::tuple_element_t<src, typename Subtrie::Types>::Result::Restart)
+              return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
+            const auto lnode_ptr_part = reinterpret_cast<LNode *>(uintptr_t(new_lnode) & ~uintptr_t(0x2));
+            MNode * replacement;
+            if (lnode_ptr_part->next)
+              replacement = lnode_ptr_part;
+            else {
+              [[maybe_unused]] const auto refs = lnode_ptr_part->snode->try_increment_refs();
+              assert(refs);
+              replacement = new TNode(lnode_ptr_part->snode);
+              lnode_ptr_part->decrement_refs();
+            }
+            if (CAS_dec(inode, inode_main, replacement) || (uintptr_t(new_lnode) & 0x2))
+              return tuple_value;
+            else
+              return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Restart, typename Subtrie::Snapshot(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
           }
         }
       }
