@@ -502,7 +502,7 @@ namespace Zeni::Concurrency {
     auto lookup(const Comparable &key) const {
       const Hash_Trie_Super_Node * const super_root = isnapshot();
       if (uintptr_t(super_root) == 0x1)
-        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up<index, Comparable, CHash, CPred>(key))>::value>::template generate<decltype(super_root->template looked_up<index, Comparable, CHash, CPred>(key))>();
+        return std::make_pair(typename std::tuple_element_t<index, Types>::Key(), Snapshot::Create_Invalid());
       const auto found = super_root->template looked_up<index, Comparable, CHash, CPred>(key);
       return std::make_pair(found, Snapshot(super_root));
     }
@@ -511,7 +511,7 @@ namespace Zeni::Concurrency {
     auto lookup_2(const Comparable &key) const {
       const Hash_Trie_Super_Node * const super_root = isnapshot();
       if (uintptr_t(super_root) == 0x1)
-        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key))>::value>::template generate<decltype(super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key))>();
+        return std::make_pair(typename std::tuple_element_t<index1, Types>::Key(), Snapshot::Create_Invalid());
       const auto found = super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key);
       return std::make_pair(found, Snapshot(super_root));
     }
@@ -520,7 +520,7 @@ namespace Zeni::Concurrency {
     auto lookup_2(const Comparable1 &key, const Comparable2 &value) const {
       const Hash_Trie_Super_Node * const super_root = isnapshot();
       if (uintptr_t(super_root) == 0x1)
-        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred1, CHash2, CPred2>(key, value))>::value>::template generate<decltype(super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred1, CHash2, CPred2>(key, value))>();
+        return std::make_pair(typename std::tuple_element_t<index1, Types>::Key(), Snapshot::Create_Invalid());
       const auto found = super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred1, CHash2, CPred2>(key, value);
       return std::make_pair(found, Snapshot(super_root));
     }
@@ -529,7 +529,7 @@ namespace Zeni::Concurrency {
     auto looked_up(const Comparable &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       if (uintptr_t(super_root) == 0x1)
-        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up<index, Comparable, CHash, CPred>(key))>::value>::template generate<decltype(super_root->template looked_up<index, Comparable, CHash, CPred>(key))>();
+        return typename std::tuple_element_t<index, Types>::Key();
       return super_root->template looked_up<index, Comparable, CHash, CPred>(key);
     }
 
@@ -537,7 +537,7 @@ namespace Zeni::Concurrency {
     auto looked_up_2(const Comparable &key) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       if (uintptr_t(super_root) == 0x1)
-        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key))>::value>::template generate<decltype(super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key))>();
+        return typename std::tuple_element_t<index1, Types>::Key();
       return super_root->template looked_up_2<index1, index2, Comparable, CHash, CPred>(key);
     }
 
@@ -545,7 +545,7 @@ namespace Zeni::Concurrency {
     auto looked_up_2(const Comparable1 &key, const Comparable2 &value) const {
       const Hash_Trie_Super_Node * const super_root = m_super_root.load(std::memory_order_acquire);
       if (uintptr_t(super_root) == 0x1)
-        return Super_Hash_Trie_Internal::Generate_Invalid_Tuple<std::tuple_size<decltype(super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred2, CHash2, CPred2>(key, value))>::value>::template generate<decltype(super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred2, CHash2, CPred2>(key, value))>();
+        return typename std::tuple_element_t<index1, Types>::Key();
       return super_root->template looked_up_2<index1, index2, Comparable1, Comparable2, CHash1, CPred2, CHash2, CPred2>(key, value);
     }
 

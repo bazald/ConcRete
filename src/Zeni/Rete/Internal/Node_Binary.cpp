@@ -142,7 +142,7 @@ namespace Zeni::Rete {
 
     assert(dynamic_cast<const Node_Key_Null *>(key.get()));
 
-    const auto[result, snapshot, value] = m_join_layer_trie.insert_ip_xp<JOIN_LAYER_OUTPUTS_UNLINKED, JOIN_LAYER_OUTPUTS>(child);
+    const auto[result, snapshot, value] = m_join_layer_output_trie.insert_ip_xp<JOIN_LAYER_OUTPUTS_UNLINKED, JOIN_LAYER_OUTPUTS>(child);
 
     if (result == Node_Trie::Result::First_Insertion)
       job_queue->give_one(std::make_shared<Message_Connect_Join>(sft, network, std::move(snapshot), value));
@@ -156,8 +156,8 @@ namespace Zeni::Rete {
     assert(dynamic_cast<const Node_Key_Null *>(key.get()));
 
     const auto[result, snapshot, value] = unlinked
-      ? m_join_layer_trie.insert_ip_xp<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(child)
-      : m_join_layer_trie.insert_ip_xp<JOIN_LAYER_OUTPUTS_UNLINKED, JOIN_LAYER_OUTPUTS>(child);
+      ? m_join_layer_output_trie.insert_ip_xp<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(child)
+      : m_join_layer_output_trie.insert_ip_xp<JOIN_LAYER_OUTPUTS_UNLINKED, JOIN_LAYER_OUTPUTS>(child);
 
     assert(value == child);
 
@@ -217,7 +217,7 @@ namespace Zeni::Rete {
   Node::Node_Trie::Result Node_Binary::link_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
     assert(std::dynamic_pointer_cast<const Node_Key_Null>(key));
 
-    const auto[result, snapshot, value] = m_join_layer_trie.move<JOIN_LAYER_OUTPUTS_UNLINKED, JOIN_LAYER_OUTPUTS>(child);
+    const auto[result, snapshot, value] = m_join_layer_output_trie.move<JOIN_LAYER_OUTPUTS_UNLINKED, JOIN_LAYER_OUTPUTS>(child);
 
     if (result != Node_Trie::Result::Successful_Move)
       return result;
@@ -230,7 +230,7 @@ namespace Zeni::Rete {
   Node::Node_Trie::Result Node_Binary::unlink_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
     assert(std::dynamic_pointer_cast<const Node_Key_Null>(key));
 
-    const auto[result, snapshot, value] = m_join_layer_trie.move<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(child);
+    const auto[result, snapshot, value] = m_join_layer_output_trie.move<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(child);
 
     if (result != Node_Trie::Result::Successful_Move)
       return result;
@@ -243,7 +243,7 @@ namespace Zeni::Rete {
   bool Node_Binary::has_tokens([[maybe_unused]] const std::shared_ptr<const Node_Key> key) const {
     assert(dynamic_cast<const Node_Key_Null *>(key.get()));
 
-    const auto tokens = m_join_layer_trie.snapshot<JOIN_LAYER_OUTPUT_TOKENS>();
+    const auto tokens = m_join_layer_output_trie.snapshot<JOIN_LAYER_OUTPUT_TOKENS>();
     return !tokens.size_zero();
   }
 
@@ -254,7 +254,7 @@ namespace Zeni::Rete {
   void Node_Binary::receive(const Message_Disconnect_Output &message) {
     assert(std::dynamic_pointer_cast<const Node_Key_Null>(message.key));
 
-    const auto[result, snapshot, value] = m_join_layer_trie.erase_ip_xp<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(message.child);
+    const auto[result, snapshot, value] = m_join_layer_output_trie.erase_ip_xp<JOIN_LAYER_OUTPUTS, JOIN_LAYER_OUTPUTS_UNLINKED>(message.child);
 
     assert(result != Node_Trie::Result::Failed_Removal);
 

@@ -14,17 +14,17 @@ namespace Zeni::Rete {
     Node_Binary(const int64_t height, const int64_t size, const int64_t token_size, const size_t hash, const std::shared_ptr<const Node_Key> key_left, const std::shared_ptr<const Node_Key> key_right, const std::shared_ptr<Node> input_left, const std::shared_ptr<Node> input_right, Variable_Bindings &&variable_bindings);
 
   public:
-    typedef Concurrency::Super_Hash_Trie<Symbols_Trie, Output_Token_Trie, Node_Trie, Node_Trie> Join_Layer_Trie;
-    typedef Join_Layer_Trie::Snapshot Join_Layer_Snapshot;
-    enum Join_Layer {
-      JOIN_LAYER_SYMBOLS = 0,
-      JOIN_LAYER_OUTPUT_TOKENS = 1,
-      JOIN_LAYER_OUTPUTS = 2,
-      JOIN_LAYER_OUTPUTS_UNLINKED = 3
+    typedef Concurrency::Super_Hash_Trie<Output_Token_Trie, Node_Trie, Node_Trie> Join_Layer_Output_Trie;
+    typedef Symbols_Ctrie Join_Layer_Input_Trie;
+    typedef Join_Layer_Output_Trie::Snapshot Join_Layer_Snapshot;
+    enum Join_Layer_Output {
+      JOIN_LAYER_OUTPUT_TOKENS = 0,
+      JOIN_LAYER_OUTPUTS = 1,
+      JOIN_LAYER_OUTPUTS_UNLINKED = 2
     };
-    enum Join_Layer_Symbol {
-      JOIN_LAYER_SYMBOLS_TOKENS_LEFT = 0,
-      JOIN_LAYER_SYMBOLS_TOKENS_RIGHT = 1
+    enum Join_Layer_Input {
+      JOIN_LAYER_INPUT_TOKENS_LEFT = 0,
+      JOIN_LAYER_INPUT_TOKENS_RIGHT = 1
     };
 
     ZENI_RETE_LINKAGE void connect_to_parents_again(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue) override;
@@ -66,7 +66,8 @@ namespace Zeni::Rete {
 
     const bool m_left_eq_right;
 
-    Join_Layer_Trie m_join_layer_trie;
+    Join_Layer_Input_Trie m_join_layer_input_trie;
+    Join_Layer_Output_Trie m_join_layer_output_trie;
 
     const Variable_Bindings m_variable_bindings;
 

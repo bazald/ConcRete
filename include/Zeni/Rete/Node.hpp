@@ -3,6 +3,7 @@
 
 #include "Zeni/Concurrency/Container/Antiable_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Ctrie.hpp"
+#include "Zeni/Concurrency/Container/Ctrie_NS_S2.hpp"
 #include "Zeni/Concurrency/Container/Hash_Trie_S2.hpp"
 #include "Zeni/Concurrency/Container/Positive_Hash_Trie.hpp"
 #include "Zeni/Concurrency/Container/Super_Hash_Trie.hpp"
@@ -36,7 +37,7 @@ namespace Zeni::Rete {
   public:
     typedef Concurrency::Antiable_Hash_Trie<std::shared_ptr<const Token>, hash_deref<Token>, compare_deref_eq> Token_Trie;
     typedef Concurrency::Positive_Hash_Trie<std::shared_ptr<Node>, hash_deref<Node>, compare_deref_eq> Node_Trie;
-    typedef Concurrency::Hash_Trie_S2<std::shared_ptr<const Symbols>, Concurrency::Super_Hash_Trie<Token_Trie, Token_Trie>, hash_deref<Symbols>, compare_deref_container_deref_eq> Symbols_Trie;
+    typedef Concurrency::Ctrie_NS_S2<std::shared_ptr<const Symbols>, Concurrency::Super_Hash_Trie<Token_Trie, Token_Trie>, hash_deref<Symbols>, compare_deref_container_deref_eq> Symbols_Ctrie;
     typedef Concurrency::Antiable_Hash_Trie<std::shared_ptr<const Token>, hash_deref<Token>, compare_deref_eq> Output_Token_Trie;
 
   protected:

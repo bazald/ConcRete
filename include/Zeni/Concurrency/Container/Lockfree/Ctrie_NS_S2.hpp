@@ -534,7 +534,7 @@ namespace Zeni::Concurrency {
         }
         else {
           if (!try_increment_refs())
-            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key()), static_cast<List_Node *>(nullptr));
           const auto[tuple_value, new_snode] = Singleton_Node<KEY, SUBTRIE>::template Create_Insert<index>(key, value);
           if (new_snode)
             return std::make_pair(tuple_value, new List_Node(new_snode, this));
@@ -550,7 +550,7 @@ namespace Zeni::Concurrency {
         if (const auto found = find(key))
           return std::make_pair(found->template insert_ip<index>(key, value), reinterpret_cast<List_Node *>(0x1));
         else
-          return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, SUBTRIE::Create_Invalid(), KEY()), reinterpret_cast<List_Node *>(0x1));
+          return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, SUBTRIE::Create_Invalid(), typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key()), reinterpret_cast<List_Node *>(0x1));
       }
 
       template <size_t if_present, size_t regardless>
@@ -569,7 +569,7 @@ namespace Zeni::Concurrency {
         }
         else {
           if (!try_increment_refs())
-            return std::make_pair(std::make_tuple(std::tuple_element_t<if_present, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+            return std::make_pair(std::make_tuple(std::tuple_element_t<if_present, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), typename std::tuple_element_t<if_present, typename SUBTRIE::Types>::Key()), static_cast<List_Node *>(nullptr));
           const auto[tuple_value, new_snode] = Singleton_Node<KEY, SUBTRIE>::template Create_Insert<regardless>(key, value);
           if (new_snode)
             return std::make_pair(tuple_value, new List_Node(new_snode, this));
@@ -596,7 +596,7 @@ namespace Zeni::Concurrency {
         }
         else {
           if (!try_increment_refs())
-            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+            return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key()), static_cast<List_Node *>(nullptr));
           const auto[tuple_value, new_snode] = Singleton_Node<KEY, SUBTRIE>::template Create_Erase<index>(key, value);
           if (new_snode)
             return std::make_pair(tuple_value, new List_Node(new_snode, this));
@@ -612,7 +612,7 @@ namespace Zeni::Concurrency {
         if (const auto found = find(key))
           return std::make_pair(found->template erase_ip<index>(key, value), reinterpret_cast<List_Node *>(0x1));
         else
-          return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, SUBTRIE::Create_Invalid(), KEY()), reinterpret_cast<List_Node *>(0x1));
+          return std::make_pair(std::make_tuple(std::tuple_element_t<index, typename SUBTRIE::Types>::Result::Not_Present, SUBTRIE::Create_Invalid(), typename std::tuple_element_t<index, typename SUBTRIE::Types>::Key()), reinterpret_cast<List_Node *>(0x1));
       }
 
       template <size_t if_present, size_t regardless>
@@ -631,7 +631,7 @@ namespace Zeni::Concurrency {
         }
         else {
           if (!try_increment_refs())
-            return std::make_pair(std::make_tuple(std::tuple_element_t<if_present, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), KEY()), static_cast<List_Node *>(nullptr));
+            return std::make_pair(std::make_tuple(std::tuple_element_t<if_present, typename SUBTRIE::Types>::Result::Restart, typename SUBTRIE::Snapshot(), typename std::tuple_element_t<if_present, typename SUBTRIE::Types>::Key()), static_cast<List_Node *>(nullptr));
           const auto[tuple_value, new_snode] = Singleton_Node<KEY, SUBTRIE>::template Create_Erase<regardless>(key, value);
           if (new_snode)
             return std::make_pair(tuple_value, new List_Node(new_snode, this));
@@ -647,7 +647,7 @@ namespace Zeni::Concurrency {
         if (const auto found = find(key))
           return std::make_pair(found->template move<src, dest>(key, value), reinterpret_cast<List_Node *>(0x1));
         else
-          return std::make_pair(std::make_tuple(std::tuple_element_t<src, typename SUBTRIE::Types>::Result::Failed_Removal, SUBTRIE::Create_Invalid(), KEY()), reinterpret_cast<List_Node *>(0x1));
+          return std::make_pair(std::make_tuple(std::tuple_element_t<src, typename SUBTRIE::Types>::Result::Failed_Removal, SUBTRIE::Create_Invalid(), typename std::tuple_element_t<src, typename SUBTRIE::Types>::Key()), reinterpret_cast<List_Node *>(0x1));
       }
 
       const Singleton_Node<KEY, SUBTRIE> * find(const KEY &key) const {

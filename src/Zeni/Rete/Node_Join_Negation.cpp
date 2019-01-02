@@ -52,7 +52,7 @@ namespace Zeni::Rete {
     if (message.parent == get_input_left() && message.key->is_contained_by(*get_key_left())) {
       const auto symbols = bind_variables_left(message.token);
 
-      const auto[result, snapshot, value] = m_join_layer_trie.insert_2<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_LEFT>(symbols, message.token);
+      const auto[result, snapshot, value] = m_join_layer_input_trie.insert<JOIN_LAYER_INPUT_TOKENS_LEFT>(symbols, message.token);
       if (result == Token_Trie::Result::First_Insertion) {
         if (!m_left_eq_right) {
           Concurrency::Intrusive_Shared_Ptr<Link_Data>::Lock expected = m_link_data.load(std::memory_order_acquire);
@@ -73,9 +73,9 @@ namespace Zeni::Rete {
           }
         }
 
-        const auto tokens_right = snapshot.lookup_snapshot<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_RIGHT>(symbols);
+        const auto tokens_right = snapshot.snapshot<JOIN_LAYER_INPUT_TOKENS_RIGHT>();
         if (tokens_right.cbegin() == tokens_right.cend()) {
-          const auto[oresult, osnapshot, ovalue] = m_join_layer_trie.insert<JOIN_LAYER_OUTPUT_TOKENS>(message.token);
+          const auto[oresult, osnapshot, ovalue] = m_join_layer_output_trie.insert<JOIN_LAYER_OUTPUT_TOKENS>(message.token);
           if (oresult == Output_Token_Trie::Result::First_Insertion) {
             for (auto &output : osnapshot.snapshot<JOIN_LAYER_OUTPUTS>())
               job_queue->give_one(std::make_shared<Message_Token_Insert>(output, message.network, sft, Node_Key_Null::Create(), message.token));
@@ -87,12 +87,12 @@ namespace Zeni::Rete {
     if (message.parent == get_input_right() && message.key->is_contained_by(*get_key_right())) {
       const auto symbols = bind_variables_right(message.token);
 
-      const auto[result, snapshot, value] = m_join_layer_trie.insert_2<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_RIGHT>(symbols, message.token);
+      const auto[result, snapshot, value] = m_join_layer_input_trie.insert<JOIN_LAYER_INPUT_TOKENS_RIGHT>(symbols, message.token);
       if (result == Token_Trie::Result::First_Insertion) {
-        const auto tokens_right = snapshot.lookup_snapshot<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_RIGHT>(symbols);
+        const auto tokens_right = snapshot.snapshot<JOIN_LAYER_INPUT_TOKENS_RIGHT>();
         if (++tokens_right.cbegin() == tokens_right.cend()) {
-          for (auto token_left : snapshot.lookup_snapshot<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_LEFT>(symbols)) {
-            const auto[oresult, osnapshot, ovalue] = m_join_layer_trie.erase<JOIN_LAYER_OUTPUT_TOKENS>(token_left);
+          for (auto token_left : snapshot.snapshot<JOIN_LAYER_INPUT_TOKENS_LEFT>()) {
+            const auto[oresult, osnapshot, ovalue] = m_join_layer_output_trie.erase<JOIN_LAYER_OUTPUT_TOKENS>(token_left);
             if (oresult != Output_Token_Trie::Result::Last_Removal)
               continue;
 
@@ -111,7 +111,7 @@ namespace Zeni::Rete {
     if (message.parent == get_input_left() && message.key->is_contained_by(*get_key_left())) {
       const auto symbols = bind_variables_left(message.token);
 
-      const auto[result, snapshot, value] = m_join_layer_trie.erase_2<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_LEFT>(symbols, message.token);
+      const auto[result, snapshot, value] = m_join_layer_input_trie.erase<JOIN_LAYER_INPUT_TOKENS_LEFT>(symbols, message.token);
       if (result == Token_Trie::Result::Last_Removal) {
         if (!m_left_eq_right) {
           Concurrency::Intrusive_Shared_Ptr<Link_Data>::Lock expected = m_link_data.load(std::memory_order_acquire);
@@ -132,9 +132,9 @@ namespace Zeni::Rete {
           }
         }
 
-        const auto tokens_right = snapshot.lookup_snapshot<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_RIGHT>(symbols);
+        const auto tokens_right = snapshot.snapshot<JOIN_LAYER_INPUT_TOKENS_RIGHT>();
         if (tokens_right.cbegin() == tokens_right.cend()) {
-          const auto[oresult, osnapshot, ovalue] = m_join_layer_trie.erase<JOIN_LAYER_OUTPUT_TOKENS>(message.token);
+          const auto[oresult, osnapshot, ovalue] = m_join_layer_output_trie.erase<JOIN_LAYER_OUTPUT_TOKENS>(message.token);
           if (oresult == Output_Token_Trie::Result::Last_Removal) {
             for (auto &output : osnapshot.snapshot<JOIN_LAYER_OUTPUTS>())
               job_queue->give_one(std::make_shared<Message_Token_Remove>(output, message.network, sft, Node_Key_Null::Create(), message.token));
@@ -146,12 +146,12 @@ namespace Zeni::Rete {
     if (message.parent == get_input_right() && message.key->is_contained_by(*get_key_right())) {
       const auto symbols = bind_variables_right(message.token);
 
-      const auto[result, snapshot, value] = m_join_layer_trie.erase_2<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_RIGHT>(symbols, message.token);
+      const auto[result, snapshot, value] = m_join_layer_input_trie.erase<JOIN_LAYER_INPUT_TOKENS_RIGHT>(symbols, message.token);
       if (result == Token_Trie::Result::Last_Removal) {
-        const auto tokens_right = snapshot.lookup_snapshot<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_RIGHT>(symbols);
+        const auto tokens_right = snapshot.snapshot<JOIN_LAYER_INPUT_TOKENS_RIGHT>();
         if (tokens_right.cbegin() == tokens_right.cend()) {
-          for (auto token_left : snapshot.lookup_snapshot<JOIN_LAYER_SYMBOLS, JOIN_LAYER_SYMBOLS_TOKENS_LEFT>(symbols)) {
-            const auto[oresult, osnapshot, ovalue] = m_join_layer_trie.insert<JOIN_LAYER_OUTPUT_TOKENS>(token_left);
+          for (auto token_left : snapshot.snapshot<JOIN_LAYER_INPUT_TOKENS_LEFT>()) {
+            const auto[oresult, osnapshot, ovalue] = m_join_layer_output_trie.insert<JOIN_LAYER_OUTPUT_TOKENS>(token_left);
             if (oresult != Output_Token_Trie::Result::First_Insertion)
               continue;
 
