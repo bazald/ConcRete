@@ -38,7 +38,7 @@ namespace Zeni::Rete {
 
     if (multisym) {
       for (const auto mend = multisym->symbols.cend(); mt != mend; ++mt) {
-        const auto result2 = network->connect_existing_output(network, job_queue, *mt, connected, false);
+        [[maybe_unused]] const auto result2 = network->connect_existing_output(network, job_queue, *mt, connected, false);
         //if (result2 == Node_Trie::Result::First_Insertion)
         //  network->connect_to_parents_again(network, job_queue);
       }
@@ -143,7 +143,6 @@ namespace Zeni::Rete {
 
   void Node_Filter_1::receive(const Message_Token_Remove &message) {
     const auto &wme = *std::dynamic_pointer_cast<const Token_Alpha>(message.token)->get_wme();
-    const auto &symbols = wme.get_symbols();
     const auto &symbol = std::get<1>(wme.get_symbols());
 
     const auto[result, snapshot, value] = m_filter_layer_trie.erase<FILTER_LAYER_TOKENS>(symbol, message.token);

@@ -144,7 +144,6 @@ namespace Zeni::Rete {
 
   void Node_Filter_2::receive(const Message_Token_Remove &message) {
     const auto &wme = *std::dynamic_pointer_cast<const Token_Alpha>(message.token)->get_wme();
-    const auto &symbols = wme.get_symbols();
     const auto &symbol = std::get<2>(wme.get_symbols());
 
     const auto[result, snapshot, value] = m_filter_layer_trie.erase<FILTER_LAYER_TOKENS>(symbol, message.token);

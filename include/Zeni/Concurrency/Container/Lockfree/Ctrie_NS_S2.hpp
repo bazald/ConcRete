@@ -1006,7 +1006,7 @@ namespace Zeni::Concurrency {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (!branch)
-            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
           else {
             if (const auto inode_next = dynamic_cast<INode *>(branch)) {
               if (deepen(inode, inode_main, level, parent, cnode, pos, inode_next))
@@ -1020,7 +1020,7 @@ namespace Zeni::Concurrency {
                 return post_op<index>(inode, level, tuple_value);
               }
               else
-                return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+                return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
             }
             else
               abort();
@@ -1033,7 +1033,7 @@ namespace Zeni::Concurrency {
         else if (auto lnode = dynamic_cast<LNode *>(inode_main)) {
           const Hash_Value lnode_hash = Hash()(lnode->snode->key);
           if (lnode_hash != hash_value)
-            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
           else {
             const auto[tuple_value, new_lnode] = lnode->template insert_ip<index>(key, value);
             if (uintptr_t(new_lnode) == 0x1)
@@ -1318,7 +1318,7 @@ namespace Zeni::Concurrency {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (!branch)
-            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
           else {
             if (const auto inode_next = dynamic_cast<INode *>(branch)) {
               if (deepen(inode, inode_main, level, parent, cnode, pos, inode_next))
@@ -1332,7 +1332,7 @@ namespace Zeni::Concurrency {
                 return post_op<index>(inode, level, tuple_value);
               }
               else
-                return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+                return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
             }
             else
               abort();
@@ -1345,7 +1345,7 @@ namespace Zeni::Concurrency {
         else if (auto lnode = dynamic_cast<LNode *>(inode_main)) {
           const Hash_Value lnode_hash = Hash()(lnode->snode->key);
           if (lnode_hash != hash_value)
-            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
+            return std::make_tuple(std::tuple_element_t<index, typename Subtrie::Types>::Result::Not_Present, Subtrie::Create_Invalid(), typename std::tuple_element_t<index, typename Subtrie::Types>::Key());
           else {
             const auto[tuple_value, new_lnode] = lnode->template erase_ip<index>(key, value);
             if (uintptr_t(new_lnode) == 0x1)
@@ -1509,7 +1509,7 @@ namespace Zeni::Concurrency {
           const auto[flag, pos] = cnode->flagpos(hash_value, level);
           Branch * branch = cnode->get_bmp() & flag ? cnode->at(pos) : nullptr;
           if (!branch)
-            return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
+            return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Not_Present, Subtrie::Create_Invalid(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
           else {
             if (const auto inode_next = dynamic_cast<INode *>(branch)) {
               if (deepen(inode, inode_main, level, parent, cnode, pos, inode_next))
@@ -1523,7 +1523,7 @@ namespace Zeni::Concurrency {
                 return post_op<src>(inode, level, tuple_value);
               }
               else
-                return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
+                return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Not_Present, Subtrie::Create_Invalid(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
             }
             else
               abort();
@@ -1536,7 +1536,7 @@ namespace Zeni::Concurrency {
         else if (auto lnode = dynamic_cast<LNode *>(inode_main)) {
           const Hash_Value lnode_hash = Hash()(lnode->snode->key);
           if (lnode_hash != hash_value)
-            return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Not_Present, typename Subtrie::Create_Invalid(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
+            return std::make_tuple(std::tuple_element_t<src, typename Subtrie::Types>::Result::Not_Present, Subtrie::Create_Invalid(), typename std::tuple_element_t<src, typename Subtrie::Types>::Key());
           else {
             const auto[tuple_value, new_lnode] = lnode->template move<src, dest>(key, value);
             if (uintptr_t(new_lnode) == 0x1)

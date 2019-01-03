@@ -193,7 +193,7 @@ int main(int argc, char **argv)
     test_Rete_Network(worker_threads, job_queue);
   }
 
-  //std::cerr << std::endl;
+  std::cerr << std::endl;
 
   //test_Parser(worker_threads, job_queue);
 
