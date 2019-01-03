@@ -37,20 +37,6 @@ namespace Zeni::Rete {
       Invalid_Worker_Threads_Setup() : std::runtime_error("Zeni::Rete::Network: Worker threads must be uninitialized before they can be (re)initialized!") {}
     };
 
-    typedef Concurrency::Hash_Trie_S2<std::shared_ptr<const Symbol>, Concurrency::Super_Hash_Trie<Token_Trie, Node_Trie, Node_Trie>, hash_deref<Symbol>, compare_deref_eq> Symbol_Trie;
-    typedef Concurrency::Super_Hash_Trie<Symbol_Trie, Node_Trie, Node_Trie> Filter_Layer_0_Trie;
-    typedef Filter_Layer_0_Trie::Snapshot Filter_Layer_0_Snapshot;
-    enum Filter_Layer_0 {
-      FILTER_LAYER_0_SYMBOL = 0,
-      FILTER_LAYER_0_VARIABLE_OUTPUTS = 1,
-      FILTER_LAYER_0_VARIABLE_OUTPUTS_UNLINKED = 2
-    };
-    enum Filter_Layer_0_Symbol {
-      FILTER_LAYER_0_SYMBOL_TOKENS = 0,
-      FILTER_LAYER_0_SYMBOL_OUTPUTS = 1,
-      FILTER_LAYER_0_SYMBOL_OUTPUTS_UNLINKED = 2
-    };
-
     class Instantiation : public std::enable_shared_from_this<Instantiation> {
       Instantiation(const Instantiation &) = delete;
       Instantiation & operator=(const Instantiation &) = delete;
@@ -149,12 +135,14 @@ namespace Zeni::Rete {
     ZENI_RETE_LINKAGE bool operator==(const Node &rhs) const override;
 
   private:
-    ZENI_RETE_LINKAGE void insert_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_0_Snapshot snapshot);
-    ZENI_RETE_LINKAGE void remove_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_0_Snapshot snapshot);
+    ZENI_RETE_LINKAGE void insert_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_Snapshot snapshot);
+    ZENI_RETE_LINKAGE void remove_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_Snapshot snapshot);
 
     std::shared_ptr<Concurrency::Worker_Threads> m_worker_threads;
 
-    Filter_Layer_0_Trie m_filter_layer_0_trie;
+    Filter_Layer_Trie m_filter_layer_0_trie;
+    Filter_Layer_Trie m_filter_layer_1_trie;
+    Filter_Layer_Trie m_filter_layer_2_trie;
 
     typedef Concurrency::Ctrie<std::shared_ptr<Node_Action>, Node_Action::Hash_By_Name, Node_Action::Compare_By_Name_Eq> Rule_Trie;
     Rule_Trie m_rules;

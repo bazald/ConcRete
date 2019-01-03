@@ -224,11 +224,16 @@ namespace Zeni::Rete {
     const auto sft = shared_from_this();
     assert(sft == network);
 
-    const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
+    const auto key_symbol_0 = std::dynamic_pointer_cast<const Node_Key_Symbol_0>(key);
+    const auto key_symbol_1 = std::dynamic_pointer_cast<const Node_Key_Symbol_1>(key);
+    const auto key_symbol_2 = std::dynamic_pointer_cast<const Node_Key_Symbol_2>(key);
+    assert(key_symbol_0 || key_symbol_1 || key_symbol_2);
 
-    const auto[result, snapshot, value] = key_symbol
-      ? m_filter_layer_0_trie.insert_2_ip_xp<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS_UNLINKED, FILTER_LAYER_0_SYMBOL_OUTPUTS>(key_symbol->symbol, child)
-      : m_filter_layer_0_trie.insert_ip_xp<FILTER_LAYER_0_VARIABLE_OUTPUTS_UNLINKED, FILTER_LAYER_0_VARIABLE_OUTPUTS>(child);
+    const auto[result, snapshot, value] = key_symbol_0
+      ? m_filter_layer_0_trie.insert_ip_xp<FILTER_LAYER_OUTPUTS_UNLINKED, FILTER_LAYER_OUTPUTS>(key_symbol_0->symbol, child)
+      : key_symbol_1
+      ? m_filter_layer_1_trie.insert_ip_xp<FILTER_LAYER_OUTPUTS_UNLINKED, FILTER_LAYER_OUTPUTS>(key_symbol_1->symbol, child)
+      : m_filter_layer_2_trie.insert_ip_xp<FILTER_LAYER_OUTPUTS_UNLINKED, FILTER_LAYER_OUTPUTS>(key_symbol_2->symbol, child);
 
     if (result == Node_Trie::Result::First_Insertion)
       job_queue->give_one(std::make_shared<Message_Connect_Filter_0>(sft, network, std::move(snapshot), key, value));
@@ -240,15 +245,22 @@ namespace Zeni::Rete {
     const auto sft = shared_from_this();
     assert(sft == network);
 
-    const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
+    const auto key_symbol_0 = std::dynamic_pointer_cast<const Node_Key_Symbol_0>(key);
+    const auto key_symbol_1 = std::dynamic_pointer_cast<const Node_Key_Symbol_1>(key);
+    const auto key_symbol_2 = std::dynamic_pointer_cast<const Node_Key_Symbol_2>(key);
+    assert(key_symbol_0 || key_symbol_1 || key_symbol_2);
 
     const auto[result, snapshot, value] = unlinked
-      ? (key_symbol
-        ? m_filter_layer_0_trie.insert_2_ip_xp<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS, FILTER_LAYER_0_SYMBOL_OUTPUTS_UNLINKED>(key_symbol->symbol, child)
-        : m_filter_layer_0_trie.insert_ip_xp<FILTER_LAYER_0_VARIABLE_OUTPUTS, FILTER_LAYER_0_VARIABLE_OUTPUTS_UNLINKED>(child))
-      : (key_symbol
-        ? m_filter_layer_0_trie.insert_2_ip_xp<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS_UNLINKED, FILTER_LAYER_0_SYMBOL_OUTPUTS>(key_symbol->symbol, child)
-        : m_filter_layer_0_trie.insert_ip_xp<FILTER_LAYER_0_VARIABLE_OUTPUTS_UNLINKED, FILTER_LAYER_0_VARIABLE_OUTPUTS>(child));
+      ? (key_symbol_0
+        ? m_filter_layer_0_trie.insert_ip_xp<FILTER_LAYER_OUTPUTS, FILTER_LAYER_OUTPUTS_UNLINKED>(key_symbol_0->symbol, child)
+        : key_symbol_1
+        ? m_filter_layer_1_trie.insert_ip_xp<FILTER_LAYER_OUTPUTS, FILTER_LAYER_OUTPUTS_UNLINKED>(key_symbol_1->symbol, child)
+        : m_filter_layer_2_trie.insert_ip_xp<FILTER_LAYER_OUTPUTS, FILTER_LAYER_OUTPUTS_UNLINKED>(key_symbol_2->symbol, child))
+      : (key_symbol_0
+        ? m_filter_layer_0_trie.insert_ip_xp<FILTER_LAYER_OUTPUTS_UNLINKED, FILTER_LAYER_OUTPUTS>(key_symbol_0->symbol, child)
+        : key_symbol_1
+        ? m_filter_layer_1_trie.insert_ip_xp<FILTER_LAYER_OUTPUTS_UNLINKED, FILTER_LAYER_OUTPUTS>(key_symbol_1->symbol, child)
+        : m_filter_layer_2_trie.insert_ip_xp<FILTER_LAYER_OUTPUTS_UNLINKED, FILTER_LAYER_OUTPUTS>(key_symbol_2->symbol, child));
 
     assert(value == child);
 
@@ -267,11 +279,16 @@ namespace Zeni::Rete {
   Node::Node_Trie::Result Network::link_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
     const auto sft = shared_from_this();
 
-    const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
+    const auto key_symbol_0 = std::dynamic_pointer_cast<const Node_Key_Symbol_0>(key);
+    const auto key_symbol_1 = std::dynamic_pointer_cast<const Node_Key_Symbol_1>(key);
+    const auto key_symbol_2 = std::dynamic_pointer_cast<const Node_Key_Symbol_2>(key);
+    assert(key_symbol_0 || key_symbol_1 || key_symbol_2);
 
-    const auto[result, snapshot, value] = key_symbol
-      ? m_filter_layer_0_trie.move_2<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS_UNLINKED, FILTER_LAYER_0_SYMBOL_OUTPUTS>(key_symbol->symbol, child)
-      : m_filter_layer_0_trie.move<FILTER_LAYER_0_VARIABLE_OUTPUTS_UNLINKED, FILTER_LAYER_0_VARIABLE_OUTPUTS>(child);
+    const auto[result, snapshot, value] = key_symbol_0
+      ? m_filter_layer_0_trie.move<FILTER_LAYER_OUTPUTS_UNLINKED, FILTER_LAYER_OUTPUTS>(key_symbol_0->symbol, child)
+      : key_symbol_1
+      ? m_filter_layer_1_trie.move<FILTER_LAYER_OUTPUTS_UNLINKED, FILTER_LAYER_OUTPUTS>(key_symbol_1->symbol, child)
+      : m_filter_layer_2_trie.move<FILTER_LAYER_OUTPUTS_UNLINKED, FILTER_LAYER_OUTPUTS>(key_symbol_2->symbol, child);
 
     if (result != Node_Trie::Result::Successful_Move)
       return result;
@@ -284,11 +301,16 @@ namespace Zeni::Rete {
   Node::Node_Trie::Result Network::unlink_output(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child) {
     const auto sft = shared_from_this();
 
-    const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
+    const auto key_symbol_0 = std::dynamic_pointer_cast<const Node_Key_Symbol_0>(key);
+    const auto key_symbol_1 = std::dynamic_pointer_cast<const Node_Key_Symbol_1>(key);
+    const auto key_symbol_2 = std::dynamic_pointer_cast<const Node_Key_Symbol_2>(key);
+    assert(key_symbol_0 || key_symbol_1 || key_symbol_2);
 
-    const auto[result, snapshot, value] = key_symbol
-      ? m_filter_layer_0_trie.move_2<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS, FILTER_LAYER_0_SYMBOL_OUTPUTS_UNLINKED>(key_symbol->symbol, child)
-      : m_filter_layer_0_trie.move<FILTER_LAYER_0_VARIABLE_OUTPUTS, FILTER_LAYER_0_VARIABLE_OUTPUTS_UNLINKED>(child);
+    const auto[result, snapshot, value] = key_symbol_0
+      ? m_filter_layer_0_trie.move<FILTER_LAYER_OUTPUTS, FILTER_LAYER_OUTPUTS_UNLINKED>(key_symbol_0->symbol, child)
+      : key_symbol_1
+      ? m_filter_layer_1_trie.move<FILTER_LAYER_OUTPUTS, FILTER_LAYER_OUTPUTS_UNLINKED>(key_symbol_1->symbol, child)
+      : m_filter_layer_2_trie.move<FILTER_LAYER_OUTPUTS, FILTER_LAYER_OUTPUTS_UNLINKED>(key_symbol_2->symbol, child);
 
     if (result != Node_Trie::Result::Successful_Move)
       return result;
@@ -299,20 +321,18 @@ namespace Zeni::Rete {
   }
 
   bool Network::has_tokens(const std::shared_ptr<const Node_Key> key) const {
-    if (const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key)) {
-      const auto tokens = m_filter_layer_0_trie.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(key_symbol->symbol);
-      return !tokens.size_zero();
-    }
-    else {
-      assert(dynamic_cast<const Node_Key_Null *>(key.get()));
+    const auto key_symbol_0 = std::dynamic_pointer_cast<const Node_Key_Symbol_0>(key);
+    const auto key_symbol_1 = std::dynamic_pointer_cast<const Node_Key_Symbol_1>(key);
+    const auto key_symbol_2 = std::dynamic_pointer_cast<const Node_Key_Symbol_2>(key);
+    assert(key_symbol_0 || key_symbol_1 || key_symbol_2);
 
-      const auto snapshot = m_filter_layer_0_trie.snapshot();
-      for (const auto tokens : snapshot.snapshot<FILTER_LAYER_0_SYMBOL>()) {
-        if (!tokens.second.size_zero<FILTER_LAYER_0_SYMBOL_TOKENS>())
-          return true;
-      }
-      return false;
-    }
+    const auto [result, tokens] = key_symbol_0
+      ? m_filter_layer_0_trie.snapshot<FILTER_LAYER_TOKENS>(key_symbol_0->symbol)
+      : key_symbol_1
+      ? m_filter_layer_1_trie.snapshot<FILTER_LAYER_TOKENS>(key_symbol_1->symbol)
+      : m_filter_layer_2_trie.snapshot<FILTER_LAYER_TOKENS>(key_symbol_2->symbol);
+
+    return !tokens.size_zero();
   }
 
   void Network::receive(const Message_Token_Insert &) {
@@ -328,11 +348,16 @@ namespace Zeni::Rete {
   }
 
   void Network::receive(const Message_Disconnect_Output &message) {
-    const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(message.key);
+    const auto key_symbol_0 = std::dynamic_pointer_cast<const Node_Key_Symbol_0>(message.key);
+    const auto key_symbol_1 = std::dynamic_pointer_cast<const Node_Key_Symbol_1>(message.key);
+    const auto key_symbol_2 = std::dynamic_pointer_cast<const Node_Key_Symbol_2>(message.key);
+    assert(key_symbol_0 || key_symbol_1 || key_symbol_2);
 
-    const auto[result, snapshot, value] = key_symbol
-      ? m_filter_layer_0_trie.erase_2_ip_xp<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS, FILTER_LAYER_0_SYMBOL_OUTPUTS_UNLINKED>(key_symbol->symbol, message.child)
-      : m_filter_layer_0_trie.erase_ip_xp<FILTER_LAYER_0_VARIABLE_OUTPUTS, FILTER_LAYER_0_VARIABLE_OUTPUTS_UNLINKED>(message.child);
+    const auto[result, snapshot, value] = key_symbol_0
+      ? m_filter_layer_0_trie.erase_ip_xp<FILTER_LAYER_OUTPUTS, FILTER_LAYER_OUTPUTS_UNLINKED>(key_symbol_0->symbol, message.child)
+      : key_symbol_1
+      ? m_filter_layer_1_trie.erase_ip_xp<FILTER_LAYER_OUTPUTS, FILTER_LAYER_OUTPUTS_UNLINKED>(key_symbol_1->symbol, message.child)
+      : m_filter_layer_2_trie.erase_ip_xp<FILTER_LAYER_OUTPUTS, FILTER_LAYER_OUTPUTS_UNLINKED>(key_symbol_2->symbol, message.child);
 
     assert(result != Node_Trie::Result::Failed_Removal);
 
@@ -342,38 +367,18 @@ namespace Zeni::Rete {
     remove_tokens(message.get_Job_Queue(), message.key, message.child, snapshot);
   }
 
-  void Network::insert_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_0_Snapshot snapshot) {
+  void Network::insert_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_Snapshot snapshot) {
     const auto sft = shared_from_this();
 
-    const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
-
-    if (key_symbol) {
-      for (const auto &token : snapshot.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(key_symbol->symbol))
-        job_queue->give_one(std::make_shared<Message_Token_Insert>(child, sft, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
-    }
-    else {
-      for (const auto tokens : snapshot.snapshot<FILTER_LAYER_0_SYMBOL>()) {
-        for (const auto &token : tokens.second.snapshot<FILTER_LAYER_0_SYMBOL_TOKENS>())
-          job_queue->give_one(std::make_shared<Message_Token_Insert>(child, sft, sft, Node_Key_Null::Create(), token));
-      }
-    }
+    for (const auto &token : snapshot.snapshot<FILTER_LAYER_TOKENS>())
+      job_queue->give_one(std::make_shared<Message_Token_Insert>(child, sft, sft, key, token));
   }
 
-  void Network::remove_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_0_Snapshot snapshot) {
+  void Network::remove_tokens(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child, const Filter_Layer_Snapshot snapshot) {
     const auto sft = shared_from_this();
 
-    const auto key_symbol = std::dynamic_pointer_cast<const Node_Key_Symbol>(key);
-
-    if (key_symbol) {
-      for (const auto &token : snapshot.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(key_symbol->symbol))
-        job_queue->give_one(std::make_shared<Message_Token_Remove>(child, sft, sft, Node_Key_Symbol::Create(key_symbol->symbol), token));
-    }
-    else {
-      for (const auto tokens : snapshot.snapshot<FILTER_LAYER_0_SYMBOL>()) {
-        for (const auto &token : tokens.second.snapshot<FILTER_LAYER_0_SYMBOL_TOKENS>())
-          job_queue->give_one(std::make_shared<Message_Token_Remove>(child, sft, sft, Node_Key_Null::Create(), token));
-      }
-    }
+    for (const auto &token : snapshot.snapshot<FILTER_LAYER_TOKENS>())
+      job_queue->give_one(std::make_shared<Message_Token_Remove>(child, sft, sft, key, token));
   }
 
   bool Network::is_linked(const std::shared_ptr<Node>, const std::shared_ptr<const Node_Key>) {
@@ -412,42 +417,65 @@ namespace Zeni::Rete {
   }
 
   void Network::insert_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme) {
-    const auto &symbol = std::get<0>(wme->get_symbols());
+    const auto sft = shared_from_this();
     const auto token = std::make_shared<Token_Alpha>(wme);
 
-    const auto[result, snapshot, value] = m_filter_layer_0_trie.insert_2<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(symbol, token);
-    if (result != Token_Trie::Result::First_Insertion)
-      return;
+    const auto[result0, snapshot0, value0] = m_filter_layer_0_trie.insert<FILTER_LAYER_TOKENS>(std::get<0>(wme->get_symbols()), token);
+    if (result0 == Token_Trie::Result::First_Insertion) {
+      const auto key = Node_Key_Symbol_0::Create(std::get<0>(wme->get_symbols()));
+      for (auto &output : snapshot0.snapshot<FILTER_LAYER_OUTPUTS>())
+        job_queue->give_one(std::make_shared<Message_Token_Insert>(output, sft, sft, key, value0));
+    }
 
-    const auto sft = shared_from_this();
+    const auto[result1, snapshot1, value1] = m_filter_layer_1_trie.insert<FILTER_LAYER_TOKENS>(std::get<1>(wme->get_symbols()), token);
+    if (result1 == Token_Trie::Result::First_Insertion) {
+      const auto key = Node_Key_Symbol_1::Create(std::get<1>(wme->get_symbols()));
+      for (auto &output : snapshot1.snapshot<FILTER_LAYER_OUTPUTS>())
+        job_queue->give_one(std::make_shared<Message_Token_Insert>(output, sft, sft, key, value1));
+    }
 
-    for (auto &output : snapshot.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS>(symbol))
-      job_queue->give_one(std::make_shared<Message_Token_Insert>(output, sft, sft, Node_Key_Symbol::Create(symbol), value));
-    for (auto &output : snapshot.snapshot<FILTER_LAYER_0_VARIABLE_OUTPUTS>())
-      job_queue->give_one(std::make_shared<Message_Token_Insert>(output, sft, sft, Node_Key_Null::Create(), value));
+    const auto[result2, snapshot2, value2] = m_filter_layer_2_trie.insert<FILTER_LAYER_TOKENS>(std::get<2>(wme->get_symbols()), token);
+    if (result2 == Token_Trie::Result::First_Insertion) {
+      const auto key = Node_Key_Symbol_2::Create(std::get<2>(wme->get_symbols()));
+      for (auto &output : snapshot2.snapshot<FILTER_LAYER_OUTPUTS>())
+        job_queue->give_one(std::make_shared<Message_Token_Insert>(output, sft, sft, key, value2));
+    }
   }
 
   void Network::remove_wme(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<const WME> wme) {
-    const auto &symbol = std::get<0>(wme->get_symbols());
+    const auto sft = shared_from_this();
     const auto token = std::make_shared<Token_Alpha>(wme);
 
-    const auto[result, snapshot, value] = m_filter_layer_0_trie.erase_2<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_TOKENS>(symbol, token);
-    if (result != Token_Trie::Result::Last_Removal)
-      return;
+    const auto[result0, snapshot0, value0] = m_filter_layer_0_trie.insert<FILTER_LAYER_TOKENS>(std::get<0>(wme->get_symbols()), token);
+    if (result0 == Token_Trie::Result::Last_Removal) {
+      const auto key = Node_Key_Symbol_0::Create(std::get<0>(wme->get_symbols()));
+      for (auto &output : snapshot0.snapshot<FILTER_LAYER_OUTPUTS>())
+        job_queue->give_one(std::make_shared<Message_Token_Remove>(output, sft, sft, key, value0));
+    }
 
-    const auto sft = shared_from_this();
+    const auto[result1, snapshot1, value1] = m_filter_layer_1_trie.insert<FILTER_LAYER_TOKENS>(std::get<1>(wme->get_symbols()), token);
+    if (result1 == Token_Trie::Result::Last_Removal) {
+      const auto key = Node_Key_Symbol_1::Create(std::get<1>(wme->get_symbols()));
+      for (auto &output : snapshot1.snapshot<FILTER_LAYER_OUTPUTS>())
+        job_queue->give_one(std::make_shared<Message_Token_Remove>(output, sft, sft, key, value1));
+    }
 
-    for (auto &output : snapshot.lookup_snapshot<FILTER_LAYER_0_SYMBOL, FILTER_LAYER_0_SYMBOL_OUTPUTS>(symbol))
-      job_queue->give_one(std::make_shared<Message_Token_Remove>(output, sft, sft, Node_Key_Symbol::Create(symbol), value));
-    for (auto &output : snapshot.snapshot<FILTER_LAYER_0_VARIABLE_OUTPUTS>())
-      job_queue->give_one(std::make_shared<Message_Token_Remove>(output, sft, sft, Node_Key_Null::Create(), value));
+    const auto[result2, snapshot2, value2] = m_filter_layer_2_trie.insert<FILTER_LAYER_TOKENS>(std::get<2>(wme->get_symbols()), token);
+    if (result2 == Token_Trie::Result::Last_Removal) {
+      const auto key = Node_Key_Symbol_2::Create(std::get<2>(wme->get_symbols()));
+      for (auto &output : snapshot2.snapshot<FILTER_LAYER_OUTPUTS>())
+        job_queue->give_one(std::make_shared<Message_Token_Remove>(output, sft, sft, key, value2));
+    }
   }
 
   void Network::clear_wmes(const std::shared_ptr<Concurrency::Job_Queue> job_queue) {
-    for (const auto tokens : m_filter_layer_0_trie.snapshot<FILTER_LAYER_0_SYMBOL>()) {
-      for (const auto &token : tokens.second.snapshot<FILTER_LAYER_0_SYMBOL_TOKENS>())
-        remove_wme(job_queue, dynamic_cast<const Token_Alpha &>(*token).get_wme());
-    }
+    /// TODO
+    abort();
+
+    //for (const auto tokens : m_filter_layer_0_trie.snapshot<FILTER_LAYER_0_SYMBOL>()) {
+    //  for (const auto &token : tokens.second.snapshot<FILTER_LAYER_0_SYMBOL_TOKENS>())
+    //    remove_wme(job_queue, dynamic_cast<const Token_Alpha &>(*token).get_wme());
+    //}
   }
 
   void Network::source_rule(const std::shared_ptr<Concurrency::Job_Queue> job_queue, const std::shared_ptr<Node_Action> action, const bool user_action) {

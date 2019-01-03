@@ -12,12 +12,12 @@ namespace Zeni::Rete {
     Message_Connect_Filter_0 & operator=(const Message_Connect_Filter_0 &) = delete;
 
   public:
-    ZENI_RETE_LINKAGE Message_Connect_Filter_0(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const Network::Filter_Layer_0_Snapshot snapshot, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child);
-    ZENI_RETE_LINKAGE Message_Connect_Filter_0(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, Network::Filter_Layer_0_Snapshot &&snapshot, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child);
+    ZENI_RETE_LINKAGE Message_Connect_Filter_0(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, const Node::Filter_Layer_Snapshot snapshot, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child);
+    ZENI_RETE_LINKAGE Message_Connect_Filter_0(const std::shared_ptr<Node> recipient, const std::shared_ptr<Network> network, Node::Filter_Layer_Snapshot &&snapshot, const std::shared_ptr<const Node_Key> key, const std::shared_ptr<Node> child);
 
     void receive() const override;
 
-    const Network::Filter_Layer_0_Snapshot snapshot;
+    const Node::Filter_Layer_Snapshot snapshot;
     const std::shared_ptr<const Node_Key> key;
     const std::shared_ptr<Node> child;
   };

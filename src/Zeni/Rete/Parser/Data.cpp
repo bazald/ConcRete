@@ -1528,124 +1528,127 @@ namespace Zeni::Rete::PEG {
     std::vector<std::tuple<Token_Index, std::shared_ptr<const Zeni::Rete::Node_Predicate::Predicate>, std::shared_ptr<const Symbol_Variable>>>>
     Node_Filter_Generator::generate(const std::shared_ptr<Network> network, const std::shared_ptr<Concurrency::Job_Queue> job_queue, const bool, const std::shared_ptr<const Node_Action::Data> action_data) const
   {
-    std::shared_ptr<Zeni::Rete::Node> node = network;
-    std::shared_ptr<const Node_Key> key;
-    auto variable_indices = Variable_Indices::Create();
-    std::vector<std::tuple<Token_Index, std::shared_ptr<const Zeni::Rete::Node_Predicate::Predicate>, std::shared_ptr<const Symbol_Variable>>> predicates;
+    /// TODO
+    abort();
 
-    if (first->symbols.size() > 1) {
-      Node_Key_Multisym::Node_Key_Symbol_Trie symbol_trie;
-      for (const auto gen : first->symbols)
-        symbol_trie.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
-      key = Node_Key_Multisym::Create(symbol_trie);
-    }
-    else if (!first->symbols.empty())
-      key = Node_Key_Symbol::Create(first->symbols.front()->generate(action_data));
-    else
-      key = Node_Key_Null::Create();
+    //std::shared_ptr<Zeni::Rete::Node> node = network;
+    //std::shared_ptr<const Node_Key> key;
+    //auto variable_indices = Variable_Indices::Create();
+    //std::vector<std::tuple<Token_Index, std::shared_ptr<const Zeni::Rete::Node_Predicate::Predicate>, std::shared_ptr<const Symbol_Variable>>> predicates;
 
-    if (first->variable)
-      variable_indices->insert(first->variable->get_value(), Token_Index(0, 0, 0));
+    //if (first->symbols.size() > 1) {
+    //  Node_Key_Multisym::Node_Key_Symbol_Trie symbol_trie;
+    //  for (const auto gen : first->symbols)
+    //    symbol_trie.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
+    //  key = Node_Key_Multisym::Create(symbol_trie);
+    //}
+    //else if (!first->symbols.empty())
+    //  key = Node_Key_Symbol::Create(first->symbols.front()->generate(action_data));
+    //else
+    //  key = Node_Key_Null::Create();
 
-    for (const auto pred : first->predicates) {
-      const auto sym_right = pred.second->generate(action_data);
-      std::shared_ptr<const Node_Predicate::Get_Symbol> rhs;
-      if (const auto var = std::dynamic_pointer_cast<const Symbol_Variable>(sym_right)) {
-        const auto index_right = variable_indices->find_index(var->get_value());
-        if (index_right == Token_Index()) {
-          predicates.push_back(std::make_tuple(Token_Index(0, 0, 0), pred.first, var));
-          continue;
-        }
-        else
-          rhs = std::make_shared<Node_Predicate::Get_Symbol_Variable>(index_right);
-      }
-      else
-        rhs = std::make_shared<Node_Predicate::Get_Symbol_Constant>(sym_right);
-      node = Node_Predicate::Create(network, job_queue, key, node, pred.first, Token_Index(0, 0, 0), rhs);
-      key = Node_Key_Null::Create();
-    }
+    //if (first->variable)
+    //  variable_indices->insert(first->variable->get_value(), Token_Index(0, 0, 0));
 
-
-    if (second->symbols.size() > 1) {
-      node = Node_Filter_1::Create(network, job_queue, key);
-      Node_Key_Multisym::Node_Key_Symbol_Trie symbol_trie;
-      for (const auto gen : second->symbols)
-        symbol_trie.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
-      key = Node_Key_Multisym::Create(symbol_trie);
-    }
-    else if (!second->symbols.empty()) {
-      node = Node_Filter_1::Create(network, job_queue, key);
-      key = Node_Key_Symbol::Create(second->symbols.front()->generate(action_data));
-    }
-    else if (second->variable && first->variable && *second->variable == *first->variable) {
-      node = Node_Filter_1::Create(network, job_queue, key);
-      key = Node_Key_01::Create();
-    }
-
-    if (second->variable)
-      variable_indices->insert(second->variable->get_value(), Token_Index(0, 0, 1));
-
-    for (const auto pred : second->predicates) {
-      const auto sym_right = pred.second->generate(action_data);
-      std::shared_ptr<const Node_Predicate::Get_Symbol> rhs;
-      if (const auto var = std::dynamic_pointer_cast<const Symbol_Variable>(sym_right)) {
-        const auto index_right = variable_indices->find_index(var->get_value());
-        if (index_right == Token_Index()) {
-          predicates.push_back(std::make_tuple(Token_Index(0, 0, 1), pred.first, var));
-          continue;
-        }
-        else
-          rhs = std::make_shared<Node_Predicate::Get_Symbol_Variable>(index_right);
-      }
-      else
-        rhs = std::make_shared<Node_Predicate::Get_Symbol_Constant>(sym_right);
-      node = Node_Predicate::Create(network, job_queue, key, node, pred.first, Token_Index(0, 0, 1), rhs);
-      key = Node_Key_Null::Create();
-    }
+    //for (const auto pred : first->predicates) {
+    //  const auto sym_right = pred.second->generate(action_data);
+    //  std::shared_ptr<const Node_Predicate::Get_Symbol> rhs;
+    //  if (const auto var = std::dynamic_pointer_cast<const Symbol_Variable>(sym_right)) {
+    //    const auto index_right = variable_indices->find_index(var->get_value());
+    //    if (index_right == Token_Index()) {
+    //      predicates.push_back(std::make_tuple(Token_Index(0, 0, 0), pred.first, var));
+    //      continue;
+    //    }
+    //    else
+    //      rhs = std::make_shared<Node_Predicate::Get_Symbol_Variable>(index_right);
+    //  }
+    //  else
+    //    rhs = std::make_shared<Node_Predicate::Get_Symbol_Constant>(sym_right);
+    //  node = Node_Predicate::Create(network, job_queue, key, node, pred.first, Token_Index(0, 0, 0), rhs);
+    //  key = Node_Key_Null::Create();
+    //}
 
 
-    if (third->symbols.size() > 1) {
-      node = Node_Filter_2::Create(network, job_queue, key, node);
-      Node_Key_Multisym::Node_Key_Symbol_Trie symbol_trie;
-      for (const auto gen : third->symbols)
-        symbol_trie.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
-      key = Node_Key_Multisym::Create(symbol_trie);
-    }
-    else if (!third->symbols.empty()) {
-      node = Node_Filter_2::Create(network, job_queue, key, node);
-      key = Node_Key_Symbol::Create(third->symbols.front()->generate(action_data));
-    }
-    else if (third->variable && first->variable && *third->variable == *first->variable) {
-      node = Node_Filter_2::Create(network, job_queue, key, node);
-      key = Node_Key_02::Create();
-    }
-    else if (third->variable && second->variable && *third->variable == *second->variable) {
-      node = Node_Filter_2::Create(network, job_queue, key, node);
-      key = Node_Key_12::Create();
-    }
+    //if (second->symbols.size() > 1) {
+    //  node = Node_Filter_1::Create(network, job_queue, key);
+    //  Node_Key_Multisym::Node_Key_Symbol_Trie symbol_trie;
+    //  for (const auto gen : second->symbols)
+    //    symbol_trie.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
+    //  key = Node_Key_Multisym::Create(symbol_trie);
+    //}
+    //else if (!second->symbols.empty()) {
+    //  node = Node_Filter_1::Create(network, job_queue, key);
+    //  key = Node_Key_Symbol::Create(second->symbols.front()->generate(action_data));
+    //}
+    //else if (second->variable && first->variable && *second->variable == *first->variable) {
+    //  node = Node_Filter_1::Create(network, job_queue, key);
+    //  key = Node_Key_01::Create();
+    //}
 
-    if (third->variable)
-      variable_indices->insert(third->variable->get_value(), Token_Index(0, 0, 2));
+    //if (second->variable)
+    //  variable_indices->insert(second->variable->get_value(), Token_Index(0, 0, 1));
 
-    for (const auto pred : third->predicates) {
-      const auto sym_right = pred.second->generate(action_data);
-      std::shared_ptr<const Node_Predicate::Get_Symbol> rhs;
-      if (const auto var = std::dynamic_pointer_cast<const Symbol_Variable>(sym_right)) {
-        const auto index_right = variable_indices->find_index(var->get_value());
-        if (index_right == Token_Index()) {
-          predicates.push_back(std::make_tuple(Token_Index(0, 0, 2), pred.first, var));
-          continue;
-        }
-        else
-          rhs = std::make_shared<Node_Predicate::Get_Symbol_Variable>(index_right);
-      }
-      else
-        rhs = std::make_shared<Node_Predicate::Get_Symbol_Constant>(sym_right);
-      node = Node_Predicate::Create(network, job_queue, key, node, pred.first, Token_Index(0, 0, 2), rhs);
-      key = Node_Key_Null::Create();
-    }
+    //for (const auto pred : second->predicates) {
+    //  const auto sym_right = pred.second->generate(action_data);
+    //  std::shared_ptr<const Node_Predicate::Get_Symbol> rhs;
+    //  if (const auto var = std::dynamic_pointer_cast<const Symbol_Variable>(sym_right)) {
+    //    const auto index_right = variable_indices->find_index(var->get_value());
+    //    if (index_right == Token_Index()) {
+    //      predicates.push_back(std::make_tuple(Token_Index(0, 0, 1), pred.first, var));
+    //      continue;
+    //    }
+    //    else
+    //      rhs = std::make_shared<Node_Predicate::Get_Symbol_Variable>(index_right);
+    //  }
+    //  else
+    //    rhs = std::make_shared<Node_Predicate::Get_Symbol_Constant>(sym_right);
+    //  node = Node_Predicate::Create(network, job_queue, key, node, pred.first, Token_Index(0, 0, 1), rhs);
+    //  key = Node_Key_Null::Create();
+    //}
 
-    return std::make_tuple(node, key, variable_indices, predicates);
+
+    //if (third->symbols.size() > 1) {
+    //  node = Node_Filter_2::Create(network, job_queue, key, node);
+    //  Node_Key_Multisym::Node_Key_Symbol_Trie symbol_trie;
+    //  for (const auto gen : third->symbols)
+    //    symbol_trie.insert(Node_Key_Symbol::Create(gen->generate(action_data)));
+    //  key = Node_Key_Multisym::Create(symbol_trie);
+    //}
+    //else if (!third->symbols.empty()) {
+    //  node = Node_Filter_2::Create(network, job_queue, key, node);
+    //  key = Node_Key_Symbol::Create(third->symbols.front()->generate(action_data));
+    //}
+    //else if (third->variable && first->variable && *third->variable == *first->variable) {
+    //  node = Node_Filter_2::Create(network, job_queue, key, node);
+    //  key = Node_Key_02::Create();
+    //}
+    //else if (third->variable && second->variable && *third->variable == *second->variable) {
+    //  node = Node_Filter_2::Create(network, job_queue, key, node);
+    //  key = Node_Key_12::Create();
+    //}
+
+    //if (third->variable)
+    //  variable_indices->insert(third->variable->get_value(), Token_Index(0, 0, 2));
+
+    //for (const auto pred : third->predicates) {
+    //  const auto sym_right = pred.second->generate(action_data);
+    //  std::shared_ptr<const Node_Predicate::Get_Symbol> rhs;
+    //  if (const auto var = std::dynamic_pointer_cast<const Symbol_Variable>(sym_right)) {
+    //    const auto index_right = variable_indices->find_index(var->get_value());
+    //    if (index_right == Token_Index()) {
+    //      predicates.push_back(std::make_tuple(Token_Index(0, 0, 2), pred.first, var));
+    //      continue;
+    //    }
+    //    else
+    //      rhs = std::make_shared<Node_Predicate::Get_Symbol_Variable>(index_right);
+    //  }
+    //  else
+    //    rhs = std::make_shared<Node_Predicate::Get_Symbol_Constant>(sym_right);
+    //  node = Node_Predicate::Create(network, job_queue, key, node, pred.first, Token_Index(0, 0, 2), rhs);
+    //  key = Node_Key_Null::Create();
+    //}
+
+    //return std::make_tuple(node, key, variable_indices, predicates);
   }
 
   Node_Join_Generator::Node_Join_Generator(const std::shared_ptr<const Node_Generator> left_, const std::shared_ptr<const Node_Generator> right_)

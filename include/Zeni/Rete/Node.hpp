@@ -40,6 +40,15 @@ namespace Zeni::Rete {
     typedef Concurrency::Ctrie_NS_S2<std::shared_ptr<const Symbols>, Concurrency::Super_Hash_Trie<Token_Trie, Token_Trie>, hash_deref<Symbols>, compare_deref_container_deref_eq> Symbols_Ctrie;
     typedef Concurrency::Antiable_Hash_Trie<std::shared_ptr<const Token>, hash_deref<Token>, compare_deref_eq> Output_Token_Trie;
 
+    typedef Concurrency::Super_Hash_Trie<Token_Trie, Node_Trie, Node_Trie> Filter_Symbol_Trie;
+    typedef Concurrency::Ctrie_NS_S2<std::shared_ptr<const Symbol>, Filter_Symbol_Trie, hash_deref<Symbol>, compare_deref_eq> Filter_Layer_Trie;
+    typedef Filter_Symbol_Trie::Snapshot Filter_Layer_Snapshot;
+    enum Filter_Layer {
+      FILTER_LAYER_TOKENS = 0,
+      FILTER_LAYER_OUTPUTS = 1,
+      FILTER_LAYER_OUTPUTS_UNLINKED = 2
+    };
+
   protected:
     ZENI_RETE_LINKAGE std::shared_ptr<const Node> shared_from_this() const;
     ZENI_RETE_LINKAGE std::shared_ptr<Node> shared_from_this();
