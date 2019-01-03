@@ -72,12 +72,12 @@ namespace Zeni::Rete::PEG {
     assert(input.string().size() > 2);
     const auto substr = input.string().substr(1, input.string().size() - 2);
     const auto symbol = std::make_shared<Symbol_Variable>(substr.c_str());
-    if (data.productions.top()->lhs_variables->find(substr) != data.productions.top()->lhs_variables->end()) {
-      /// Treat as bound
+    if (data.productions.top()->external_lhs_variables->find(substr) != data.productions.top()->external_lhs_variables->end()) {
+      /// External variable should be treated as constant
       data.symbols.top()->symbols.emplace_back(std::make_shared<Symbol_Variable_Generator>(symbol));
     }
     else {
-      /// Treat as new binding
+      /// Internal variable must be treated as new binding
       data.symbols.top()->variable = symbol;
       data.productions.top()->lhs_variables->insert(substr);
     }
@@ -196,6 +196,9 @@ namespace Zeni::Rete::PEG {
     data.symbols.pop();
     const auto first = data.symbols.top();
     // Deliberately leave the first symbols on the stack
+
+    if (first->symbols.empty() && second->symbols.empty() && third->symbols.empty())
+      throw parse_error("Parser error: a condition must include at least one non-variable", input);
 
     data.productions.top()->lhs.top().push(std::make_shared<Node_Filter_Generator>(first, second, third));
 
