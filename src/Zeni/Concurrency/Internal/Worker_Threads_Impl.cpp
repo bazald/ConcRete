@@ -55,6 +55,7 @@ namespace Zeni::Concurrency {
     m_worker_threads.reserve(num_threads);
     m_job_queues.reserve(num_threads);
     m_job_queues.emplace_back(std::make_pair(std::this_thread::get_id(), m_job_queue));
+    auto prev_job_queue = m_job_queue;
     for (int16_t num_threads_created = 1; num_threads_created < num_threads; ++num_threads_created) {
       std::shared_ptr<std::thread> new_thread;
 
@@ -63,6 +64,8 @@ namespace Zeni::Concurrency {
         new_thread = std::make_shared<std::thread>(worker, this);
         m_worker_threads.emplace_back(new_thread);
         m_job_queues.emplace_back(std::make_pair(new_thread->get_id(), new_job_queue));
+        prev_job_queue->init_next(new_job_queue.get());
+        prev_job_queue = new_job_queue;
       }
       catch (const std::system_error &) {
         if (new_thread) {
@@ -83,6 +86,7 @@ namespace Zeni::Concurrency {
         throw;
       }
     }
+    prev_job_queue->init_next(m_job_queue.get());
     m_initialized.store(true, std::memory_order_relaxed);
   }
 #endif

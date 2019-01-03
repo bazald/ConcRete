@@ -19,6 +19,8 @@ namespace Zeni::Concurrency {
   public:
     static std::shared_ptr<Job_Queue_Impl> Create(Worker_Threads * const worker_threads) noexcept;
 
+    void init_next(Job_Queue * const next) noexcept override;
+
     /// Take a Job off the queue.
     std::shared_ptr<IJob> try_take_one(const bool is_already_awake) noexcept override;
 
@@ -36,6 +38,7 @@ namespace Zeni::Concurrency {
     ZENI_CONCURRENCY_CACHE_ALIGN std::atomic_bool m_reclaim = false;
 #endif
     Worker_Threads * const m_worker_threads;
+    Job_Queue * m_next = nullptr;
     Queue<std::shared_ptr<IJob>> m_jobs;
   };
 

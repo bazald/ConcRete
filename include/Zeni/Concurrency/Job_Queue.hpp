@@ -30,6 +30,8 @@ namespace Zeni::Concurrency {
 
     ZENI_CONCURRENCY_LINKAGE static std::shared_ptr<Job_Queue> Create(Worker_Threads * const worker_threads) noexcept;
 
+    ZENI_CONCURRENCY_LINKAGE virtual void init_next(Job_Queue * const next) noexcept = 0;
+
     /// Take a Job off the queue.
     ZENI_CONCURRENCY_LINKAGE virtual std::shared_ptr<IJob> try_take_one(const bool is_already_awake) noexcept = 0;
 
