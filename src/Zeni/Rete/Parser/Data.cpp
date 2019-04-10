@@ -614,7 +614,7 @@ namespace Zeni::Rete::PEG {
           for (const auto filename : m_filenames)
             parser->parse_file(network, job_queue, filename, true);
         }
-        catch (const PEG::input_error &)
+        catch (const std::system_error &)
         {
         }
       }

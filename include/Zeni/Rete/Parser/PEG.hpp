@@ -14,7 +14,7 @@
 
 namespace Zeni::Rete::PEG {
 
-  using namespace tao::Zeni_Rete_PEG;
+  using namespace Zeni_Rete_PEG;
 
   struct Data;
 

@@ -429,7 +429,7 @@ namespace Zeni::Concurrency {
     typedef Super_Hash_Trie<TYPES...> Snapshot;
 
     Super_Hash_Trie(const bool invalidate_on_empty = false)
-      : m_super_root(new Hash_Trie_Super_Node()),
+      : m_super_root(new Hash_Trie_Super_Node),
       m_invalidate_on_empty(invalidate_on_empty)
     {
     }

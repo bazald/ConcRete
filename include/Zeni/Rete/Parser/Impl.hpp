@@ -72,7 +72,7 @@ namespace Zeni::Rete {
 
         parse(input, network, job_queue, user_action);
       }
-      catch (const PEG::input_error &err) {
+      catch (const std::system_error &err) {
         std::cerr << err.what() << std::endl;
         throw err;
       }
